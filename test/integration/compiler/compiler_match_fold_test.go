@@ -21,7 +21,7 @@ RETURN MATCH 1 {
 }
 `, func(prog *bytecode.Program) error {
 			if inspect.HasOpcode(prog, bytecode.OpJumpIfNeConst) {
-				return fmt.Errorf("expected match folding to remove JumpIfNeConst in O0")
+				return fmt.Errorf("expected match folding to remove JumpIfNeConst in None")
 			}
 
 			return nil
@@ -62,5 +62,5 @@ RETURN MATCH 1s {
 
 			return nil
 		}, "cross-type Duration equality folds constant MATCH fallback"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.None, compiler.Full)
 }

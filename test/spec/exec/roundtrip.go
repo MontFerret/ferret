@@ -77,12 +77,12 @@ func RunRoundTripsWith(t *testing.T, name string, c *compiler.Compiler, cases []
 func RunRoundTrips(t *testing.T, cases []RoundTrip, opts ...vm.EnvironmentOption) {
 	t.Helper()
 
-	levels := []compiler.OptimizationLevel{compiler.O0, compiler.O1}
+	levels := []compiler.OptimizationLevel{compiler.None, compiler.Full}
 
 	for _, level := range levels {
 		RunRoundTripsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			cases,
 			opts...,

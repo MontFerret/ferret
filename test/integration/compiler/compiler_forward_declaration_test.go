@@ -146,7 +146,7 @@ RETURN value
 func compileDiagnostics(t *testing.T, src string) []*diagpkg.Diagnostic {
 	t.Helper()
 
-	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O0)).Compile(source.NewAnonymous(src))
+	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).Compile(source.NewAnonymous(src))
 	if err == nil {
 		t.Fatal("expected compile diagnostics")
 	}

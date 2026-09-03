@@ -7,7 +7,7 @@ bypass when debugging is disabled.
 ## Compilation and metadata
 
 `Engine.CompileDebug` uses a compiler configured to emit debug information.
-Debug compilation uses effective O0 optimization so source-visible execution is
+Debug compilation uses `OptimizationNone` so source-visible execution is
 not rearranged by optimizer passes.
 
 The compiler records source spans, logical debug points, function identities,

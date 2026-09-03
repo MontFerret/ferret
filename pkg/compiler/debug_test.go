@@ -10,16 +10,16 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func TestWithDebugInfoEmitsLogicalPointsAndForcesO0(t *testing.T) {
-	program, err := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo()).Compile(
+func TestWithDebugInfoEmitsLogicalPointsAndForcesNone(t *testing.T) {
+	program, err := mustNewCompiler(t, WithOptimizationLevel(Full), WithDebugInfo()).Compile(
 		source.New("debug.fql", "LET x = 1\nVAR y = 2\ny = y + x\nRETURN y"),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if program.Metadata.OptimizationLevel != int(O0) {
-		t.Fatalf("expected O0, got O%d", program.Metadata.OptimizationLevel)
+	if program.Metadata.OptimizationLevel != int(None) {
+		t.Fatalf("optimization level = %d, want %d", program.Metadata.OptimizationLevel, None)
 	}
 
 	if len(program.Metadata.DebugPoints) != 4 {
@@ -40,18 +40,18 @@ func TestWithDebugInfoEmitsLogicalPointsAndForcesO0(t *testing.T) {
 	}
 }
 
-func TestWithDebugInfoForcesO0AfterLaterOptimizationOption(t *testing.T) {
+func TestWithDebugInfoForcesNoneAfterLaterOptimizationOption(t *testing.T) {
 	program, err := mustNewCompiler(
 		t,
 		WithDebugInfo(),
-		WithOptimizationLevel(O1),
+		WithOptimizationLevel(Full),
 	).Compile(source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if program.Metadata.OptimizationLevel != int(O0) {
-		t.Fatalf("expected O0, got O%d", program.Metadata.OptimizationLevel)
+	if program.Metadata.OptimizationLevel != int(None) {
+		t.Fatalf("optimization level = %d, want %d", program.Metadata.OptimizationLevel, None)
 	}
 	if len(program.Metadata.DebugPoints) == 0 {
 		t.Fatal("expected debug points")
@@ -88,7 +88,7 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 }
 
 func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
-	program, err := mustNewCompiler(t, WithOptimizationLevel(O1)).Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
+	program, err := mustNewCompiler(t, WithOptimizationLevel(Full)).Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,8 +103,8 @@ func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
 		}
 	}
 
-	if program.Metadata.OptimizationLevel != int(O1) {
-		t.Fatalf("normal compilation optimization changed: O%d", program.Metadata.OptimizationLevel)
+	if program.Metadata.OptimizationLevel != int(Full) {
+		t.Fatalf("normal compilation optimization level = %d, want %d", program.Metadata.OptimizationLevel, Full)
 	}
 }
 

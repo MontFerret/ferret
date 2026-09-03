@@ -18,24 +18,32 @@ const (
 	objectComputedLiteralsQuery = `RETURN { ["foo"]: 1, ["bar"]: 2, [1]: 3 }`
 )
 
-func BenchmarkArrayLiterals_O0(b *testing.B) {
-	RunBenchmarkO0(b, arrayLiteralsQuery)
+func BenchmarkArrayLiterals_None(b *testing.B) {
+	RunBenchmarkNone(b, arrayLiteralsQuery)
 }
 
-func BenchmarkArrayLiterals_O1(b *testing.B) {
-	RunBenchmarkO1(b, arrayLiteralsQuery)
+func BenchmarkArrayLiterals_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, arrayLiteralsQuery)
 }
 
-func BenchmarkArraySpread_O0(b *testing.B) {
-	RunBenchmarkO0(b, arraySpreadQuery)
+func BenchmarkArrayLiterals_Full(b *testing.B) {
+	RunBenchmarkFull(b, arrayLiteralsQuery)
 }
 
-func BenchmarkArraySpread_O1(b *testing.B) {
-	RunBenchmarkO1(b, arraySpreadQuery)
+func BenchmarkArraySpread_None(b *testing.B) {
+	RunBenchmarkNone(b, arraySpreadQuery)
 }
 
-func BenchmarkArraySpreadHostList_O0(b *testing.B) {
-	RunBenchmarkO0(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
+func BenchmarkArraySpread_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, arraySpreadQuery)
+}
+
+func BenchmarkArraySpread_Full(b *testing.B) {
+	RunBenchmarkFull(b, arraySpreadQuery)
+}
+
+func BenchmarkArraySpreadHostList_None(b *testing.B) {
+	RunBenchmarkNone(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
 		List: runtime.NewArrayWith(
 			runtime.NewString("foo"),
 			runtime.NewString("bar"),
@@ -45,8 +53,8 @@ func BenchmarkArraySpreadHostList_O0(b *testing.B) {
 	}))
 }
 
-func BenchmarkArraySpreadHostList_O1(b *testing.B) {
-	RunBenchmarkO1(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
+func BenchmarkArraySpreadHostList_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
 		List: runtime.NewArrayWith(
 			runtime.NewString("foo"),
 			runtime.NewString("bar"),
@@ -56,7 +64,18 @@ func BenchmarkArraySpreadHostList_O1(b *testing.B) {
 	}))
 }
 
-func BenchmarkArraySpreadHostSnapshot_O0(b *testing.B) {
+func BenchmarkArraySpreadHostList_Full(b *testing.B) {
+	RunBenchmarkFull(b, arrayHostSpreadQuery, benchmarkSpreadSource(struct{ runtime.List }{
+		List: runtime.NewArrayWith(
+			runtime.NewString("foo"),
+			runtime.NewString("bar"),
+			runtime.NewString("qaz"),
+			runtime.NewString("abc"),
+		),
+	}))
+}
+
+func BenchmarkArraySpreadHostSnapshot_None(b *testing.B) {
 	values := runtime.NewArrayWith(
 		runtime.NewString("foo"),
 		runtime.NewString("bar"),
@@ -64,13 +83,13 @@ func BenchmarkArraySpreadHostSnapshot_O0(b *testing.B) {
 		runtime.NewString("abc"),
 	)
 
-	RunBenchmarkO0(b, arrayHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotList{
+	RunBenchmarkNone(b, arrayHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotList{
 		List:     values,
 		snapshot: values,
 	}))
 }
 
-func BenchmarkArraySpreadHostSnapshot_O1(b *testing.B) {
+func BenchmarkArraySpreadHostSnapshot_Basic(b *testing.B) {
 	values := runtime.NewArrayWith(
 		runtime.NewString("foo"),
 		runtime.NewString("bar"),
@@ -78,64 +97,105 @@ func BenchmarkArraySpreadHostSnapshot_O1(b *testing.B) {
 		runtime.NewString("abc"),
 	)
 
-	RunBenchmarkO1(b, arrayHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotList{
+	RunBenchmarkBasic(b, arrayHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotList{
 		List:     values,
 		snapshot: values,
 	}))
 }
 
-func BenchmarkObjectLiterals_O0(b *testing.B) {
-	RunBenchmarkO0(b, objectLiteralsQuery)
+func BenchmarkArraySpreadHostSnapshot_Full(b *testing.B) {
+	values := runtime.NewArrayWith(
+		runtime.NewString("foo"),
+		runtime.NewString("bar"),
+		runtime.NewString("qaz"),
+		runtime.NewString("abc"),
+	)
+
+	RunBenchmarkFull(b, arrayHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotList{
+		List:     values,
+		snapshot: values,
+	}))
 }
 
-func BenchmarkObjectLiterals_O1(b *testing.B) {
-	RunBenchmarkO1(b, objectLiteralsQuery)
+func BenchmarkObjectLiterals_None(b *testing.B) {
+	RunBenchmarkNone(b, objectLiteralsQuery)
 }
 
-func BenchmarkObjectSpread_O0(b *testing.B) {
-	RunBenchmarkO0(b, objectSpreadQuery)
+func BenchmarkObjectLiterals_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectLiteralsQuery)
 }
 
-func BenchmarkObjectSpread_O1(b *testing.B) {
-	RunBenchmarkO1(b, objectSpreadQuery)
+func BenchmarkObjectLiterals_Full(b *testing.B) {
+	RunBenchmarkFull(b, objectLiteralsQuery)
 }
 
-func BenchmarkObjectSpreadHostMap_O0(b *testing.B) {
-	RunBenchmarkO0(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
+func BenchmarkObjectSpread_None(b *testing.B) {
+	RunBenchmarkNone(b, objectSpreadQuery)
+}
+
+func BenchmarkObjectSpread_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectSpreadQuery)
+}
+
+func BenchmarkObjectSpread_Full(b *testing.B) {
+	RunBenchmarkFull(b, objectSpreadQuery)
+}
+
+func BenchmarkObjectSpreadHostMap_None(b *testing.B) {
+	RunBenchmarkNone(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
 		Map: benchmarkSpreadObject(),
 	}))
 }
 
-func BenchmarkObjectSpreadHostMap_O1(b *testing.B) {
-	RunBenchmarkO1(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
+func BenchmarkObjectSpreadHostMap_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
 		Map: benchmarkSpreadObject(),
 	}))
 }
 
-func BenchmarkObjectSpreadHostSnapshot_O0(b *testing.B) {
+func BenchmarkObjectSpreadHostMap_Full(b *testing.B) {
+	RunBenchmarkFull(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkMap{
+		Map: benchmarkSpreadObject(),
+	}))
+}
+
+func BenchmarkObjectSpreadHostSnapshot_None(b *testing.B) {
 	object := benchmarkSpreadObject()
 
-	RunBenchmarkO0(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotObject{
+	RunBenchmarkNone(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotObject{
 		Map:      object,
 		snapshot: object,
 	}))
 }
 
-func BenchmarkObjectSpreadHostSnapshot_O1(b *testing.B) {
+func BenchmarkObjectSpreadHostSnapshot_Basic(b *testing.B) {
 	object := benchmarkSpreadObject()
 
-	RunBenchmarkO1(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotObject{
+	RunBenchmarkBasic(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotObject{
 		Map:      object,
 		snapshot: object,
 	}))
 }
 
-func BenchmarkObjectComputedLiterals_O0(b *testing.B) {
-	RunBenchmarkO0(b, objectComputedLiteralsQuery)
+func BenchmarkObjectSpreadHostSnapshot_Full(b *testing.B) {
+	object := benchmarkSpreadObject()
+
+	RunBenchmarkFull(b, objectHostSpreadQuery, benchmarkSpreadSource(&benchmarkSnapshotObject{
+		Map:      object,
+		snapshot: object,
+	}))
 }
 
-func BenchmarkObjectComputedLiterals_O1(b *testing.B) {
-	RunBenchmarkO1(b, objectComputedLiteralsQuery)
+func BenchmarkObjectComputedLiterals_None(b *testing.B) {
+	RunBenchmarkNone(b, objectComputedLiteralsQuery)
+}
+
+func BenchmarkObjectComputedLiterals_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, objectComputedLiteralsQuery)
+}
+
+func BenchmarkObjectComputedLiterals_Full(b *testing.B) {
+	RunBenchmarkFull(b, objectComputedLiteralsQuery)
 }
 
 func benchmarkSpreadSource(value runtime.Value) vm.EnvironmentOption {

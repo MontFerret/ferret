@@ -12,10 +12,14 @@ RETURN FOR s IN strs
 	RETURN s
 `
 
-func BenchmarkForSort_O0(b *testing.B) {
-	RunBenchmarkO0(b, sortQuery)
+func BenchmarkForSort_None(b *testing.B) {
+	RunBenchmarkNone(b, sortQuery)
 }
 
-func BenchmarkForSort_O1(b *testing.B) {
-	RunBenchmarkO1(b, sortQuery)
+func BenchmarkForSort_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, sortQuery)
+}
+
+func BenchmarkForSort_Full(b *testing.B) {
+	RunBenchmarkFull(b, sortQuery)
 }

@@ -143,12 +143,12 @@ func TestHostFunctionRecoveryFallbackFailurePropagates(t *testing.T) {
 		),
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		callCount := 0
 
 		RunSpecsWith(
 			t,
-			fmt.Sprintf("VM/O%d", level),
+			fmt.Sprintf("VM/%s", level),
 			mustNewCompiler(t, compiler.WithOptimizationLevel(level)),
 			specs,
 			vm.WithFunction("STEP", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

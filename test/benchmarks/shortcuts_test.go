@@ -12,10 +12,14 @@ var (
 	WithParam = spec.WithParam
 )
 
-func RunBenchmarkO0(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.O0, opts...)
+func RunBenchmarkNone(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.None, opts...)
 }
 
-func RunBenchmarkO1(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
-	spec.RunBenchmarkWithOptimization(b, expression, compiler.O1, opts...)
+func RunBenchmarkBasic(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.Basic, opts...)
+}
+
+func RunBenchmarkFull(b *testing.B, expression string, opts ...vm.EnvironmentOption) {
+	spec.RunBenchmarkWithOptimization(b, expression, compiler.Full, opts...)
 }

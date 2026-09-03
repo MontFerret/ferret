@@ -3,7 +3,6 @@ package vm
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -36,8 +35,8 @@ FUNC TEST() {
 RETURN [val, val2, TEST()]
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_mixed_sites.fql", query)
 			instance := mustNewVM(t, program)
 
@@ -95,8 +94,8 @@ FUNC outer() {
 RETURN outer()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_nested_udf.fql", query)
 			instance := mustNewVM(t, program)
 
@@ -141,8 +140,8 @@ LET right = read()
 RETURN left + right
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_udf_callsites.fql", query)
 			instance := mustNewVM(t, program)
 
@@ -182,8 +181,8 @@ func TestWarmupMissingParamProtectedUdfCallStillFailsWithoutTrace(t *testing.T) 
 RETURN risky()?
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			program := mustCompileProgram(t, level, "missing_param_protected_udf.fql", query)
 			instance := mustNewVM(t, program)
 

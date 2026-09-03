@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/test/spec/compile/inspect"
 )
 
-func TestUdfCallConstantArgsDirectLoadO0(t *testing.T) {
+func TestUdfCallConstantArgsDirectLoadNone(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 FUNC f2(x, y) => x + y
@@ -38,7 +38,7 @@ RETURN f2(1, 2)
 	})
 }
 
-func TestHostCallConstantArgsDirectLoadO0(t *testing.T) {
+func TestHostCallConstantArgsDirectLoadNone(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`RETURN TEST(1, 2)`, func(prog *bytecode.Program) error {
 			callIndex, ok := inspect.FindFirstOpcodeIndex(prog.Bytecode, bytecode.OpHCall)
@@ -62,7 +62,7 @@ func TestHostCallConstantArgsDirectLoadO0(t *testing.T) {
 	})
 }
 
-func TestCallArgumentLoweringKeepsMoveForNonLiteralArgO0(t *testing.T) {
+func TestCallArgumentLoweringKeepsMoveForNonLiteralArgNone(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 LET x = 1
@@ -80,8 +80,8 @@ RETURN TEST(x, 2)
 func TestCallArgumentSpansRecordedForCallInstructions(t *testing.T) {
 	const query = "RETURN TEST(1 + 2, [3, 4])"
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			prog := compileWithLevel(t, level, query)
 
 			callIndex, ok := inspect.FindFirstOpcodeIndex(prog.Bytecode, bytecode.OpHCall)

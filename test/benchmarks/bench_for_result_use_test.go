@@ -41,50 +41,74 @@ RETURN FOR outer IN 1..100 {
 `
 )
 
-func BenchmarkForResultDiscarded_O0(b *testing.B) {
-	RunBenchmarkO0(b, discardedForResultQuery)
+func BenchmarkForResultDiscarded_None(b *testing.B) {
+	RunBenchmarkNone(b, discardedForResultQuery)
 }
 
-func BenchmarkForResultDiscarded_O1(b *testing.B) {
-	RunBenchmarkO1(b, discardedForResultQuery)
+func BenchmarkForResultDiscarded_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, discardedForResultQuery)
 }
 
-func BenchmarkForResultReturnless_O0(b *testing.B) {
-	RunBenchmarkO0(b, returnlessForResultQuery)
+func BenchmarkForResultDiscarded_Full(b *testing.B) {
+	RunBenchmarkFull(b, discardedForResultQuery)
 }
 
-func BenchmarkForResultReturnless_O1(b *testing.B) {
-	RunBenchmarkO1(b, returnlessForResultQuery)
+func BenchmarkForResultReturnless_None(b *testing.B) {
+	RunBenchmarkNone(b, returnlessForResultQuery)
 }
 
-func BenchmarkForResultRequired_O0(b *testing.B) {
-	RunBenchmarkO0(b, requiredForResultQuery)
+func BenchmarkForResultReturnless_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, returnlessForResultQuery)
 }
 
-func BenchmarkForResultRequired_O1(b *testing.B) {
-	RunBenchmarkO1(b, requiredForResultQuery)
+func BenchmarkForResultReturnless_Full(b *testing.B) {
+	RunBenchmarkFull(b, returnlessForResultQuery)
 }
 
-func BenchmarkForNestedResultDiscarded_O0(b *testing.B) {
-	RunBenchmarkO0(b, discardedNestedForResultQuery)
+func BenchmarkForResultRequired_None(b *testing.B) {
+	RunBenchmarkNone(b, requiredForResultQuery)
 }
 
-func BenchmarkForNestedResultDiscarded_O1(b *testing.B) {
-	RunBenchmarkO1(b, discardedNestedForResultQuery)
+func BenchmarkForResultRequired_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, requiredForResultQuery)
 }
 
-func BenchmarkForNestedResultReturnless_O0(b *testing.B) {
-	RunBenchmarkO0(b, returnlessNestedForResultQuery)
+func BenchmarkForResultRequired_Full(b *testing.B) {
+	RunBenchmarkFull(b, requiredForResultQuery)
 }
 
-func BenchmarkForNestedResultReturnless_O1(b *testing.B) {
-	RunBenchmarkO1(b, returnlessNestedForResultQuery)
+func BenchmarkForNestedResultDiscarded_None(b *testing.B) {
+	RunBenchmarkNone(b, discardedNestedForResultQuery)
 }
 
-func BenchmarkForNestedResultRequired_O0(b *testing.B) {
-	RunBenchmarkO0(b, requiredNestedForResultQuery)
+func BenchmarkForNestedResultDiscarded_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, discardedNestedForResultQuery)
 }
 
-func BenchmarkForNestedResultRequired_O1(b *testing.B) {
-	RunBenchmarkO1(b, requiredNestedForResultQuery)
+func BenchmarkForNestedResultDiscarded_Full(b *testing.B) {
+	RunBenchmarkFull(b, discardedNestedForResultQuery)
+}
+
+func BenchmarkForNestedResultReturnless_None(b *testing.B) {
+	RunBenchmarkNone(b, returnlessNestedForResultQuery)
+}
+
+func BenchmarkForNestedResultReturnless_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, returnlessNestedForResultQuery)
+}
+
+func BenchmarkForNestedResultReturnless_Full(b *testing.B) {
+	RunBenchmarkFull(b, returnlessNestedForResultQuery)
+}
+
+func BenchmarkForNestedResultRequired_None(b *testing.B) {
+	RunBenchmarkNone(b, requiredNestedForResultQuery)
+}
+
+func BenchmarkForNestedResultRequired_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, requiredNestedForResultQuery)
+}
+
+func BenchmarkForNestedResultRequired_Full(b *testing.B) {
+	RunBenchmarkFull(b, requiredNestedForResultQuery)
 }

@@ -10,7 +10,6 @@ import (
 	gooptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
@@ -20,7 +19,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func mustNewOptionsForTest(t *testing.T, setters ...Option) *options {
+func mustNewOptionsForTest(t *testing.T, setters ...Option) *config {
 	t.Helper()
 
 	opts, err := newOptions(setters)
@@ -46,6 +45,10 @@ func TestNewOptionsPreservesDefaults(t *testing.T) {
 
 	if opts.programLoader == nil {
 		t.Fatal("expected default program loader")
+	}
+
+	if opts.optimizationLevel != OptimizationFull {
+		t.Fatalf("optimization level = %v, want %v", opts.optimizationLevel, OptimizationFull)
 	}
 
 	if opts.maxActiveSessions != defaultMaxActiveSessions {
@@ -76,6 +79,12 @@ func TestEngineSimpleOptionsApplyValidValues(t *testing.T) {
 		WithMaxVMsPerPlan(5),
 		WithFSRoot(" \t"+root+"\n"),
 		WithFSReadOnly(),
+		WithOptimizationLevel(OptimizationNone),
+		WithParam("param1", "value1"),
+		WithParams(map[string]any{"param2": 42}),
+		WithRuntimeParam("param3", runtime.NewString("value3")),
+		WithRuntimeParams(runtime.Params{"param4": runtime.NewInt(100)}),
+		WithLogFields(map[string]any{"component": "engine"}),
 	)
 
 	if opts.encoding != registry {
@@ -101,6 +110,10 @@ func TestEngineSimpleOptionsApplyValidValues(t *testing.T) {
 
 	if !opts.fsReadOnly {
 		t.Fatal("expected file system to be read-only")
+	}
+
+	if opts.optimizationLevel != OptimizationNone {
+		t.Fatalf("optimization level = %v, want %v", opts.optimizationLevel, OptimizationNone)
 	}
 }
 
@@ -246,18 +259,18 @@ func TestNewOptionsAppliesAllOptionsAndJoinsFailuresInOrder(t *testing.T) {
 	var calls []string
 
 	_, err := newOptions([]Option{
-		func(*options) error {
+		func(*config) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(*options) error {
+		func(*config) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
-		func(*options) error {
+		func(*config) error {
 			calls = append(calls, "second")
 
 			return secondErr
@@ -409,33 +422,6 @@ func TestNewOptionsRejectsNilModule(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "module cannot be nil") {
 		t.Fatalf("expected nil module validation error, got: %v", err)
-	}
-}
-
-func TestNewOptionsAcceptsEmptyCompilerOptions(t *testing.T) {
-	t.Parallel()
-
-	opts := mustNewOptionsForTest(
-		t,
-		WithCompilerOptions(compiler.WithOptimizationLevel(compiler.O0)),
-		WithCompilerOptions(),
-	)
-
-	if len(opts.compiler) != 1 {
-		t.Fatalf("expected compiler options to remain unchanged, got %d entries", len(opts.compiler))
-	}
-}
-
-func TestNewOptionsRejectsNilCompilerOption(t *testing.T) {
-	t.Parallel()
-
-	_, err := newOptions([]Option{WithCompilerOptions(nil)})
-	if err == nil {
-		t.Fatal("expected nil compiler option to fail")
-	}
-
-	if !strings.Contains(err.Error(), "compiler option cannot be nil") {
-		t.Fatalf("expected nil compiler option validation error, got: %v", err)
 	}
 }
 

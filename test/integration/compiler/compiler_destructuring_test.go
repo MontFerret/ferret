@@ -11,7 +11,7 @@ import (
 )
 
 func TestDestructuringLoweringUsesAssertionsAndOptionalConstantLoads(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, `
 LET { user: { name }, values: [first, _] } = @payload
 RETURN [name, first]
@@ -23,21 +23,21 @@ RETURN [name, first]
 		}
 
 		if got, want := counts[bytecode.OpAssertDestructure], 3; got != want {
-			t.Fatalf("O%d assertion count = %d, want %d", level, got, want)
+			t.Fatalf("%s assertion count = %d, want %d", level, got, want)
 		}
 
 		if got, want := counts[bytecode.OpLoadKeyOptionalConst], 3; got != want {
-			t.Fatalf("O%d object load count = %d, want %d", level, got, want)
+			t.Fatalf("%s object load count = %d, want %d", level, got, want)
 		}
 
 		if got, want := counts[bytecode.OpLoadIndexOptionalConst], 1; got != want {
-			t.Fatalf("O%d array load count = %d, want %d", level, got, want)
+			t.Fatalf("%s array load count = %d, want %d", level, got, want)
 		}
 	}
 }
 
 func TestDestructuringLoweringSkipsIgnoredStructuredChildren(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		ignored := compileWithLevel(t, level, `
 LET {
     kept,
@@ -58,29 +58,29 @@ RETURN kept
 		}
 
 		if got, want := counts[bytecode.OpAssertDestructure], 1; got != want {
-			t.Fatalf("O%d assertion count = %d, want %d", level, got, want)
+			t.Fatalf("%s assertion count = %d, want %d", level, got, want)
 		}
 
 		if got, want := counts[bytecode.OpLoadKeyOptionalConst], 1; got != want {
-			t.Fatalf("O%d object load count = %d, want %d", level, got, want)
+			t.Fatalf("%s object load count = %d, want %d", level, got, want)
 		}
 
 		if got := counts[bytecode.OpLoadIndexOptionalConst]; got != 0 {
-			t.Fatalf("O%d array load count = %d, want 0", level, got)
+			t.Fatalf("%s array load count = %d, want 0", level, got)
 		}
 
 		if got, want := ignored.Registers, direct.Registers; got != want {
-			t.Fatalf("O%d register count = %d, direct ignore uses %d", level, got, want)
+			t.Fatalf("%s register count = %d, direct ignore uses %d", level, got, want)
 		}
 
 		if got, want := len(ignored.Constants), len(direct.Constants); got != want {
-			t.Fatalf("O%d constant count = %d, direct ignore uses %d", level, got, want)
+			t.Fatalf("%s constant count = %d, direct ignore uses %d", level, got, want)
 		}
 	}
 }
 
 func TestDestructuringLoweringRetainsMixedStructuredChildren(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, `
 LET { nested: [_, kept, _], ignored: { child: [_] } } = @payload
 RETURN kept
@@ -92,15 +92,15 @@ RETURN kept
 		}
 
 		if got, want := counts[bytecode.OpAssertDestructure], 2; got != want {
-			t.Fatalf("O%d assertion count = %d, want %d", level, got, want)
+			t.Fatalf("%s assertion count = %d, want %d", level, got, want)
 		}
 
 		if got, want := counts[bytecode.OpLoadKeyOptionalConst], 1; got != want {
-			t.Fatalf("O%d object load count = %d, want %d", level, got, want)
+			t.Fatalf("%s object load count = %d, want %d", level, got, want)
 		}
 
 		if got, want := counts[bytecode.OpLoadIndexOptionalConst], 1; got != want {
-			t.Fatalf("O%d array load count = %d, want %d", level, got, want)
+			t.Fatalf("%s array load count = %d, want %d", level, got, want)
 		}
 	}
 }

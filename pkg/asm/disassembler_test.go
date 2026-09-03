@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -62,7 +63,7 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 		".isa 1\n",
 		".asm 1\n",
 		"\n  compiler 2.0.0\n",
-		"\n  opt O1\n",
+		"\n  opt basic\n",
 		"\n  value\n",
 		"\n  \"value\"\n",
 		"\n  0\n",
@@ -76,6 +77,23 @@ func TestDisassemble_HeaderSectionsStackedLayout(t *testing.T) {
 	for _, row := range expectedRows {
 		if !strings.Contains(out, row) {
 			t.Fatalf("missing expected row %q in output:\n%s", row, out)
+		}
+	}
+}
+
+func TestFormatMetaOptimizationRowUsesSemanticLevelNames(t *testing.T) {
+	tests := []struct {
+		want  string
+		level compiler.OptimizationLevel
+	}{
+		{level: compiler.None, want: "opt none"},
+		{level: compiler.Basic, want: "opt basic"},
+		{level: compiler.Full, want: "opt full"},
+	}
+
+	for _, tt := range tests {
+		if got := formatMetaOptimizationRow(int(tt.level)); got != tt.want {
+			t.Errorf("formatMetaOptimizationRow(%d) = %q, want %q", tt.level, got, tt.want)
 		}
 	}
 }

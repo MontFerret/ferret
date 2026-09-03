@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -69,7 +70,7 @@ func formatMetaCompilerRow(version string) string {
 }
 
 func formatMetaOptimizationRow(level int) string {
-	return fmt.Sprintf("opt O%d", level)
+	return fmt.Sprintf("opt %s", compiler.OptimizationLevel(level))
 }
 
 func formatParamRow(name string) string {

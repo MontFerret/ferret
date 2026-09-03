@@ -7,7 +7,7 @@ type bootstrap struct {
 	hooks *hookRegistry
 }
 
-func newBootstrap(opts *options) (*bootstrap, error) {
+func newBootstrap(opts *config) (*bootstrap, error) {
 	hostCtx, err := newHostContext(opts)
 	if err != nil {
 		return nil, err

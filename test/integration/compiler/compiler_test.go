@@ -37,7 +37,7 @@ RETURN str`))
 func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 	t.Parallel()
 
-	compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O1))
+	compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.Full))
 	workers := maxInt(8, runtime.GOMAXPROCS(0)*2)
 	iterations := 80
 
@@ -176,7 +176,7 @@ RETURN wrap()
 func TestCompilerCompileConcurrentInvalidQueries(t *testing.T) {
 	t.Parallel()
 
-	compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O1))
+	compilerInstance := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.Full))
 	workers := maxInt(8, runtime.GOMAXPROCS(0)*2)
 	iterations := 80
 

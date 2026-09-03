@@ -10,10 +10,14 @@ RETURN FOR WHILE i < 100
   RETURN current
 `
 
-func BenchmarkForWhileVar_O0(b *testing.B) {
-	RunBenchmarkO0(b, forWhileVarQuery)
+func BenchmarkForWhileVar_None(b *testing.B) {
+	RunBenchmarkNone(b, forWhileVarQuery)
 }
 
-func BenchmarkForWhileVar_O1(b *testing.B) {
-	RunBenchmarkO1(b, forWhileVarQuery)
+func BenchmarkForWhileVar_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, forWhileVarQuery)
+}
+
+func BenchmarkForWhileVar_Full(b *testing.B) {
+	RunBenchmarkFull(b, forWhileVarQuery)
 }

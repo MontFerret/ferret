@@ -161,7 +161,7 @@ func TestDispatchGroupedTargetsCompile(t *testing.T) {
 			bytecode.OpQueryOne: 1,
 			bytecode.OpDispatch: 1,
 		}}, "Should compile a grouped target in an inline WAITFOR trigger"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.None, compiler.Full)
 }
 
 func expectGroupedDispatchOrder(program *bytecode.Program) error {

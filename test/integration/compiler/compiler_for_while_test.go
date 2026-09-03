@@ -31,5 +31,5 @@ FOR _ WHILE UNTIL(2)
 `,
 			"discard loop variable",
 		),
-	}, compiler.O0, compiler.O1)
+	}, compiler.None, compiler.Full)
 }

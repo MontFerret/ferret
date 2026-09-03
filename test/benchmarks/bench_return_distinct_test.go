@@ -51,50 +51,74 @@ RETURN DISTINCT unique([1, 2, 1, 3])
 `
 )
 
-func BenchmarkReturnDistinct_O0(b *testing.B) {
-	RunBenchmarkO0(b, returnDistinctQuery)
+func BenchmarkReturnDistinct_None(b *testing.B) {
+	RunBenchmarkNone(b, returnDistinctQuery)
 }
 
-func BenchmarkReturnDistinct_O1(b *testing.B) {
-	RunBenchmarkO1(b, returnDistinctQuery)
+func BenchmarkReturnDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, returnDistinctQuery)
 }
 
-func BenchmarkLoopDistinct_O0(b *testing.B) {
-	RunBenchmarkO0(b, loopDistinctQuery)
+func BenchmarkReturnDistinct_Full(b *testing.B) {
+	RunBenchmarkFull(b, returnDistinctQuery)
 }
 
-func BenchmarkLoopDistinct_O1(b *testing.B) {
-	RunBenchmarkO1(b, loopDistinctQuery)
+func BenchmarkLoopDistinct_None(b *testing.B) {
+	RunBenchmarkNone(b, loopDistinctQuery)
 }
 
-func BenchmarkUnique_O0(b *testing.B) {
-	RunBenchmarkO0(b, uniqueQuery)
+func BenchmarkLoopDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, loopDistinctQuery)
 }
 
-func BenchmarkUnique_O1(b *testing.B) {
-	RunBenchmarkO1(b, uniqueQuery)
+func BenchmarkLoopDistinct_Full(b *testing.B) {
+	RunBenchmarkFull(b, loopDistinctQuery)
 }
 
-func BenchmarkUnionDistinct_O0(b *testing.B) {
-	RunBenchmarkO0(b, unionDistinctQuery)
+func BenchmarkUnique_None(b *testing.B) {
+	RunBenchmarkNone(b, uniqueQuery)
 }
 
-func BenchmarkUnionDistinct_O1(b *testing.B) {
-	RunBenchmarkO1(b, unionDistinctQuery)
+func BenchmarkUnique_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, uniqueQuery)
 }
 
-func BenchmarkCountDistinct_O0(b *testing.B) {
-	RunBenchmarkO0(b, countDistinctQuery)
+func BenchmarkUnique_Full(b *testing.B) {
+	RunBenchmarkFull(b, uniqueQuery)
 }
 
-func BenchmarkCountDistinct_O1(b *testing.B) {
-	RunBenchmarkO1(b, countDistinctQuery)
+func BenchmarkUnionDistinct_None(b *testing.B) {
+	RunBenchmarkNone(b, unionDistinctQuery)
 }
 
-func BenchmarkCompilerCompileReturnDistinct_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.O0)
+func BenchmarkUnionDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, unionDistinctQuery)
 }
 
-func BenchmarkCompilerCompileReturnDistinct_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.O1)
+func BenchmarkUnionDistinct_Full(b *testing.B) {
+	RunBenchmarkFull(b, unionDistinctQuery)
+}
+
+func BenchmarkCountDistinct_None(b *testing.B) {
+	RunBenchmarkNone(b, countDistinctQuery)
+}
+
+func BenchmarkCountDistinct_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, countDistinctQuery)
+}
+
+func BenchmarkCountDistinct_Full(b *testing.B) {
+	RunBenchmarkFull(b, countDistinctQuery)
+}
+
+func BenchmarkCompilerCompileReturnDistinct_None(b *testing.B) {
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.None)
+}
+
+func BenchmarkCompilerCompileReturnDistinct_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.Basic)
+}
+
+func BenchmarkCompilerCompileReturnDistinct_Full(b *testing.B) {
+	benchmarkCompileQuery(b, compilerReturnDistinctQuery, compiler.Full)
 }

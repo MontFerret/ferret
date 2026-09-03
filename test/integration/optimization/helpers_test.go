@@ -10,5 +10,5 @@ import (
 func runProgramSpecs(t *testing.T, specs []spec.Spec) {
 	t.Helper()
 
-	spec.NewRunner("optimization/program", compiler.WithOptimizationLevel(compiler.O0)).Run(t, specs)
+	spec.NewRunner("optimization/program", compiler.WithOptimizationLevel(compiler.None)).Run(t, specs)
 }

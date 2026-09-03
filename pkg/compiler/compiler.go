@@ -56,7 +56,7 @@ func (c *Compiler) Compile(src source.Source) (program *bytecode.Program, err er
 
 	level := c.config.Level
 	if c.config.DebugInfo {
-		level = optimization.LevelNone
+		level = optimization.None
 	}
 
 	visitor := runFrontend(src, errorHandler, level, c.config.DebugInfo, nil, nil)
@@ -94,7 +94,7 @@ func (c *Compiler) Analyze(src source.Source) (analysis *Analysis, err error) {
 		return analysis, analysisError(analysis)
 	}
 
-	visitor := runFrontend(src, errorHandler, optimization.LevelNone, false, recorder, &syntaxTokens)
+	visitor := runFrontend(src, errorHandler, optimization.None, false, recorder, &syntaxTokens)
 	if visitor != nil {
 		recorder.Sort()
 	}

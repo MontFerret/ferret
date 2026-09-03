@@ -3,7 +3,6 @@ package formatter
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -300,7 +299,7 @@ WHEN .type == "match"`,
 	for _, test := range tests {
 		formatted := formatParenthesesStable(t, test.input)
 
-		for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+		for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 			t.Run(test.name+"/"+optimizationNameForFormatter(level), func(t *testing.T) {
 				originalProgram, err := spec.Compile(test.input, level)
 				if err != nil {
@@ -524,7 +523,7 @@ func TestFormatterParenthesisSimplificationPreservesExecution(t *testing.T) {
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
 			t.Run(optimizationNameForFormatter(level)+"/"+test.name, func(t *testing.T) {
 				formatted := formatParenthesesStable(t, test.input)
@@ -582,5 +581,5 @@ func formatParenthesesStable(t *testing.T, input string) string {
 }
 
 func optimizationNameForFormatter(level compiler.OptimizationLevel) string {
-	return fmt.Sprintf("O%d", level)
+	return level.String()
 }

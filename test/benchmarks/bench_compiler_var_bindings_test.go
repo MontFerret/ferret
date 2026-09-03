@@ -27,10 +27,14 @@ LET ignored = (
 RETURN carried
 `
 
-func BenchmarkCompilerCompileVarBindings_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.O0)
+func BenchmarkCompilerCompileVarBindings_None(b *testing.B) {
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.None)
 }
 
-func BenchmarkCompilerCompileVarBindings_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.O1)
+func BenchmarkCompilerCompileVarBindings_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.Basic)
+}
+
+func BenchmarkCompilerCompileVarBindings_Full(b *testing.B) {
+	benchmarkCompileQuery(b, compilerVarBindingsQuery, compiler.Full)
 }

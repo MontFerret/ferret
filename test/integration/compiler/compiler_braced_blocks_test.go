@@ -1,7 +1,6 @@
 package compiler_test
 
 import (
-	"fmt"
 	"slices"
 	"testing"
 
@@ -65,8 +64,8 @@ RETURN FOR value IN [1, 2, 3] {
 }
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
 			unbracedProgram := compileWithLevel(t, level, unbraced)
 			bracedProgram := compileWithLevel(t, level, braced)
 

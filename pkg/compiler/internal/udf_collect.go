@@ -61,10 +61,9 @@ func (c *UDFCatalogBuilder) BuildCatalog(program *fql.ProgramContext) {
 
 	c.validateBindingConflicts(body, table.GlobalScope)
 
-	if c.ctx.Program.OptimizationLevel > optimization.LevelNone {
+	if c.ctx.Program.OptimizationLevel > optimization.None {
 		c.pruneUnusedFunctions(body)
 	}
-
 }
 
 func (c *UDFCatalogBuilder) collectScopeFunctionsFromBody(body *fql.BodyContext, scope *core.UDFScope) []*core.UDFInfo {

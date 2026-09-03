@@ -10,18 +10,26 @@ RETURN arr[?]`
 
 var bareArrayQuestionValues = []any{1, 2, 3, 4, 5, 6, 7, 8}
 
-func BenchmarkBareArrayQuestion_O0(b *testing.B) {
-	RunBenchmarkO0(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
+func BenchmarkBareArrayQuestion_None(b *testing.B) {
+	RunBenchmarkNone(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
 }
 
-func BenchmarkBareArrayQuestion_O1(b *testing.B) {
-	RunBenchmarkO1(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
+func BenchmarkBareArrayQuestion_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
 }
 
-func BenchmarkBareLocalArrayQuestion_O0(b *testing.B) {
-	RunBenchmarkO0(b, bareLocalArrayQuestionQuery)
+func BenchmarkBareArrayQuestion_Full(b *testing.B) {
+	RunBenchmarkFull(b, bareArrayQuestionQuery, WithParam("arr", bareArrayQuestionValues))
 }
 
-func BenchmarkBareLocalArrayQuestion_O1(b *testing.B) {
-	RunBenchmarkO1(b, bareLocalArrayQuestionQuery)
+func BenchmarkBareLocalArrayQuestion_None(b *testing.B) {
+	RunBenchmarkNone(b, bareLocalArrayQuestionQuery)
+}
+
+func BenchmarkBareLocalArrayQuestion_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, bareLocalArrayQuestionQuery)
+}
+
+func BenchmarkBareLocalArrayQuestion_Full(b *testing.B) {
+	RunBenchmarkFull(b, bareLocalArrayQuestionQuery)
 }

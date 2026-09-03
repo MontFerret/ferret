@@ -60,34 +60,50 @@ RETURN FOR v IN values
 	RETURN { g, cnt, sum, min, max, avg }
 `
 
-func BenchmarkGlobalCollectAggregate_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateQuery)
+func BenchmarkGlobalCollectAggregate_None(b *testing.B) {
+	RunBenchmarkNone(b, globalCollectAggregateQuery)
 }
 
-func BenchmarkGlobalCollectAggregate_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateQuery)
+func BenchmarkGlobalCollectAggregate_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, globalCollectAggregateQuery)
 }
 
-func BenchmarkGlobalCollectAggregateLarge_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateLargeQuery)
+func BenchmarkGlobalCollectAggregate_Full(b *testing.B) {
+	RunBenchmarkFull(b, globalCollectAggregateQuery)
 }
 
-func BenchmarkGlobalCollectAggregateLarge_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateLargeQuery)
+func BenchmarkGlobalCollectAggregateLarge_None(b *testing.B) {
+	RunBenchmarkNone(b, globalCollectAggregateLargeQuery)
 }
 
-func BenchmarkGlobalCollectAggregateLargeInto_O0(b *testing.B) {
-	RunBenchmarkO0(b, globalCollectAggregateLargeIntoQuery)
+func BenchmarkGlobalCollectAggregateLarge_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, globalCollectAggregateLargeQuery)
 }
 
-func BenchmarkGlobalCollectAggregateLargeInto_O1(b *testing.B) {
-	RunBenchmarkO1(b, globalCollectAggregateLargeIntoQuery)
+func BenchmarkGlobalCollectAggregateLarge_Full(b *testing.B) {
+	RunBenchmarkFull(b, globalCollectAggregateLargeQuery)
 }
 
-func BenchmarkGroupedCollectAggregateLarge_O0(b *testing.B) {
-	RunBenchmarkO0(b, groupedCollectAggregateLargeQuery)
+func BenchmarkGlobalCollectAggregateLargeInto_None(b *testing.B) {
+	RunBenchmarkNone(b, globalCollectAggregateLargeIntoQuery)
 }
 
-func BenchmarkGroupedCollectAggregateLarge_O1(b *testing.B) {
-	RunBenchmarkO1(b, groupedCollectAggregateLargeQuery)
+func BenchmarkGlobalCollectAggregateLargeInto_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, globalCollectAggregateLargeIntoQuery)
+}
+
+func BenchmarkGlobalCollectAggregateLargeInto_Full(b *testing.B) {
+	RunBenchmarkFull(b, globalCollectAggregateLargeIntoQuery)
+}
+
+func BenchmarkGroupedCollectAggregateLarge_None(b *testing.B) {
+	RunBenchmarkNone(b, groupedCollectAggregateLargeQuery)
+}
+
+func BenchmarkGroupedCollectAggregateLarge_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, groupedCollectAggregateLargeQuery)
+}
+
+func BenchmarkGroupedCollectAggregateLarge_Full(b *testing.B) {
+	RunBenchmarkFull(b, groupedCollectAggregateLargeQuery)
 }

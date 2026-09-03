@@ -497,7 +497,7 @@ func TestAnalyzeVisitsEveryMatchArm(t *testing.T) {
   _ => THIRD(),
 }`
 
-	analysis, err := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo()).Analyze(source.NewAnonymous(query))
+	analysis, err := mustNewCompiler(t, WithOptimizationLevel(Full), WithDebugInfo()).Analyze(source.NewAnonymous(query))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -579,7 +579,7 @@ func TestAnalyzeIsConcurrentSafeAndOptionIndependent(t *testing.T) {
 FUNC add(value) => base + value
 RETURN add(@value)`
 	src := source.NewAnonymous(query)
-	shared := mustNewCompiler(t, WithOptimizationLevel(O1), WithDebugInfo())
+	shared := mustNewCompiler(t, WithOptimizationLevel(Full), WithDebugInfo())
 
 	want, err := shared.Analyze(src)
 	if err != nil {
@@ -616,12 +616,12 @@ RETURN add(@value)`
 		t.Fatal(concurrentErr)
 	}
 
-	o0, err := mustNewCompiler(t, WithOptimizationLevel(O0)).Analyze(src)
+	none, err := mustNewCompiler(t, WithOptimizationLevel(None)).Analyze(src)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(o0.Symbols(), want.Symbols()) || !reflect.DeepEqual(o0.References(), want.References()) || !reflect.DeepEqual(o0.Calls(), want.Calls()) || !reflect.DeepEqual(o0.TypeFacts(), want.TypeFacts()) {
+	if !reflect.DeepEqual(none.Symbols(), want.Symbols()) || !reflect.DeepEqual(none.References(), want.References()) || !reflect.DeepEqual(none.Calls(), want.Calls()) || !reflect.DeepEqual(none.TypeFacts(), want.TypeFacts()) {
 		t.Fatal("Analyze depends on compiler optimization or debug options")
 	}
 }

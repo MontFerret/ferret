@@ -73,7 +73,7 @@ func TestVarSyntaxErrors(t *testing.T) {
 func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
 	src := "VAR x = 0\nx +=\nRETURN x"
 
-	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.O0)).Compile(source.New("var_compound_span", src))
+	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).Compile(source.New("var_compound_span", src))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
@@ -216,7 +216,7 @@ func TestVarErrorsFunctionAssignmentTargets(t *testing.T) {
 				Message: "Function 'inner' cannot be used as an assignment target",
 				Hint:    "Call it as inner(...), or assign to a declared VAR binding instead.",
 			}, "Nested UDF path assignment reports function-specific diagnostic"),
-	}, compiler.O0, compiler.O1)
+	}, compiler.None, compiler.Full)
 }
 
 func TestVarErrorsFunctionAssignmentTargetSpanLabel(t *testing.T) {
@@ -226,35 +226,35 @@ test.foo = 42
 RETURN NONE
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.NewAnonymous(src))
 		if err == nil {
-			t.Fatalf("expected compilation error at O%d", level)
+			t.Fatalf("expected compilation error at %s", level)
 		}
 
 		diag := firstCompilationError(err)
 		if diag == nil {
-			t.Fatalf("expected diagnostic at O%d", level)
+			t.Fatalf("expected diagnostic at %s", level)
 		}
 
 		if diag.Kind != parserd.SemanticError {
-			t.Fatalf("expected semantic error at O%d, got %s", level, diag.Kind)
+			t.Fatalf("expected semantic error at %s, got %s", level, diag.Kind)
 		}
 
 		if diag.Message != "Function 'test' cannot be used as an assignment target" {
-			t.Fatalf("unexpected diagnostic message at O%d: %q", level, diag.Message)
+			t.Fatalf("unexpected diagnostic message at %s: %q", level, diag.Message)
 		}
 
 		if diag.Hint != "Call it as test(...), or assign to a declared VAR binding instead." {
-			t.Fatalf("unexpected diagnostic hint at O%d: %q", level, diag.Hint)
+			t.Fatalf("unexpected diagnostic hint at %s: %q", level, diag.Hint)
 		}
 
 		if len(diag.Spans) == 0 {
-			t.Fatalf("expected diagnostic span at O%d", level)
+			t.Fatalf("expected diagnostic span at %s", level)
 		}
 
 		if diag.Spans[0].Label != "function is not a writable binding" {
-			t.Fatalf("unexpected diagnostic span label at O%d: %q", level, diag.Spans[0].Label)
+			t.Fatalf("unexpected diagnostic span label at %s: %q", level, diag.Spans[0].Label)
 		}
 	}
 }
@@ -270,7 +270,7 @@ FUNC outer() {
 RETURN outer()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		_ = compileWithLevel(t, level, expr)
 	}
 }
@@ -592,7 +592,7 @@ FOR item IN [1, 2]
 	}
 
 	for _, expr := range expressions {
-		_ = compileWithLevel(t, compiler.O0, expr)
+		_ = compileWithLevel(t, compiler.None, expr)
 	}
 }
 
@@ -603,7 +603,7 @@ x = x + 1
 RETURN x
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, expr)
 		assertNoCellOps(t, prog)
 	}
@@ -616,7 +616,7 @@ func TestVarRegisterBackedCompoundAssignmentAvoidsCellOps(t *testing.T) {
 	RETURN x
 	`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, expr)
 		assertNoCellOps(t, prog)
 	}
@@ -629,7 +629,7 @@ func TestVarReadOnlyCaptureStaysByValueAcrossOptimizationLevels(t *testing.T) {
 RETURN getBase()
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, expr)
 		assertNoCellOps(t, prog)
 	}
@@ -645,7 +645,7 @@ FUNC setBase(v) {
 RETURN setBase(2)
 `
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, expr)
 
 		if got := inspect.CountOpcode(prog, bytecode.OpMakeCell); got == 0 {
@@ -672,7 +672,7 @@ func TestVarWriteCaptureCompoundAssignmentUsesCellOpsAcrossOptimizationLevels(t 
 	RETURN addToBase(2)
 	`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		prog := compileWithLevel(t, level, expr)
 
 		if got := inspect.CountOpcode(prog, bytecode.OpMakeCell); got == 0 {
@@ -696,7 +696,7 @@ func TestVarReassignmentOutsideLoopKeepsExactType(t *testing.T) {
 RETURN x[0]
 `
 
-	prog := compileWithLevel(t, compiler.O0, expr)
+	prog := compileWithLevel(t, compiler.None, expr)
 	assertNoCellOps(t, prog)
 
 	if !inspect.HasOpcode(prog, bytecode.OpLoadKeyConst) {
@@ -720,7 +720,7 @@ LET ignored = (
 RETURN x[0]
 `
 
-	prog := compileWithLevel(t, compiler.O0, expr)
+	prog := compileWithLevel(t, compiler.None, expr)
 	assertNoCellOps(t, prog)
 
 	if !inspect.HasOpcode(prog, bytecode.OpLoadPropertyConst) {
@@ -748,7 +748,7 @@ LET ignored = (
 RETURN x[0]
 `
 
-	prog := compileWithLevel(t, compiler.O0, expr)
+	prog := compileWithLevel(t, compiler.None, expr)
 
 	if got := inspect.CountOpcode(prog, bytecode.OpMakeCell); got == 0 {
 		t.Fatalf("expected OpMakeCell for captured mutable binding")
@@ -783,7 +783,7 @@ LET ignored = (
 RETURN x[0]
 `
 
-	prog := compileWithLevel(t, compiler.O0, expr)
+	prog := compileWithLevel(t, compiler.None, expr)
 	assertNoCellOps(t, prog)
 
 	if !inspect.HasOpcode(prog, bytecode.OpLoadIndexConst) {

@@ -72,7 +72,7 @@ FOR value IN [3, 4] {
 }
 RETURN NONE`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		t.Run(optimizationName(level), func(t *testing.T) {
 			program, err := spec.Compile(query, level)
 			if err != nil {
@@ -117,7 +117,7 @@ RETURN total`, 26, "parenthesized discarded loops preserve nested execution"),
 })`, "parenthesized discarded loop propagates runtime errors"),
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		RunSpecsWith(t, optimizationName(level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), tests)
 	}
 }
@@ -181,7 +181,7 @@ RETURN count`, 1, "returnless FOR DO WHILE executes once"),
 }`, "returnless FOR propagates runtime errors"),
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		RunSpecsWith(t, optimizationName(level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), tests)
 	}
 }
@@ -209,13 +209,13 @@ LET values = (FOR outer IN [1, 2] {
 RETURN [values, total]`, []any{[]any{1, 2}, 3}, "nonterminal nested collecting FOR is discarded"),
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		RunSpecsWith(t, optimizationName(level), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), tests)
 	}
 }
 
 func TestStandaloneForClosesDiscardedIterator(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, query := range []string{
 			`FOR value IN SOURCE() { RETURN value }`,
 			`(FOR value IN SOURCE() { RETURN value })`,
@@ -363,7 +363,7 @@ func TestDiscardedForPreservesLoopSemantics(t *testing.T) {
 		},
 	}
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("%s/%s", optimizationName(level), test.name), func(t *testing.T) {
 				var calls []int
@@ -397,7 +397,7 @@ func TestDiscardedForPreservesLoopSemantics(t *testing.T) {
 func TestDiscardedExplicitReturnedForPropagatesErrors(t *testing.T) {
 	wantErr := errors.New("nested loop failure")
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		t.Run(optimizationName(level), func(t *testing.T) {
 			program, err := spec.Compile(`FOR outer IN [1, 2] {
   RETURN FOR inner IN [outer, outer + 1] {
@@ -423,7 +423,7 @@ func TestDiscardedExplicitReturnedForPropagatesErrors(t *testing.T) {
 }
 
 func TestDiscardedWrappedForRecovery(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		t.Run(optimizationName(level), func(t *testing.T) {
 			t.Run("suppress", func(t *testing.T) {
 				calls := 0
@@ -539,7 +539,7 @@ RETURN effect()`, func() (runtime.Value, error) {
 }
 
 func TestDiscardedAndReturnlessForCloseReturnedResources(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, query := range []string{
 			`FOR value IN 1..3 { RETURN RESOURCE(value) }`,
 			`(FOR value IN 1..3 { RETURN RESOURCE(value) })`,

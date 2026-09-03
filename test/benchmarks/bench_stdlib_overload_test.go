@@ -7,18 +7,26 @@ const (
 	trimCharsQuery   = `RETURN TRIM("xxvaluexx", "x")`
 )
 
-func BenchmarkStdlibTrimDefault_O0(b *testing.B) {
-	RunBenchmarkO0(b, trimDefaultQuery)
+func BenchmarkStdlibTrimDefault_None(b *testing.B) {
+	RunBenchmarkNone(b, trimDefaultQuery)
 }
 
-func BenchmarkStdlibTrimDefault_O1(b *testing.B) {
-	RunBenchmarkO1(b, trimDefaultQuery)
+func BenchmarkStdlibTrimDefault_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, trimDefaultQuery)
 }
 
-func BenchmarkStdlibTrimChars_O0(b *testing.B) {
-	RunBenchmarkO0(b, trimCharsQuery)
+func BenchmarkStdlibTrimDefault_Full(b *testing.B) {
+	RunBenchmarkFull(b, trimDefaultQuery)
 }
 
-func BenchmarkStdlibTrimChars_O1(b *testing.B) {
-	RunBenchmarkO1(b, trimCharsQuery)
+func BenchmarkStdlibTrimChars_None(b *testing.B) {
+	RunBenchmarkNone(b, trimCharsQuery)
+}
+
+func BenchmarkStdlibTrimChars_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, trimCharsQuery)
+}
+
+func BenchmarkStdlibTrimChars_Full(b *testing.B) {
+	RunBenchmarkFull(b, trimCharsQuery)
 }

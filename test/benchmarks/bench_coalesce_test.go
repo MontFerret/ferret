@@ -14,8 +14,8 @@ LET primary = @primary
 RETURN primary ?? @secondary ?? @tertiary ?? "fallback"
 `
 
-func BenchmarkCoalescePresent_O0(b *testing.B) {
-	RunBenchmarkO0(
+func BenchmarkCoalescePresent_None(b *testing.B) {
+	RunBenchmarkNone(
 		b,
 		coalesceBenchmarkQuery,
 		WithParam("value", runtime.ZeroInt),
@@ -23,8 +23,8 @@ func BenchmarkCoalescePresent_O0(b *testing.B) {
 	)
 }
 
-func BenchmarkCoalescePresent_O1(b *testing.B) {
-	RunBenchmarkO1(
+func BenchmarkCoalescePresent_Basic(b *testing.B) {
+	RunBenchmarkBasic(
 		b,
 		coalesceBenchmarkQuery,
 		WithParam("value", runtime.ZeroInt),
@@ -32,8 +32,17 @@ func BenchmarkCoalescePresent_O1(b *testing.B) {
 	)
 }
 
-func BenchmarkCoalesceFallback_O0(b *testing.B) {
-	RunBenchmarkO0(
+func BenchmarkCoalescePresent_Full(b *testing.B) {
+	RunBenchmarkFull(
+		b,
+		coalesceBenchmarkQuery,
+		WithParam("value", runtime.ZeroInt),
+		WithParam("fallback", runtime.NewInt(42)),
+	)
+}
+
+func BenchmarkCoalesceFallback_None(b *testing.B) {
+	RunBenchmarkNone(
 		b,
 		coalesceBenchmarkQuery,
 		WithParam("value", runtime.None),
@@ -41,8 +50,8 @@ func BenchmarkCoalesceFallback_O0(b *testing.B) {
 	)
 }
 
-func BenchmarkCoalesceFallback_O1(b *testing.B) {
-	RunBenchmarkO1(
+func BenchmarkCoalesceFallback_Basic(b *testing.B) {
+	RunBenchmarkBasic(
 		b,
 		coalesceBenchmarkQuery,
 		WithParam("value", runtime.None),
@@ -50,10 +59,23 @@ func BenchmarkCoalesceFallback_O1(b *testing.B) {
 	)
 }
 
-func BenchmarkCompilerCompileCoalesce_O0(b *testing.B) {
-	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.O0)
+func BenchmarkCoalesceFallback_Full(b *testing.B) {
+	RunBenchmarkFull(
+		b,
+		coalesceBenchmarkQuery,
+		WithParam("value", runtime.None),
+		WithParam("fallback", runtime.NewInt(42)),
+	)
 }
 
-func BenchmarkCompilerCompileCoalesce_O1(b *testing.B) {
-	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.O1)
+func BenchmarkCompilerCompileCoalesce_None(b *testing.B) {
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.None)
+}
+
+func BenchmarkCompilerCompileCoalesce_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.Basic)
+}
+
+func BenchmarkCompilerCompileCoalesce_Full(b *testing.B) {
+	benchmarkCompileQuery(b, coalesceCompilerBenchmarkQuery, compiler.Full)
 }

@@ -222,8 +222,8 @@ func TestForDestructuringValidatesEveryItem(t *testing.T) {
 }
 
 func TestDestructuringAcceptsCapabilityBasedValuesAndSkipsIgnoredLookups(t *testing.T) {
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d/object", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(fmt.Sprintf("%s/object", level), func(t *testing.T) {
 			value := &observableKeyReadable{
 				Int:    0,
 				values: map[string]runtime.Value{"kept": runtime.Int(42)},
@@ -248,7 +248,7 @@ func TestDestructuringAcceptsCapabilityBasedValuesAndSkipsIgnoredLookups(t *test
 			}
 		})
 
-		t.Run(fmt.Sprintf("O%d/array", level), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/array", level), func(t *testing.T) {
 			value := &observableIndexReadable{
 				Int:    0,
 				values: []runtime.Value{runtime.Int(1), runtime.Int(2), runtime.Int(3)},
@@ -278,8 +278,8 @@ func TestDestructuringAcceptsCapabilityBasedValuesAndSkipsIgnoredLookups(t *test
 func TestDestructuringSkipsIgnoredStructuredSubtrees(t *testing.T) {
 	getterErr := errors.New("ignored getter ran")
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d/object", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(fmt.Sprintf("%s/object", level), func(t *testing.T) {
 			ignoredIndexes := &observableIndexReadable{Int: 0, err: getterErr}
 			ignoredKeys := &observableKeyReadable{
 				Int: 0,
@@ -322,7 +322,7 @@ RETURN kept
 			}
 		})
 
-		t.Run(fmt.Sprintf("O%d/array", level), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/array", level), func(t *testing.T) {
 			ignored := &observableIndexReadable{Int: 0, err: getterErr}
 			value := &observableIndexReadable{
 				Int:    0,
@@ -356,7 +356,7 @@ RETURN [first, third]
 			}
 		})
 
-		t.Run(fmt.Sprintf("O%d/mixed", level), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/mixed", level), func(t *testing.T) {
 			nested := &observableIndexReadable{
 				Int:    0,
 				values: []runtime.Value{runtime.Int(1), runtime.Int(42), runtime.Int(3)},
@@ -399,8 +399,8 @@ RETURN kept
 func TestMutableAndLoopDestructuringSkipIgnoredStructuredSubtrees(t *testing.T) {
 	getterErr := errors.New("ignored getter ran")
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
-		t.Run(fmt.Sprintf("O%d/var", level), func(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
+		t.Run(fmt.Sprintf("%s/var", level), func(t *testing.T) {
 			value := &observableKeyReadable{
 				Int:    0,
 				errors: map[string]error{"ignored": getterErr},
@@ -430,7 +430,7 @@ RETURN kept
 			}
 		})
 
-		t.Run(fmt.Sprintf("O%d/for", level), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s/for", level), func(t *testing.T) {
 			item := &observableKeyReadable{
 				Int:    0,
 				errors: map[string]error{"ignored": getterErr},
@@ -481,7 +481,7 @@ func TestDestructuringWrongShapeReportsNestedPattern(t *testing.T) {
 	query := `LET { nested: [value] } = { nested: 42 }
 RETURN value`
 
-	for _, level := range []compiler.OptimizationLevel{compiler.O0, compiler.O1} {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		program, err := spec.Compile(query, level)
 		if err != nil {
 			t.Fatal(err)
@@ -489,21 +489,21 @@ RETURN value`
 
 		_, err = spec.Run(program)
 		if err == nil {
-			t.Fatalf("O%d expected destructuring error", level)
+			t.Fatalf("%s expected destructuring error", level)
 		}
 
 		var runtimeErr *vm.RuntimeError
 		if !errors.As(err, &runtimeErr) {
-			t.Fatalf("O%d error type = %T, want *vm.RuntimeError", level, err)
+			t.Fatalf("%s error type = %T, want *vm.RuntimeError", level, err)
 		}
 
 		formatted := runtimeErr.Format()
 		if !strings.Contains(formatted, "cannot destructure Int as Array") {
-			t.Fatalf("O%d unexpected error:\n%s", level, formatted)
+			t.Fatalf("%s unexpected error:\n%s", level, formatted)
 		}
 
 		if !strings.Contains(formatted, "[value]") {
-			t.Fatalf("O%d error does not point at nested pattern:\n%s", level, formatted)
+			t.Fatalf("%s error does not point at nested pattern:\n%s", level, formatted)
 		}
 	}
 }

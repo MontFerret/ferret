@@ -10,7 +10,7 @@ import (
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
 )
 
-func TestUdfUnusedEliminationO1(t *testing.T) {
+func TestUdfUnusedEliminationOptimized(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 FUNC used() => 1
@@ -18,7 +18,7 @@ FUNC unused() => 2
 RETURN used()
 `, func(prog *bytecode.Program) error {
 			if len(prog.Functions.UserDefined) != 1 {
-				return fmt.Errorf("expected 1 UDF at O1, got %d", len(prog.Functions.UserDefined))
+				return fmt.Errorf("expected 1 UDF after optimization, got %d", len(prog.Functions.UserDefined))
 			}
 
 			if prog.Functions.UserDefined[0].Name != "used" {
@@ -27,10 +27,10 @@ RETURN used()
 
 			return nil
 		}, "unused udf eliminated"),
-	}, compiler.O1)
+	}, compiler.Basic, compiler.Full)
 }
 
-func TestUdfUnusedEliminationO0(t *testing.T) {
+func TestUdfUnusedEliminationNone(t *testing.T) {
 	RunSpecs(t, []spec.Spec{
 		ProgramCheck(`
 FUNC used() => 1
@@ -38,11 +38,11 @@ FUNC unused() => 2
 RETURN used()
 `, func(prog *bytecode.Program) error {
 			if len(prog.Functions.UserDefined) != 2 {
-				return fmt.Errorf("expected 2 UDFs at O0, got %d", len(prog.Functions.UserDefined))
+				return fmt.Errorf("expected 2 UDFs with no optimization, got %d", len(prog.Functions.UserDefined))
 			}
 
 			return nil
-		}, "unused udf metadata kept at o0"),
+		}, "unused udf metadata kept at none"),
 	})
 }
 
@@ -57,7 +57,7 @@ FUNC outer() {
 RETURN outer()
 `, func(prog *bytecode.Program) error {
 			if len(prog.Functions.UserDefined) != 1 {
-				return fmt.Errorf("expected 1 UDF at O1, got %d", len(prog.Functions.UserDefined))
+				return fmt.Errorf("expected 1 UDF at Full, got %d", len(prog.Functions.UserDefined))
 			}
 
 			outerParams := -1
@@ -78,7 +78,7 @@ RETURN outer()
 
 			return nil
 		}, "unused nested capture not lifted"),
-	}, compiler.O1)
+	}, compiler.Full)
 }
 
 func TestUdfRecursionReachable(t *testing.T) {
@@ -101,10 +101,10 @@ RETURN fact(5)
 			}
 
 			if !found {
-				return fmt.Errorf("expected fact UDF to be reachable at O1")
+				return fmt.Errorf("expected fact UDF to be reachable at Full")
 			}
 
 			return nil
 		}, "recursive udf remains reachable"),
-	}, compiler.O1)
+	}, compiler.Full)
 }

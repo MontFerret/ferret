@@ -32,26 +32,38 @@ const compilerQueryShorthandQuery = "\n" +
 	"  labels: doc[~ css`.product-card`][* RETURN .[~? css`.title`]]\n" +
 	"}\n"
 
-func BenchmarkCompilerCompileMemberPipeline_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.O0)
+func BenchmarkCompilerCompileMemberPipeline_None(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.None)
 }
 
-func BenchmarkCompilerCompileMemberPipeline_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.O1)
+func BenchmarkCompilerCompileMemberPipeline_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.Basic)
 }
 
-func BenchmarkCompilerCompileMatchQueryMix_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.O0)
+func BenchmarkCompilerCompileMemberPipeline_Full(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMemberPipelineQuery, compiler.Full)
 }
 
-func BenchmarkCompilerCompileMatchQueryMix_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.O1)
+func BenchmarkCompilerCompileMatchQueryMix_None(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.None)
 }
 
-func BenchmarkCompilerCompileQueryShorthand_O0(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.O0)
+func BenchmarkCompilerCompileMatchQueryMix_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.Basic)
 }
 
-func BenchmarkCompilerCompileQueryShorthand_O1(b *testing.B) {
-	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.O1)
+func BenchmarkCompilerCompileMatchQueryMix_Full(b *testing.B) {
+	benchmarkCompileQuery(b, compilerMatchQueryMixQuery, compiler.Full)
+}
+
+func BenchmarkCompilerCompileQueryShorthand_None(b *testing.B) {
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.None)
+}
+
+func BenchmarkCompilerCompileQueryShorthand_Basic(b *testing.B) {
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.Basic)
+}
+
+func BenchmarkCompilerCompileQueryShorthand_Full(b *testing.B) {
+	benchmarkCompileQuery(b, compilerQueryShorthandQuery, compiler.Full)
 }

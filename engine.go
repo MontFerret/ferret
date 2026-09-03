@@ -37,7 +37,7 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	ownsNetwork := opts.hostNetwork == false
-	compilerInstance, err := compiler.New(opts.compiler...)
+	compilerLevel, err := opts.optimizationLevel.compilerLevel()
 	if err != nil {
 		if ownsNetwork {
 			ferretnet.CloseIdleNetworkConnections(opts.network)
@@ -46,8 +46,16 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, fmt.Errorf("compiler: %w", err)
 	}
 
-	debugOptions := append(append([]compiler.Option(nil), opts.compiler...), compiler.WithDebugInfo())
-	debugCompiler, err := compiler.New(debugOptions...)
+	compilerInstance, err := compiler.New(compiler.WithOptimizationLevel(compilerLevel))
+	if err != nil {
+		if ownsNetwork {
+			ferretnet.CloseIdleNetworkConnections(opts.network)
+		}
+
+		return nil, fmt.Errorf("compiler: %w", err)
+	}
+
+	debugCompiler, err := compiler.New(compiler.WithDebugInfo())
 	if err != nil {
 		if ownsNetwork {
 			ferretnet.CloseIdleNetworkConnections(opts.network)
@@ -125,7 +133,7 @@ func (e *Engine) Compile(ctx context.Context, src Source) (*Plan, error) {
 }
 
 // CompileDebug compiles source into a reusable plan with source-level debugger
-// metadata. Debug compilation uses effective O0 optimization.
+// metadata. Debug compilation uses OptimizationNone.
 func (e *Engine) CompileDebug(ctx context.Context, src Source) (*Plan, error) {
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
 		return nil, fmt.Errorf("before compile hooks: %w", err)
