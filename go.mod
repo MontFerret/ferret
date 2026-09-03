@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.1
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/goccy/go-json v0.10.6
 	github.com/google/go-cmp v0.7.0
 	github.com/jarcoal/httpmock v1.4.2
