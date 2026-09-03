@@ -1,9 +1,6 @@
 package ferret
 
-import (
-	"github.com/MontFerret/ferret/v2/pkg/encoding"
-	"github.com/MontFerret/ferret/v2/pkg/source"
-)
+import "github.com/MontFerret/ferret/v2/pkg/source"
 
 type (
 	// Source represents the input data for a Ferret query.
@@ -20,9 +17,6 @@ type (
 
 	// Range represents a range of characters in a source file, including the location and span.
 	Range = source.Range
-
-	// Output is the encoded result returned from session or engine execution.
-	Output = encoding.Output
 )
 
 // NewSource creates a new Source instance with the given name and content.
