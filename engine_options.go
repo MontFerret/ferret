@@ -125,7 +125,7 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 
 // WithParams applies custom parameters to the options by merging them with existing ones, initializing if necessary.
 // If a parameter already exists, it will be overwritten.
-// All host values will be converted to a runtime.Value.
+// All host values will be converted to a Value.
 func WithParams(params map[string]any) Option {
 	return func(opts *config) error {
 		if len(params) == 0 {
@@ -148,9 +148,9 @@ func WithParams(params map[string]any) Option {
 	}
 }
 
-// WithRuntimeParams configures runtime parameters by merging the provided params with existing ones in options.
+// WithRuntimeParams configures runtime parameters by merging the provided Params with existing ones in options.
 // If a parameter already exists, it will be overwritten.
-func WithRuntimeParams(params runtime.Params) Option {
+func WithRuntimeParams(params Params) Option {
 	return func(opts *config) error {
 		if len(params) == 0 {
 			return nil
@@ -194,9 +194,9 @@ func WithParam(name string, value any) Option {
 	}
 }
 
-// WithRuntimeParam returns an Option that sets a runtime parameter with the specified name and value in the options configuration.
+// WithRuntimeParam returns an Option that sets a runtime parameter with the specified name and pre-converted Value.
 // The name cannot be empty, and the value cannot be nil.
-func WithRuntimeParam(name string, value runtime.Value) Option {
+func WithRuntimeParam(name string, value Value) Option {
 	return func(opts *config) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
@@ -272,9 +272,9 @@ func WithLog(writer io.Writer) Option {
 
 // WithLogLevel sets the logging level for the engine.
 // The logging level determines the severity of log messages that will be recorded.
-func WithLogLevel(lvl logging.LogLevel) Option {
+func WithLogLevel(lvl LogLevel) Option {
 	return func(opts *config) error {
-		if lvl < logging.TraceLevel || lvl > logging.Disabled {
+		if lvl < LogTrace || lvl > LogDisabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
 
@@ -335,8 +335,8 @@ func WithStdlib(set stdlib.Set) Option {
 		Build()
 }
 
-// WithModules creates an Option that appends the provided modules to the options if not empty.
-func WithModules(mods ...module.Module) Option {
+// WithModules creates an Option that appends the provided Module values if not empty.
+func WithModules(mods ...Module) Option {
 	return func(env *config) error {
 		if len(mods) == 0 {
 			return nil
@@ -378,7 +378,7 @@ func WithEncodingCodec(contentType string, codec encoding.Codec) Option {
 
 // WithEngineInitHook returns an Option that registers a hook to execute during engine initialization.
 // It returns an error if hook is nil.
-func WithEngineInitHook(hook module.EngineInitHook) Option {
+func WithEngineInitHook(hook EngineInitHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("engine init hook is nil")
@@ -392,7 +392,7 @@ func WithEngineInitHook(hook module.EngineInitHook) Option {
 
 // WithEngineCloseHook returns an Option that registers a hook to execute when the engine is closed.
 // It returns an error if hook is nil.
-func WithEngineCloseHook(hook module.EngineCloseHook) Option {
+func WithEngineCloseHook(hook EngineCloseHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("engine close hook is nil")
@@ -406,7 +406,7 @@ func WithEngineCloseHook(hook module.EngineCloseHook) Option {
 
 // WithBeforeCompileHook returns an Option that registers a hook to execute before each compilation attempt.
 // It returns an error if hook is nil.
-func WithBeforeCompileHook(hook module.BeforeCompileHook) Option {
+func WithBeforeCompileHook(hook BeforeCompileHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("before compile hook is nil")
@@ -420,7 +420,7 @@ func WithBeforeCompileHook(hook module.BeforeCompileHook) Option {
 
 // WithAfterCompileHook returns an Option that registers a hook to execute after each compilation attempt.
 // The hook receives the compilation error (if any). It returns an error if hook is nil.
-func WithAfterCompileHook(hook module.AfterCompileHook) Option {
+func WithAfterCompileHook(hook AfterCompileHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("after compile hook is nil")
@@ -434,7 +434,7 @@ func WithAfterCompileHook(hook module.AfterCompileHook) Option {
 
 // WithPlanCloseHook returns an Option that registers a hook to execute when a plan is closed.
 // It returns an error if hook is nil.
-func WithPlanCloseHook(hook module.PlanCloseHook) Option {
+func WithPlanCloseHook(hook PlanCloseHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("plan close hook is nil")
@@ -449,7 +449,7 @@ func WithPlanCloseHook(hook module.PlanCloseHook) Option {
 // WithBeforeRunHook returns an Option that registers a hook to execute before each session run.
 // The hook can replace the context used by subsequent hooks and VM execution.
 // It returns an error if hook is nil.
-func WithBeforeRunHook(hook module.BeforeRunHook) Option {
+func WithBeforeRunHook(hook BeforeRunHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("before run hook is nil")
@@ -463,7 +463,7 @@ func WithBeforeRunHook(hook module.BeforeRunHook) Option {
 
 // WithAfterRunHook returns an Option that registers a hook to execute after each session run attempt.
 // The hook receives the run error (if any). It returns an error if hook is nil.
-func WithAfterRunHook(hook module.AfterRunHook) Option {
+func WithAfterRunHook(hook AfterRunHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("after run hook is nil")
@@ -477,7 +477,7 @@ func WithAfterRunHook(hook module.AfterRunHook) Option {
 
 // WithSessionCloseHook returns an Option that registers a hook to execute when a session is closed.
 // It returns an error if hook is nil.
-func WithSessionCloseHook(hook module.SessionCloseHook) Option {
+func WithSessionCloseHook(hook SessionCloseHook) Option {
 	return func(opts *config) error {
 		if hook == nil {
 			return fmt.Errorf("session close hook is nil")

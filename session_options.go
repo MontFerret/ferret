@@ -63,7 +63,9 @@ func WithDebugFormat(format DebugFormatOptions) SessionOption {
 		Build()
 }
 
-// WithEnvironmentOptions appends VM environment options to the created session.
+// WithEnvironmentOptions is an advanced escape hatch that appends VM environment
+// options to the created session. Prefer the root session options for ordinary
+// embedding configuration.
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 	return func(session *sessionOptions) error {
 		if session == nil {
@@ -115,9 +117,9 @@ func WithSessionParams(params map[string]any) SessionOption {
 	}
 }
 
-// WithSessionRuntimeParams merges the provided runtime.Params into the session environment,
+// WithSessionRuntimeParams merges the provided Params into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
-func WithSessionRuntimeParams(params runtime.Params) SessionOption {
+func WithSessionRuntimeParams(params Params) SessionOption {
 	return func(s *sessionOptions) error {
 		if len(params) == 0 {
 			return nil
@@ -147,8 +149,8 @@ func WithSessionParam(name string, value any) SessionOption {
 	}
 }
 
-// WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
-func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
+// WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted Value.
+func WithSessionRuntimeParam(name string, value Value) SessionOption {
 	return func(s *sessionOptions) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
@@ -178,9 +180,9 @@ func WithSessionLog(writer io.Writer) SessionOption {
 
 // WithSessionLogLevel sets the logging level for the session.
 // The logging level determines the severity of log messages that will be recorded.
-func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
+func WithSessionLogLevel(lvl LogLevel) SessionOption {
 	return func(opts *sessionOptions) error {
-		if lvl < logging.TraceLevel || lvl > logging.Disabled {
+		if lvl < LogTrace || lvl > LogDisabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
 
