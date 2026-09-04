@@ -122,6 +122,7 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 
 	sessionOptions := []ferret.SessionOption{
 		ferret.WithOutputContentType("application/json"),
+		ferret.WithSessionFSRoot(t.TempDir()),
 		ferret.WithSessionLogLevel(ferret.LogDebug),
 		ferret.WithSessionRuntimeParams(sessionParams),
 		ferret.WithSessionRuntimeParam("sessionValue", sessionValue),

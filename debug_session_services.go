@@ -2,6 +2,7 @@ package ferret
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -19,6 +20,7 @@ type debugSessionServices struct {
 	network           ferretnet.Network
 	releasePermit     sessionPermitRelease
 	outputContentType string
+	ownsFileSystem    bool
 }
 
 func (s *debugSessionServices) BeforeRun(ctx context.Context) (context.Context, error) {
@@ -48,6 +50,12 @@ func (s *debugSessionServices) Close() error {
 		if hookErr := s.hooks.runCloseHooks(); hookErr != nil {
 			err = fmt.Errorf("close hooks: %w", hookErr)
 		}
+	}
+
+	if s.ownsFileSystem {
+		err = errors.Join(err, closeFileSystem(s.fs))
+		s.fs = nil
+		s.ownsFileSystem = false
 	}
 
 	if s.releasePermit != nil {

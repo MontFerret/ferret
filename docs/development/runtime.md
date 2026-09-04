@@ -89,7 +89,10 @@ The root embedding lifecycle is hierarchical:
   unbounded pool of VMs for that program.
 * `Session` borrows a VM, constructs an execution environment, injects logging,
   encoding, filesystem, and network services into the context, and materializes
-  output.
+  output. By default it borrows the engine filesystem.
+  `ferret.WithSessionFSRoot` replaces only that session's root while retaining
+  the engine's read-only policy; the session owns and closes the replacement
+  filesystem.
 
 `Engine.Run` is a convenience path that owns and closes its temporary plan and
 session. A caller that creates a plan or session directly owns its `Close` call.
