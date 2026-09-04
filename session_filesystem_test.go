@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -298,6 +299,55 @@ func TestNewPlanSessionClosesOwnedFSRootOnBuildFailure(t *testing.T) {
 	}
 	if _, err := filesystem.Stat("."); err == nil {
 		t.Fatal("session construction failure did not close its owned filesystem")
+	}
+}
+
+func TestSessionFSRootWaitsForPermitBeforeOpening(t *testing.T) {
+	t.Parallel()
+
+	engine := mustNewEngine(t, WithMaxActiveSessions(1))
+	defer func() { _ = engine.Close() }()
+	plan := mustCompilePlan(t, engine, coverageValidQuery)
+	defer func() { _ = plan.Close() }()
+
+	active := mustNewSession(t, plan)
+	defer func() { _ = active.Close() }()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	missingRoot := filepath.Join(t.TempDir(), "missing")
+	session, err := plan.NewSession(ctx, WithSessionFSRoot(missingRoot))
+	if session != nil {
+		_ = session.Close()
+		t.Fatal("canceled session creation returned a session")
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("session creation error = %v, want %v", err, context.Canceled)
+	}
+}
+
+func TestSessionFSRootCreationFailureReleasesPermit(t *testing.T) {
+	t.Parallel()
+
+	engine := mustNewEngine(t, WithMaxActiveSessions(1))
+	defer func() { _ = engine.Close() }()
+	plan := mustCompilePlan(t, engine, coverageValidQuery)
+	defer func() { _ = plan.Close() }()
+
+	missingRoot := filepath.Join(t.TempDir(), "missing")
+	if session, err := plan.NewSession(context.Background(), WithSessionFSRoot(missingRoot)); err == nil {
+		_ = session.Close()
+		t.Fatal("session creation with a missing filesystem root unexpectedly succeeded")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	session, err := plan.NewSession(ctx)
+	if err != nil {
+		t.Fatalf("session creation after filesystem failure: %v", err)
+	}
+	if err := session.Close(); err != nil {
+		t.Fatalf("close session after filesystem failure: %v", err)
 	}
 }
 

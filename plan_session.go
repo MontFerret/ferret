@@ -69,6 +69,24 @@ func newPlanSession[T any](
 		return session, err
 	}
 
+	logger, err := logging.NewFrom(h.logger, options.logger...)
+	if err != nil {
+		return session, fmt.Errorf("logger: %w", err)
+	}
+
+	if err = limiter.Acquire(ctx); err != nil {
+		return session, err
+	}
+
+	releaseOnReturn := true
+	defer func() {
+		// Construction errors and panics retain ownership here. Successful
+		// construction transfers the permit release to the returned session.
+		if releaseOnReturn {
+			limiter.Release()
+		}
+	}()
+
 	filesystem := h.fs
 	ownsFileSystem := false
 	if options.fsRoot != "" {
@@ -85,24 +103,6 @@ func newPlanSession[T any](
 	defer func() {
 		if ownsFileSystem && !fileSystemTransferred {
 			err = errors.Join(err, closeFileSystem(filesystem))
-		}
-	}()
-
-	logger, err := logging.NewFrom(h.logger, options.logger...)
-	if err != nil {
-		return session, fmt.Errorf("logger: %w", err)
-	}
-
-	if err = limiter.Acquire(ctx); err != nil {
-		return session, err
-	}
-
-	releaseOnReturn := true
-	defer func() {
-		// Construction errors and panics retain ownership here. Successful
-		// construction transfers the permit release to the returned session.
-		if releaseOnReturn {
-			limiter.Release()
 		}
 	}()
 
