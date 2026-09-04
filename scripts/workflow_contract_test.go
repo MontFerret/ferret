@@ -53,6 +53,43 @@ func TestReleasePublicationChecksPublishedExactTagAndUsesNormalPushWrapper(t *te
 	}
 }
 
+func TestPublishedV2ReleaseNotifiesWebsiteThroughSharedWorkflow(t *testing.T) {
+	root, err := filepath.Abs("..")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	workflow := readWorkflow(t, root, "notify-website.yml")
+	for _, required := range []string{
+		"types: [published]",
+		"contents: read",
+		"if: startsWith(github.event.release.tag_name, 'v2.')",
+		"uses: MontFerret/.github/.github/workflows/notify-website-release.yml@main",
+		"tag: ${{ github.event.release.tag_name }}",
+		"release-url: ${{ github.event.release.html_url }}",
+		"commit-sha: ${{ github.sha }}",
+		"FERRET_RELEASE_APP_CLIENT_ID: ${{ secrets.FERRET_RELEASE_APP_CLIENT_ID }}",
+		"FERRET_RELEASE_APP_PRIVATE_KEY: ${{ secrets.FERRET_RELEASE_APP_PRIVATE_KEY }}",
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Fatalf("website notification workflow is missing %q", required)
+		}
+	}
+
+	for _, forbidden := range []string{
+		"actions/checkout",
+		"actions/create-github-app-token",
+		"data/versions.yaml",
+		"ferret-release-published",
+		"gh pr",
+		"workflow_dispatch:",
+	} {
+		if strings.Contains(workflow, forbidden) {
+			t.Fatalf("website notification workflow duplicates downstream behavior %q", forbidden)
+		}
+	}
+}
+
 func readWorkflow(t *testing.T, root, name string) string {
 	t.Helper()
 

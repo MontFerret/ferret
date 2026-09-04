@@ -4,17 +4,19 @@ This repository defines post-release automation for Ferret Core. It does not
 define the release-creation or binary-packaging process for the separate
 MontFerret CLI product.
 
-Published GitHub releases with v2 tags trigger two independent workflows:
+Published GitHub releases with v2 tags trigger three independent workflows:
 
 ```text
 published v2 release
     |-> notify dependent source repositories
+    |-> notify the website to open a version update pull request
     \-> publish versioned Ferret Core API artifacts
 ```
 
-Both workflows also support explicitly validated manual dispatches. Their YAML
-definitions are the authority for accepted inputs, permissions, target
-repositories, and event payloads.
+The dependent notification and API publication workflows also support explicitly
+validated manual dispatches. Website-version recovery is owned by the website's
+workflow. The YAML definitions are the authority for accepted inputs,
+permissions, target repositories, and event payloads.
 
 ## Dependent repository notification
 
@@ -35,6 +37,28 @@ tokens or private keys, or include rejected raw input in downstream requests.
 The matrix does not fail fast, so notification results remain visible for every
 dependent. A failed dispatch must fail that matrix job rather than being reported
 as a successful notification.
+
+## Website version notification
+
+`.github/workflows/notify-website.yml` handles published v2 releases separately
+from dependent source repositories. It passes the release tag, canonical release
+URL, and tagged commit SHA to the organization-owned
+`notify-website-release.yml` reusable workflow, together with the existing
+Ferret Release GitHub App credentials.
+
+The shared workflow validates the release metadata before authentication and
+sends the fixed `ferret-release-published` event to
+`MontFerret/montferret.github.io`. The website owns the repository-to-product
+mapping, version comparison, `data/versions.yaml` edit, automation branch, and
+pull request. Ferret must not check out or mutate the website repository, create
+the website pull request directly, or send this event through the dependent
+repository notification matrix.
+
+The Ferret caller is automatic only. To recover a missed release, manually run
+the website repository's `Update release version` workflow with the source
+repository, release tag, canonical release URL, and tagged commit SHA. The
+website updater advances directly to the requested version, so intermediate
+missed releases do not require separate pull requests.
 
 ## Core API artifact publication
 
@@ -82,11 +106,13 @@ minimum token permissions and repository scope required by each operation. Never
 print GitHub App private keys, access tokens, authorization headers, or other
 credential-bearing values.
 
-The automatic notification path runs only for a published release event. Its
-manual recovery path validates tag syntax and the target allowlist but does not
-query GitHub to confirm that the supplied tag is published. In contrast, manual
-API publication explicitly verifies the published, non-draft release before
-checking out the tag. Keep that distinction visible when changing either flow.
+The automatic dependent notification path runs only for a published release
+event. Its manual recovery path validates tag syntax and the target allowlist
+but does not query GitHub to confirm that the supplied tag is published. The
+website notification caller has no manual path; recovery uses the website-owned
+workflow described above. In contrast, manual API publication explicitly
+verifies the published, non-draft release before checking out the tag. Keep
+these distinctions visible when changing any release flow.
 
 Recovery paths must not silently overwrite divergent history or treat partial
 publication as success.
