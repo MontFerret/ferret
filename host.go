@@ -13,21 +13,23 @@ import (
 
 type (
 	host struct {
-		functions *runtime.Functions
-		params    runtime.Params
-		encoding  *encoding.Registry
-		logger    logging.Logger
-		fs        fs.FileSystem
-		network   ferretnet.Network
+		functions  *runtime.Functions
+		params     runtime.Params
+		encoding   *encoding.Registry
+		logger     logging.Logger
+		fs         fs.FileSystem
+		network    ferretnet.Network
+		fsReadOnly bool
 	}
 
 	hostContext struct {
-		library  runtime.Library
-		params   runtime.Params
-		encoding *encoding.Registry
-		logger   logging.Logger
-		fs       fs.FileSystem
-		network  ferretnet.Network
+		library    runtime.Library
+		params     runtime.Params
+		encoding   *encoding.Registry
+		logger     logging.Logger
+		fs         fs.FileSystem
+		network    ferretnet.Network
+		fsReadOnly bool
 	}
 )
 
@@ -53,12 +55,13 @@ func newHostContext(opts *config) (*hostContext, error) {
 	}
 
 	return &hostContext{
-		library:  opts.library,
-		params:   opts.params,
-		encoding: opts.encoding,
-		logger:   logger,
-		fs:       rootFs,
-		network:  network,
+		library:    opts.library,
+		params:     opts.params,
+		encoding:   opts.encoding,
+		logger:     logger,
+		fs:         rootFs,
+		network:    network,
+		fsReadOnly: opts.fsReadOnly,
 	}, nil
 }
 
@@ -94,11 +97,12 @@ func (h *hostContext) Build() (*host, error) {
 	}
 
 	return &host{
-		functions: funcs,
-		params:    h.params.Clone(),
-		encoding:  h.encoding.Clone(),
-		logger:    h.logger,
-		fs:        h.fs,
-		network:   h.network,
+		functions:  funcs,
+		params:     h.params.Clone(),
+		encoding:   h.encoding.Clone(),
+		logger:     h.logger,
+		fs:         h.fs,
+		network:    h.network,
+		fsReadOnly: h.fsReadOnly,
 	}, nil
 }

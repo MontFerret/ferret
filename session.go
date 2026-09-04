@@ -40,6 +40,7 @@ type (
 		network           ferretnet.Network
 		release           sessionPermitRelease
 		outputContentType string
+		ownsFileSystem    bool
 		closeOnce         sync.Once
 		closed            atomic.Bool
 	}
@@ -91,7 +92,8 @@ func (s *Session) extendContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-// Close releases the session's borrowed VM and runs close hooks.
+// Close releases the session's borrowed VM, runs close hooks, and closes any
+// filesystem created specifically for the session.
 // It is idempotent and safe to call multiple times, including concurrently.
 func (s *Session) Close() error {
 	if s == nil {
@@ -103,12 +105,20 @@ func (s *Session) Close() error {
 
 		instance := s.vm
 		release := s.release
+		filesystem := s.fs
+		ownsFileSystem := s.ownsFileSystem
 
 		s.vm = nil
 		s.release = nil
+		s.fs = nil
+		s.ownsFileSystem = false
 
 		if hookErr := s.hooks.runCloseHooks(); hookErr != nil {
 			s.closeErr = fmt.Errorf("close hooks: %w", hookErr)
+		}
+
+		if ownsFileSystem {
+			s.closeErr = errors.Join(s.closeErr, closeFileSystem(filesystem))
 		}
 
 		if release != nil && instance != nil {

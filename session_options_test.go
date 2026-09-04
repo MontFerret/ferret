@@ -43,6 +43,7 @@ func TestSessionSimpleOptionsApplyValidValues(t *testing.T) {
 		t,
 		WithDebugFormat(format),
 		WithOutputContentType("  application/custom \n"),
+		WithSessionFSRoot("  /runtime \n"),
 	)
 
 	if opts.debugFormat != format {
@@ -51,6 +52,10 @@ func TestSessionSimpleOptionsApplyValidValues(t *testing.T) {
 
 	if opts.outputContentType != "application/custom" {
 		t.Fatalf("output content type = %q", opts.outputContentType)
+	}
+
+	if opts.fsRoot != "/runtime" {
+		t.Fatalf("filesystem root = %q", opts.fsRoot)
 	}
 }
 
@@ -81,6 +86,13 @@ func TestSessionSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 			value:  `" \t\n "`,
 			reason: "must not be blank",
 			option: WithOutputContentType(" \t\n "),
+		},
+		{
+			name:   "filesystem root",
+			field:  "fs root",
+			value:  `" \t\n "`,
+			reason: "must not be blank",
+			option: WithSessionFSRoot(" \t\n "),
 		},
 	}
 
@@ -119,10 +131,12 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	config := defaultSessionOptions()
 	format := config.debugFormat
 	config.outputContentType = "existing"
+	config.fsRoot = "existing"
 
 	for _, option := range []SessionOption{
 		WithDebugFormat(DebugFormatOptions{MaxDepth: 0, MaxItems: 8, MaxBytes: 1024}),
 		WithOutputContentType(" \t "),
+		WithSessionFSRoot(" \t "),
 	} {
 		if err := option(&config); err == nil {
 			t.Fatal("expected invalid option to fail")
@@ -135,6 +149,10 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 
 	if config.outputContentType != "existing" {
 		t.Fatalf("invalid output content type mutated the config to %q", config.outputContentType)
+	}
+
+	if config.fsRoot != "existing" {
+		t.Fatalf("invalid filesystem root mutated the config to %q", config.fsRoot)
 	}
 }
 
@@ -326,6 +344,10 @@ func TestNewSessionOptionsKeepDefaultOutputContentTypeWithNoopOptions(t *testing
 
 	if opts.debugFormat != debugger.DefaultFormatOptions() {
 		t.Fatalf("expected default debug format, got %+v", opts.debugFormat)
+	}
+
+	if opts.fsRoot != "" {
+		t.Fatalf("expected no filesystem root override, got %q", opts.fsRoot)
 	}
 
 	if len(opts.env) != 0 {

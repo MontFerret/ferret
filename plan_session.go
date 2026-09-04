@@ -7,6 +7,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -18,13 +19,15 @@ type (
 	}
 
 	planSessionDependencies struct {
-		logger  logging.Logger
-		hooks   sessionHooks
-		program *bytecode.Program
-		host    *host
-		limiter *sessionLimiter
-		pool    *vm.Pool
-		options sessionOptions
+		logger         logging.Logger
+		hooks          sessionHooks
+		program        *bytecode.Program
+		host           *host
+		limiter        *sessionLimiter
+		pool           *vm.Pool
+		filesystem     fs.FileSystem
+		options        sessionOptions
+		ownsFileSystem bool
 	}
 )
 
@@ -66,6 +69,25 @@ func newPlanSession[T any](
 		return session, err
 	}
 
+	filesystem := h.fs
+	ownsFileSystem := false
+	if options.fsRoot != "" {
+		filesystem, err = fs.New(fs.WithRoot(options.fsRoot), fs.WithReadOnly(h.fsReadOnly))
+		if err != nil {
+			return session, fmt.Errorf("filesystem: %w", err)
+		}
+
+		ownsFileSystem = true
+	}
+
+	fileSystemTransferred := false
+
+	defer func() {
+		if ownsFileSystem && !fileSystemTransferred {
+			err = errors.Join(err, closeFileSystem(filesystem))
+		}
+	}()
+
 	logger, err := logging.NewFrom(h.logger, options.logger...)
 	if err != nil {
 		return session, fmt.Errorf("logger: %w", err)
@@ -85,17 +107,20 @@ func newPlanSession[T any](
 	}()
 
 	session, err = build(planSessionDependencies{
-		program: program,
-		host:    h,
-		hooks:   hooks,
-		limiter: limiter,
-		pool:    pool,
-		options: options,
-		logger:  logger,
+		program:        program,
+		host:           h,
+		hooks:          hooks,
+		limiter:        limiter,
+		pool:           pool,
+		filesystem:     filesystem,
+		options:        options,
+		logger:         logger,
+		ownsFileSystem: ownsFileSystem,
 	})
 
 	if err == nil {
 		releaseOnReturn = false
+		fileSystemTransferred = true
 	}
 
 	return session, err
@@ -120,12 +145,13 @@ func buildSession(dependencies planSessionDependencies) (*Session, error) {
 		vm:                instance,
 		env:               environment,
 		logger:            dependencies.logger,
-		fs:                dependencies.host.fs,
+		fs:                dependencies.filesystem,
 		network:           dependencies.host.network,
 		encoding:          dependencies.host.encoding,
 		outputContentType: dependencies.options.outputContentType,
 		hooks:             dependencies.hooks,
 		release:           newSessionPermitRelease(dependencies.limiter, dependencies.pool),
+		ownsFileSystem:    dependencies.ownsFileSystem,
 	}, nil
 }
 
@@ -155,8 +181,9 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 			encoding:          dependencies.host.encoding,
 			outputContentType: dependencies.options.outputContentType,
 			logger:            dependencies.logger,
-			fs:                dependencies.host.fs,
+			fs:                dependencies.filesystem,
 			network:           dependencies.host.network,
+			ownsFileSystem:    dependencies.ownsFileSystem,
 		},
 		Source:      dependencies.program.Source,
 		DebugPoints: dependencies.program.Metadata.DebugPoints,

@@ -38,6 +38,33 @@ func BenchmarkPlanNewSession(b *testing.B) {
 	}
 }
 
+func BenchmarkPlanNewSessionWithSessionFSRoot(b *testing.B) {
+	root := b.TempDir()
+	engine, err := New(WithMaxIdleVMsPerPlan(1), WithMaxVMsPerPlan(1))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() { _ = engine.Close() }()
+
+	plan, err := engine.Compile(context.Background(), source.NewAnonymous("RETURN 1"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() { _ = plan.Close() }()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		session, sessionErr := plan.NewSession(context.Background(), WithSessionFSRoot(root))
+		if sessionErr != nil {
+			b.Fatal(sessionErr)
+		}
+		if closeErr := session.Close(); closeErr != nil {
+			b.Fatal(closeErr)
+		}
+	}
+}
+
 func BenchmarkPlanNewDebugSession(b *testing.B) {
 	engine, err := New()
 	if err != nil {
@@ -60,6 +87,33 @@ func BenchmarkPlanNewDebugSession(b *testing.B) {
 
 	for b.Loop() {
 		session, sessionErr := plan.NewDebugSession(context.Background())
+		if sessionErr != nil {
+			b.Fatal(sessionErr)
+		}
+		if closeErr := session.Close(); closeErr != nil {
+			b.Fatal(closeErr)
+		}
+	}
+}
+
+func BenchmarkPlanNewDebugSessionWithSessionFSRoot(b *testing.B) {
+	root := b.TempDir()
+	engine, err := New()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() { _ = engine.Close() }()
+
+	plan, err := engine.CompileDebug(context.Background(), source.NewAnonymous("RETURN 1"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() { _ = plan.Close() }()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		session, sessionErr := plan.NewDebugSession(context.Background(), WithSessionFSRoot(root))
 		if sessionErr != nil {
 			b.Fatal(sessionErr)
 		}

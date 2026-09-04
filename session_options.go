@@ -18,6 +18,7 @@ type (
 	sessionOptions struct {
 		logger            []logging.Option
 		outputContentType string
+		fsRoot            string
 		env               []vm.EnvironmentOption
 		debugFormat       debugger.FormatOptions
 	}
@@ -95,6 +96,19 @@ func WithOutputContentType(contentType string) SessionOption {
 	}).
 		Value(contentType).
 		Named("output content type").
+		Validators(gooptions.NotBlank[string]()).
+		Build()
+}
+
+// WithSessionFSRoot selects the rooted filesystem used by one execution
+// session. The session owns the replacement filesystem and inherits the
+// engine's read-only policy.
+func WithSessionFSRoot(root string) SessionOption {
+	return gooptions.New(func(session *sessionOptions, root string) {
+		session.fsRoot = strings.TrimSpace(root)
+	}).
+		Value(root).
+		Named("fs root").
 		Validators(gooptions.NotBlank[string]()).
 		Build()
 }
