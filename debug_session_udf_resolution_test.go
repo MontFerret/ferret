@@ -245,14 +245,14 @@ RETURN y`
 	if event.Location.Line != 1 {
 		t.Fatalf("unexpected entry: %#v", event)
 	}
-	event, err = session.Step(context.Background())
+	event, err = session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if event.Location.Line != 9 {
-		t.Fatalf("unexpected caller step: %#v", event)
+		t.Fatalf("unexpected caller StepIn: %#v", event)
 	}
-	event, err = session.Step(context.Background())
+	event, err = session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -277,12 +277,12 @@ RETURN y`
 		t.Fatalf("unexpected UDF entry locals: %#v", locals)
 	}
 
-	event, err = session.Step(context.Background())
+	event, err = session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if event.Location.Line != 4 {
-		t.Fatalf("unexpected UDF return step: %#v", event)
+		t.Fatalf("unexpected UDF return StepIn: %#v", event)
 	}
 	locals, err = session.Locals()
 	if err != nil {
@@ -403,12 +403,12 @@ RETURN outer(2) + x + @input + box.value - 10`
 		t.Fatalf("expected missing frame rejection, got %v", err)
 	}
 
-	event, err = session.Step(context.Background())
+	event, err = session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if event.Location.Line != 6 {
-		t.Fatalf("unexpected mutable-cell step: %#v", event)
+		t.Fatalf("unexpected mutable-cell StepIn: %#v", event)
 	}
 	if _, err := session.Variables(callerReference); !errors.Is(err, runtime.ErrNotFound) {
 		t.Fatalf("expected caller reference to become stale on resume, got %v", err)

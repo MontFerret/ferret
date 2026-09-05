@@ -21,9 +21,10 @@ loaded or compiled without debug information cannot create a debug session.
 ## Layer boundaries
 
 `pkg/vm` owns retained execution and paused-state access. Its debug execution
-surface starts or resumes the VM in continue, step, next, and out modes, reports
-stops, accepts pause or termination requests, and exposes frames and runtime
-values without moving source-level policy into the dispatch loop.
+surface starts or resumes the VM in `DebugResumeContinue`, `DebugResumeStepIn`,
+`DebugResumeStepOver`, and `DebugResumeStepOut` modes, reports stops, accepts pause
+or termination requests, and exposes frames and runtime values without moving
+source-level policy into the dispatch loop.
 
 `pkg/debugger` owns source-level policy:
 
@@ -41,9 +42,16 @@ package.
 ## Session state and concurrency
 
 A debug session retains one execution across commands. `Start` stops at entry;
-`Continue`, `Step`, `Next`, and `Out` resume according to the selected VM mode.
-Commands are serialized. `Pause` can safely request a stop while a command is
-running.
+`Continue`, `StepIn`, `StepOver`, and `StepOut` resume according to the selected
+VM mode. `StepIn` stops at the next debuggable source location and may enter
+called functions. `StepOver` stops at the next debuggable location at the same
+or shallower call depth. `StepOut` stops at the next debuggable location in a
+caller after the current frame exits; at main it runs to completion.
+
+Breakpoints and pause requests take precedence over stepping, including inside
+deeper calls. All three stepping operations report the shared `ReasonStep` stop
+reason when their stepping condition is reached. Commands are serialized.
+`Pause` can safely request a stop while a command is running.
 
 Resume calls use the retained execution context unless a caller supplies an
 additional context, in which case both lifetimes are observed. Starting or

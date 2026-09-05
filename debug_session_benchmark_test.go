@@ -38,7 +38,7 @@ RETURN FOR i IN 1..100
 		}
 
 		for event.Reason != DebugReasonCompleted {
-			event, startErr = session.Step(context.Background())
+			event, startErr = session.StepIn(context.Background())
 			if startErr != nil {
 				b.Fatal(startErr)
 			}

@@ -71,12 +71,12 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 		t.Fatalf("unexpected locals: %#v", locals)
 	}
 
-	event, err = session.Step(context.Background())
+	event, err = session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if event.Location.Line != 4 {
-		t.Fatalf("unexpected step location: %#v", event)
+		t.Fatalf("unexpected StepIn location: %#v", event)
 	}
 	value, err := session.Evaluate(context.Background(), "x + y")
 	if err != nil {
@@ -443,75 +443,98 @@ func TestPlanNewDebugSessionRequiresDebugCompilation(t *testing.T) {
 	}
 }
 
-func TestDebugSessionStepIntoAndOut(t *testing.T) {
+func TestDebugSessionStepInAndStepOut(t *testing.T) {
 	engine, err := New()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer engine.Close()
+
 	query := `FUNC add(a) {
   LET b = a + 1
   RETURN b
 }
-LET x = add(2)
+FUNC outer(a) {
+  LET b = add(a)
+  RETURN b
+}
+LET x = outer(2)
 RETURN x`
 	plan, err := engine.CompileDebug(context.Background(), source.New("udf.fql", query))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer plan.Close()
+
 	session, err := plan.NewDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer session.Close()
 
-	event, err := session.Start(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	commands := []struct {
+		resume func(context.Context) (*DebugEvent, error)
+		name   string
+		reason DebugReason
+		frames []string
+		line   int
+	}{
+		{session.Start, "Start", DebugReasonEntry, []string{"<main>"}, 9},
+		{session.StepIn, "StepIn to outer", DebugReasonStep, []string{"outer", "<main>"}, 6},
+		{session.StepIn, "StepIn to add", DebugReasonStep, []string{"add", "outer", "<main>"}, 2},
+		{session.StepOut, "StepOut to outer", DebugReasonStep, []string{"outer", "<main>"}, 7},
+		{session.StepOut, "StepOut to main", DebugReasonStep, []string{"<main>"}, 10},
 	}
-	if event.Location.Line != 5 {
-		t.Fatalf("unexpected entry: %#v", event)
-	}
-	event, err = session.Step(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if event.Location.Line != 2 || event.Depth != 1 {
-		t.Fatalf("expected step into UDF, got %#v", event)
-	}
-	frames, err := session.Frames()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(frames) != 2 || frames[0].Name != "add" || frames[1].Name != "<main>" {
-		t.Fatalf("unexpected frames: %#v", frames)
-	}
-	event, err = session.Out(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if event.Location.Line != 6 || event.Depth != 0 {
-		t.Fatalf("expected step out to main, got %#v", event)
+
+	for _, command := range commands {
+		event, err := command.resume(context.Background())
+		if err != nil {
+			t.Fatalf("%s: %v", command.name, err)
+		}
+
+		if event.Reason != command.reason || event.Location.Line != command.line || event.Depth != len(command.frames)-1 {
+			t.Fatalf("%s: unexpected stop: %#v", command.name, event)
+		}
+
+		frames, err := session.Frames()
+		if err != nil {
+			t.Fatalf("%s: %v", command.name, err)
+		}
+
+		if len(frames) != len(command.frames) {
+			t.Fatalf("%s: unexpected frames: %#v", command.name, frames)
+		}
+
+		for i, name := range command.frames {
+			if frames[i].Name != name {
+				t.Fatalf("%s: frame %d: got %q, want %q", command.name, i, frames[i].Name, name)
+			}
+		}
+
+		if frames[0].Location.Line != command.line {
+			t.Fatalf("%s: unexpected current frame location: %#v", command.name, frames[0])
+		}
 	}
 }
 
-func TestDebugSessionNextStepsOverCallAndOutFromMainCompletes(t *testing.T) {
+func TestDebugSessionStepOverCallAndStepOutFromMainCompletes(t *testing.T) {
 	engine, err := New()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer engine.Close()
+
 	query := `FUNC add(a) {
   RETURN a + 1
 }
 LET x = add(2)
 RETURN x`
-	plan, err := engine.CompileDebug(context.Background(), source.New("next.fql", query))
+	plan, err := engine.CompileDebug(context.Background(), source.New("step-over.fql", query))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer plan.Close()
+
 	session, err := plan.NewDebugSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -522,22 +545,36 @@ RETURN x`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Location.Line != 4 {
+
+	if event.Reason != DebugReasonEntry || event.Location.Line != 4 || event.Depth != 0 {
 		t.Fatalf("unexpected entry: %#v", event)
 	}
-	event, err = session.Next(context.Background())
+
+	event, err = session.StepOver(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Location.Line != 5 || event.Depth != 0 {
-		t.Fatalf("expected next to step over UDF, got %#v", event)
+
+	if event.Reason != DebugReasonStep || event.Location.Line != 5 || event.Depth != 0 {
+		t.Fatalf("expected StepOver to skip UDF, got %#v", event)
 	}
-	event, err = session.Out(context.Background())
+
+	frames, err := session.Frames()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	if len(frames) != 1 || frames[0].Name != "<main>" || frames[0].Location.Line != 5 {
+		t.Fatalf("unexpected frames after StepOver: %#v", frames)
+	}
+
+	event, err = session.StepOut(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if event.Reason != DebugReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
-		t.Fatalf("expected out from main to complete, got %#v", event)
+		t.Fatalf("expected StepOut from main to complete, got %#v", event)
 	}
 }
 
@@ -561,11 +598,11 @@ func TestDebugSessionStopsOnRepeatedLoopLocation(t *testing.T) {
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	first, err := session.Step(context.Background())
+	first, err := session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := session.Step(context.Background())
+	second, err := session.StepIn(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
