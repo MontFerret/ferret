@@ -132,12 +132,12 @@ func TestNewDebugExecutionObservesSourcePointsWithoutMutatingPlan(t *testing.T) 
 		t.Fatalf("unexpected entry event: %#v", event)
 	}
 
-	event, err = execution.Resume(context.Background(), DebugResumeStep, nil)
+	event, err = execution.Resume(context.Background(), DebugResumeStepIn, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if event.Reason != DebugStopStep || event.Point == nil || event.Point.PC != 2 {
-		t.Fatalf("unexpected step event: %#v", event)
+		t.Fatalf("unexpected StepIn event: %#v", event)
 	}
 
 	event, err = execution.Resume(context.Background(), DebugResumeContinue, nil)

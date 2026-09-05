@@ -90,9 +90,9 @@ const (
 
 const (
 	DebugResumeContinue DebugResumeMode = iota
-	DebugResumeStep
-	DebugResumeNext
-	DebugResumeOut
+	DebugResumeStepIn
+	DebugResumeStepOver
+	DebugResumeStepOut
 )
 
 const (

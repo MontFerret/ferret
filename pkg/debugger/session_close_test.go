@@ -82,7 +82,7 @@ func TestSessionCloseLifecycleStates(t *testing.T) {
 			if !execution.closed || !services.closed {
 				t.Fatal("expected execution and services to close")
 			}
-			if _, err := session.Step(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
+			if _, err := session.StepIn(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
 				t.Fatalf("expected command rejection after close, got %v", err)
 			}
 		})

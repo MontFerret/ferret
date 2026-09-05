@@ -25,10 +25,10 @@ func TestSessionSerializesConcurrentCommands(t *testing.T) {
 	}()
 	waitForSignal(t, execution.resumeStarted, "first resume")
 
-	stepDone := make(chan error, 1)
+	stepInDone := make(chan error, 1)
 	go func() {
-		_, err := session.Step(context.Background())
-		stepDone <- err
+		_, err := session.StepIn(context.Background())
+		stepInDone <- err
 	}()
 	breakpointDone := make(chan error, 1)
 	go func() {
@@ -36,7 +36,7 @@ func TestSessionSerializesConcurrentCommands(t *testing.T) {
 		breakpointDone <- err
 	}()
 
-	assertBlocked(t, stepDone, "step")
+	assertBlocked(t, stepInDone, "StepIn")
 	assertBlocked(t, breakpointDone, "set breakpoint")
 	if calls, maxActive, _ := execution.stats(); calls != 1 || maxActive != 1 {
 		t.Fatalf("commands entered execution concurrently: calls=%d max=%d", calls, maxActive)
@@ -44,7 +44,7 @@ func TestSessionSerializesConcurrentCommands(t *testing.T) {
 
 	execution.release()
 	waitForError(t, continueDone, "continue")
-	waitForError(t, stepDone, "step")
+	waitForError(t, stepInDone, "StepIn")
 	waitForError(t, breakpointDone, "set breakpoint")
 
 	if calls, maxActive, _ := execution.stats(); calls != 2 || maxActive != 1 {

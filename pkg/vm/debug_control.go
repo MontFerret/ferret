@@ -66,17 +66,17 @@ func (c *debugControl) shouldStop(pc, depth int) bool {
 	}
 
 	switch c.mode {
-	case DebugResumeStep:
+	case DebugResumeStepIn:
 		c.reason = DebugStopStep
 
 		return true
-	case DebugResumeNext:
+	case DebugResumeStepOver:
 		if depth <= c.startDepth {
 			c.reason = DebugStopStep
 
 			return true
 		}
-	case DebugResumeOut:
+	case DebugResumeStepOut:
 		if depth < c.startDepth {
 			c.reason = DebugStopStep
 

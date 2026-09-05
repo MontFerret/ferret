@@ -140,34 +140,39 @@ func (s *Session) Continue(ctx context.Context) (*Event, error) {
 	return s.resume(ctx, vm.DebugResumeContinue)
 }
 
-// Step stops at the next logical source location, including inside calls.
-func (s *Session) Step(ctx context.Context) (*Event, error) {
+// StepIn resumes execution until the next debuggable source location and may
+// enter called functions.
+func (s *Session) StepIn(ctx context.Context) (*Event, error) {
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
 	defer s.commandMu.Unlock()
 
-	return s.resume(ctx, vm.DebugResumeStep)
+	return s.resume(ctx, vm.DebugResumeStepIn)
 }
 
-// Next stops at the next logical source location at the same or shallower call depth.
-func (s *Session) Next(ctx context.Context) (*Event, error) {
+// StepOver resumes execution until the next debuggable source location at the
+// same or shallower call depth. Breakpoints and pause requests may interrupt it
+// inside deeper calls.
+func (s *Session) StepOver(ctx context.Context) (*Event, error) {
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
 	defer s.commandMu.Unlock()
 
-	return s.resume(ctx, vm.DebugResumeNext)
+	return s.resume(ctx, vm.DebugResumeStepOver)
 }
 
-// Out stops at the next logical source location in a caller. At main it runs to completion.
-func (s *Session) Out(ctx context.Context) (*Event, error) {
+// StepOut resumes execution until the current frame exits, then stops at the
+// next debuggable source location in a caller. At main it runs to completion.
+// Breakpoints and pause requests may interrupt it before the frame exits.
+func (s *Session) StepOut(ctx context.Context) (*Event, error) {
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
 	defer s.commandMu.Unlock()
 
-	return s.resume(ctx, vm.DebugResumeOut)
+	return s.resume(ctx, vm.DebugResumeStepOut)
 }
 
 // Pause requests a stop at the next logical source location.
