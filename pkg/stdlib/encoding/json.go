@@ -1,4 +1,4 @@
-package strings
+package encoding
 
 import (
 	"context"
@@ -11,7 +11,12 @@ import (
 // @param str {String} The string to parse as JSON.
 // @return {Any} Parsed value.
 func JSONParse(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	out, err := encodingjson.Default.Decode([]byte(arg.String()))
+	text, err := runtime.CastArg[runtime.String](arg, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	out, err := encodingjson.Default.Decode([]byte(text))
 	if err != nil {
 		return runtime.EmptyString, err
 	}
@@ -24,7 +29,6 @@ func JSONParse(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 // @return {String} JSON string.
 func JSONStringify(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	out, err := encodingjson.Default.Encode(arg)
-
 	if err != nil {
 		return runtime.EmptyString, err
 	}

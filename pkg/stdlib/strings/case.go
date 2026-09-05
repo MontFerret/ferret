@@ -9,18 +9,28 @@ import (
 
 // lower converts strings to their lower-case counterparts. All other characters are returned unchanged.
 // @param str {String} The source string.
-// @return {String} THis string in lower case.
+// @return {String} The string in lower case.
 func Lower(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	text := strings.ToLower(arg.String())
+	str, err := runtime.CastArg[runtime.String](arg, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	text := strings.ToLower(string(str))
 
 	return runtime.NewString(text), nil
 }
 
 // upper converts strings to their upper-case counterparts. All other characters are returned unchanged.
 // @param str {String} The source string.
-// @return {String} THis string in upper case.
+// @return {String} The string in upper case.
 func Upper(_ context.Context, arg runtime.Value) (runtime.Value, error) {
-	text := strings.ToUpper(arg.String())
+	str, err := runtime.CastArg[runtime.String](arg, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	text := strings.ToUpper(string(str))
 
 	return runtime.NewString(text), nil
 }

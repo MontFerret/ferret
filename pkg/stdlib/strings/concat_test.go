@@ -4,10 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	. "github.com/smartystreets/goconvey/convey"
 
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
@@ -75,74 +74,6 @@ func TestConcat(t *testing.T) {
 			)
 
 			So(out.String(), ShouldEqual, "123")
-		})
-	})
-}
-
-func TestConcatWithSeparator(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			_, err := strings.ConcatWithSeparator(context.Background())
-
-			So(err, ShouldBeError)
-		})
-	})
-
-	Convey("When args are strings", t, func() {
-		Convey("ConcatWithSeparator(',' 'foo', 'bar', 'qaz') should return 'foo,bar,qaz'", func() {
-			out, _ := strings.ConcatWithSeparator(
-				context.Background(),
-				runtime.NewString(","),
-				runtime.NewString("foo"),
-				runtime.NewString("bar"),
-				runtime.NewString("qaz"),
-			)
-
-			So(out.String(), ShouldEqual, "foo,bar,qaz")
-		})
-	})
-
-	Convey("When args are not strings", t, func() {
-		Convey("ConcatWithSeparator(',' ['foo', 'bar', 'qaz']) should return 'foo,bar,qaz'", func() {
-			out, _ := strings.ConcatWithSeparator(
-				context.Background(),
-				runtime.NewString(","),
-				runtime.NewArrayWith(
-					runtime.NewString("foo"),
-					runtime.NewString("bar"),
-					runtime.NewString("qaz"),
-				),
-			)
-
-			So(out.String(), ShouldEqual, "foo,bar,qaz")
-		})
-
-		Convey("ConcatWithSeparator(',' ['foo', None, 'qaz']) should return 'foo,qaz'", func() {
-			out, _ := strings.ConcatWithSeparator(
-				context.Background(),
-				runtime.NewString(","),
-				runtime.NewArrayWith(
-					runtime.NewString("foo"),
-					runtime.None,
-					runtime.NewString("qaz"),
-				),
-			)
-
-			So(out.String(), ShouldEqual, "foo,qaz")
-		})
-
-		Convey("ConcatWithSeparator(',' 'foo', None, 'qaz') should return 'foo,qaz'", func() {
-			out, _ := strings.ConcatWithSeparator(
-				context.Background(),
-				runtime.NewString(","),
-				runtime.NewArrayWith(
-					runtime.NewString("foo"),
-					runtime.None,
-					runtime.NewString("qaz"),
-				),
-			)
-
-			So(out.String(), ShouldEqual, "foo,qaz")
 		})
 	})
 }

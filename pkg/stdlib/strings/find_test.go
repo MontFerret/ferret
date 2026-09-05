@@ -7,7 +7,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
@@ -244,18 +243,6 @@ func TestFindUnicodeAndBounds(t *testing.T) {
 			fn:       strings.FindLast,
 			args:     []runtime.Value{runtime.NewString("éa"), runtime.EmptyString, runtime.NewInt(1), runtime.NewInt(100)},
 			expected: runtime.NewInt(2),
-		},
-		{
-			name:     "invalid start falls back to zero",
-			fn:       strings.FindFirst,
-			args:     []runtime.Value{runtime.NewString("éa"), runtime.NewString("a"), runtime.True},
-			expected: runtime.NewInt(1),
-		},
-		{
-			name:     "invalid end falls back to character length",
-			fn:       strings.FindLast,
-			args:     []runtime.Value{runtime.NewString("éaéa"), runtime.NewString("a"), runtime.ZeroInt, runtime.True},
-			expected: runtime.NewInt(3),
 		},
 	}
 

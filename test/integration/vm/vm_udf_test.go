@@ -88,7 +88,7 @@ RETURN [outer(), value]
 		S(`
 FUNC normalizePrice(value) {
   LET cleaned = TRIM(value)
-  LET numeric = SUBSTITUTE(cleaned, "$", "")
+  LET numeric = REPLACE(cleaned, "$", "")
   RETURN TO_FLOAT(numeric)
 }
 LET price = normalizePrice("$19.99")
@@ -100,7 +100,7 @@ FUNC foo() {
 }
 FUNC normalizePrice(input) {
   LET cleaned = TRIM(input)
-  LET numeric = SUBSTITUTE(cleaned, "$", "")
+  LET numeric = REPLACE(cleaned, "$", "")
   RETURN TO_FLOAT(numeric)
 }
 FUNC f1(product) {

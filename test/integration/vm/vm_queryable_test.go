@@ -302,7 +302,7 @@ func TestComplexQueries(t *testing.T) {
 			"Should pass params to query",
 		),
 		Array(
-			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]\n    [* FILTER . != \"\" RETURN UPPER(.)]",
+			"RETURN @doc\n    [~ css`.product`]\n    [~ css`.title`]\n    [~ text]\n    [* FILTER . != \"\" RETURN UPPER(TO_STRING(.))]",
 			[]any{"TITLE"},
 			"Should apply array operators after query chain",
 		),

@@ -16,6 +16,6 @@ func RegisterLib(ns runtime.Namespace) {
 	ns.Function().A2().
 		Add("match", Match)
 
-	ns.Function().Var().
+	ns.Namespace("path").Function().Var().
 		Add("join", Join)
 }

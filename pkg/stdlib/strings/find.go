@@ -16,7 +16,6 @@ import (
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func FindFirst(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
-
 	if err != nil {
 		return runtime.NewInt(-1), err
 	}
@@ -45,7 +44,11 @@ func findFirst2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, e
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func findFirst3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
+	start, err := runtime.CastArg[runtime.Int](arg3, 2)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	return findFirst(ctx, arg1, arg2, start, runtime.ZeroInt, false)
 }
 
@@ -56,15 +59,27 @@ func findFirst3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Va
 // @param end {Int} Limit the search to a subset of the text, ending before end.
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, start is returned.
 func findFirst4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
-	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
-	end, hasEnd := arg4.(runtime.Int)
-	return findFirst(ctx, arg1, arg2, start, end, hasEnd)
+	start, err := runtime.CastArg[runtime.Int](arg3, 2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	end, err := runtime.CastArg[runtime.Int](arg4, 3)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return findFirst(ctx, arg1, arg2, start, end, true)
 }
 
 func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.Int, hasEnd bool) (runtime.Value, error) {
-	text := arg1.String()
+	text, needle, err := runtime.CastArgs2[runtime.String, runtime.String](arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	runes := []rune(text)
-	search := arg2.String()
+	search := string(needle)
 	if !hasEnd {
 		end = runtime.Int(len(runes))
 	}
@@ -76,7 +91,6 @@ func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.I
 
 	window := string(runes[startIndex:endIndex])
 	found := strings.Index(window, search)
-
 	if found > -1 {
 		return runtime.NewInt(startIndex + utf8.RuneCountInString(window[:found])), nil
 	}
@@ -92,7 +106,6 @@ func findFirst(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.I
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func FindLast(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	err := runtime.ValidateArgs(args, 2, 4)
-
 	if err != nil {
 		return runtime.NewInt(-1), err
 	}
@@ -121,7 +134,11 @@ func findLast2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, er
 // @param start {Int} Limit the search to a subset of the text, beginning at start.
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func findLast3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
+	start, err := runtime.CastArg[runtime.Int](arg3, 2)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	return findLast(ctx, arg1, arg2, start, runtime.ZeroInt, false)
 }
 
@@ -132,15 +149,27 @@ func findLast3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Val
 // @param end {Int} Limit the search to a subset of the text, ending before end.
 // @return {Int} The character position of the match. If search is not contained in text, -1 is returned. If search is empty, end is returned.
 func findLast4(ctx context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
-	start := runtime.CastOr[runtime.Int](arg3, runtime.ZeroInt)
-	end, hasEnd := arg4.(runtime.Int)
-	return findLast(ctx, arg1, arg2, start, end, hasEnd)
+	start, err := runtime.CastArg[runtime.Int](arg3, 2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	end, err := runtime.CastArg[runtime.Int](arg4, 3)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return findLast(ctx, arg1, arg2, start, end, true)
 }
 
 func findLast(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.Int, hasEnd bool) (runtime.Value, error) {
-	text := arg1.String()
+	text, needle, err := runtime.CastArgs2[runtime.String, runtime.String](arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	runes := []rune(text)
-	search := arg2.String()
+	search := string(needle)
 	if !hasEnd {
 		end = runtime.Int(len(runes))
 	}
@@ -152,7 +181,6 @@ func findLast(_ context.Context, arg1, arg2 runtime.Value, start, end runtime.In
 
 	window := string(runes[startIndex:endIndex])
 	found := strings.LastIndex(window, search)
-
 	if found > -1 {
 		return runtime.NewInt(startIndex + utf8.RuneCountInString(window[:found])), nil
 	}

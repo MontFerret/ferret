@@ -176,7 +176,7 @@ func assertCatalog(t *testing.T, reference *api.Reference, catalog *apicatalog.C
 		}
 	}
 
-	wantCategories := []string{"arrays", "collections", "datetime", "io", "math", "objects", "path", "strings", "testing", "types", "utils"}
+	wantCategories := []string{"arrays", "collections", "crypto", "datetime", "encoding", "io", "math", "objects", "path", "strings", "testing", "types", "utils"}
 	if !reflect.DeepEqual(categoryIDs, wantCategories) {
 		t.Fatalf("categories = %v, want %v", categoryIDs, wantCategories)
 	}

@@ -14,8 +14,8 @@ func TestBoundedFunctionsUseFixedArityRegistrations(t *testing.T) {
 	functions := buildFunctions(t, stdlib.Full())
 	expected := boundedFunctionArities()
 
-	if len(expected) != 81 {
-		t.Fatalf("bounded function matrix has %d names, want 81", len(expected))
+	if len(expected) != 86 {
+		t.Fatalf("bounded function matrix has %d names, want 86", len(expected))
 	}
 
 	for name, arities := range expected {
@@ -49,9 +49,8 @@ func TestRepeatedArgumentFunctionsRemainVariadicOnly(t *testing.T) {
 		"KEEP_KEYS",
 		"MERGE",
 		"MERGE_RECURSIVE",
-		"JOIN",
+		"PATH::JOIN",
 		"CONCAT",
-		"CONCAT_SEPARATOR",
 		"FMT",
 		"PRINT",
 	}
@@ -71,37 +70,42 @@ func TestRepeatedArgumentFunctionsRemainVariadicOnly(t *testing.T) {
 
 func boundedFunctionArities() map[string][]int {
 	functions := map[string][]int{
-		"APPEND":        {2, 3},
-		"FLATTEN":       {1, 2},
-		"POSITION":      {2, 3},
-		"PUSH":          {2, 3},
-		"REMOVE_VALUE":  {2, 3},
-		"SLICE":         {2, 3},
-		"UNSHIFT":       {2, 3},
-		"DATE":          {1, 2},
-		"DATE_COMPARE":  {3, 4},
-		"DATE_DIFF":     {3, 4},
-		"IO::FS::WRITE": {2, 3},
-		"PERCENTILE":    {2, 3},
-		"RAND":          {0, 1, 2},
-		"RANGE":         {2, 3},
-		"KEYS":          {1, 2},
-		"TO_DATETIME":   {1, 2},
-		"CONTAINS":      {2, 3},
-		"FIND_FIRST":    {2, 3, 4},
-		"FIND_LAST":     {2, 3, 4},
-		"LIKE":          {2, 3},
-		"LTRIM":         {1, 2},
-		"REGEX_MATCH":   {2, 3},
-		"REGEX_SPLIT":   {2, 3, 4},
-		"REGEX_TEST":    {2, 3},
-		"REGEX_REPLACE": {3, 4},
-		"RTRIM":         {1, 2},
-		"SPLIT":         {2, 3},
-		"SUBSTITUTE":    {2, 3, 4},
-		"SUBSTRING":     {2, 3},
-		"TRIM":          {1, 2},
-		"T::FAIL":       {0, 1},
+		"APPEND":         {2, 3},
+		"FLATTEN":        {1, 2},
+		"POSITION":       {2, 3},
+		"PUSH":           {2, 3},
+		"REMOVE_VALUE":   {2, 3},
+		"SLICE":          {2, 3},
+		"UNSHIFT":        {2, 3},
+		"DATE":           {1, 2},
+		"DATE_COMPARE":   {3, 4},
+		"DATE_DIFF":      {3, 4},
+		"IO::FS::WRITE":  {2, 3},
+		"PERCENTILE":     {2, 3},
+		"RAND":           {0, 1, 2},
+		"RANGE":          {2, 3},
+		"KEYS":           {1, 2},
+		"TO_DATETIME":    {1, 2},
+		"CONTAINS":       {2},
+		"FIND_FIRST":     {2, 3, 4},
+		"FIND_LAST":      {2, 3, 4},
+		"LIKE":           {2, 3},
+		"LTRIM":          {1, 2},
+		"REGEX_FIND":     {2},
+		"REGEX_FIND_ALL": {2},
+		"STARTS_WITH":    {2},
+		"ENDS_WITH":      {2},
+		"JOIN":           {2},
+		"REPEAT":         {2},
+		"REGEX_SPLIT":    {2, 3},
+		"REGEX_TEST":     {2},
+		"REGEX_REPLACE":  {3},
+		"RTRIM":          {1, 2},
+		"SPLIT":          {2, 3},
+		"REPLACE":        {3, 4},
+		"SUBSTRING":      {2, 3},
+		"TRIM":           {1, 2},
+		"T::FAIL":        {0, 1},
 	}
 
 	unaryAssertions := []string{

@@ -124,7 +124,7 @@ While: 'WHILE';
 
 // Literals
 Param: '@';
-Identifier: Letter+ (Symbols (Identifier)*)* (Digit (Identifier)*)*;
+Identifier: Letter (Letter | Symbols | Digit)*;
 IgnoreIdentifier: Underscore;
 StringLiteral: SQString | DQSring | TickString;
 BacktickOpen: '`' -> pushMode(TEMPLATE);

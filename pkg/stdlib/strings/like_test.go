@@ -7,7 +7,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
@@ -25,21 +24,21 @@ func TestLike(t *testing.T) {
 		})
 	})
 
-	Convey("Should return true when matches with _ pattern", t, func() {
+	Convey("Should return true when matches with ? pattern", t, func() {
 		out, _ := strings.Like(
 			context.Background(),
 			runtime.NewString("cart"),
-			runtime.NewString("ca_t"),
+			runtime.NewString("ca?t"),
 		)
 
 		So(out, ShouldEqual, runtime.True)
 	})
 
-	Convey("Should return true when matches with % pattern", t, func() {
+	Convey("Should return true when matches with * pattern", t, func() {
 		out, _ := strings.Like(
 			context.Background(),
 			runtime.NewString("foo bar baz"),
-			runtime.NewString("%bar%"),
+			runtime.NewString("*bar*"),
 		)
 
 		So(out, ShouldEqual, runtime.True)
@@ -49,7 +48,7 @@ func TestLike(t *testing.T) {
 		out, _ := strings.Like(
 			context.Background(),
 			runtime.NewString("FoO bAr BaZ"),
-			runtime.NewString("fOo%bAz"),
+			runtime.NewString("fOo*bAz"),
 		)
 
 		So(out, ShouldEqual, runtime.False)
@@ -59,7 +58,7 @@ func TestLike(t *testing.T) {
 		out, _ := strings.Like(
 			context.Background(),
 			runtime.NewString("FoO bAr BaZ"),
-			runtime.NewString("fOo%bAz"),
+			runtime.NewString("fOo*bAz"),
 			runtime.True,
 		)
 

@@ -7,241 +7,163 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// regex_match returns the matches in the given string text, using the regex.
-// @param str {String} The string to search in.
-// @param expression {String} A regular expression to use for matching the text.
-// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive. The default is false.
-// @return {Any[]} An array of strings containing the matches.
-func RegexMatch(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+// regex_test reports whether a Go regular expression matches any part of text. Use inline flags such as (?i).
+// @param text {String} The source string.
+// @param pattern {String} The Go regular expression.
+// @return {Boolean} Whether a match exists.
+func RegexTest(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	text, expression, err := compileRegex(arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.Boolean(expression.MatchString(text)), nil
+}
+
+// regex_find finds the first match of a Go regular expression. Use inline flags such as (?i). Captures exclude the full match, preserve declaration order, and use empty strings for unmatched groups. Named captures use the first declared group for duplicate names.
+// @param text {String} The source string.
+// @param pattern {String} The Go regular expression.
+// @return {Object | None} An object with match (String), groups (String[]), and named (Object), or None when no match exists.
+func RegexFind(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	text, expression, err := compileRegex(arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	match := expression.FindStringSubmatch(text)
+	if match == nil {
+		return runtime.None, nil
+	}
+
+	return regexMatchValue(expression, match), nil
+}
+
+// regex_find_all finds non-overlapping matches in source order using Go regular expression semantics. Empty matches adjacent to a preceding match are ignored. Use inline flags such as (?i). Capture fields follow regex_find.
+// @param text {String} The source string.
+// @param pattern {String} The Go regular expression.
+// @return {Object[]} Objects with match (String), groups (String[]), and named (Object). No matches returns an empty array.
+func RegexFindAll(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	text, expression, err := compileRegex(arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	matches := expression.FindAllStringSubmatch(text, -1)
+	out := runtime.NewArray(len(matches))
+	for _, match := range matches {
+		_ = out.Append(ctx, regexMatchValue(expression, match))
+	}
+
+	return out, nil
+}
+
+// regex_replace replaces all non-overlapping matches of a Go regular expression. Use inline flags such as (?i).
+// @param text {String} The source string.
+// @param pattern {String} The Go regular expression.
+// @param replacement {String} Go replacement template: $1 and ${name} expand captures, and $$ inserts a literal dollar sign.
+// @return {String} The string with matches replaced.
+func RegexReplace(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	text, expression, err := compileRegex(arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	replacement, err := runtime.CastArg[runtime.String](arg3, 2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.String(expression.ReplaceAllString(text, string(replacement))), nil
+}
+
+// regex_split splits text at matches of a Go regular expression. Use inline flags such as (?i). Empty matches follow Go regexp.Split semantics.
+// @param text {String} The source string.
+// @param pattern {String} The separator expression.
+// @param limit {Int} Non-negative maximum result count. Zero returns an empty array; positive limits preserve the unsplit remainder. Omitted means unlimited.
+// @return {String[]} The pieces between matches.
+func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
 
 	if len(args) == 2 {
-		return regexMatch2(ctx, args[0], args[1])
-	}
-
-	return regexMatch3(ctx, args[0], args[1], args[2])
-}
-
-// regex_match returns the matches in the given string text, using the regex.
-// @param str {String} The string to search in.
-// @param expression {String} A regular expression to use for matching the text.
-// @return {Any[]} An array of strings containing the matches.
-func regexMatch2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	return regexMatch3(ctx, arg1, arg2, runtime.False)
-}
-
-// regex_match returns the matches in the given string text, using the regex.
-// @param str {String} The string to search in.
-// @param expression {String} A regular expression to use for matching the text.
-// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive. The default is false.
-// @return {Any[]} An array of strings containing the matches.
-func regexMatch3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	text := arg1.String()
-	exp := arg2.String()
-
-	if arg3 == runtime.True {
-		exp = "(?i)" + exp
-	}
-
-	reg, err := regexp.Compile(exp)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	matches := reg.FindAllStringSubmatch(text, -1)
-	res := runtime.NewArray(10)
-
-	if len(matches) == 0 {
-		return res, nil
-	}
-
-	for _, m := range matches[0] {
-		_ = res.Append(ctx, runtime.NewString(m))
-	}
-
-	return res, nil
-}
-
-// regex_split splits the given string text into a list of strings, using the separator.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression to use for splitting the text.
-// @param limit {Int} Limit the number of split values in the result. If no limit is given, the number of splits returned is not bounded.
-// @param reserved {Any} Reserved compatibility argument; currently ignored.
-// @return {Any[]} An array of strings splitted by the expression.
-func RegexSplit(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 4)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	switch len(args) {
-	case 2:
 		return regexSplit2(ctx, args[0], args[1])
-	case 3:
-		return regexSplit3(ctx, args[0], args[1], args[2])
-	default:
-		return regexSplit4(ctx, args[0], args[1], args[2], args[3])
 	}
+
+	return regexSplit3(ctx, args[0], args[1], args[2])
 }
 
-// regex_split splits the given string text into a list of strings, using the separator.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression to use for splitting the text.
-// @return {Any[]} An array of strings splitted by the expression.
+// regex_split splits text at matches of a Go regular expression. Use inline flags such as (?i). Empty matches follow Go regexp.Split semantics.
+// @param text {String} The source string.
+// @param pattern {String} The separator expression.
+// @return {String[]} All pieces between matches.
 func regexSplit2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return regexSplit(ctx, arg1, arg2, -1)
 }
 
-// regex_split splits the given string text into a list of strings, using the separator.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression to use for splitting the text.
-// @param limit {Int} Limit the number of split values in the result.
-// @return {Any[]} An array of strings splitted by the expression.
+// regex_split splits text at matches of a Go regular expression. Use inline flags such as (?i). Empty matches follow Go regexp.Split semantics.
+// @param text {String} The source string.
+// @param pattern {String} The separator expression.
+// @param limit {Int} Non-negative maximum result count. Zero returns an empty array; positive limits preserve the unsplit remainder.
+// @return {String[]} The pieces between matches.
 func regexSplit3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	limit := runtime.CastOr[runtime.Int](arg3, runtime.Int(-1))
-	return regexSplit(ctx, arg1, arg2, int(limit))
-}
+	limit, err := nonNegativeLimit(arg3, 2)
+	if err != nil {
+		return runtime.None, err
+	}
 
-// regex_split splits the given string text into a list of strings, using the separator.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression to use for splitting the text.
-// @param limit {Int} Limit the number of split values in the result.
-// @param reserved {Any} Reserved compatibility argument; currently ignored.
-// @return {Any[]} An array of strings splitted by the expression.
-func regexSplit4(ctx context.Context, arg1, arg2, arg3, _ runtime.Value) (runtime.Value, error) {
-	return regexSplit3(ctx, arg1, arg2, arg3)
+	return regexSplit(ctx, arg1, arg2, limit)
 }
 
 func regexSplit(ctx context.Context, arg1, arg2 runtime.Value, limit int) (runtime.Value, error) {
-	text := arg1.String()
-	exp := arg2.String()
-
-	reg, err := regexp.Compile(exp)
-
+	text, expression, err := compileRegex(arg1, arg2)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	matches := reg.Split(text, limit)
-	res := runtime.NewArray(10)
-
-	if len(matches) == 0 {
-		return res, nil
+	pieces := expression.Split(text, limit)
+	out := runtime.NewArray(len(pieces))
+	for _, piece := range pieces {
+		_ = out.Append(ctx, runtime.String(piece))
 	}
 
-	for _, m := range matches {
-		_ = res.Append(ctx, runtime.NewString(m))
-	}
-
-	return res, nil
+	return out, nil
 }
 
-// regex_test test whether the regexp has at least one match in the given text.
-// @param str {String} The string to test.
-// @param expression {String} A regular expression to use for splitting the text.
-// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive.
-// @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
-func RegexTest(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, 3)
-
+func compileRegex(arg1, arg2 runtime.Value) (string, *regexp.Regexp, error) {
+	text, pattern, err := runtime.CastArgs2[runtime.String, runtime.String](arg1, arg2)
 	if err != nil {
-		return runtime.None, err
+		return "", nil, err
 	}
 
-	if len(args) == 2 {
-		return regexTest2(ctx, args[0], args[1])
-	}
-
-	return regexTest3(ctx, args[0], args[1], args[2])
-}
-
-// regex_test test whether the regexp has at least one match in the given text.
-// @param str {String} The string to test.
-// @param expression {String} A regular expression to use for splitting the text.
-// @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
-func regexTest2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	return regexTest3(ctx, arg1, arg2, runtime.False)
-}
-
-// regex_test test whether the regexp has at least one match in the given text.
-// @param str {String} The string to test.
-// @param expression {String} A regular expression to use for splitting the text.
-// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive.
-// @return {Boolean} Returns true if the pattern is contained in text, and false otherwise.
-func regexTest3(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	text := arg1.String()
-	exp := arg2.String()
-
-	if arg3 == runtime.True {
-		exp = "(?i)" + exp
-	}
-
-	reg, err := regexp.Compile(exp)
-
+	expression, err := regexp.Compile(string(pattern))
 	if err != nil {
-		return runtime.None, err
+		return "", nil, runtime.ArgError(err, 1)
 	}
 
-	matches := reg.MatchString(text)
-
-	return runtime.NewBoolean(matches), nil
+	return string(text), expression, nil
 }
 
-// regex_replace replace every substring matched with the regexp with a given string.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression search pattern.
-// @param replacement {String} The string to replace the search pattern with
-// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive.
-// @return {String} Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
-func RegexReplace(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 3, 4)
-
-	if err != nil {
-		return runtime.EmptyString, err
+func regexMatchValue(expression *regexp.Regexp, match []string) runtime.Value {
+	groups := make([]runtime.Value, len(match)-1)
+	for index, value := range match[1:] {
+		groups[index] = runtime.String(value)
 	}
 
-	if len(args) == 3 {
-		return regexReplace3(ctx, args[0], args[1], args[2])
+	named := make(map[string]runtime.Value)
+	for index, name := range expression.SubexpNames() {
+		if name == "" {
+			continue
+		}
+
+		if _, exists := named[name]; !exists {
+			named[name] = runtime.String(match[index])
+		}
 	}
 
-	return regexReplace4(ctx, args[0], args[1], args[2], args[3])
-}
-
-// regex_replace replace every substring matched with the regexp with a given string.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression search pattern.
-// @param replacement {String} The string to replace the search pattern with
-// @return {String} Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
-func regexReplace3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	return regexReplace4(ctx, arg1, arg2, arg3, runtime.False)
-}
-
-// regex_replace replace every substring matched with the regexp with a given string.
-// @param str {String} The string to split.
-// @param expression {String} A regular expression search pattern.
-// @param replacement {String} The string to replace the search pattern with
-// @param caseInsensitive {Boolean} If set to true, the matching will be case-insensitive.
-// @return {String} Returns the string text with the search regex pattern replaced with the replacement string wherever the pattern exists in text
-func regexReplace4(_ context.Context, arg1, arg2, arg3, arg4 runtime.Value) (runtime.Value, error) {
-	text := arg1.String()
-	exp := arg2.String()
-	repl := arg3.String()
-
-	if arg4 == runtime.True {
-		exp = "(?i)" + exp
-	}
-
-	reg, err := regexp.Compile(exp)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	out := reg.ReplaceAllString(text, repl)
-
-	return runtime.NewString(out), nil
+	return runtime.NewObjectWith(map[string]runtime.Value{
+		"match":  runtime.String(match[0]),
+		"groups": runtime.NewArrayWith(groups...),
+		"named":  runtime.NewObjectWith(named),
+	})
 }

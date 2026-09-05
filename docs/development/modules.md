@@ -93,6 +93,11 @@ the published Ferret Core API artifacts. Structured documentation requirements
 and generation checks are described in the
 [Core API artifact maintainer guide](../maintainers/core-api-reference.md).
 
+String operations stay global, while the independent Encoding and Crypto groups
+register namespaced serialization and cryptographic operations. Their strict
+argument, Unicode, formatting, and migration contracts are described in
+[String, encoding, and crypto contracts](string-library.md).
+
 ## Testing
 
 Use package tests for module registration and hook ordering. Exercise SDK
