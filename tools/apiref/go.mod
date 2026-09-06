@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/MontFerret/api v1.0.0-alpha.14 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
