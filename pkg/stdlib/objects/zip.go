@@ -7,67 +7,69 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// zip returns an object assembled from the separate parameters keys and values.
-// Keys and values must be arrays and have the same length.
-// @param keys {String[]} An array of strings, to be used as key names in the result.
-// @param values {hashMap[]} An array of runtime.Value, to be used as key values.
-// @return {Map} An object with the keys and values assembled.
+// Zip constructs an object from parallel key and value lists of equal length.
+// Keys must be strings. Duplicate keys use the last value in the input.
+// @param keys {String[]} List of object keys.
+// @param values {Any[]} Parallel list of values.
+// @return {Map} Independent object containing cloned or copied values.
 func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	keys, err := runtime.CastArg[runtime.List](arg1, 0)
-
+	keys, vals, err := runtime.CastArgs2[runtime.List, runtime.List](arg1, arg2)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	vals, err := runtime.CastArg[runtime.List](arg2, 1)
-
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return runtime.None, err
 	}
 
-	keysSize, _ := keys.Length(ctx)
-	valsSize, _ := vals.Length(ctx)
-
-	if keysSize != valsSize {
-		return runtime.None, runtime.Error(
-			runtime.ErrInvalidArgument,
-			fmt.Sprintf("keys and values must have the same length. got keys: %d, values: %d",
-				keysSize, valsSize,
-			),
-		)
+	keysSize, err := keys.Length(ctx)
+	if err != nil {
+		return runtime.None, runtime.ArgError(err, 0)
 	}
 
-	if err := runtime.AssertItemsOf(ctx, keys, runtime.AssertString); err != nil {
+	valsSize, err := vals.Length(ctx)
+	if err != nil {
 		return runtime.None, runtime.ArgError(err, 1)
 	}
 
-	zipped := runtime.NewObject()
+	if keysSize < 0 {
+		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "list length must not be negative"), 0)
+	}
 
-	var k runtime.String
-	var val runtime.Value
-	var exists bool
-	keyExists := map[runtime.String]bool{}
+	if valsSize < 0 {
+		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "list length must not be negative"), 1)
+	}
 
-	return zipped, keys.ForEach(ctx, func(c context.Context, key runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		k = key.(runtime.String)
+	if keysSize != valsSize {
+		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument,
+			fmt.Sprintf("keys and values must have the same length; got keys: %d, values: %d", keysSize, valsSize)), 1)
+	}
 
-		// If the key already exists, we skip it. This allows us to handle duplicate keys in the input.
-		if _, exists = keyExists[k]; exists {
-			return true, nil
+	result := runtime.NewObject()
+	for index := runtime.ZeroInt; index < keysSize; index++ {
+		if err := ctx.Err(); err != nil {
+			return runtime.None, err
 		}
 
-		keyExists[k] = true
-
-		val, _ = vals.At(c, idx)
-
-		cloneable, ok := val.(runtime.Cloneable)
-
-		if ok {
-			val, _ = cloneable.Clone(c)
+		keyValue, err := keys.At(ctx, index)
+		if err != nil {
+			return runtime.None, runtime.ArgError(fmt.Errorf("item %d: %w", index, err), 0)
 		}
 
-		_ = zipped.Set(c, k, val)
+		key, err := runtime.CastString(keyValue)
+		if err != nil {
+			return runtime.None, runtime.ArgError(fmt.Errorf("item %d: %w", index, err), 0)
+		}
 
-		return true, nil
-	})
+		value, err := vals.At(ctx, index)
+		if err != nil {
+			return runtime.None, runtime.ArgError(fmt.Errorf("item %d: %w", index, err), 1)
+		}
+
+		if err := setCopiedEntry(ctx, result, key, value); err != nil {
+			return runtime.None, runtime.ArgError(fmt.Errorf("item %d: %w", index, err), 1)
+		}
+	}
+
+	return result, nil
 }

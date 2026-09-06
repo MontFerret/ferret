@@ -6,41 +6,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// values return the attribute values of the map as a list.
-// @param map {Map} Target map.
-// @return {Any[]} Values of document returned in any order.
+// Values returns cloned or copied map values in unspecified order.
+// @param value {Map} Map whose values are returned.
+// @return {Any[]} Independent list of values, following each value's clone or copy contract.
 func Values(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgType(arg, 0, runtime.TypeMap); err != nil {
-		return runtime.None, err
-	}
-
-	obj := arg.(runtime.Map)
-
-	values, err := obj.Values(ctx)
+	target, err := runtime.CastArg[runtime.Map](arg, 0)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	length, err := values.Length(ctx)
+	values, err := target.Values(ctx)
 	if err != nil {
-		return runtime.None, err
+		return runtime.None, runtime.ArgError(err, 0)
 	}
 
-	result := runtime.NewArray64(length)
-
-	if err := values.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		cloned, err := runtime.CloneOrCopy(c, value)
-		if err != nil {
-			return false, err
-		}
-
-		if err := result.Append(c, cloned); err != nil {
-			return false, err
-		}
-
-		return true, nil
-	}); err != nil {
-		return runtime.None, err
+	result, err := copyListValues(ctx, values)
+	if err != nil {
+		return runtime.None, runtime.ArgError(err, 0)
 	}
 
 	return result, nil

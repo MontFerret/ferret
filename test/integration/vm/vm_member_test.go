@@ -120,7 +120,7 @@ func TestMember(t *testing.T) {
 			map[string]any{
 				"second": "third",
 			}),
-		Object(`RETURN KEEP_KEYS({first: {second: "third"}}.first, "second")`,
+		Object(`RETURN object::keep_keys({first: {second: "third"}}.first, "second")`,
 			map[string]any{
 				"second": "third",
 			}),

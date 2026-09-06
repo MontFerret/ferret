@@ -32,8 +32,8 @@ func ForEach(ctx context.Context, input Iterable, predicate Predicate) error {
 	closable, ok := iter.(io.Closer)
 
 	if ok {
-		if err := closable.Close(); err != nil {
-			return err
+		if closeErr := closable.Close(); closeErr != nil {
+			return errors.Join(err, closeErr)
 		}
 	}
 

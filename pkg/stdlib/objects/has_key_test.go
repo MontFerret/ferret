@@ -12,7 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestHas(t *testing.T) {
+func TestHasKey(t *testing.T) {
 	Convey("When key exists", t, func() {
 		obj := runtime.NewObjectWith(
 			map[string]runtime.Value{
@@ -20,7 +20,7 @@ func TestHas(t *testing.T) {
 			},
 		)
 
-		val, err := objects.Has(context.Background(), obj, runtime.NewString("key"))
+		val, err := objects.HasKey(context.Background(), obj, runtime.NewString("key"))
 		valBool := val.(runtime.Boolean)
 
 		So(err, ShouldEqual, nil)
@@ -35,7 +35,7 @@ func TestHas(t *testing.T) {
 			},
 		)
 
-		val, err := objects.Has(context.Background(), obj, runtime.NewString("key"))
+		val, err := objects.HasKey(context.Background(), obj, runtime.NewString("key"))
 		valBool := val.(runtime.Boolean)
 
 		So(err, ShouldEqual, nil)
@@ -46,7 +46,7 @@ func TestHas(t *testing.T) {
 	Convey("When there are no keys", t, func() {
 		obj := runtime.NewObject()
 
-		val, err := objects.Has(context.Background(), obj, runtime.NewString("key"))
+		val, err := objects.HasKey(context.Background(), obj, runtime.NewString("key"))
 		valBool := val.(runtime.Boolean)
 
 		So(err, ShouldEqual, nil)
@@ -58,7 +58,7 @@ func TestHas(t *testing.T) {
 		obj := runtime.NewObject()
 		key := runtime.NewInt(1)
 
-		val, err := objects.Has(context.Background(), obj, key)
+		val, err := objects.HasKey(context.Background(), obj, key)
 
 		So(err, ShouldBeError)
 		So(val, ShouldEqual, runtime.None)
@@ -67,7 +67,7 @@ func TestHas(t *testing.T) {
 	Convey("When first argument isn't object", t, func() {
 		notObj := runtime.NewInt(1)
 
-		val, err := objects.Has(context.Background(), notObj, runtime.NewString("key"))
+		val, err := objects.HasKey(context.Background(), notObj, runtime.NewString("key"))
 
 		So(err, ShouldBeError)
 		So(val, ShouldEqual, runtime.None)
@@ -80,7 +80,7 @@ func TestHas(t *testing.T) {
 			},
 		)
 
-		val, err := objects.Has(context.Background(), obj, runtime.NewString(""))
+		val, err := objects.HasKey(context.Background(), obj, runtime.NewString(""))
 		valBool := val.(runtime.Boolean)
 
 		So(err, ShouldEqual, nil)
@@ -97,14 +97,14 @@ func TestHas(t *testing.T) {
 		obj := runtime.NewObjectWith(properties)
 
 		// Test existing key
-		val, err := objects.Has(context.Background(), obj, runtime.NewString("key50"))
+		val, err := objects.HasKey(context.Background(), obj, runtime.NewString("key50"))
 		valBool := val.(runtime.Boolean)
 
 		So(err, ShouldEqual, nil)
 		So(bool(valBool), ShouldEqual, true)
 
 		// Test non-existing key
-		val, err = objects.Has(context.Background(), obj, runtime.NewString("key999"))
+		val, err = objects.HasKey(context.Background(), obj, runtime.NewString("key999"))
 		valBool = val.(runtime.Boolean)
 
 		So(err, ShouldEqual, nil)

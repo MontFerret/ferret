@@ -6,78 +6,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// keep_keys returns a new object with only given keys.
-// @param obj {Object|Map} Source object.
-// @param keys {String, repeated} Keys that need to be kept.
-// @return {Map} New Object with only given keys.
+// KeepKeys clones the source and retains only the requested keys.
+// Missing and repeated keys are ignored.
+// @param value {Map} Source map.
+// @param keys {String|String[], repeated} Variadic keys, or one list of keys; an empty list keeps nothing.
+// @return {Map} Independent map containing only selected keys.
 func KeepKeys(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
-		return runtime.None, err
-	}
-
-	if err := runtime.ValidateArgTypeAt(args, 0, runtime.TypeMap); err != nil {
-		return runtime.None, err
-	}
-
-	src := args[0].(runtime.Map)
-
-	var keys runtime.List
-
-	if len(args) == 2 {
-		list, ok := args[1].(runtime.List)
-
-		if ok {
-			keys = list
-		}
-	}
-
-	if keys == nil {
-		keys = runtime.NewArrayWith(args[1:]...)
-	}
-
-	if err := runtime.AssertItemsOf(ctx, keys, runtime.AssertString); err != nil {
-		return runtime.None, runtime.ArgError(err, 1)
-	}
-
-	resultObj, err := src.Empty(ctx)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	var key runtime.String
-
-	return resultObj, keys.ForEach(ctx, func(c context.Context, keyVal runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		key = keyVal.(runtime.String)
-
-		exists, err := src.ContainsKey(c, key)
-		if err != nil {
-			return runtime.False, err
-		}
-
-		if exists {
-			val, err := src.Get(c, key)
-			if err != nil {
-				return runtime.False, err
-			}
-
-			cloneable, ok := val.(runtime.Cloneable)
-
-			if ok {
-				v, err := cloneable.Clone(c)
-
-				if err != nil {
-					return runtime.False, err
-				}
-
-				val = v
-			}
-
-			if err := resultObj.Set(c, key, val); err != nil {
-				return runtime.False, err
-			}
-		}
-
-		return true, nil
-	})
+	return filterKeys(ctx, args, runtime.KeepMapKeys)
 }
