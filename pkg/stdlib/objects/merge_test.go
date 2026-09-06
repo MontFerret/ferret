@@ -279,7 +279,7 @@ func TestMergeArray(t *testing.T) {
 			},
 		)
 
-		merged, err := objects.MergeRecursive(context.Background(), obj, obj)
+		merged, err := objects.MergeDeep(context.Background(), obj, obj)
 
 		So(err, ShouldBeNil)
 		So(compareValues(merged, obj), ShouldEqual, 0)

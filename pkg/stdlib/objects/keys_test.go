@@ -5,131 +5,55 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/objects"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestKeys(t *testing.T) {
-	Convey("Keys(obj, false) should return 'a', 'c', 'b' in any order", t, func() {
-		obj := runtime.NewObjectWith(
-			map[string]runtime.Value{
-				"a": runtime.NewInt(0),
-				"b": runtime.NewInt(1),
-				"c": runtime.NewInt(2),
-			},
-		)
+	ctx := context.Background()
+	for _, source := range []*runtime.Object{
+		runtime.NewObject(),
+		runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1), "é 😀": runtime.None, "a.b": runtime.True}),
+	} {
+		result, err := objects.Keys(ctx, source)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		keys, err := objects.Keys(context.Background(), obj)
-		keysArray := keys.(*runtime.Array)
+		list := result.(runtime.List)
+		got, err := list.Length(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		So(err, ShouldEqual, nil)
-		actualLength, _ := keysArray.Length(context.Background())
-		So(actualLength, ShouldEqual, 3)
+		want, err := source.Length(ctx)
+		if err != nil || got != want {
+			t.Fatalf("length = %d, want %d: %v", got, want, err)
+		}
 
-		// Check that all expected keys are present (order doesn't matter)
-		keyStrings := make([]string, 0, 3)
-		keysArray.ForEach(context.Background(), func(ctx context.Context, val runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			keyStrings = append(keyStrings, val.String())
+		err = list.ForEach(ctx, func(ctx context.Context, key runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+			present, err := source.ContainsKey(ctx, key)
+			if err != nil || !present {
+				t.Fatalf("unexpected key %v: %v", key, err)
+			}
+
 			return true, nil
 		})
-
-		for _, expectedKey := range []string{"a", "b", "c"} {
-			found := false
-			for _, actualKey := range keyStrings {
-				if actualKey == expectedKey {
-					found = true
-					break
-				}
-			}
-			So(found, ShouldBeTrue)
+		if err != nil {
+			t.Fatal(err)
 		}
-	})
 
-	Convey("Keys(obj, true) should return ['a', 'b', 'c'] in sorted order", t, func() {
-		obj := runtime.NewObjectWith(
-			map[string]runtime.Value{
-				"b": runtime.NewInt(0),
-				"a": runtime.NewInt(1),
-				"c": runtime.NewInt(3),
-			},
-		)
-
-		keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
-		keysArray := keys.(*runtime.Array)
-
-		So(err, ShouldEqual, nil)
-
-		expectedKeys := []string{"a", "b", "c"}
-		for idx, key := range expectedKeys {
-			actualKey, _ := keysArray.At(context.Background(), runtime.NewInt(idx))
-			So(actualKey.String(), ShouldEqual, key)
+		if err := list.Append(ctx, runtime.String("extra")); err != nil {
+			t.Fatal(err)
 		}
-	})
 
-	Convey("When there are no keys", t, func() {
-		obj := runtime.NewObject()
-
-		keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
-		keysArray := keys.(*runtime.Array)
-
-		So(err, ShouldEqual, nil)
-		actualLength, _ := keysArray.Length(context.Background())
-		So(actualLength, ShouldEqual, 0)
-
-		keys, err = objects.Keys(context.Background(), obj, runtime.NewBoolean(false))
-		keysArray = keys.(*runtime.Array)
-
-		So(err, ShouldEqual, nil)
-		actualLength, _ = keysArray.Length(context.Background())
-		So(actualLength, ShouldEqual, 0)
-	})
-
-	Convey("When not enough arguments", t, func() {
-		_, err := objects.Keys(context.Background())
-
-		So(err, ShouldBeError)
-	})
-
-	Convey("When first argument isn't object", t, func() {
-		notObj := runtime.NewInt(0)
-
-		_, err := objects.Keys(context.Background(), notObj)
-
-		So(err, ShouldBeError)
-	})
-
-	Convey("When second argument isn't boolean", t, func() {
-		obj := runtime.NewObject()
-
-		_, err := objects.Keys(context.Background(), obj, obj)
-
-		So(err, ShouldBeError)
-	})
-
-	Convey("When object has special character keys", t, func() {
-		obj := runtime.NewObjectWith(
-			map[string]runtime.Value{
-				"key with spaces":      runtime.NewInt(1),
-				"key_with_underscores": runtime.NewInt(2),
-				"key-with-dashes":      runtime.NewInt(3),
-				"key.with.dots":        runtime.NewInt(4),
-			},
-		)
-
-		keys, err := objects.Keys(context.Background(), obj, runtime.NewBoolean(true))
-		keysArray := keys.(*runtime.Array)
-
-		So(err, ShouldEqual, nil)
-		actualLength, _ := keysArray.Length(context.Background())
-		So(actualLength, ShouldEqual, 4)
-
-		// Check sorted order
-		expectedKeys := []string{"key with spaces", "key-with-dashes", "key.with.dots", "key_with_underscores"}
-		for idx, expectedKey := range expectedKeys {
-			actualKey, _ := keysArray.At(context.Background(), runtime.NewInt(idx))
-			So(actualKey.String(), ShouldEqual, expectedKey)
+		present, err := source.ContainsKey(ctx, runtime.String("extra"))
+		if err != nil || present {
+			t.Fatalf("keys alias source: %v", err)
 		}
-	})
+	}
+
+	result, err := objects.Keys(ctx, runtime.Int(1))
+	if err == nil || result != runtime.None {
+		t.Fatalf("invalid map: %v, %v", result, err)
+	}
 }

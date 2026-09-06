@@ -10,22 +10,22 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestMergeRecursive(t *testing.T) {
+func TestMergeDeep(t *testing.T) {
 	Convey("Wrong arguments", t, func() {
 		Convey("It should error when 0 arguments", func() {
-			actual, err := objects.MergeRecursive(context.Background())
+			actual, err := objects.MergeDeep(context.Background())
 
 			So(err, ShouldBeError)
 			So(compareValues(actual, runtime.None), ShouldEqual, 0)
 		})
 
 		Convey("It should error when there is not object arguments", func() {
-			actual, err := objects.MergeRecursive(context.Background(), runtime.NewInt(0))
+			actual, err := objects.MergeDeep(context.Background(), runtime.NewInt(0))
 
 			So(err, ShouldBeError)
 			So(compareValues(actual, runtime.None), ShouldEqual, 0)
 
-			actual, err = objects.MergeRecursive(context.Background(),
+			actual, err = objects.MergeDeep(context.Background(),
 				runtime.NewInt(0), runtime.NewObject(),
 			)
 
@@ -46,7 +46,7 @@ func TestMergeRecursive(t *testing.T) {
 			},
 		)
 
-		actual, err := objects.MergeRecursive(context.Background(), obj)
+		actual, err := objects.MergeDeep(context.Background(), obj)
 
 		So(err, ShouldBeNil)
 		So(compareValues(actual, expected), ShouldEqual, 0)
@@ -75,7 +75,7 @@ func TestMergeRecursive(t *testing.T) {
 				},
 			)
 
-			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
+			actual, err := objects.MergeDeep(context.Background(), obj1, obj2)
 
 			So(err, ShouldBeNil)
 			So(compareValues(actual, expected), ShouldEqual, 0)
@@ -102,7 +102,7 @@ func TestMergeRecursive(t *testing.T) {
 				},
 			)
 
-			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
+			actual, err := objects.MergeDeep(context.Background(), obj1, obj2)
 
 			So(err, ShouldBeNil)
 			So(compareValues(actual, expected), ShouldEqual, 0)
@@ -133,7 +133,7 @@ func TestMergeRecursive(t *testing.T) {
 				},
 			)
 
-			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
+			actual, err := objects.MergeDeep(context.Background(), obj1, obj2)
 			actualObj := actual.(*runtime.Object)
 
 			So(err, ShouldBeNil)
@@ -169,7 +169,7 @@ func TestMergeRecursive(t *testing.T) {
 				},
 			)
 
-			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
+			actual, err := objects.MergeDeep(context.Background(), obj1, obj2)
 			actualObj := actual.(*runtime.Object)
 
 			So(err, ShouldBeNil)
@@ -218,7 +218,7 @@ func TestMergeRecursive(t *testing.T) {
 				},
 			)
 
-			actual, err := objects.MergeRecursive(context.Background(), obj1, obj2)
+			actual, err := objects.MergeDeep(context.Background(), obj1, obj2)
 			actualObj := actual.(*runtime.Object)
 
 			So(err, ShouldBeNil)
@@ -255,7 +255,7 @@ func TestMergeRecursive(t *testing.T) {
 					"arr": arr,
 				})
 
-			actual, err := objects.MergeRecursive(context.Background(), obj)
+			actual, err := objects.MergeDeep(context.Background(), obj)
 
 			So(err, ShouldBeNil)
 
@@ -280,7 +280,7 @@ func TestMergeRecursive(t *testing.T) {
 					"obj": nested,
 				})
 
-			actual, err := objects.MergeRecursive(context.Background(), obj)
+			actual, err := objects.MergeDeep(context.Background(), obj)
 
 			So(err, ShouldBeNil)
 

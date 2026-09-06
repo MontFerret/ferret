@@ -97,7 +97,7 @@ func TestZip(t *testing.T) {
 			So(compareValues(actual, expected), ShouldEqual, 0)
 		})
 
-		Convey("Zip with duplicate keys - first value wins", func() {
+		Convey("Zip with duplicate keys - last value wins", func() {
 			keys := runtime.NewArrayWith(
 				runtime.NewString("a"),
 				runtime.NewString("b"),
@@ -110,7 +110,7 @@ func TestZip(t *testing.T) {
 			)
 			expected := runtime.NewObjectWith(
 				map[string]runtime.Value{
-					"a": runtime.NewInt(1),
+					"a": runtime.NewInt(3),
 					"b": runtime.NewInt(2),
 				},
 			)

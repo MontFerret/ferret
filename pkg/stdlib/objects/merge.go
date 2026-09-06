@@ -6,68 +6,33 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// merge merge the given objects into a single object.
-// @param objects {Map, repeated} Maps to merge.
-// @return {Map} Map created by merging.
+// Merge copies maps into an independent destination; later values replace earlier values.
+// @param values {Map|Map[], repeated} Variadic maps, or one list of maps.
+// @return {Map} Shallow merge with cloned or copied values.
 func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
-		return runtime.None, err
-	}
-
-	var objs runtime.List
-
-	if len(args) == 1 {
-		arr, ok := args[0].(runtime.List)
-
-		if ok {
-			objs = arr
-		}
-	}
-
-	if objs == nil {
-		objs = runtime.NewArrayWith(args...)
-	}
-
-	if err := runtime.AssertItemsOf(ctx, objs, runtime.AssertMap); err != nil {
-		return runtime.None, err
-	}
-
-	merged, err := mergeMaps(ctx, objs)
-	if err != nil {
-		return runtime.None, err
-	}
-
-	cloned, err := runtime.CloneOrCopy(ctx, merged)
-	if err != nil {
-		return runtime.None, err
-	}
-
-	return cloned, nil
+	return mergeObjects(ctx, args, runtime.MergeMapsInto)
 }
 
-func mergeMaps(ctx context.Context, arr runtime.List) (runtime.Map, error) {
-	var obj runtime.Map
-
-	first, err := arr.First(ctx)
-
+func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(context.Context, runtime.Map, ...runtime.Map) error) (runtime.Value, error) {
+	sources, listForm, err := normalizeMergeArgs(ctx, args)
 	if err != nil {
-		return nil, err
+		return runtime.None, err
 	}
 
-	if first == nil || first == runtime.None {
+	if len(sources) == 0 {
 		return runtime.NewObject(), nil
 	}
 
-	firstMap := first.(runtime.Map)
-	merged, err := firstMap.Empty(ctx)
-
+	dst, err := sources[0].Empty(ctx)
 	if err != nil {
-		return runtime.NewObject(), err
+		return runtime.None, mergeArgumentError(err, 0, listForm)
 	}
 
-	return merged, arr.ForEach(ctx, func(c context.Context, arrValue runtime.Value, arrIdx runtime.Int) (runtime.Boolean, error) {
-		obj = arrValue.(runtime.Map)
+	for index, src := range sources {
+		if err := mergeInto(ctx, dst, src); err != nil {
+			return runtime.None, mergeArgumentError(err, index, listForm)
+		}
+	}
 
-		return true, merged.Merge(ctx, obj)
-	})
+	return dst, nil
 }
