@@ -2,147 +2,58 @@ package strings_test
 
 import (
 	"context"
+	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
-	. "github.com/smartystreets/goconvey/convey"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
-type testCase struct {
-	Name      string
-	Expected  string
-	Format    string
-	Args      []runtime.Value
-	ShouldErr bool
-}
+func TestFmtGrammar(t *testing.T) {
+	for _, tc := range []struct {
+		template, want string
+		args           []runtime.Value
+	}{
+		{template: "", want: "", args: nil}, {template: "literal", want: "literal", args: nil}, {template: "{{}}", want: "{}", args: nil},
+		{template: "{} {}", want: "é 42", args: []runtime.Value{runtime.String("é"), runtime.Int(42)}},
+		{template: "{1}: {0} {1}", want: "42: 😀 42", args: []runtime.Value{runtime.String("😀"), runtime.Int(42)}},
+		{template: "{{{0}}}", want: "{x}", args: []runtime.Value{runtime.String("x")}},
+		{template: "{00}{0}", want: "xx", args: []runtime.Value{runtime.String("x")}},
+		{template: "{}", want: "{}", args: []runtime.Value{runtime.String("{}")}},
+		{template: "{}", want: "[1]", args: []runtime.Value{runtime.NewArrayWith(runtime.Int(1))}},
+	} {
+		t.Run(tc.template, func(t *testing.T) {
+			args := append([]runtime.Value{runtime.String(tc.template)}, tc.args...)
+			got, err := strings.Fmt(context.Background(), args...)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-func TestFmt(t *testing.T) {
-	tcs := []*testCase{
-		&testCase{
-			Name:     `FMT("{}", 1) return "1"`,
-			Expected: "1",
-			Format:   "{}",
-			Args: []runtime.Value{
-				runtime.NewInt(1),
-			},
-		},
-		&testCase{
-			Name:     `FMT("{1} {} {0} {}", 1, 2) return "2 1 1 2"`,
-			Expected: "2 1 1 2",
-			Format:   "{1} {} {0} {}",
-			Args: []runtime.Value{
-				runtime.NewInt(1),
-				runtime.NewInt(2),
-			},
-		},
-		&testCase{
-			Name:     `FMT("{1} {} {0} {} {}", 1, 2, 3) return "2 1 1 2 3"`,
-			Expected: "2 1 1 2 3",
-			Format:   "{1} {} {0} {} {}",
-			Args: []runtime.Value{
-				runtime.NewInt(1),
-				runtime.NewInt(2),
-				runtime.NewInt(3),
-			},
-		},
-		&testCase{
-			Name:     `FMT("{2}{1} {0}", "World!", ",", "Hello") return "Hello, World!"`,
-			Expected: "Hello, World!",
-			Format:   "{2}{1} {0}",
-			Args: []runtime.Value{
-				runtime.NewString("World!"),
-				runtime.NewString(","),
-				runtime.NewString("Hello"),
-			},
-		},
-		&testCase{
-			Name:     `FMT({}, {key:"value"}) return "{"key":"value"}"`,
-			Expected: `{"key":"value"}`,
-			Format:   "{}",
-			Args: []runtime.Value{
-				runtime.NewObjectWith(
-					map[string]runtime.Value{
-						"key": runtime.NewString("value"),
-					},
-				),
-			},
-		},
-		&testCase{
-			Name:     `FMT({}, {key:"value"}) return "{"key":"value"}"`,
-			Expected: `{"key":"value","yek":"eulav"}`,
-			Format:   "{}",
-			Args: []runtime.Value{
-				runtime.NewObjectWith(
-					map[string]runtime.Value{
-						"key": runtime.NewString("value"),
-						"yek": runtime.NewString("eulav"),
-					},
-				),
-			},
-		},
-		&testCase{
-			Name:     `FMT("string") return "string"`,
-			Expected: "string",
-			Format:   "string",
-		},
-		&testCase{
-			Name:     `FMT("string") return "string"`,
-			Expected: "string",
-			Format:   "string",
-			Args: []runtime.Value{
-				runtime.NewInt(1),
-			},
-		},
-		&testCase{
-			Name:      `FMT("{}") return error`,
-			Format:    "{}",
-			Args:      []runtime.Value{},
-			ShouldErr: true,
-		},
-		&testCase{
-			Name:   `FMT("{1}", 10) return error`,
-			Format: "{1}",
-			Args: []runtime.Value{
-				runtime.NewInt(10),
-			},
-			ShouldErr: true,
-		},
-		&testCase{
-			Name:   `FMT("{1} {} {0} {}", 1, 2, 3) return error`,
-			Format: "{1} {} {0} {}",
-			Args: []runtime.Value{
-				runtime.NewInt(1),
-				runtime.NewInt(2),
-				runtime.NewInt(3),
-			},
-			ShouldErr: true,
-		},
+			if !reflect.DeepEqual(runtime.String(tc.want), got) {
+				t.Fatalf("got %#v, want %#v", got, runtime.String(tc.want))
+			}
+		})
 	}
 
-	for _, tc := range tcs {
-		tc.Do(t)
-	}
-}
-
-func (tc *testCase) Do(t *testing.T) {
-	Convey(tc.Name, t, func() {
-		var expected runtime.Value = runtime.NewString(tc.Expected)
-
-		args := []runtime.Value{runtime.NewString(tc.Format)}
-		args = append(args, tc.Args...)
-
-		formatted, err := strings.Fmt(context.Background(), args...)
-
-		if tc.ShouldErr {
-			So(err, ShouldBeError)
-			expected = runtime.None
-		} else {
-			So(err, ShouldBeNil)
+	for _, args := range [][]runtime.Value{
+		nil, {runtime.Int(1)}, {runtime.String("{}")},
+		{runtime.String("literal"), runtime.Int(1)},
+		{runtime.String("{1}"), runtime.Int(1), runtime.Int(2)},
+		{runtime.String("{0} {}"), runtime.Int(1)},
+		{runtime.String("{} {0}"), runtime.Int(1)},
+		{runtime.String("{0}"), runtime.Int(1), runtime.Int(2)},
+	} {
+		_, err := strings.Fmt(context.Background(), args...)
+		if err == nil {
+			t.Fatal("expected an error")
 		}
+	}
 
-		So(formatted, ShouldEqual, expected)
-	})
+	for _, template := range []string{"{", "}", "{x}", "{-1}", "{ 0}", "{0:2}", "{{}", "{0}{", "{9999999999999999999999999999999999999999}"} {
+		_, err := strings.Fmt(context.Background(), runtime.String(template), runtime.Int(1))
+		if !errors.Is(err, runtime.ErrInvalidArgument) {
+			t.Fatalf("error = %v, want %v", err, runtime.ErrInvalidArgument)
+		}
+	}
 }

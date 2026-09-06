@@ -124,7 +124,7 @@ func TestPathTraversalVulnerability(t *testing.T) {
 
 	_, err = engine.Run(context.Background(), source.NewAnonymous(fmt.Sprintf(`
 LET response = IO::NET::HTTP::GET({url: "%s/api/articles"})
-LET articles = JSON_PARSE(TO_STRING(response))
+LET articles = ENCODING::JSON_PARSE(TO_STRING(response))
 
 FOR article IN articles
     LET path = "%s/" + article.name + ".txt"

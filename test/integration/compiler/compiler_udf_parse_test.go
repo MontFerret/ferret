@@ -33,7 +33,7 @@ func TestUdfMemberStatementsParse(t *testing.T) {
 FUNC PARSE_PRICE(product) {
   LET priceNode = QUERY ONE ".product-price" IN product USING css
   LET priceText = priceNode.attributes["data-price"]
-  LET price = TO_FLOAT(SUBSTITUTE(priceText, "$", ""))
+  LET price = TO_FLOAT(REPLACE(priceText, "$", ""))
   RETURN price
 }
 RETURN PARSE_PRICE({})

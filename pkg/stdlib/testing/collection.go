@@ -109,7 +109,7 @@ var (
 			value := args[0]
 			expression := args[1]
 
-			out, err := stdlibstrings.RegexTest(ctx, value, expression)
+			out, err := stdlibstrings.RegexTest(ctx, runtime.ToString(value), expression)
 			if err != nil {
 				return false, err
 			}

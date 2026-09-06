@@ -7,26 +7,25 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
-func TestSubstitute(t *testing.T) {
+func TestReplace(t *testing.T) {
 	Convey("When args are not passed", t, func() {
 		Convey("It should return an error", func() {
 			var err error
-			_, err = strings.Substitute(context.Background())
+			_, err = strings.Replace(context.Background())
 
 			So(err, ShouldBeError)
 
-			_, err = strings.Substitute(context.Background(), runtime.NewString("foo"))
+			_, err = strings.Replace(context.Background(), runtime.NewString("foo"))
 
 			So(err, ShouldBeError)
 		})
 	})
 
-	Convey("Substitute('foo-bar-baz', 'a', 'o') should return 'foo-bor-boz'", t, func() {
-		out, err := strings.Substitute(
+	Convey("Replace('foo-bar-baz', 'a', 'o') should return 'foo-bor-boz'", t, func() {
+		out, err := strings.Replace(
 			context.Background(),
 			runtime.NewString("foo-bar-baz"),
 			runtime.NewString("a"),
@@ -37,8 +36,8 @@ func TestSubstitute(t *testing.T) {
 		So(out.String(), ShouldEqual, "foo-bor-boz")
 	})
 
-	Convey("Substitute('foo-bar-baz', 'a', 'o', 1) should return 'foo-bor-baz'", t, func() {
-		out, err := strings.Substitute(
+	Convey("Replace('foo-bar-baz', 'a', 'o', 1) should return 'foo-bor-baz'", t, func() {
+		out, err := strings.Replace(
 			context.Background(),
 			runtime.NewString("foo-bar-baz"),
 			runtime.NewString("a"),

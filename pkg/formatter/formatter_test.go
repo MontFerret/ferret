@@ -565,3 +565,14 @@ func TestFormatter_WaitForPredicateRepeatedWhenRemainsParseable(t *testing.T) {
 		t.Fatalf("formatted output must remain parseable: %v\nformatted:\n%s", err, out)
 	}
 }
+
+func TestFormatterPreservesBase64Identifier(t *testing.T) {
+	var output bytes.Buffer
+	if err := mustNewFormatter(t).Format(&output, source.NewAnonymous(`RETURN ENCODING::BASE64_ENCODE(value1_bytes)`)); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := output.String(), "return ENCODING::BASE64_ENCODE(value1_bytes)"; got != want {
+		t.Fatalf("formatted query = %q, want %q", got, want)
+	}
+}

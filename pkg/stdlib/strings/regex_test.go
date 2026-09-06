@@ -2,153 +2,190 @@ package strings_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"reflect"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/smarty/assertions"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 )
 
-func TestRegexMatch(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.RegexMatch(context.Background())
+func TestRegexMatchShapes(t *testing.T) {
+	for _, tc := range []struct{ text, pattern, want string }{
+		{text: "abc", pattern: "b", want: `{"match":"b","groups":[],"named":{}}`},
+		{text: "é😀", pattern: "(?P<letter>é)(😀)?", want: `{"match":"é😀","groups":["é","😀"],"named":{"letter":"é"}}`},
+		{text: "é", pattern: "(?P<letter>é)(😀)?", want: `{"match":"é","groups":["é",""],"named":{"letter":"é"}}`},
+		{text: "ab", pattern: "(?P<x>a)(?P<y>b)", want: `{"match":"ab","groups":["a","b"],"named":{"x":"a","y":"b"}}`},
+		{text: "ab", pattern: "(?P<x>a)(?P<X>b)", want: `{"match":"ab","groups":["a","b"],"named":{"x":"a","X":"b"}}`},
+		{text: "ab", pattern: "(a)(b)", want: `{"match":"ab","groups":["a","b"],"named":{}}`},
+		{text: "b", pattern: "(?P<x>a)?(b)", want: `{"match":"b","groups":["","b"],"named":{"x":""}}`},
+		{text: "ABC", pattern: "(?i)(abc)", want: `{"match":"ABC","groups":["ABC"],"named":{}}`},
+		{text: "", pattern: "", want: "{\"match\":\"\",\"groups\":[],\"named\":{}}"},
+	} {
+		for _, fn := range []struct {
+			run        func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error)
+			name, want string
+		}{
+			{name: "find", run: strings.RegexFind, want: tc.want},
+			{name: "find_all", run: strings.RegexFindAll, want: "[" + tc.want + "]"},
+		} {
+			t.Run(fn.name+"/"+tc.pattern, func(t *testing.T) {
+				got, err := fn.run(context.Background(), runtime.String(tc.text), runtime.String(tc.pattern))
+				if err != nil {
+					t.Fatal(err)
+				}
 
-			So(err, ShouldBeError)
+				if message := assertions.ShouldEqualJSON(got.String(), fn.want); message != "" {
+					t.Fatal(message)
+				}
+			})
+		}
+	}
 
-			_, err = strings.RegexMatch(context.Background(), runtime.NewString(""))
+	got, err := strings.RegexFind(context.Background(), runtime.String("a"), runtime.String("z"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-			So(err, ShouldBeError)
-		})
-	})
+	if !reflect.DeepEqual(runtime.None, got) {
+		t.Fatalf("got %#v, want %#v", got, runtime.None)
+	}
 
-	Convey("Should match with case insensitive regexp", t, func() {
-		out, err := strings.RegexMatch(
-			context.Background(),
-			runtime.NewString("My-us3r_n4m3"),
-			runtime.NewString("[a-z0-9_-]{3,16}$"),
-			runtime.True,
-		)
+	for _, tc := range []struct{ text, pattern, want string }{
+		{text: "é😀 é", pattern: "(?P<letter>é)(?P<emoji>😀)?", want: `[{"match":"é😀","groups":["é","😀"],"named":{"letter":"é","emoji":"😀"}},{"match":"é","groups":["é",""],"named":{"letter":"é","emoji":""}}]`},
+		{text: "aba", pattern: "a", want: `[{"match":"a","groups":[],"named":{}},{"match":"a","groups":[],"named":{}}]`},
+		{text: "aba", pattern: "z", want: "[]"}, {text: "aaa", pattern: "aa", want: `[{"match":"aa","groups":[],"named":{}}]`},
+		{text: "é", pattern: "", want: `[{"match":"","groups":[],"named":{}},{"match":"","groups":[],"named":{}}]`},
+		{text: "a", pattern: "a*", want: `[{"match":"a","groups":[],"named":{}}]`},
+	} {
+		got, err := strings.RegexFindAll(context.Background(), runtime.String(tc.text), runtime.String(tc.pattern))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		So(err, ShouldBeNil)
-		So(out.String(), ShouldEqual, `["My-us3r_n4m3"]`)
-	})
+		if message := assertions.ShouldEqualJSON(got.String(), tc.want); message != "" {
+			t.Fatal(message)
+		}
+	}
 
-	Convey("Should match with case sensitive regexp", t, func() {
-		out, err := strings.RegexMatch(
-			context.Background(),
-			runtime.NewString("john@doe.com"),
-			runtime.NewString(`([a-z0-9_\.-]+)@([\da-z-]+)\.([a-z\.]{2,6})$`),
-		)
+	got, err = strings.RegexTest(context.Background(), runtime.String("ABC"), runtime.String("(?i)abc"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		So(err, ShouldBeNil)
-		So(out.String(), ShouldEqual, `["john@doe.com","john","doe","com"]`)
-	})
+	if !reflect.DeepEqual(runtime.True, got) {
+		t.Fatalf("got %#v, want %#v", got, runtime.True)
+	}
+
+	got, err = strings.RegexTest(context.Background(), runtime.String("ABC"), runtime.String("abc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(runtime.False, got) {
+		t.Fatalf("got %#v, want %#v", got, runtime.False)
+	}
+
+	got, err = strings.RegexReplace(context.Background(), runtime.String("a1 a2"), runtime.String("(?P<letter>a)([0-9])"), runtime.String("${letter}:$2:$$"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(runtime.String("a:1:$ a:2:$"), got) {
+		t.Fatalf("got %#v, want %#v", got, runtime.String("a:1:$ a:2:$"))
+	}
+
+	got, err = strings.RegexReplace(context.Background(), runtime.String("é"), runtime.String(""), runtime.String("x"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(runtime.String("xéx"), got) {
+		t.Fatalf("got %#v, want %#v", got, runtime.String("xéx"))
+	}
 }
 
-func TestRegexSplit(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.RegexSplit(context.Background())
+func TestRegexDuplicateNamedCaptures(t *testing.T) {
+	for _, fn := range []struct {
+		run  func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error)
+		name string
+	}{
+		{name: "find", run: strings.RegexFind},
+		{name: "find_all", run: strings.RegexFindAll},
+	} {
+		for _, tc := range []struct{ text, pattern, duplicate string }{
+			{text: "ab", pattern: `(?P<value>a)(?P<value>b)`, duplicate: "value"},
+			{text: "b", pattern: `(?P<value>a)?(?P<value>b)`, duplicate: "value"},
+			{text: "b", pattern: `(?P<value>a)|(?P<value>b)`, duplicate: "value"},
+			{text: "z", pattern: `(?P<value>a)(?P<value>b)`, duplicate: "value"},
+			{text: "", pattern: `(?P<value>a)(?P<value>b)`, duplicate: "value"},
+			{text: "ab", pattern: `(?<value>a)(?<value>b)`, duplicate: "value"},
+			{text: "abcd", pattern: `(?P<z>a)(?P<a>b)(?P<z>c)(?P<a>d)`, duplicate: "z"},
+		} {
+			t.Run(fn.name+"/"+tc.pattern+"/"+tc.text, func(t *testing.T) {
+				got, err := fn.run(context.Background(), runtime.String(tc.text), runtime.String(tc.pattern))
+				if !errors.Is(err, runtime.ErrInvalidArgument) {
+					t.Fatalf("value = %v, error = %v, want invalid argument", got, err)
+				}
 
-			So(err, ShouldBeError)
+				position, ok, cause := runtime.InvalidArgumentDetails(err)
+				if !ok || position != 1 || cause == nil {
+					t.Fatalf("argument details = (%d, %t, %v), want pattern argument", position, ok, cause)
+				}
 
-			_, err = strings.RegexSplit(context.Background(), runtime.NewString(""))
+				if want := fmt.Sprintf("duplicate named capture group %q", tc.duplicate); cause.Error() != want {
+					t.Fatalf("cause = %q, want %q", cause, want)
+				}
 
-			So(err, ShouldBeError)
-		})
-	})
-
-	Convey("Should split with regexp", t, func() {
-		out, err := strings.RegexSplit(
-			context.Background(),
-			runtime.NewString("This is a line.\n This is yet another line\r\n This again is a line.\r Mac line "),
-			runtime.NewString(`\.?(\n|\r)`),
-		)
-
-		So(err, ShouldBeNil)
-		So(out.String(), ShouldEqual, `["This is a line"," This is yet another line",""," This again is a line"," Mac line "]`)
-	})
-
-	Convey("Should preserve limit and ignored fourth argument behavior", t, func() {
-		out, err := strings.RegexSplit(
-			context.Background(),
-			runtime.NewString("a,b,c"),
-			runtime.NewString(","),
-			runtime.NewInt(2),
-			runtime.True,
-		)
-
-		So(err, ShouldBeNil)
-		So(out.String(), ShouldEqual, `["a","b,c"]`)
-	})
+				if got != runtime.None {
+					t.Fatalf("value = %v, want None on error", got)
+				}
+			})
+		}
+	}
 }
 
-func TestRegexTest(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.RegexTest(context.Background())
+func TestRegexDuplicateNamesOutsideStructuredCaptures(t *testing.T) {
+	ctx := context.Background()
+	pattern := runtime.String(`(?P<value>a)(?P<value>b)`)
+	got, err := strings.RegexTest(ctx, runtime.String("ab"), pattern)
+	if err != nil || got != runtime.True {
+		t.Fatalf("regex_test = %v, %v, want true", got, err)
+	}
 
-			So(err, ShouldBeError)
+	got, err = strings.RegexReplace(ctx, runtime.String("ab"), pattern, runtime.String("$1:$2"))
+	if err != nil || got != runtime.String("a:b") {
+		t.Fatalf("regex_replace = %v, %v, want a:b", got, err)
+	}
 
-			_, err = strings.RegexTest(context.Background(), runtime.NewString(""))
+	got, err = strings.RegexSplit(ctx, runtime.String("xabx"), pattern)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-			So(err, ShouldBeError)
-
-		})
-	})
-
-	Convey("Should return true when matches", t, func() {
-		out, _ := strings.RegexTest(
-			context.Background(),
-			runtime.NewString("the quick brown fox"),
-			runtime.NewString("the.*fox"),
-		)
-
-		So(out, ShouldEqual, runtime.True)
-	})
+	if message := assertions.ShouldEqualJSON(got.String(), `["x","x"]`); message != "" {
+		t.Fatal(message)
+	}
 }
 
-func TestRegexReplace(t *testing.T) {
-	Convey("When args are not passed", t, func() {
-		Convey("It should return an error", func() {
-			var err error
-			_, err = strings.RegexReplace(context.Background())
+func TestRegexCompileErrors(t *testing.T) {
+	for _, fn := range []func(context.Context, runtime.Value, runtime.Value) (runtime.Value, error){strings.RegexTest, strings.RegexFind, strings.RegexFindAll} {
+		_, err := fn(context.Background(), runtime.String("text"), runtime.String("["))
+		if !errors.Is(err, runtime.ErrInvalidArgument) {
+			t.Fatalf("error = %v, want %v", err, runtime.ErrInvalidArgument)
+		}
+	}
 
-			So(err, ShouldBeError)
+	_, err := strings.RegexReplace(context.Background(), runtime.String("text"), runtime.String("["), runtime.String(""))
+	if !errors.Is(err, runtime.ErrInvalidArgument) {
+		t.Fatalf("error = %v, want %v", err, runtime.ErrInvalidArgument)
+	}
 
-			_, err = strings.RegexReplace(context.Background(), runtime.NewString(""))
-
-			So(err, ShouldBeError)
-
-			_, err = strings.RegexReplace(context.Background(), runtime.NewString(""), runtime.NewString(""))
-
-			So(err, ShouldBeError)
-		})
-	})
-
-	Convey("Should replace with regexp", t, func() {
-		out, _ := strings.RegexReplace(
-			context.Background(),
-			runtime.NewString("the quick brown fox"),
-			runtime.NewString("the.*fox"),
-			runtime.NewString("jumped over"),
-		)
-
-		So(out.String(), ShouldEqual, "jumped over")
-
-		out, _ = strings.RegexReplace(
-			context.Background(),
-			runtime.NewString("the quick brown fox"),
-			runtime.NewString("o"),
-			runtime.NewString("i"),
-		)
-
-		So(out.String(), ShouldEqual, "the quick briwn fix")
-	})
+	_, err = strings.RegexSplit(context.Background(), runtime.String("text"), runtime.String("["), runtime.Int(0))
+	if !errors.Is(err, runtime.ErrInvalidArgument) {
+		t.Fatalf("error = %v, want %v", err, runtime.ErrInvalidArgument)
+	}
 }

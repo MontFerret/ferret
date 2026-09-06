@@ -6,8 +6,8 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// concat concatenates one or more instances of String, or an arrayList.
-// @param src {String, repeated | String[]} The source string / array.
+// concat concatenates values using their string representations. With one List argument, concatenates its elements. None contributes no text; nested lists are not flattened.
+// @param src {Any, repeated} Values to concatenate, or a single List of values.
 // @return {String} A string value.
 func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
@@ -20,7 +20,6 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	if argsCount == 1 {
 		argv, ok := args[0].(runtime.List)
-
 		if ok {
 			err := argv.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 				res = res.Concat(value)
@@ -38,58 +37,6 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 	for _, str := range args {
 		res = res.Concat(str)
-	}
-
-	return res, nil
-}
-
-// concat_separator concatenates one or more instances of String, or an arrayList with a given separator.
-// @param separator {String} The separator string.
-// @param src {String, repeated | String[]} The source string / array.
-// @return {String} Concatenated string.
-func ConcatWithSeparator(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	err := runtime.ValidateArgs(args, 2, runtime.MaxArgs)
-
-	if err != nil {
-		return runtime.EmptyString, err
-	}
-
-	separator, ok := args[0].(runtime.String)
-
-	if !ok {
-		separator = runtime.NewString(separator.String())
-	}
-
-	res := runtime.EmptyString
-
-	for idx, arg := range args[1:] {
-		switch argv := arg.(type) {
-		case runtime.List:
-			err = argv.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-				if value != runtime.None {
-					if idx > 0 {
-						res = res.Concat(separator)
-					}
-
-					res = res.Concat(value)
-				}
-
-				return true, nil
-			})
-
-			if err != nil {
-				return runtime.None, err
-			}
-		default:
-			if argv != runtime.None {
-				if idx > 0 {
-					res = res.Concat(separator)
-				}
-
-				res = res.Concat(argv)
-			}
-
-		}
 	}
 
 	return res, nil

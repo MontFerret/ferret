@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -63,7 +64,55 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 	assertExactTopology(t, functions, first.Reference)
 	assertSorted(t, first.Reference)
 	assertCatalog(t, first.Reference, first.Catalog)
+	assertPathNamespace(t, first.Reference, first.Catalog)
 	assertTestingAssertionMetadata(t, first.Reference)
+}
+
+func assertPathNamespace(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {
+	t.Helper()
+
+	want := []string{"base", "clean", "dir", "ext", "is_abs", "join", "match", "separate"}
+	var names []string
+	for _, namespace := range reference.Namespaces {
+		for _, function := range namespace.Functions {
+			if namespace.Name == "path" {
+				names = append(names, function.Name)
+			}
+
+			if namespace.Name == "" && slices.Contains(want, function.Name) {
+				if function.Name != "join" {
+					t.Fatalf("obsolete global PATH function %s appears in the API reference", function.Name)
+				}
+
+				if len(function.Signatures) != 1 || !hasSignature(function.Signatures, 2, false) {
+					t.Fatal("global join must retain only the binary string signature")
+				}
+			}
+		}
+	}
+
+	if !reflect.DeepEqual(names, want) {
+		t.Fatalf("API path functions = %v, want %v", names, want)
+	}
+
+	names = nil
+	for _, category := range catalog.Categories {
+		if category.ID != "path" {
+			continue
+		}
+
+		for _, function := range category.Functions {
+			if function.Namespace != "path" {
+				t.Fatalf("PATH catalog function %s has namespace %q", function.Name, function.Namespace)
+			}
+
+			names = append(names, function.Name)
+		}
+	}
+
+	if !reflect.DeepEqual(names, want) {
+		t.Fatalf("catalog path functions = %v, want %v", names, want)
+	}
 }
 
 func assertTestingAssertionMetadata(t *testing.T, reference *api.Reference) {
@@ -176,7 +225,7 @@ func assertCatalog(t *testing.T, reference *api.Reference, catalog *apicatalog.C
 		}
 	}
 
-	wantCategories := []string{"arrays", "collections", "datetime", "io", "math", "objects", "path", "strings", "testing", "types", "utils"}
+	wantCategories := []string{"arrays", "collections", "crypto", "datetime", "encoding", "io", "math", "objects", "path", "strings", "testing", "types", "utils"}
 	if !reflect.DeepEqual(categoryIDs, wantCategories) {
 		t.Fatalf("categories = %v, want %v", categoryIDs, wantCategories)
 	}

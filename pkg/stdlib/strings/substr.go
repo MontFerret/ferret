@@ -8,8 +8,8 @@ import (
 
 // substring returns a substring of value.
 // @param str {String} The source string.
-// @param offset {Int} Start at offset, offsets start at position 0.
-// @param length {Int} At most length characters, omit to get the substring from offset to the end of the string.
+// @param offset {Int} Zero-based rune offset. Negative or out-of-range offsets return an empty string.
+// @param length {Int} Non-negative maximum rune count; omitted means the rest of the string.
 // @return {String} A substring of value.
 func Substring(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
@@ -25,7 +25,7 @@ func Substring(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 
 // substring returns a substring of value.
 // @param str {String} The source string.
-// @param offset {Int} Start at offset, offsets start at position 0.
+// @param offset {Int} Zero-based rune offset. Negative or out-of-range offsets return an empty string.
 // @return {String} A substring of value.
 func substring2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return substring(ctx, arg1, arg2, runtime.None, false)
@@ -33,93 +33,82 @@ func substring2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, e
 
 // substring returns a substring of value.
 // @param str {String} The source string.
-// @param offset {Int} Start at offset, offsets start at position 0.
-// @param length {Int} At most length characters, omit to get the substring from offset to the end of the string.
+// @param offset {Int} Zero-based rune offset. Negative or out-of-range offsets return an empty string.
+// @param length {Int} Non-negative maximum rune count; omitted means the rest of the string.
 // @return {String} A substring of value.
 func substring3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return substring(ctx, arg1, arg2, arg3, true)
 }
 
 func substring(_ context.Context, arg1, arg2, arg3 runtime.Value, hasLength bool) (runtime.Value, error) {
-	offsetArg, err := runtime.CastArg[runtime.Int](arg2, 1)
-
+	text, offset, err := runtime.CastArgs2[runtime.String, runtime.Int](arg1, arg2)
 	if err != nil {
-		return runtime.EmptyString, err
+		return runtime.None, err
 	}
 
-	text := arg1.String()
 	runes := []rune(text)
-	size := len(runes)
-	offset := int(offsetArg)
-	length := size
-
+	length := runtime.Int(len(runes))
 	if hasLength {
-		length = int(runtime.CastOr[runtime.Int](arg3, runtime.Int(size)))
+		length, err = runtime.CastArg[runtime.Int](arg3, 2)
+		if err != nil {
+			return runtime.None, err
+		}
+
+		if length < 0 {
+			return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "length must be non-negative"), 2)
+		}
 	}
 
-	// Handle edge cases for bounds checking
-	if offset < 0 || offset >= size {
-		return runtime.NewString(""), nil
+	if offset < 0 || offset >= runtime.Int(len(runes)) {
+		return runtime.EmptyString, nil
 	}
 
-	if length <= 0 {
-		return runtime.NewString(""), nil
-	}
+	// Clamp before addition and conversion, including on 32-bit platforms.
+	length = min(length, runtime.Int(len(runes))-offset)
 
-	var substr []rune
-	end := offset + length
-
-	// Ensure end doesn't exceed the string size
-	if end > size {
-		end = size
-	}
-
-	substr = runes[offset:end]
-
-	return runtime.NewStringFromRunes(substr), nil
+	return runtime.NewStringFromRunes(runes[int(offset):int(offset+length)]), nil
 }
 
 // left returns the leftmost characters of the string value by index.
 // @param str {String} The source string.
-// @param length {Int} The amount of characters to return.
+// @param length {Int} Non-negative rune count, clamped to the string length.
 // @return {String} The leftmost characters of the string value by index.
 func Left(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	text := arg1.String()
+	text, length, err := runtime.CastArgs2[runtime.String, runtime.Int](arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if length < 0 {
+		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "length must be non-negative"), 1)
+	}
+
 	runes := []rune(text)
-
-	var pos int
-	length, ok := arg2.(runtime.Int)
-
-	if ok {
-		pos = int(length)
+	if length >= runtime.Int(len(runes)) {
+		return text, nil
 	}
 
-	if len(text) < pos {
-		return runtime.NewString(text), nil
-	}
-
-	return runtime.NewStringFromRunes(runes[0:pos]), nil
+	return runtime.NewStringFromRunes(runes[:int(length)]), nil
 }
 
 // right returns the rightmost characters of the string value.
 // @param str {String} The source string.
-// @param length {Int} The amount of characters to return.
+// @param length {Int} Non-negative rune count, clamped to the string length.
 // @return {String} The rightmost characters of the string value.
 func Right(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	text := arg1.String()
+	text, length, err := runtime.CastArgs2[runtime.String, runtime.Int](arg1, arg2)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if length < 0 {
+		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "length must be non-negative"), 1)
+	}
+
 	runes := []rune(text)
-	size := len(runes)
-	pos := size
-
-	length, ok := arg2.(runtime.Int)
-
-	if ok {
-		pos = int(length)
+	if length >= runtime.Int(len(runes)) {
+		return text, nil
 	}
 
-	if len(text) < pos {
-		return runtime.NewString(text), nil
-	}
-
-	return runtime.NewStringFromRunes(runes[size-pos : size]), nil
+	return runtime.NewStringFromRunes(runes[len(runes)-int(length):]), nil
 }

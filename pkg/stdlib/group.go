@@ -7,7 +7,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/collections"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/crypto"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/io/fs"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/io/net"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/math"
@@ -19,12 +21,21 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/utils"
 )
 
-// Group identifies a standard library capability group.
-type Group string
+type (
+	// Group identifies a standard library capability group.
+	Group string
+
+	groupRegistration struct {
+		register func(runtime.Namespace)
+		group    Group
+	}
+)
 
 const (
 	Types       Group = "types"
 	Strings     Group = "strings"
+	Encoding    Group = "encoding"
+	Crypto      Group = "crypto"
 	Math        Group = "math"
 	Collections Group = "collections"
 	DateTime    Group = "datetime"
@@ -38,14 +49,11 @@ const (
 	Testing     Group = "testing"
 )
 
-type groupRegistration struct {
-	register func(runtime.Namespace)
-	group    Group
-}
-
 var groupRegistrations = []groupRegistration{
 	{group: Types, register: types.RegisterLib},
 	{group: Strings, register: stdlibstrings.RegisterLib},
+	{group: Encoding, register: encoding.RegisterLib},
+	{group: Crypto, register: crypto.RegisterLib},
 	{group: Math, register: math.RegisterLib},
 	{group: Collections, register: collections.RegisterLib},
 	{group: DateTime, register: datetime.RegisterLib},
@@ -62,7 +70,7 @@ func expandGroup(group Group) ([]Group, bool) {
 	switch group {
 	case IO:
 		return []Group{FS, NET}, true
-	case Types, Strings, Math, Collections, DateTime, Arrays, Objects, FS, NET, Path, Utils, Testing:
+	case Types, Strings, Encoding, Crypto, Math, Collections, DateTime, Arrays, Objects, FS, NET, Path, Utils, Testing:
 		return []Group{group}, true
 	default:
 		return nil, false

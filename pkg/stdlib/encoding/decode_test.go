@@ -1,20 +1,20 @@
-package strings_test
+package encoding_test
 
 import (
 	"context"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
-
 	. "github.com/smartystreets/goconvey/convey"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/encoding"
 )
 
-func TestFromBase64(t *testing.T) {
+func TestBase64Decode(t *testing.T) {
 	Convey("When hash is not valid base64", t, func() {
 		Convey("It should return an error", func() {
 			var err error
-			_, err = strings.FromBase64(
+			_, err = encoding.Base64Decode(
 				context.Background(),
 				runtime.NewString("foobar"),
 			)
@@ -24,7 +24,7 @@ func TestFromBase64(t *testing.T) {
 	})
 
 	Convey("Should decode a given hash", t, func() {
-		out, err := strings.FromBase64(
+		out, err := encoding.Base64Decode(
 			context.Background(),
 			runtime.NewString("Zm9vYmFy"),
 		)
@@ -35,10 +35,10 @@ func TestFromBase64(t *testing.T) {
 	})
 }
 
-func TestDecodeURIComponent(t *testing.T) {
+func TestQueryUnescape(t *testing.T) {
 	Convey("When invalid URI encoding", t, func() {
 		Convey("It should return an error", func() {
-			_, err := strings.DecodeURIComponent(
+			_, err := encoding.QueryUnescape(
 				context.Background(),
 				runtime.NewString("invalid%uri%encoding%"),
 			)
@@ -87,7 +87,7 @@ func TestDecodeURIComponent(t *testing.T) {
 
 		for _, tC := range testCases {
 			Convey(tC.Name, func() {
-				out, err := strings.DecodeURIComponent(
+				out, err := encoding.QueryUnescape(
 					context.Background(),
 					runtime.NewString(tC.InURI),
 				)
