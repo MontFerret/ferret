@@ -78,7 +78,7 @@ func TestMatchMissingCommaDiagnosticSpan(t *testing.T) {
 
 RETURN fib(10)`
 
-	_, err := c.Compile(source.NewAnonymous(query))
+	_, err := c.Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

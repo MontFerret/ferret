@@ -50,5 +50,7 @@ func buildProgram(visitor *Visitor, src source.Source, level optimization.Level)
 		return nil, err
 	}
 
+	normalizeProgramSpans(program)
+
 	return program, nil
 }

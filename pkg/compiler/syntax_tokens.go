@@ -10,7 +10,7 @@ import (
 )
 
 func buildSyntaxTokens(src source.Source, tokens []antlr.Token) []SyntaxToken {
-	byteOffsets := analysisByteOffsets(src)
+	byteOffsets := sourceByteOffsets(src)
 	out := make([]SyntaxToken, 0, len(tokens))
 
 	for _, token := range tokens {
@@ -24,7 +24,7 @@ func buildSyntaxTokens(src source.Source, tokens []antlr.Token) []SyntaxToken {
 		}
 
 		span := source.Span{Start: token.GetStart(), End: token.GetStop() + 1}
-		span = analysisByteSpan(byteOffsets, span)
+		span = sourceByteSpan(byteOffsets, span)
 
 		if span.Start < 0 || span.End <= span.Start {
 			continue

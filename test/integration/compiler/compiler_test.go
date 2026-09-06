@@ -16,7 +16,7 @@ import (
 func TestCompiler_Consts(t *testing.T) {
 	c := mustNewCompiler(t)
 
-	p, err := c.Compile(source.NewAnonymous(`VAR str = ""
+	p, err := c.Compile(t.Context(), source.NewAnonymous(`VAR str = ""
 
 str += " " + 1 + " " + 2 + " " + 3 + " " + 4 + " " + 5
 
@@ -57,7 +57,7 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			source := sources[(worker+iter)%len(sources)]
 
-			program, err := compilerInstance.Compile(source)
+			program, err := compilerInstance.Compile(t.Context(), source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
@@ -71,7 +71,7 @@ func TestCompilerCompileConcurrentSharedCompiler(t *testing.T) {
 			query := validQueries[(worker+iter)%len(validQueries)]
 			src := source.New(fmt.Sprintf("fresh_%d_%d", worker, iter), query)
 
-			program, err := compilerInstance.Compile(src)
+			program, err := compilerInstance.Compile(t.Context(), src)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
@@ -141,7 +141,7 @@ RETURN wrap()
 		runConcurrentCompileWorkers(t, workers, iterations, func(worker, iter int) error {
 			entry := sources[(worker+iter)%len(sources)]
 
-			program, err := compilerInstance.Compile(entry.source)
+			program, err := compilerInstance.Compile(t.Context(), entry.source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
@@ -159,7 +159,7 @@ RETURN wrap()
 			query := udfQueries[(worker+iter)%len(udfQueries)]
 			source := source.New(fmt.Sprintf("udf_fresh_%d_%d", worker, iter), query.query)
 
-			program, err := compilerInstance.Compile(source)
+			program, err := compilerInstance.Compile(t.Context(), source)
 			if err != nil {
 				return fmt.Errorf("compile failed: %w", err)
 			}
@@ -192,7 +192,7 @@ func TestCompilerCompileConcurrentInvalidQueries(t *testing.T) {
 			query := invalidQueries[(worker+iter)%len(invalidQueries)]
 			source := source.New(fmt.Sprintf("invalid_%d_%d", worker, iter), query)
 
-			program, err := compilerInstance.Compile(source)
+			program, err := compilerInstance.Compile(t.Context(), source)
 			if err == nil {
 				return fmt.Errorf("expected compilation error")
 			}

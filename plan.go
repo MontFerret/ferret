@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -13,14 +12,14 @@ import (
 
 // Plan wraps a compiled program together with the host state needed to execute it.
 type Plan struct {
-	prog         *bytecode.Program
-	host         *host
-	hooks        planHooks
-	sessionHooks sessionHooks
-	limiter      *sessionLimiter
-	pool         *vm.Pool
-	mu           sync.RWMutex
-	closed       bool
+	prog            *bytecode.Program
+	host            *host
+	hooks           planHooks
+	sessionHooks    sessionHooks
+	limiter         *sessionLimiter
+	pool            *vm.Pool
+	lifecycle       creationLifecycle
+	engineLifecycle *creationLifecycle
 }
 
 // Params returns the list of parameter names declared in the query.
@@ -55,45 +54,32 @@ func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*
 
 // Marshal serializes the plan's compiled program using the provided program options.
 func (p *Plan) Marshal(opts ...ProgramOption) ([]byte, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	if p.closed {
+	if err := p.lifecycle.check(); err != nil {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
 
 	return MarshalProgram(p.prog, opts...)
 }
 
-// Close runs plan cleanup hooks and closes the plan's VM pool.
+// Close rejects new sessions, settles admitted construction, runs cleanup hooks,
+// and closes the VM pool. Concurrent/repeated calls retain the cleanup result.
+// Callers must close sessions first; this method does not close descendants.
 func (p *Plan) Close() error {
 	if p == nil {
 		return nil
 	}
 
-	p.mu.Lock()
-	if p.closed {
-		p.mu.Unlock()
-		return nil
-	}
+	return p.lifecycle.close(func() error {
+		var err error
 
-	p.closed = true
-	// Snapshot close dependencies before unlocking so later Session.Close calls can
-	// finish independently of the Plan's mutable state.
-	hooks := p.hooks
-	pool := p.pool
-	p.mu.Unlock()
+		if hookErr := p.hooks.runCloseHooks(); hookErr != nil {
+			err = fmt.Errorf("close hooks: %w", hookErr)
+		}
 
-	var err error
+		if poolErr := p.pool.Close(); poolErr != nil {
+			err = errors.Join(err, fmt.Errorf("close pool: %w", poolErr))
+		}
 
-	// Plan close hooks follow the hook registry close semantics (LIFO with error aggregation).
-	if hookErr := hooks.runCloseHooks(); hookErr != nil {
-		err = fmt.Errorf("close hooks: %w", hookErr)
-	}
-
-	if poolErr := pool.Close(); poolErr != nil {
-		err = errors.Join(err, fmt.Errorf("close pool: %w", poolErr))
-	}
-
-	return err
+		return err
+	})
 }

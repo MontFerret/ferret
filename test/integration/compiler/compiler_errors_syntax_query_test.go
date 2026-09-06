@@ -168,7 +168,7 @@ func TestSyntaxErrorsQueryExpression(t *testing.T) {
 func TestSyntaxErrorsQueryExpressionWithAfterOptionsSpan(t *testing.T) {
 	query := "RETURN QUERY `.x` IN @doc USING css OPTIONS { timeout: 5000 } WITH { params: [1] }"
 
-	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

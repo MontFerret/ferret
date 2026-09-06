@@ -109,3 +109,22 @@ interaction cost.
 * [Architecture](architecture.md)
 * [Runtime and lifecycle](runtime.md)
 * [Development workflow](workflow.md)
+
+## Portable debugger boundary
+
+Coordinates, values, variables, frames, breakpoints, reasons, and events alias
+the Universal API types. Native source text/indexing and compiler debug tables
+remain native. Table identifiers are validated natively and converted only when
+constructing portable debugger values. The Universal API debugger package owns
+`NoFunction` for the top-level body and the positive value-reference convention;
+references are usable only in their paused state.
+
+Native source positions use one-based lines and byte columns; spans are
+zero-based half-open byte offsets. Source names can be anonymous or non-path
+identities. The compiler converts ANTLR rune offsets into byte spans when
+publishing diagnostics and program metadata, including debug points and
+call-argument spans. Analysis already publishes byte spans. Breakpoint creation accepts a source location and optional binding
+mode; unknown modes are rejected. Command cancellation reports termination while
+preserving cancellation identity. Ordinary runtime failures remain inspectable
+runtime-error stops. Completion retains an event and available output even when
+an after-run hook or later result cleanup fails.

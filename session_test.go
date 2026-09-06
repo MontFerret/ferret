@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/goccy/go-json"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
-	"github.com/goccy/go-json"
 )
 
 func TestSessionRunReturnsBeforeHookError(t *testing.T) {
@@ -507,5 +508,27 @@ func TestSessionRuntimeParam(t *testing.T) {
 
 	if result != 3 {
 		t.Fatalf("expected run to return 3, got: %d", result)
+	}
+}
+
+func TestAfterRunFailureReleasesProducedResource(t *testing.T) {
+	resource := newTrackingJSONCloser("owned", `42`)
+	cleanupErr, hookErr := errors.New("resource cleanup"), errors.New("after hook")
+	resource.closeErr = cleanupErr
+	engine := mustNewEngine(t,
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			ns.Function().A0().Add("OWNED_RESULT", func(context.Context) (runtime.Value, error) { return resource, nil })
+		}),
+		WithAfterRunHook(func(context.Context, error) error { return hookErr }),
+	)
+	t.Cleanup(func() { _ = engine.Close() })
+	plan := mustCompilePlan(t, engine, "RETURN OWNED_RESULT()")
+	t.Cleanup(func() { _ = plan.Close() })
+	session := mustNewSession(t, plan)
+	t.Cleanup(func() { _ = session.Close() })
+
+	_, err := session.Run(t.Context())
+	if !errors.Is(err, hookErr) || !errors.Is(err, cleanupErr) || resource.closed != 1 {
+		t.Fatalf("err=%v resource closes=%d", err, resource.closed)
 	}
 }

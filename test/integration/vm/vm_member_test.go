@@ -227,7 +227,7 @@ func TestMemberReservedWords(t *testing.T) {
 			expected.WriteString(strconv.Itoa(idx))
 			expected.WriteString("}")
 
-			prog, err := c.Compile(source.NewAnonymous(query.String()))
+			prog, err := c.Compile(t.Context(), source.NewAnonymous(query.String()))
 			if err != nil {
 				t.Fatalf("compile failed: %v", err)
 			}

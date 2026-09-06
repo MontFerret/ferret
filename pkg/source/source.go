@@ -101,8 +101,8 @@ func (s Source) PositionAt(span Span) Position {
 
 func (s Source) LocationAt(span Span) Location {
 	return Location{
-		File:     s.name,
-		Position: s.PositionAt(span),
+		SourceName: s.name,
+		Position:   s.PositionAt(span),
 	}
 }
 

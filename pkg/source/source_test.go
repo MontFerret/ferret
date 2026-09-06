@@ -187,21 +187,21 @@ func TestSourceLocationAndRangeAt(t *testing.T) {
 		span := Span{Start: 6, End: 11}
 
 		So(source.LocationAt(span), ShouldResemble, Location{
-			File:     "test.fql",
-			Position: Position{Line: 2, Column: 1},
+			SourceName: "test.fql",
+			Position:   Position{Line: 2, Column: 1},
 		})
 		So(source.RangeAt(span), ShouldResemble, Range{
 			Location: Location{
-				File:     "test.fql",
-				Position: Position{Line: 2, Column: 1},
+				SourceName: "test.fql",
+				Position:   Position{Line: 2, Column: 1},
 			},
 			Span: span,
 		})
 
 		invalid := Span{Start: -1, End: 0}
-		So(source.LocationAt(invalid), ShouldResemble, Location{File: "test.fql"})
+		So(source.LocationAt(invalid), ShouldResemble, Location{SourceName: "test.fql"})
 		So(source.RangeAt(invalid), ShouldResemble, Range{
-			Location: Location{File: "test.fql"},
+			Location: Location{SourceName: "test.fql"},
 			Span:     invalid,
 		})
 	})

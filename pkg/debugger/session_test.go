@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	apidebugger "github.com/MontFerret/api/debugger"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -34,14 +36,16 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 		t.Fatal(err)
 	}
 
-	breakpoint, err := session.SetBreakpoint("debug.fql", 1)
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "debug.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !breakpoint.Bound || breakpoint.PointID != point.ID || breakpoint.FunctionID != point.FunctionID || breakpoint.RequestedLocation.Column != 0 {
+
+	if !breakpoint.Bound || int(breakpoint.PointID) != int(point.ID) || int(breakpoint.FunctionID) != int(point.FunctionID) || breakpoint.RequestedLocation.Column != 0 {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
-	if got := session.Breakpoints(); len(got) != 1 || got[0].PointID != point.ID || got[0].FunctionID != point.FunctionID {
+
+	if got := session.Breakpoints(); len(got) != 1 || int(got[0].PointID) != int(point.ID) || int(got[0].FunctionID) != int(point.FunctionID) {
 		t.Fatalf("breakpoint snapshot lost bound identity: %#v", got)
 	}
 	if _, err := session.Start(context.Background()); err != nil {
@@ -127,15 +131,16 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint("", 1)
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !breakpoint.Bound || breakpoint.PointID != 4 || breakpoint.FunctionID != bytecode.NoFunction || breakpoint.Location.Line != 1 {
+
+	if !breakpoint.Bound || breakpoint.PointID != 4 || breakpoint.FunctionID != apidebugger.NoFunction || breakpoint.Location.Line != 1 {
 		t.Fatalf("unexpected source-ordered breakpoint: %#v", breakpoint)
 	}
 
-	unbound, err := session.SetBreakpoint("other.fql", 1)
+	unbound, err := session.SetBreakpoint(source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}

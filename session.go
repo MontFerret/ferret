@@ -48,6 +48,14 @@ type (
 
 // Run executes the session with the provided context and returns encoded output.
 func (s *Session) Run(c context.Context) (*Output, error) {
+	if c == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := c.Err(); err != nil {
+		return nil, err
+	}
+
 	if s.closed.Load() {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "session is closed")
 	}
@@ -55,14 +63,32 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 	// Before-run hooks can replace the context used for the rest of execution.
 	ctx, err := s.hooks.runBeforeRunHooks(c)
 	if err != nil {
-		return nil, fmt.Errorf("before run hooks: %w", err)
+		return nil, errors.Join(fmt.Errorf("before run hooks: %w", err), c.Err())
+	}
+
+	if err := c.Err(); err != nil {
+		return nil, err
+	}
+
+	if ctx == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "before run hooks returned nil context")
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	out, err := s.vm.Run(s.extendContext(ctx), s.env)
 
 	// After-run hooks always run and receive the VM run error (if any).
 	if hookErr := s.hooks.runAfterRunHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after run hooks: %w", hookErr))
+		var closeErr error
+
+		if out != nil {
+			closeErr = out.Close()
+		}
+
+		return nil, errors.Join(err, fmt.Errorf("after run hooks: %w", hookErr), closeErr)
 	}
 
 	if err != nil {

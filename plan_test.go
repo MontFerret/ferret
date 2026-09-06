@@ -117,10 +117,6 @@ func TestPlanCloseIsIdempotentAndRejectsNewSessions(t *testing.T) {
 	if !errors.Is(err, runtime.ErrInvalidOperation) {
 		t.Fatalf("expected invalid operation after plan close, got: %v", err)
 	}
-
-	if !strings.Contains(err.Error(), "plan is closed") {
-		t.Fatalf("expected closed-plan message, got: %v", err)
-	}
 }
 
 func TestPlanNewSessionReturnsPoolExhaustedAtPerPlanVMLimit(t *testing.T) {
@@ -310,7 +306,7 @@ func TestNewPlanSessionReleasesLimiterOnBuilderPanic(t *testing.T) {
 			context.Background(),
 			nil,
 			planSessionSetup{},
-			func(planSessionDependencies) (struct{}, error) {
+			func(planSessionDependencies) (*Session, error) {
 				panic("session builder failed")
 			},
 		)

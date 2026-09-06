@@ -376,7 +376,7 @@ func runQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionO
 		return execQuery(ctx, engine, opts, query)
 	}
 
-	return analyzeQuery(query)
+	return analyzeQuery(ctx, query)
 }
 
 func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.SessionOption, query source.Source) error {
@@ -591,7 +591,7 @@ func printResult(_ context.Context, res *ferret.Output) (uint64, error) {
 	return printer.size, err
 }
 
-func analyzeQuery(query source.Source) error {
+func analyzeQuery(ctx context.Context, query source.Source) error {
 	beforeCompilation := "Before Compilation"
 	compilation := "Compilation"
 	afterCompilation := "After Compilation"
@@ -624,7 +624,7 @@ func analyzeQuery(query source.Source) error {
 
 	prof.StartTimer(compilation)
 
-	prog, err := c.Compile(query)
+	prog, err := c.Compile(ctx, query)
 
 	if err != nil {
 		fmt.Println(diagnostics.Format(err))

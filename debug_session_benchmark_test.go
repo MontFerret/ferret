@@ -78,7 +78,7 @@ RETURN outer(2)`))
 	}
 	defer session.Close()
 
-	if _, err := session.SetBreakpoint("caller.fql", 5); err != nil {
+	if _, err := session.SetBreakpoint(source.Location{SourceName: "caller.fql", Position: source.Position{Line: 5}}); err != nil {
 		b.Fatal(err)
 	}
 	if _, err := session.Start(context.Background()); err != nil {

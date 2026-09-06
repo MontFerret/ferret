@@ -116,3 +116,17 @@ func (e *Diagnostics[E]) Format() string {
 
 	return b.String()
 }
+
+// Unwrap exposes the ordered errors without granting mutation of the collection.
+func (e *Diagnostics[E]) Unwrap() []error {
+	if e == nil {
+		return nil
+	}
+
+	result := make([]error, len(e.errors))
+	for i, err := range e.errors {
+		result[i] = err
+	}
+
+	return result
+}

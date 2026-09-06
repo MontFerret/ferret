@@ -3,6 +3,7 @@ package ferret
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -288,10 +289,10 @@ func TestNewPlanSessionClosesOwnedFSRootOnBuildFailure(t *testing.T) {
 		context.Background(),
 		[]SessionOption{WithSessionFSRoot(t.TempDir())},
 		planSessionSetup{},
-		func(dependencies planSessionDependencies) (struct{}, error) {
+		func(dependencies planSessionDependencies) (*Session, error) {
 			filesystem = dependencies.filesystem
 
-			return struct{}{}, buildErr
+			return nil, buildErr
 		},
 	)
 	if !errors.Is(err, buildErr) {
@@ -368,5 +369,52 @@ func TestSessionFSRootRejectsUnusablePaths(t *testing.T) {
 			_ = session.Close()
 			t.Fatalf("NewSession(%q) unexpectedly succeeded", root)
 		}
+	}
+}
+
+func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
+	for _, debug := range []bool{false, true} {
+		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
+			closeErr := errors.New("session rollback cleanup")
+			engine := mustNewEngine(t, WithMaxActiveSessions(1), WithSessionCloseHook(func() error { return closeErr }))
+			t.Cleanup(func() { _ = engine.Close() })
+			plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = plan.Close() })
+			ctx, cancel := context.WithCancel(t.Context())
+			t.Cleanup(cancel)
+			var filesystem ferretfs.FileSystem
+			created, err := newPlanSession(plan, ctx, []SessionOption{WithSessionFSRoot(t.TempDir())}, planSessionSetup{requiresDebugInfo: debug},
+				func(dependencies planSessionDependencies) (io.Closer, error) {
+					filesystem = dependencies.filesystem
+					var child io.Closer
+					var buildErr error
+					if debug {
+						child, buildErr = buildDebugSession(dependencies)
+					} else {
+						child, buildErr = buildSession(dependencies)
+					}
+					cancel()
+					return child, buildErr
+				})
+			if created != nil || !errors.Is(err, context.Canceled) || !errors.Is(err, closeErr) {
+				t.Fatalf("publication=%v error=%v", created, err)
+			}
+			if _, err := filesystem.Stat("."); err == nil {
+				t.Fatal("canceled publication retained its owned filesystem")
+			}
+			if len(engine.limiter.ch) != 0 {
+				t.Fatal("canceled publication retained its permit")
+			}
+			sibling, err := plan.NewSession(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := sibling.Close(); !errors.Is(err, closeErr) {
+				t.Fatalf("sibling close=%v", err)
+			}
+		})
 	}
 }

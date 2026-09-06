@@ -171,8 +171,9 @@ func TestDebugExecutionChecksCancellationAtSourcePointSafepoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugStopRuntimeError {
-		t.Fatalf("resume reason = %v, want DebugStopRuntimeError", event.Reason)
+
+	if event.Reason != DebugStopTerminated {
+		t.Fatalf("resume reason = %v, want DebugStopTerminated", event.Reason)
 	}
 	if !errors.Is(event.Error, context.Canceled) {
 		t.Fatalf("resume error = %v, want context.Canceled", event.Error)

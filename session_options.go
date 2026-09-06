@@ -3,74 +3,50 @@ package ferret
 import (
 	"fmt"
 	"io"
-	"strings"
 
 	gooptions "github.com/ziflex/go-options"
 
-	"github.com/MontFerret/ferret/v2/pkg/debugger"
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	"github.com/MontFerret/api"
+
 	"github.com/MontFerret/ferret/v2/pkg/logging"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-type (
-	sessionOptions struct {
-		logger            []logging.Option
-		outputContentType string
-		fsRoot            string
-		env               []vm.EnvironmentOption
-		debugFormat       debugger.FormatOptions
-	}
-
-	// SessionOption configures a Session created from a Plan.
-	SessionOption = gooptions.Option[sessionOptions]
-)
-
-func defaultSessionOptions() sessionOptions {
-	return sessionOptions{
-		outputContentType: encodingjson.ContentType,
-		debugFormat:       debugger.DefaultFormatOptions(),
-	}
-}
-
-func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
-	if len(setters) == 0 {
-		return defaultSessionOptions(), nil
-	}
-
-	opts, err := gooptions.ApplyTo(defaultSessionOptions(), setters...)
-	if err != nil {
-		return sessionOptions{}, err
-	}
-
-	return opts, nil
-}
+// SessionOption configures the actual session option owner through the portable contract.
+type SessionOption = api.SessionOption
 
 // WithDebugFormat configures bounded debugger value formatting.
 func WithDebugFormat(format DebugFormatOptions) SessionOption {
-	return gooptions.New(func(session *sessionOptions, format DebugFormatOptions) {
-		session.debugFormat = format
-	}).
-		Value(format).
-		Named("debug format").
-		Validators(gooptions.Check(func(format DebugFormatOptions) error {
-			if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
-				return fmt.Errorf("debug format limits must be positive")
-			}
+	return func(target api.SessionOptions) error {
+		session, ok := target.(*sessionOptions)
+		if !ok || session == nil {
+			return fmt.Errorf("debug format requires native Ferret session options")
+		}
 
-			return nil
-		})).
-		Build()
+		return gooptions.New(func(session *sessionOptions, format DebugFormatOptions) {
+			session.debugFormat = format
+		}).
+			Value(format).
+			Named("debug format").
+			Validators(gooptions.Check(func(format DebugFormatOptions) error {
+				if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
+					return fmt.Errorf("debug format limits must be positive")
+				}
+
+				return nil
+			})).
+			Build()(session)
+	}
 }
 
 // WithEnvironmentOptions is an advanced escape hatch that appends VM environment
 // options to the created session. Prefer the root session options for ordinary
 // embedding configuration.
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
-	return func(session *sessionOptions) error {
-		if session == nil {
-			return nil
+	return func(target api.SessionOptions) error {
+		session, ok := target.(*sessionOptions)
+		if !ok || session == nil {
+			return fmt.Errorf("option requires native Ferret session options")
 		}
 
 		if len(opts) == 0 {
@@ -91,50 +67,31 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 
 // WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
-	return gooptions.New(func(session *sessionOptions, contentType string) {
-		session.outputContentType = strings.TrimSpace(contentType)
-	}).
-		Value(contentType).
-		Named("output content type").
-		Validators(gooptions.NotBlank[string]()).
-		Build()
+	return api.WithOutputContentType(contentType)
 }
 
 // WithSessionFSRoot selects the rooted filesystem used by one execution
 // session. The session owns the replacement filesystem and inherits the
 // engine's read-only policy.
 func WithSessionFSRoot(root string) SessionOption {
-	return gooptions.New(func(session *sessionOptions, root string) {
-		session.fsRoot = strings.TrimSpace(root)
-	}).
-		Value(root).
-		Named("fs root").
-		Validators(gooptions.NotBlank[string]()).
-		Build()
+	return api.WithFSRoot(root)
 }
 
 // WithSessionParams merges the provided parameter map into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params map[string]any) SessionOption {
-	return func(s *sessionOptions) error {
-		if len(params) == 0 {
-			return nil
-		}
-
-		rtp, err := runtime.NewParamsFrom(params)
-
-		if err != nil {
-			return fmt.Errorf("failed to convert params to runtime.Params: %w", err)
-		}
-
-		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
-	}
+	return api.WithParams(params)
 }
 
 // WithSessionRuntimeParams merges the provided Params into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionRuntimeParams(params Params) SessionOption {
-	return func(s *sessionOptions) error {
+	return func(target api.SessionOptions) error {
+		s, ok := target.(*sessionOptions)
+		if !ok || s == nil {
+			return fmt.Errorf("option requires native Ferret session options")
+		}
+
 		if len(params) == 0 {
 			return nil
 		}
@@ -145,27 +102,17 @@ func WithSessionRuntimeParams(params Params) SessionOption {
 
 // WithSessionParam adds or overrides a single session parameter.
 func WithSessionParam(name string, value any) SessionOption {
-	return func(s *sessionOptions) error {
-		if name == "" {
-			return fmt.Errorf("param name cannot be empty")
-		}
-
-		if value == nil {
-			return fmt.Errorf("param value cannot be nil")
-		}
-
-		rtp, err := runtime.NewParamsFrom(map[string]any{name: value})
-		if err != nil {
-			return fmt.Errorf("failed to convert param to runtime.Params: %w", err)
-		}
-
-		return WithEnvironmentOptions(vm.WithParams(rtp))(s)
-	}
+	return api.WithParam(name, value)
 }
 
 // WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted Value.
 func WithSessionRuntimeParam(name string, value Value) SessionOption {
-	return func(s *sessionOptions) error {
+	return func(target api.SessionOptions) error {
+		s, ok := target.(*sessionOptions)
+		if !ok || s == nil {
+			return fmt.Errorf("option requires native Ferret session options")
+		}
+
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
 		}
@@ -181,7 +128,12 @@ func WithSessionRuntimeParam(name string, value Value) SessionOption {
 // WithSessionLog sets the writer for logging output.
 // The writer can be any io.Writer, such as os.Stdout or a file.
 func WithSessionLog(writer io.Writer) SessionOption {
-	return func(opts *sessionOptions) error {
+	return func(target api.SessionOptions) error {
+		opts, ok := target.(*sessionOptions)
+		if !ok || opts == nil {
+			return fmt.Errorf("option requires native Ferret session options")
+		}
+
 		if writer == nil {
 			return fmt.Errorf("log writer cannot be nil")
 		}
@@ -195,7 +147,12 @@ func WithSessionLog(writer io.Writer) SessionOption {
 // WithSessionLogLevel sets the logging level for the session.
 // The logging level determines the severity of log messages that will be recorded.
 func WithSessionLogLevel(lvl LogLevel) SessionOption {
-	return func(opts *sessionOptions) error {
+	return func(target api.SessionOptions) error {
+		opts, ok := target.(*sessionOptions)
+		if !ok || opts == nil {
+			return fmt.Errorf("option requires native Ferret session options")
+		}
+
 		if lvl < LogTrace || lvl > LogDisabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
@@ -209,7 +166,12 @@ func WithSessionLogLevel(lvl LogLevel) SessionOption {
 // WithSessionLogFields sets the fields to be included in log entries for the session.
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithSessionLogFields(fields map[string]any) SessionOption {
-	return func(opts *sessionOptions) error {
+	return func(target api.SessionOptions) error {
+		opts, ok := target.(*sessionOptions)
+		if !ok || opts == nil {
+			return fmt.Errorf("option requires native Ferret session options")
+		}
+
 		if len(fields) == 0 {
 			return nil
 		}

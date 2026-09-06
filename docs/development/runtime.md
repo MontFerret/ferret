@@ -99,11 +99,44 @@ The root embedding lifecycle is hierarchical:
   the engine's read-only policy; the session owns and closes the replacement
   filesystem.
 
-`Engine.Run` is a convenience path that owns and closes its temporary plan and
-session. A caller that creates a plan or session directly owns its `Close` call.
-`Session.Close` is idempotent and concurrency-safe; it runs close hooks and
-returns its VM to the pool. `Plan.Close` rejects new sessions, runs close hooks,
-and closes retained VMs. Engine cleanup must continue even when a hook fails.
+`Engine.Run` owns its temporary session and plan, closes them in that order,
+and joins execution and cleanup errors while retaining available encoded output.
+A caller that creates children directly closes sessions before plans, and plans
+before the engine. Parents have no descendant registries. Ordinary execution
+owners cancel and settle `Run` before closing their session; debug closure
+terminates and settles active commands.
+
+Engine, Plan, and Session closure is concurrency-safe and idempotent, retaining
+the completed cleanup result. Closing parents reject new children and wait for
+admitted construction to finish or roll back. Hooks and resource cleanup execute
+outside state locks. A lifecycle hook must not synchronously close the same
+resource or an ancestor waiting for that hook's operation to finish.
+`Session.Close` returns its VM to the pool; `Plan.Close` releases pooled VMs.
+Engine cleanup continues even when a hook fails.
+
+Execution, compilation, and debugger context boundaries require non-nil contexts.
+Embedding/session admission rejects existing cancellation before options or hooks
+and rechecks cancellation before publishing resources. Raw VM execution retains
+its existing cancellation safepoints within an admitted run.
+
+`Compiler.Compile(ctx, src)` synchronously checks cancellation between parsing,
+lowering, and program construction; phases are not individually preempted. The
+context is required. Cancellation and deadline identities remain available
+through `errors.Is`, including when cancellation accompanies an option or hook
+failure.
+
+Native `SessionOption` is `api.SessionOption`. Non-nil options target the actual
+native `api.SessionOptions` owner once in order. Validation errors are joined
+before resource acquisition; native-only options reject foreign targets.
+Per-plan options on `Engine.Compile` inherit the engine's optimization when
+omitted, or select API None, Basic, or Full for one compilation. Aggressive is
+unsupported. `CompileDebug` accepts omission or None. Compiler instances remain
+immutable and safe for shared use.
+
+Encoded `Output` is an alias of `api/result.Output`; native source indexing,
+runtime values, compiler metadata, and diagnostic rendering remain native.
+Diagnostic aggregates expose `Unwrap() []error`, and runtime errors unwrap to
+their underlying diagnostic, which in turn retains its cause.
 
 Before hooks run in registration order. After and close hooks unwind in reverse
 order, with the error behavior defined by `pkg/module` and the root hook

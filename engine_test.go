@@ -83,7 +83,7 @@ func mustMarshalArtifact(t *testing.T, query string, opts ...artifact.Option) []
 		t.Fatalf("failed to create compiler: %v", err)
 	}
 
-	prog, err := compilerInstance.Compile(source.NewAnonymous(query))
+	prog, err := compilerInstance.Compile(t.Context(), source.NewAnonymous(query))
 	if err != nil {
 		t.Fatalf("failed to compile query %q: %v", query, err)
 	}

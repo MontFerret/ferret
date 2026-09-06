@@ -59,7 +59,7 @@ func TestCoalesceLoweringUsesNoneBranch(t *testing.T) {
 
 func TestCoalesceMissingFallbackDiagnostic(t *testing.T) {
 	input := "RETURN 1 ??"
-	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).Compile(source.NewAnonymous(input))
+	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).Compile(t.Context(), source.NewAnonymous(input))
 	if err == nil {
 		t.Fatal("expected compilation to fail")
 	}
@@ -101,7 +101,7 @@ func TestCoalesceMissingFallbackDiagnostic(t *testing.T) {
 }
 
 func TestCoalesceMissingFallbackDiagnosticIgnoresComments(t *testing.T) {
-	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).Compile(source.NewAnonymous("RETURN 1 + // ??"))
+	_, err := mustNewCompiler(t, compiler.WithOptimizationLevel(compiler.None)).Compile(t.Context(), source.NewAnonymous("RETURN 1 + // ??"))
 	if err == nil {
 		t.Fatal("expected compilation to fail")
 	}

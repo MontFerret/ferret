@@ -32,7 +32,7 @@ func TestSessionSerializesConcurrentCommands(t *testing.T) {
 	}()
 	breakpointDone := make(chan error, 1)
 	go func() {
-		_, err := session.SetBreakpoint("", 1)
+		_, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
 		breakpointDone <- err
 	}()
 
@@ -77,7 +77,8 @@ func TestSessionPauseDoesNotWaitForRunningCommand(t *testing.T) {
 
 func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *testing.T) {
 	session, execution := newBlockingSession(t)
-	breakpoint, err := session.SetBreakpoint("", 1)
+
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}

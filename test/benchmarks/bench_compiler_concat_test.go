@@ -43,7 +43,7 @@ func benchmarkCompileQuery(b *testing.B, query string, level compiler.Optimizati
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		if _, err := compilerInstance.Compile(src); err != nil {
+		if _, err := compilerInstance.Compile(b.Context(), src); err != nil {
 			b.Fatalf("compile failed: %v", err)
 		}
 	}

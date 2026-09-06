@@ -14,15 +14,17 @@ import (
 
 // Engine compiles queries into reusable plans and runs them against the configured host.
 type Engine struct {
-	compiler      *compiler.Compiler
-	debugCompiler *compiler.Compiler
-	loader        *artifact.Loader
-	host          *host
-	hooks         *hookRegistry
-	limiter       *sessionLimiter
-	idleCap       int
-	totalCap      int
-	ownsNetwork   bool
+	lifecycle         creationLifecycle
+	optimizationLevel compiler.OptimizationLevel
+	compiler          *compiler.Compiler
+	debugCompiler     *compiler.Compiler
+	loader            *artifact.Loader
+	host              *host
+	hooks             *hookRegistry
+	limiter           *sessionLimiter
+	idleCap           int
+	totalCap          int
+	ownsNetwork       bool
 }
 
 // New constructs an Engine from the provided options, registers all modules,
@@ -101,50 +103,83 @@ func New(setters ...Option) (*Engine, error) {
 	}
 
 	return &Engine{
-		compiler:      compilerInstance,
-		debugCompiler: debugCompiler,
-		loader:        opts.programLoader,
-		host:          h,
-		hooks:         hooks,
-		limiter:       newSessionLimiter(opts.maxActiveSessions),
-		idleCap:       opts.maxIdleVMsPerPlan,
-		totalCap:      opts.maxVMsPerPlan,
-		ownsNetwork:   ownsNetwork,
+		compiler:          compilerInstance,
+		optimizationLevel: compilerLevel,
+		debugCompiler:     debugCompiler,
+		loader:            opts.programLoader,
+		host:              h,
+		hooks:             hooks,
+		limiter:           newSessionLimiter(opts.maxActiveSessions),
+		idleCap:           opts.maxIdleVMsPerPlan,
+		totalCap:          opts.maxVMsPerPlan,
+		ownsNetwork:       ownsNetwork,
 	}, nil
 }
 
-// Compile compiles source into a reusable execution plan.
-func (e *Engine) Compile(ctx context.Context, src Source) (*Plan, error) {
-	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
-		return nil, fmt.Errorf("before compile hooks: %w", err)
-	}
+// Compile synchronously compiles source into a reusable execution plan. Omitted
+// optimization inherits the engine configuration; explicit per-plan options do
+// not mutate the engine. The context must be non-nil.
+func (e *Engine) Compile(ctx context.Context, src Source, opts ...PlanOption) (*Plan, error) {
+	return e.compile(ctx, src, false, opts)
+}
 
-	prog, err := e.compiler.Compile(src)
-	// After-compile hooks always run and receive the compilation error (if any).
-	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
-	}
+// CompileDebug compiles a reusable plan with debug metadata and no optimization.
+func (e *Engine) CompileDebug(ctx context.Context, src Source, opts ...PlanOption) (*Plan, error) {
+	return e.compile(ctx, src, true, opts)
+}
 
-	if err != nil {
+func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []PlanOption) (*Plan, error) {
+	if err := e.lifecycle.checkContext(ctx); err != nil {
 		return nil, err
 	}
 
-	return e.newPlan(prog)
-}
-
-// CompileDebug compiles source into a reusable plan with source-level debugger
-// metadata. Debug compilation uses OptimizationNone.
-func (e *Engine) CompileDebug(ctx context.Context, src Source) (*Plan, error) {
-	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
-		return nil, fmt.Errorf("before compile hooks: %w", err)
+	if err := e.lifecycle.enter(); err != nil {
+		return nil, err
 	}
 
-	prog, err := e.debugCompiler.Compile(src)
-	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
+	defer e.lifecycle.leave()
+	level := e.optimizationLevel
+
+	if debug {
+		level = compiler.None
 	}
 
+	opts, err := newPlanOptions(level, debug, setters)
 	if err != nil {
+		return nil, errors.Join(err, ctx.Err())
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	selected := e.compiler
+	if debug {
+		selected = e.debugCompiler
+	} else if opts.level != e.optimizationLevel {
+		selected, err = compiler.New(compiler.WithOptimizationLevel(opts.level))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
+		return nil, errors.Join(fmt.Errorf("before compile hooks: %w", err), ctx.Err())
+	}
+
+	var prog *bytecode.Program
+
+	err = ctx.Err()
+	if err == nil {
+		prog, err = selected.Compile(ctx, src)
+	}
+
+	err = errors.Join(err, ctx.Err())
+	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
+		err = errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
+	}
+
+	if err = errors.Join(err, ctx.Err(), e.lifecycle.check()); err != nil {
 		return nil, err
 	}
 
@@ -153,8 +188,18 @@ func (e *Engine) CompileDebug(ctx context.Context, src Source) (*Plan, error) {
 
 // Load decodes a serialized program artifact and wraps it in a reusable plan.
 func (e *Engine) Load(data []byte) (*Plan, error) {
+	if err := e.lifecycle.enter(); err != nil {
+		return nil, err
+	}
+
+	defer e.lifecycle.leave()
+
 	prog, err := e.loader.Load(data)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := e.lifecycle.check(); err != nil {
 		return nil, err
 	}
 
@@ -164,58 +209,41 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 // Run compiles source, executes it in a fresh session, and returns encoded output and an error.
 // Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
 // (for example, if execution produced output but a deferred cleanup step failed).
-func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (*Output, error) {
+func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (output *Output, resultErr error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var session *Session
+	defer func() { resultErr = errors.Join(resultErr, plan.Close()) }()
 
-	defer func() {
-		logger := e.host.logger
-
-		if session != nil {
-			if closeErr := session.Close(); closeErr != nil {
-				logger.Error().
-					Err(closeErr).
-					Str("phase", "session").
-					Str("operation", "close").
-					Msg("deferred cleanup failed")
-			}
-		}
-
-		if closeErr := plan.Close(); closeErr != nil {
-			logger.Error().
-				Err(closeErr).
-				Str("phase", "plan").
-				Str("operation", "close").
-				Msg("deferred cleanup failed")
-		}
-	}()
-
-	session, err = plan.NewSession(ctx, opts...)
+	session, err := plan.NewSession(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
+
+	defer func() { resultErr = errors.Join(resultErr, session.Close()) }()
 
 	return session.Run(ctx)
 }
 
 // Close runs the engine close hooks and releases engine-scoped resources,
 // including the configured rooted filesystem and owned network idle connections.
+// It rejects new children, waits for admitted construction, and retains its
+// result across concurrent/repeated calls. Callers must close children first.
 func (e *Engine) Close() error {
-	return closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork)
+	return e.lifecycle.close(func() error { return closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork) })
 }
 
 func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {
 	return &Plan{
-		prog:         prog,
-		host:         e.host,
-		hooks:        e.hooks.plan,
-		sessionHooks: e.hooks.session,
-		limiter:      e.limiter,
-		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
+		prog:            prog,
+		engineLifecycle: &e.lifecycle,
+		host:            e.host,
+		hooks:           e.hooks.plan,
+		sessionHooks:    e.hooks.session,
+		limiter:         e.limiter,
+		pool:            vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
 	}, nil
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func compileBenchmarkProgram(c *compiler.Compiler, expression string) *bytecode.Program {
-	prog, err := c.Compile(source.New("benchmark", expression))
+	prog, err := c.Compile(context.Background(), source.New("benchmark", expression))
 
 	if err != nil {
 		panic(err)

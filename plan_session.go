@@ -31,7 +31,7 @@ type (
 	}
 )
 
-func newPlanSession[T any](
+func newPlanSession[T interface{ Close() error }](
 	plan *Plan,
 	ctx context.Context,
 	setters []SessionOption,
@@ -42,15 +42,22 @@ func newPlanSession[T any](
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
 
-	if ctx == nil {
-		ctx = context.Background()
+	if err := plan.lifecycle.checkContext(ctx); err != nil {
+		return session, err
 	}
 
-	plan.mu.RLock()
-	if plan.closed {
-		plan.mu.RUnlock()
+	if err := plan.lifecycle.enter(); err != nil {
+		return session, err
+	}
 
-		return session, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
+	defer plan.lifecycle.leave()
+	// The engine gate protects borrowed host resources during construction.
+	if plan.engineLifecycle != nil {
+		if err := plan.engineLifecycle.enter(); err != nil {
+			return session, err
+		}
+
+		defer plan.engineLifecycle.leave()
 	}
 
 	program := plan.prog
@@ -58,7 +65,6 @@ func newPlanSession[T any](
 	hooks := plan.sessionHooks
 	limiter := plan.limiter
 	pool := plan.pool
-	plan.mu.RUnlock()
 
 	if setup.requiresDebugInfo && len(program.Metadata.DebugPoints) == 0 {
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan was not compiled for debugging")
@@ -66,6 +72,10 @@ func newPlanSession[T any](
 
 	options, err := newSessionOptions(setters)
 	if err != nil {
+		return session, errors.Join(err, ctx.Err())
+	}
+
+	if err := ctx.Err(); err != nil {
 		return session, err
 	}
 
@@ -74,7 +84,7 @@ func newPlanSession[T any](
 		return session, fmt.Errorf("logger: %w", err)
 	}
 
-	if err = limiter.Acquire(ctx); err != nil {
+	if err = limiter.Acquire(ctx, &plan.lifecycle, plan.engineLifecycle); err != nil {
 		return session, err
 	}
 
@@ -119,8 +129,22 @@ func newPlanSession[T any](
 	})
 
 	if err == nil {
+		// The constructed session now owns the permit/filesystem, even if publication
+		// loses a race with cancellation or parent close and must roll back.
 		releaseOnReturn = false
 		fileSystemTransferred = true
+
+		err = errors.Join(ctx.Err(), plan.lifecycle.check())
+		if plan.engineLifecycle != nil {
+			err = errors.Join(err, plan.engineLifecycle.check())
+		}
+
+		if err != nil {
+			err = errors.Join(err, session.Close())
+			var zero T
+
+			return zero, err
+		}
 	}
 
 	return session, err

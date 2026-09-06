@@ -6,7 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	apidebugger "github.com/MontFerret/api/debugger"
+
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -39,15 +40,17 @@ RETURN value`
 	}
 	defer session.Close()
 
-	beforeBody, err := session.SetBreakpoint("udf-breakpoints.fql", 2)
+	beforeBody, err := session.SetBreakpoint(source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	body, err := session.SetBreakpoint("udf-breakpoints.fql", 3)
+
+	body, err := session.SetBreakpoint(source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 3}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	callSite, err := session.SetBreakpoint("udf-breakpoints.fql", 6)
+
+	callSite, err := session.SetBreakpoint(source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 6}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,10 +58,12 @@ RETURN value`
 	if !beforeBody.Bound || beforeBody.Location.Line != 3 || beforeBody.PointID != body.PointID || beforeBody.FunctionID != body.FunctionID {
 		t.Fatalf("non-executable UDF declaration did not bind to its body: before=%#v body=%#v", beforeBody, body)
 	}
-	if !body.Bound || !body.FunctionID.Valid() {
+
+	if !body.Bound || !(body.FunctionID >= 0) {
 		t.Fatalf("expected UDF body breakpoint identity: %#v", body)
 	}
-	if !callSite.Bound || callSite.FunctionID != bytecode.NoFunction || callSite.PointID == body.PointID {
+
+	if !callSite.Bound || callSite.FunctionID != apidebugger.NoFunction || callSite.PointID == body.PointID {
 		t.Fatalf("expected distinct caller breakpoint identity: body=%#v call=%#v", body, callSite)
 	}
 
@@ -113,11 +118,12 @@ RETURN a + b`
 	}
 	defer session.Close()
 
-	first, err := session.SetBreakpoint("multiple-udfs.fql", 2)
+	first, err := session.SetBreakpoint(source.Location{SourceName: "multiple-udfs.fql", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := session.SetBreakpoint("multiple-udfs.fql", 5)
+
+	second, err := session.SetBreakpoint(source.Location{SourceName: "multiple-udfs.fql", Position: source.Position{Line: 5}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,18 +182,19 @@ RETURN add(seed)`
 	defer session.Close()
 
 	inside, err := session.SetBreakpointAt(
-		DebugSourceLocation{File: "udf-binding.fql", Position: source.Position{Line: 4}},
+		DebugSourceLocation{SourceName: "udf-binding.fql", Position: source.Position{Line: 4}},
 		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !inside.Bound || inside.Location.Line != 5 || !inside.FunctionID.Valid() {
+
+	if !inside.Bound || inside.Location.Line != 5 || !(inside.FunctionID >= 0) {
 		t.Fatalf("expected blank line inside UDF to bind within the UDF: %#v", inside)
 	}
 
 	before, err := session.SetBreakpointAt(
-		DebugSourceLocation{File: "udf-binding.fql", Position: source.Position{Line: 2}},
+		DebugSourceLocation{SourceName: "udf-binding.fql", Position: source.Position{Line: 2}},
 		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
 	)
 	if err != nil {
@@ -198,7 +205,7 @@ RETURN add(seed)`
 	}
 
 	after, err := session.SetBreakpointAt(
-		DebugSourceLocation{File: "udf-binding.fql", Position: source.Position{Line: 7}},
+		DebugSourceLocation{SourceName: "udf-binding.fql", Position: source.Position{Line: 7}},
 		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
 	)
 	if err != nil {
@@ -347,7 +354,7 @@ RETURN outer(2) + x + @input + box.value - 10`
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint("caller-frames.fql", 5)
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "caller-frames.fql", Position: source.Position{Line: 5}})
 	if err != nil {
 		t.Fatal(err)
 	}

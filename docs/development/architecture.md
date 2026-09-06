@@ -18,7 +18,8 @@ source.Source
     -> encoding.Output
 ```
 
-`pkg/source` owns source text, identity, and spans. Source-aware behavior begins
+`pkg/source` owns indexed source text and identity. Portable positions, spans,
+locations, and ranges are aliases of `github.com/MontFerret/api/source` types. Source-aware behavior begins
 there so parser, compiler, diagnostics, formatter, and debugger integrations use
 the same coordinates instead of translating them independently.
 
@@ -74,7 +75,7 @@ inspection.
 
 ### Language frontend and tooling
 
-* `pkg/source`: source identity, text, spans, and locations.
+* `pkg/source`: indexed source identity and text, with API-owned coordinates.
 * `pkg/parser`: grammar integration, token transformation, parse trees, and
   parser diagnostics.
 * `pkg/diagnostics`: shared diagnostics, labels, notes, hints, and rendering.
