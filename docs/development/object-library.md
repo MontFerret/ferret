@@ -12,6 +12,9 @@ Map operations accept `runtime.Map`, including host implementations. `keys`
 has one argument; callers compose `sorted(object::keys(value))` for ordering.
 No ordering is promised for keys, values, or entries. Entries traverses each
 map once and constructs pairs directly, preserving key/value association.
+Each entry contains a String key and a cloned or copied value. Keys are validated
+with `runtime.CastString` and are never cloned or copied; a host map exposing a
+non-string key fails the call with an argument-attributed type error.
 
 Both merge functions accept variadic maps or one `runtime.List` of maps.
 At least one argument is required; an empty list produces an empty object.

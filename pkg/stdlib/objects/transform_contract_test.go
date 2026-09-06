@@ -453,7 +453,7 @@ func TestEntriesUsesOneAssociatedTraversal(t *testing.T) {
 	calls := 0
 	sentinel := errors.New("separate key/value access is forbidden")
 	src := &hostMap{
-		Map:     runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1), "b": runtime.Int(2)}),
+		Map:     runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1), "b": runtime.Int(2), "": runtime.None, "é 😀": runtime.True}),
 		keysErr: sentinel, valuesErr: sentinel, walkCalls: &calls,
 	}
 	entries, err := objects.Entries(ctx, src)
@@ -465,10 +465,65 @@ func TestEntriesUsesOneAssociatedTraversal(t *testing.T) {
 		t.Fatalf("map traversed %d times", calls)
 	}
 
+	err = entries.(runtime.List).ForEach(ctx, func(ctx context.Context, entry runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+		key, err := entry.(runtime.List).At(ctx, 0)
+		if err != nil {
+			return false, err
+		}
+
+		if _, ok := key.(runtime.String); !ok {
+			t.Fatalf("entry key has type %T, want runtime.String", key)
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	roundTrip, err := objects.FromEntries(ctx, entries)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assertObjectValue(t, roundTrip, src.Map)
+}
+
+func TestEntriesRejectsNonStringKeysBeforeCopying(t *testing.T) {
+	ctx := context.Background()
+	for _, kind := range []string{"integer", "copy-only", "cloneable"} {
+		t.Run(kind, func(t *testing.T) {
+			keyCopies, keyClones, valueClones := 0, 0, 0
+			var key runtime.Value = runtime.Int(42)
+			switch kind {
+			case "copy-only":
+				key = &copyOnlyValue{Value: runtime.String("key"), copies: &keyCopies}
+			case "cloneable":
+				key = &cloneValue{Value: runtime.String("key"), clones: &keyClones}
+			}
+
+			value := &cloneValue{Value: runtime.String("value"), clones: &valueClones}
+			src := &hostMap{
+				Map: runtime.NewObject(),
+				walk: func(ctx context.Context, fn runtime.KeyReadablePredicate) error {
+					_, err := fn(ctx, value, key)
+
+					return err
+				},
+			}
+			result, err := objects.Entries(ctx, src)
+			if result != runtime.None || !errors.Is(err, runtime.ErrInvalidType) {
+				t.Fatalf("got %v, %v; want None and a type error", result, err)
+			}
+
+			position, ok, cause := runtime.InvalidArgumentDetails(err)
+			if !ok || position != 0 || !strings.Contains(cause.Error(), "key:") {
+				t.Fatalf("missing argument/key context: %v", err)
+			}
+
+			if keyCopies != 0 || keyClones != 0 || valueClones != 0 {
+				t.Fatalf("copied rejected entry: key copies=%d, key clones=%d, value clones=%d", keyCopies, keyClones, valueClones)
+			}
+		})
+	}
 }

@@ -8,9 +8,10 @@ import (
 )
 
 // Entries returns associated key/value pairs from one map traversal.
-// Keys and values follow their clone or copy contracts; ordering is unspecified.
+// Keys must be strings; only values follow their clone or copy contracts.
+// Ordering is unspecified.
 // @param value {Map} Map whose entries are returned.
-// @return {Any[][]} Independent two-item lists containing each key and its value.
+// @return {Any[][]} Independent two-item lists containing a String key and its cloned or copied value.
 func Entries(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	src, err := runtime.CastArg[runtime.Map](arg, 0)
 	if err != nil {
@@ -27,17 +28,17 @@ func Entries(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 			return false, err
 		}
 
-		copiedKey, err := runtime.CloneOrCopy(ctx, key)
+		stringKey, err := runtime.CastString(key)
 		if err != nil {
-			return false, fmt.Errorf("key %q: %w", key.String(), err)
+			return false, fmt.Errorf("key: %w", err)
 		}
 
 		copiedValue, err := runtime.CloneOrCopy(ctx, value)
 		if err != nil {
-			return false, fmt.Errorf("key %q: %w", key.String(), err)
+			return false, fmt.Errorf("key %q: %w", stringKey, err)
 		}
 
-		if err := result.Append(ctx, runtime.NewArrayWith(copiedKey, copiedValue)); err != nil {
+		if err := result.Append(ctx, runtime.NewArrayWith(stringKey, copiedValue)); err != nil {
 			return false, err
 		}
 

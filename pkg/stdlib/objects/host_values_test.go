@@ -26,6 +26,7 @@ type (
 		equalityErr error
 		readingKeys *bool
 		walkCalls   *int
+		walk        func(context.Context, runtime.KeyReadablePredicate) error
 	}
 	hostList struct {
 		runtime.List
@@ -117,6 +118,10 @@ func (m *hostMap) ForEach(ctx context.Context, fn runtime.KeyReadablePredicate) 
 
 	if m.walkErr != nil {
 		return m.walkErr
+	}
+
+	if m.walk != nil {
+		return m.walk(ctx, fn)
 	}
 
 	return m.Map.ForEach(ctx, fn)
