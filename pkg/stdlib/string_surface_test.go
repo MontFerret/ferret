@@ -49,13 +49,4 @@ func TestStringEncodingCryptoCapabilities(t *testing.T) {
 			t.Fatalf("obsolete global %s remains registered", name)
 		}
 	}
-
-	path := buildFunctions(t, stdlib.Only(stdlib.Path))
-	if path.Has("JOIN") || !path.Var().Has("PATH::JOIN") {
-		t.Fatal("path joining must be namespaced")
-	}
-
-	if !functions.A2().Has("JOIN") || functions.Var().Has("JOIN") || !functions.Var().Has("PATH::JOIN") {
-		t.Fatal("string and path join registrations must coexist")
-	}
 }

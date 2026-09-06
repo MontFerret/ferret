@@ -2,9 +2,9 @@
 
 `stdlib.Strings` registers global text operations. `stdlib.Encoding` and
 `stdlib.Crypto` register the `encoding::` and `crypto::` namespaces independently.
-`Full()` and `Safe()` include all three groups. The encoding function package
-delegates JSON serialization to `pkg/encoding/json`; it does not own a second
-JSON codec.
+`stdlib.Path` registers the complete `path::` namespace. `Full()` and `Safe()`
+include all four groups. The encoding function package delegates JSON
+serialization to `pkg/encoding/json`; it does not own a second JSON codec.
 
 ## Late-alpha API migration
 
@@ -23,12 +23,16 @@ These changes intentionally remove legacy names and overloads without aliases.
 | `to_base64`, `from_base64` | `encoding::base64_encode`, `encoding::base64_decode` |
 | `escape_html`, `unescape_html` | `encoding::html_escape`, `encoding::html_unescape` |
 | `md5`, `sha1`, `sha512`, `random_token` | The same names under `crypto::` |
+| `base`, `clean`, `dir`, `ext`, `is_abs`, `separate`, `match` | The same names under `path::` |
 | Global path `join(parts...)` | `path::join(parts...)` |
 
-`starts_with`, `ends_with`, `repeat`, and `crypto::sha256` are new. Other path
-functions keep their global registrations. Identifiers now allow underscores
-after digits, so names such as `base64_encode` are callable in FQL; the first
-character must still be a letter.
+All eight path functions move into `path::` without global aliases. Their path
+semantics and arities are unchanged; global `join(values, separator)` is string
+joining. For example, `path::base(path::join("a", "b.txt"))` returns `"b.txt"`.
+
+`starts_with`, `ends_with`, `repeat`, and `crypto::sha256` are new. Identifiers
+allow underscores after digits, so names such as `base64_encode` are callable
+in FQL; the first character must still be a letter.
 
 ## Text and bounds
 
@@ -79,8 +83,17 @@ Regex functions use Go regular expressions and inline flags. `regex_test`
 returns Boolean. `regex_find` returns None or `{match, groups, named}`;
 `regex_find_all` returns an array of those objects. `groups` excludes the full
 match, preserves capture declaration order, and uses empty strings for unmatched
-groups. `named` maps capture names to strings; duplicate names use the first
-declared group. No captures yields `groups: []` and `named: {}`.
+groups. `named` maps capture names to strings. No captures yields `groups: []`
+and `named: {}`.
+
+`regex_find` and `regex_find_all` reject duplicate non-empty capture names with
+an invalid-argument error on the pattern (argument 2), identifying the duplicated
+name. Names are compared exactly, so `value` and `Value` are distinct. Validation
+uses the compiled expression's subexpression names before matching; duplicates
+are invalid even across alternatives, in unmatched optional groups, or when no
+match exists. For example, `(?P<value>a)(?P<value>b)` is rejected. These errors are
+catchable with `ON ERROR`. `regex_test`, `regex_replace`, and `regex_split` retain
+Go's duplicate-name behavior because they do not return named capture objects.
 
 All-match operations use Go's non-overlapping and zero-width match rules.
 `regex_replace` expands `$1`, `${name}`, and `$$` using Go replacement semantics.
@@ -107,7 +120,10 @@ sampling, failure, and cancellation tests without replacing the process reader.
 Package tests cover boundaries, strict types, capture shapes, sampling, and
 iteration failures. FQL integration runs at None, Basic, and Full optimization.
 Registry tests enforce capability isolation, removed aliases, fixed arities,
-and coexistence of string `join` with `path::join`.
+the complete PATH namespace, and coexistence of string `join` with `path::join`.
+Regex tests cover duplicate rejection before matching and unchanged capture
+shapes. `BenchmarkRegexNamedCaptures` measures both structured regex APIs with
+named and unnamed groups on matching and nonmatching input.
 
 Structured Go comments feed the Core API reference and category catalog, which
 now include Encoding and Crypto. The website's generated reference consumes a

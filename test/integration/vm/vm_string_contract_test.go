@@ -26,11 +26,16 @@ func TestModernStringContracts(t *testing.T) {
 		S(`RETURN FMT("{{{1}}} {0} {1}","é",42)`, "{42} é 42", "indexed formatting and escaped braces"),
 		S(`RETURN LIKE("a_b%","a_b%") AND NOT LIKE("acb","a_b")`, true, "glob treats SQL characters literally"),
 		S(`RETURN REGEX_TEST("ABC","(?i)abc")`, true, "regex inline flags"),
-		S(`RETURN REGEX_FIND("é😀","(?P<letter>é)(😀)?") == {match:"é😀",groups:["é","😀"],named:{letter:"é"}}`, true, "structured regex captures"),
+		S(`RETURN REGEX_FIND("é😀 é","(?P<letter>é)(😀)?") == {match:"é😀",groups:["é","😀"],named:{letter:"é"}}`, true, "first structured regex capture"),
+		S(`RETURN REGEX_FIND("b","(?P<letter>a)?(b)") == {match:"b",groups:["","b"],named:{letter:""}}`, true, "unmatched named capture"),
+		S(`RETURN REGEX_FIND_ALL("é😀 é","(?P<letter>é)(?P<emoji>😀)?") == [{match:"é😀",groups:["é","😀"],named:{letter:"é",emoji:"😀"}},{match:"é",groups:["é",""],named:{letter:"é",emoji:""}}]`, true, "all named capture objects"),
 		Nil(`RETURN REGEX_FIND("a","z")`, "no regex match returns None"),
 		S(`RETURN LENGTH(REGEX_FIND_ALL("aba","a"))`, 2, "regex finds all matches"),
 		Array(`RETURN REGEX_FIND_ALL("a","z")`, []any{}, "no matches returns empty array"),
 		S(`RETURN REGEX_REPLACE("a1 a2","(?P<letter>a)([0-9])","${letter}:$2:$$")`, "a:1:$ a:2:$", "regex replacement expansion"),
+		S(`RETURN REGEX_TEST("ab","(?P<value>a)(?P<value>b)")`, true, "regex_test permits duplicate names"),
+		S(`RETURN REGEX_REPLACE("ab","(?P<value>a)(?P<value>b)","$1:$2")`, "a:b", "regex_replace permits duplicate names"),
+		Array(`RETURN REGEX_SPLIT("xabx","(?P<value>a)(?P<value>b)")`, []any{"x", "x"}, "regex_split permits duplicate names"),
 		S(`RETURN ENCODING::JSON_PARSE(ENCODING::JSON_STRINGIFY({x:[1,NONE,true]})) == {x:[1,NONE,true]}`, true, "JSON namespace preserves values"),
 		S(`RETURN ENCODING::QUERY_ESCAPE("a +/?&é")`, "a+%2B%2F%3F%26%C3%A9", "query-form encoding"),
 		S(`RETURN ENCODING::QUERY_UNESCAPE("a+%2B")`, "a +", "query-form decoding"),
@@ -40,6 +45,24 @@ func TestModernStringContracts(t *testing.T) {
 		S(`RETURN CRYPTO::SHA256("foobar")`, "c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", "SHA256 vector"),
 		S(`LET token = CRYPTO::RANDOM_TOKEN(32) RETURN LENGTH(token) == 32 AND REGEX_TEST(token,"^[a-zA-Z0-9]+$")`, true, "secure token contract"),
 	}
+	for _, name := range []string{"REGEX_FIND", "REGEX_FIND_ALL"} {
+		for _, args := range []string{
+			`"ab","(?P<value>a)(?P<value>b)"`,
+			`"b","(?P<value>a)?(?P<value>b)"`,
+			`"b","(?P<value>a)|(?P<value>b)"`,
+			`"z","(?P<value>a)(?P<value>b)"`,
+		} {
+			query := "RETURN " + name + "(" + args + ")"
+			specs = append(specs,
+				spec.NewSpec(query, query).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+					Message:  "invalid argument",
+					Contains: []string{`duplicate named capture group "value"`},
+				}),
+				S(query+` ON ERROR RETURN "caught"`, "caught", name+" duplicate names are catchable"),
+			)
+		}
+	}
+
 	for _, test := range []struct {
 		query   string
 		message string

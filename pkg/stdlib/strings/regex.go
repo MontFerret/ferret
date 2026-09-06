@@ -2,6 +2,7 @@ package strings
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -20,13 +21,17 @@ func RegexTest(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, erro
 	return runtime.Boolean(expression.MatchString(text)), nil
 }
 
-// regex_find finds the first match of a Go regular expression. Use inline flags such as (?i). Captures exclude the full match, preserve declaration order, and use empty strings for unmatched groups. Named captures use the first declared group for duplicate names.
+// regex_find finds the first match of a Go regular expression. Use inline flags such as (?i). Captures exclude the full match, preserve declaration order, and use empty strings for unmatched groups. Duplicate named capture groups are invalid, even when no match exists.
 // @param text {String} The source string.
 // @param pattern {String} The Go regular expression.
 // @return {Object | None} An object with match (String), groups (String[]), and named (Object), or None when no match exists.
 func RegexFind(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	text, expression, err := compileRegex(arg1, arg2)
 	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := validateRegexCaptureNames(expression); err != nil {
 		return runtime.None, err
 	}
 
@@ -38,13 +43,17 @@ func RegexFind(_ context.Context, arg1, arg2 runtime.Value) (runtime.Value, erro
 	return regexMatchValue(expression, match), nil
 }
 
-// regex_find_all finds non-overlapping matches in source order using Go regular expression semantics. Empty matches adjacent to a preceding match are ignored. Use inline flags such as (?i). Capture fields follow regex_find.
+// regex_find_all finds non-overlapping matches in source order using Go regular expression semantics. Empty matches adjacent to a preceding match are ignored. Use inline flags such as (?i). Capture fields follow regex_find. Duplicate named capture groups are invalid, even when no match exists.
 // @param text {String} The source string.
 // @param pattern {String} The Go regular expression.
 // @return {Object[]} Objects with match (String), groups (String[]), and named (Object). No matches returns an empty array.
 func RegexFindAll(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	text, expression, err := compileRegex(arg1, arg2)
 	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := validateRegexCaptureNames(expression); err != nil {
 		return runtime.None, err
 	}
 
@@ -144,6 +153,23 @@ func compileRegex(arg1, arg2 runtime.Value) (string, *regexp.Regexp, error) {
 	return string(text), expression, nil
 }
 
+func validateRegexCaptureNames(expression *regexp.Regexp) error {
+	names := make(map[string]struct{})
+	for _, name := range expression.SubexpNames() {
+		if name == "" {
+			continue
+		}
+
+		if _, exists := names[name]; exists {
+			return runtime.ArgError(fmt.Errorf("duplicate named capture group %q", name), 1)
+		}
+
+		names[name] = struct{}{}
+	}
+
+	return nil
+}
+
 func regexMatchValue(expression *regexp.Regexp, match []string) runtime.Value {
 	groups := make([]runtime.Value, len(match)-1)
 	for index, value := range match[1:] {
@@ -156,9 +182,7 @@ func regexMatchValue(expression *regexp.Regexp, match []string) runtime.Value {
 			continue
 		}
 
-		if _, exists := named[name]; !exists {
-			named[name] = runtime.String(match[index])
-		}
+		named[name] = runtime.String(match[index])
 	}
 
 	return runtime.NewObjectWith(map[string]runtime.Value{

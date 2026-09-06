@@ -95,7 +95,8 @@ and generation checks are described in the
 
 String operations stay global, while the independent Encoding and Crypto groups
 register namespaced serialization and cryptographic operations. Their strict
-argument, Unicode, formatting, and migration contracts are described in
+argument, Unicode, formatting, and migration contracts, together with the full
+`path::` namespace registered by the Path group, are described in
 [String, encoding, and crypto contracts](string-library.md).
 
 ## Testing
