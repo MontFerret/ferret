@@ -50,8 +50,8 @@ type (
 		// Hooks can replace the context passed to subsequent hooks and VM execution.
 		// A nil hook is ignored.
 		BeforeRun(hook BeforeRunHook)
-		// AfterRun registers a hook executed in LIFO order after each session run
-		// attempt.
+		// AfterRun registers a hook executed in LIFO order once all before-run
+		// hooks succeed, even if context validation prevents VM entry.
 		// It receives the run error (if any), and a nil hook is ignored.
 		AfterRun(hook AfterRunHook)
 		// OnClose registers a hook executed in LIFO order when a session is
@@ -86,8 +86,10 @@ type (
 	// It can return a derived context for subsequent hooks and VM execution.
 	BeforeRunHook func(ctx context.Context) (context.Context, error)
 
-	// AfterRunHook runs after each session run attempt.
+	// AfterRunHook runs once for each attempt whose before-run hooks all succeed,
+	// including attempts stopped by context validation before VM entry.
 	// Hooks run in LIFO order, receive the run error (if any), and aggregate hook errors.
+	// The context is the before-run result, or the caller context if that result is nil.
 	AfterRunHook func(ctx context.Context, err error) error
 
 	// SessionCloseHook runs when a session is closed.

@@ -66,21 +66,22 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 		return nil, errors.Join(fmt.Errorf("before run hooks: %w", err), c.Err())
 	}
 
-	if err := c.Err(); err != nil {
-		return nil, err
-	}
-
+	err = c.Err()
 	if ctx == nil {
-		return nil, runtime.Error(runtime.ErrInvalidArgument, "before run hooks returned nil context")
+		ctx = c
+		err = errors.Join(err, runtime.Error(runtime.ErrInvalidArgument, "before run hooks returned nil context"))
+	} else if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+		err = errors.Join(err, ctxErr)
 	}
 
-	if err := ctx.Err(); err != nil {
-		return nil, err
+	var out *vm.Result
+
+	if err == nil {
+		out, err = s.vm.Run(s.extendContext(ctx), s.env)
 	}
 
-	out, err := s.vm.Run(s.extendContext(ctx), s.env)
-
-	// After-run hooks always run and receive the VM run error (if any).
+	// Successful before-run hooks must be paired even when context validation
+	// prevents VM entry. Every after-run hook receives the same primary error.
 	if hookErr := s.hooks.runAfterRunHooks(ctx, err); hookErr != nil {
 		var closeErr error
 

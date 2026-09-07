@@ -12,14 +12,14 @@ import (
 
 // Plan wraps a compiled program together with the host state needed to execute it.
 type Plan struct {
-	prog            *bytecode.Program
-	host            *host
 	hooks           planHooks
 	sessionHooks    sessionHooks
+	prog            *bytecode.Program
+	host            *host
 	limiter         *sessionLimiter
 	pool            *vm.Pool
-	lifecycle       creationLifecycle
 	engineLifecycle *creationLifecycle
+	lifecycle       creationLifecycle
 }
 
 // Params returns the list of parameter names declared in the query.

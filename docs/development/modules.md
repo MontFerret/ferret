@@ -38,8 +38,12 @@ Ordering is part of the contract:
 * close paths aggregate errors and continue cleanup.
 
 A before-run hook may return a derived context for later hooks and VM execution.
-Context propagation, error joining, and cleanup behavior must remain consistent
-between normal and debug sessions.
+Once all before-run hooks succeed, after-run hooks run exactly once, including
+when subsequent context validation prevents VM entry. They receive the returned
+hook context, or the original caller context if the hook context is nil, and the
+same execution or validation error. Hook failures are joined with that error.
+Pre-canceled admission and failed before-run hooks do not invoke after-run hooks.
+These rules apply to both normal and debug sessions.
 
 ## SDK authoring layer
 

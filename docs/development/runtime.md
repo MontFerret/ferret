@@ -101,6 +101,10 @@ The root embedding lifecycle is hierarchical:
 
 `Engine.Run` owns its temporary session and plan, closes them in that order,
 and joins execution and cleanup errors while retaining available encoded output.
+Successful cleanup preserves the original runtime diagnostic. Compilation also
+preserves the original diagnostic when hooks, cancellation checks, and lifecycle
+checks add no failure, so `FormatError` retains its source locations and hints.
+Actual additional failures are joined without changing aggregate error rendering.
 A caller that creates children directly closes sessions before plans, and plans
 before the engine. Parents have no descendant registries. Ordinary execution
 owners cancel and settle `Run` before closing their session; debug closure

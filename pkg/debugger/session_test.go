@@ -85,6 +85,44 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	}
 }
 
+func TestSessionCloseDoesNotRepeatAbortedStartHooks(t *testing.T) {
+	execution := &fakeExecution{status: vm.DebugExecutionNew}
+	services := &fakeSessionServices{beforeRun: func(ctx context.Context) (context.Context, error) {
+		ctx, cancel := context.WithCancel(ctx)
+		cancel()
+
+		return ctx, nil
+	}}
+	session, err := NewSession(Config{
+		Execution: execution,
+		Values:    vm.NewDebugValueAccess(),
+		Services:  services,
+		Source:    source.NewAnonymous("RETURN 1"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = session.Close() })
+	if event, err := session.Start(t.Context()); event != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("aborted start: event=%+v err=%v", event, err)
+	}
+
+	if execution.Status() != vm.DebugExecutionNew || services.afterCalls != 1 || !errors.Is(services.afterRunErr, context.Canceled) {
+		t.Fatalf("aborted start: status=%v after hooks=%d error=%v", execution.Status(), services.afterCalls, services.afterRunErr)
+	}
+
+	for range 2 {
+		if err := session.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if services.afterCalls != 1 {
+		t.Fatalf("close repeated aborted attempt's hooks: %d", services.afterCalls)
+	}
+}
+
 func TestSessionCloseReturnsAndCachesExecutionCloseError(t *testing.T) {
 	closeErr := errors.New("execution close failed")
 	src := source.New("close.fql", "RETURN 1")

@@ -14,14 +14,14 @@ import (
 
 // Engine compiles queries into reusable plans and runs them against the configured host.
 type Engine struct {
-	lifecycle         creationLifecycle
-	optimizationLevel compiler.OptimizationLevel
 	compiler          *compiler.Compiler
 	debugCompiler     *compiler.Compiler
 	loader            *artifact.Loader
 	host              *host
 	hooks             *hookRegistry
 	limiter           *sessionLimiter
+	lifecycle         creationLifecycle
+	optimizationLevel compiler.OptimizationLevel
 	idleCap           int
 	totalCap          int
 	ownsNetwork       bool
@@ -146,7 +146,11 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 
 	opts, err := newPlanOptions(level, debug, setters)
 	if err != nil {
-		return nil, errors.Join(err, ctx.Err())
+		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+			err = errors.Join(err, ctxErr)
+		}
+
+		return nil, err
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -164,7 +168,12 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 	}
 
 	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
-		return nil, errors.Join(fmt.Errorf("before compile hooks: %w", err), ctx.Err())
+		err = fmt.Errorf("before compile hooks: %w", err)
+		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+			err = errors.Join(err, ctxErr)
+		}
+
+		return nil, err
 	}
 
 	var prog *bytecode.Program
@@ -174,12 +183,23 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 		prog, err = selected.Compile(ctx, src)
 	}
 
-	err = errors.Join(err, ctx.Err())
+	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+		err = errors.Join(err, ctxErr)
+	}
+
 	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
 		err = errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
 	}
 
-	if err = errors.Join(err, ctx.Err(), e.lifecycle.check()); err != nil {
+	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+		err = errors.Join(err, ctxErr)
+	}
+
+	if lifecycleErr := e.lifecycle.check(); lifecycleErr != nil {
+		err = errors.Join(err, lifecycleErr)
+	}
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -216,14 +236,22 @@ func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (ou
 		return nil, err
 	}
 
-	defer func() { resultErr = errors.Join(resultErr, plan.Close()) }()
+	defer func() {
+		if closeErr := plan.Close(); closeErr != nil {
+			resultErr = errors.Join(resultErr, closeErr)
+		}
+	}()
 
 	session, err := plan.NewSession(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	defer func() { resultErr = errors.Join(resultErr, session.Close()) }()
+	defer func() {
+		if closeErr := session.Close(); closeErr != nil {
+			resultErr = errors.Join(resultErr, closeErr)
+		}
+	}()
 
 	return session.Run(ctx)
 }

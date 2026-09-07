@@ -12,13 +12,13 @@ import (
 // Transitions are protected by mu; callbacks and waiting happen without it.
 // Closing done publishes the immutable cleanup result to concurrent closers.
 type creationLifecycle struct {
-	mu       sync.Mutex
-	active   int
-	closing  bool
+	err      error
 	idle     chan struct{}
 	done     chan struct{}
 	stopping chan struct{}
-	err      error
+	active   int
+	mu       sync.Mutex
+	closing  bool
 }
 
 func (l *creationLifecycle) enter() error {

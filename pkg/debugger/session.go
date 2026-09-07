@@ -46,6 +46,7 @@ type Session struct {
 	closed           atomic.Bool
 	started          atomic.Bool
 	afterRun         bool
+	executionClosed  bool
 }
 
 // NewSession creates an advanced debugger session from explicit dependencies.
@@ -120,11 +121,22 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 		return nil, errors.Join(fmt.Errorf("before run hooks: %w", err), ctx.Err())
 	}
 
-	if err := s.checkContext(runCtx); err != nil {
-		return nil, err
+	err = s.checkContext(runCtx)
+	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+		err = errors.Join(err, ctxErr)
 	}
 
-	if err := ctx.Err(); err != nil {
+	if err != nil {
+		if runCtx == nil {
+			runCtx = ctx
+		}
+
+		// Settle this attempt without consuming a later successful Start's hooks
+		// or making Close repeat them. Execution has not been entered yet.
+		if hookErr := s.services.AfterRun(runCtx, err); hookErr != nil {
+			err = errors.Join(err, fmt.Errorf("after run hooks: %w", hookErr))
+		}
+
 		return nil, err
 	}
 
@@ -690,6 +702,19 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 			out.Error = context.Canceled
 		}
 
+		if event.Error != nil {
+			out.Error = errors.Join(out.Error, event.Error)
+		}
+
+		// Close can win while the VM is returning an inspectable stop. Drain
+		// retained state before publishing termination and cache the cleanup
+		// result without making the pending Close call the execution again.
+		s.executionClosed = true
+		if closeErr := s.execution.Close(); closeErr != nil {
+			s.closeErr = errors.Join(s.closeErr, closeErr)
+			out.Error = errors.Join(out.Error, closeErr)
+		}
+
 		if hookErr := s.runAfterHooks(out.Error); hookErr != nil {
 			out.Error = errors.Join(out.Error, hookErr)
 		}
@@ -923,7 +948,8 @@ func (s *Session) Close() error {
 			s.closeErr = errors.Join(s.closeErr, s.runAfterHooks(context.Canceled))
 		}
 
-		if s.execution != nil {
+		if s.execution != nil && !s.executionClosed {
+			s.executionClosed = true
 			s.closeErr = errors.Join(s.closeErr, s.execution.Close())
 		}
 

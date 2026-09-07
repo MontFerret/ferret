@@ -22,13 +22,13 @@ func TestCompileRejectsInvalidContexts(t *testing.T) {
 	expired, cancelDeadline := context.WithDeadline(t.Context(), time.Unix(1, 0))
 	defer cancelDeadline()
 	for _, tc := range []struct {
-		name string
 		ctx  context.Context
 		want error
+		name string
 	}{
-		{"nil", nil, runtime.ErrInvalidArgument},
-		{"canceled", canceled, context.Canceled},
-		{"deadline", expired, context.DeadlineExceeded},
+		{name: "nil", ctx: nil, want: runtime.ErrInvalidArgument},
+		{name: "canceled", ctx: canceled, want: context.Canceled},
+		{name: "deadline", ctx: expired, want: context.DeadlineExceeded},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			program, err := c.Compile(tc.ctx, source.NewAnonymous("RETURN 1"))
