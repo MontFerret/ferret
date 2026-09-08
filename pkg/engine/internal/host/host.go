@@ -48,47 +48,6 @@ type (
 	}
 )
 
-func (h *hostContext) Logger() logging.Logger {
-	return h.logger
-}
-
-func (h *hostContext) FileSystem() fs.FileSystem {
-	return h.fs
-}
-
-func (h *hostContext) Network() ferretnet.Network {
-	return h.network
-}
-
-func (h *hostContext) Params() runtime.Params {
-	return h.params
-}
-
-func (h *hostContext) Library() runtime.Library {
-	return h.library
-}
-
-func (h *hostContext) Encoding() encoding.CodecRegistrar {
-	return h.encoding
-}
-
-func (h *hostContext) Build() (*Host, error) {
-	funcs, err := h.library.Build()
-	if err != nil {
-		return nil, err
-	}
-
-	return &Host{
-		Functions:  funcs,
-		Params:     h.params.Clone(),
-		Encoding:   h.encoding.Clone(),
-		Logger:     h.logger,
-		FileSystem: h.fs,
-		Network:    h.network,
-		FSReadOnly: h.fsReadOnly,
-	}, nil
-}
-
 func newHostContext(opts Config, resources *resource.Manager) (*hostContext, error) {
 	logger, err := logging.New(opts.Logger...)
 	if err != nil {
@@ -128,5 +87,46 @@ func newHostContext(opts Config, resources *resource.Manager) (*hostContext, err
 		fs:         rootFs,
 		network:    network,
 		fsReadOnly: opts.FSReadOnly,
+	}, nil
+}
+
+func (h *hostContext) Logger() logging.Logger {
+	return h.logger
+}
+
+func (h *hostContext) FileSystem() fs.FileSystem {
+	return h.fs
+}
+
+func (h *hostContext) Network() ferretnet.Network {
+	return h.network
+}
+
+func (h *hostContext) Params() runtime.Params {
+	return h.params
+}
+
+func (h *hostContext) Library() runtime.Library {
+	return h.library
+}
+
+func (h *hostContext) Encoding() encoding.CodecRegistrar {
+	return h.encoding
+}
+
+func (h *hostContext) build() (*Host, error) {
+	funcs, err := h.library.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Host{
+		Functions:  funcs,
+		Params:     h.params.Clone(),
+		Encoding:   h.encoding.Clone(),
+		Logger:     h.logger,
+		FileSystem: h.fs,
+		Network:    h.network,
+		FSReadOnly: h.fsReadOnly,
 	}, nil
 }

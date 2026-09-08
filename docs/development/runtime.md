@@ -80,13 +80,16 @@ fails. Materializers may return additional closers or explicitly adopt values
 discovered during traversal. The result remains responsible for those resources
 until `Close`.
 
-The root embedding layer uses this mechanism to produce `encoding.Output`.
+The native engine uses this mechanism to produce `encoding.Output`, also exposed
+through the root embedding façade.
 Encoders can discover nested resources during traversal, so encoding failures and
 missing-codec failures must still close all resources already owned or adopted.
 
 ## Engine, plan, and session lifecycle
 
-Native Ferret protects object integrity; callers orchestrate object lifetime:
+`pkg/engine` owns the native lifecycle implementation; root `ferret` aliases its
+public embedding types. Native Ferret protects object integrity; callers
+orchestrate object lifetime:
 
 * `Engine` owns the configured host, compilers, loader, module hooks, session
   limiter, filesystem, and any network service it created.
@@ -99,7 +102,7 @@ Native Ferret protects object integrity; callers orchestrate object lifetime:
   the engine's read-only policy; the session owns and closes the replacement
   filesystem.
 
-Engine host-resource ownership is recorded in `internal/resource.Manager`.
+Engine host-resource ownership is recorded in `pkg/engine/internal/resource.Manager`.
 The filesystem and Ferret-created networks are owned; `WithNetwork` explicitly
 borrows the caller's network. Each acquisition registers a callback that captures
 that resource instance. Replacing a named resource retires its previous owned
@@ -131,6 +134,9 @@ its normal cleanup path.
 Session close hooks precede host-resource cleanup, which precedes permit release
 and, for ordinary sessions, return of the borrowed VM. Debugger closure still
 settles retained execution before closing the embedding session services.
+Those services keep their resource manager and acquired limiter permit private;
+their constructor does not transfer construction rollback. Debug services return
+the permit directly, while ordinary sessions also return a VM to the plan pool.
 Manager calls are serialized by construction and the owner's existing once-only
 shutdown. Managers have no independent synchronization or resource lookup API.
 VM resources, query-value cleanup, and limiter permits retain their separate
@@ -181,8 +187,9 @@ through `errors.Is`, including when cancellation accompanies an option or hook
 failure.
 
 Native `PlanOption` and `SessionOption` target private native configurations,
-following the root `Option` pattern. They are distinct from Universal API
-functional options. Non-nil options run once in order, joining validation errors
+following the native `Option` pattern also aliased by root `ferret`. They are
+distinct from Universal API functional options. Non-nil options run once in
+order, joining validation errors
 before resource acquisition. Portable semantic data may be shared with the
 Universal API; runtime-specific option adaptation belongs at a future adapter
 boundary.
@@ -207,8 +214,8 @@ Diagnostic aggregates expose `Unwrap() []error`, and runtime errors unwrap to
 their underlying diagnostic, which in turn retains its cause.
 
 Before hooks run in registration order. After and close hooks unwind in reverse
-order, with the error behavior defined by `pkg/module` and the root hook
-implementation. See [Modules, SDK, and standard library](modules.md).
+order, with the error behavior defined by `pkg/module` and the engine's internal
+host hook implementation. See [Modules, SDK, and standard library](modules.md).
 
 ## Performance-sensitive boundaries
 
@@ -225,10 +232,10 @@ ownership correctness.
 ## Testing
 
 Use `pkg/runtime` tests for value and capability contracts, `pkg/vm` tests for
-instruction execution and ownership transitions, and top-level tests for
-Engine/Plan/Session lifecycle and output behavior. Cross-layer semantics should
-also have coverage in `test/integration/vm` or the relevant compiler/optimization
-suite.
+instruction execution and ownership transitions, `pkg/engine` tests for native
+Engine/Plan/Session lifecycle and output behavior, and root tests for the curated
+public façade. Cross-layer semantics should also have coverage in
+`test/integration/vm` or the relevant compiler/optimization suite.
 
 Resource tests should cover aliases, borrowed versus owned values, failure,
 cancellation, unwind, materialization, and idempotent cleanup. Performance work

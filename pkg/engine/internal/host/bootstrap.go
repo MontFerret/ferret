@@ -36,5 +36,5 @@ func (b *Bootstrap) Hooks() module.HookRegistrar {
 // Build finalizes the function library and snapshots parameters and codecs.
 // It does not run initialization hooks or transfer resource ownership.
 func (b *Bootstrap) Build() (*Host, error) {
-	return b.host.Build()
+	return b.host.build()
 }

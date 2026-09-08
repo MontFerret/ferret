@@ -210,16 +210,14 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 	session, err := debugger.NewSession(debugger.Config{
 		Execution: execution,
 		Values:    vm.NewDebugValueAccess(),
-		Services: &enginesession.DebugServices{
+		Services: enginesession.NewDebugServices(enginesession.DebugServicesConfig{
 			Hooks:             dependencies.hooks,
-			ReleasePermit:     enginesession.NewPermitRelease(dependencies.limiter, nil),
 			Encoding:          dependencies.host.Encoding,
 			OutputContentType: dependencies.options.outputContentType,
 			Logger:            dependencies.logger,
 			FileSystem:        dependencies.filesystem,
 			Network:           dependencies.host.Network,
-			Resources:         dependencies.resources,
-		},
+		}, dependencies.limiter, dependencies.resources),
 		Source:      dependencies.program.Source,
 		DebugPoints: dependencies.program.Metadata.DebugPoints,
 		Params:      dependencies.program.Params,

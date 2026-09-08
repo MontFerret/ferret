@@ -34,10 +34,11 @@ source-level policy into the dispatch loop.
   presentation limits;
 * running embedding lifecycle services and materializing final output.
 
-The root package wires a plan's VM, host services, hooks, source, and output
-configuration into `pkg/debugger.Session`. It aliases the supported debugger
-types through the embedding API without moving debugger policy into the root
-package.
+`pkg/engine` wires a plan's VM, host services, hooks, source, and output
+configuration into `pkg/debugger.Session`. Its internal session package supplies
+the native debugger services. Root `ferret` aliases the supported debugger types
+through the curated embedding API; source-level debugger policy stays in
+`pkg/debugger`.
 
 ## Session state and concurrency
 
@@ -88,7 +89,11 @@ The embedding services receive their own host-resource manager from session
 construction. It borrows Engine services and owns a session filesystem override,
 if configured. Service closure runs close hooks, closes owned host resources,
 and releases the limiter permit. Retained VM execution remains owned and closed
-by the debugger session rather than by this manager.
+by the debugger session rather than by this manager. Native debug services bind
+the concrete limiter and resource manager through a constructor and keep them
+private. They never receive a pooled VM or a VM-return callback. The session
+builder retains rollback until construction succeeds; the debugger serializes
+service use and invokes service closure once.
 
 When all before-run hooks succeed but context validation prevents VM entry,
 `Start` settles that attempt's after-run hooks immediately. The session remains
@@ -115,7 +120,8 @@ normal execution path must be explicit, measurable, and immediately bypassable.
 
 Keep VM retained-execution tests separate from source-level breakpoint,
 stepping, evaluation, formatting, and lifecycle tests in `pkg/debugger`. Use
-top-level tests for public `DebugSession` composition and output behavior.
+`pkg/engine` tests for native `DebugSession` composition and output behavior,
+and root tests for supported façade usage.
 
 Cover invalid state transitions, concurrent pause/close, cancellation, nested
 frames, breakpoint resolution, stale value references, formatter bounds,

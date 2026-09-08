@@ -73,16 +73,31 @@ Begin in the package that owns the requested behavior:
 | Module contracts and authoring support | `pkg/module`, `pkg/sdk` |
 | Built-in functions and namespaces | `pkg/stdlib` |
 | Controlled filesystem and network access | `pkg/fs`, `pkg/net` |
-| Embedding lifecycle and composition | top-level `ferret` package |
+| Public embedding façade | top-level `ferret` package |
+| Native embedding lifecycle and composition | `pkg/engine` |
 
 Do not duplicate an owning package's semantics in a consumer. In particular,
 runtime value behavior belongs in `pkg/runtime`, not in VM, stdlib, encoding, or
 debugger-specific type switches.
 
+The embedding dependency direction is `ferret -> pkg/engine ->
+pkg/engine/internal/* -> lower-level pkg/*`:
+
+* Root `ferret` is the curated public embedding façade; it contains no substantial
+  engine implementation.
+* `pkg/engine` owns Engine, Plan, Session, their native APIs, and orchestration.
+* `pkg/engine/internal/*` contains engine-owned components, used only within the
+  engine subtree; these packages must not import root `ferret` or `pkg/engine`.
+* Lower-level production packages must not import root `ferret`. Depend on
+  `pkg/engine` only when implementing an integration that requires engine
+  semantics, never for convenience types or helpers.
+* Downstream-style examples and public API tests use root `ferret`; native
+  adapters and implementation tooling use `pkg/engine`.
+
 ## Public API and compatibility
 
-Treat the top-level package, `pkg/module`, `pkg/runtime`, and `pkg/sdk` as
-API-sensitive.
+Treat the top-level package, `pkg/engine`, `pkg/module`, `pkg/runtime`, and
+`pkg/sdk` as API-sensitive.
 
 * Preserve existing public and language-visible behavior unless the task
   explicitly changes it.
