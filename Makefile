@@ -86,12 +86,12 @@ fmt:
 	go fmt ./... && \
 	go -C ${DIR_TOOL_APIREF} fmt ./... && \
 	go -C ${DIR_TOOL_APIPUBLISH} fmt ./... && \
-	goimports -w -local github.com/MontFerret ${DIR_PKG} ${DIR_TOOLS} ${DIR_INTEG} ${DIR_E2E}
+	goimports -w -local github.com/MontFerret ./*.go ${DIR_PKG} ${DIR_TOOLS} ${DIR_INTEG} ${DIR_E2E}
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck ${STATICCHECK_FLAGS} $$(go list ${DIR_PKG}/... | grep -v /fql) && \
+	staticcheck ${STATICCHECK_FLAGS} $$(go list . ${DIR_PKG}/... | grep -v /fql) && \
 	(cd ${DIR_TOOL_APIREF} && staticcheck ${STATICCHECK_FLAGS} $$(go list ./...)) && \
 	(cd ${DIR_TOOL_APIPUBLISH} && staticcheck ${STATICCHECK_FLAGS} $$(go list ./...)) && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...
