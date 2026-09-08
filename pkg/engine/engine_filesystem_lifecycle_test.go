@@ -19,7 +19,7 @@ func TestEngineCloseClosesRootFileSystem(t *testing.T) {
 		t.Fatalf("new engine: %v", err)
 	}
 
-	filesystem := engine.host.fs
+	filesystem := engine.host.FileSystem
 
 	if err := engine.Close(); err != nil {
 		t.Fatalf("close engine: %v", err)
@@ -123,16 +123,10 @@ func TestNewJoinsConstructionHookAndFileSystemCloseErrors(t *testing.T) {
 	replacement := &failingCloseFileSystem{FileSystem: filesystem, closeErr: filesystemErr}
 	mod := testModule{
 		registerFn: func(boot module.Bootstrap) error {
-			internal, ok := boot.(*bootstrap)
-			if !ok {
-				t.Fatalf("expected internal bootstrap, got %T", boot)
-			}
-
 			if err := resources.Own(resource.FileSystem, replacement.Close); err != nil {
 				t.Fatal(err)
 			}
 
-			internal.host.fs = replacement
 			boot.Hooks().Engine().OnClose(func() error {
 				return hookErr
 			})

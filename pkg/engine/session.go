@@ -8,7 +8,9 @@ import (
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
+	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
@@ -16,36 +18,32 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-type (
-	sessionPermitRelease func(*vm.VM)
-
-	// Session represents the execution of a compiled Ferret program.
-	// It holds the state of the execution, including the virtual machine, environment, and encoding registry.
-	// A Session is created from a Plan and can be run to obtain results.
-	//
-	// Session is not safe for concurrent use by multiple goroutines, except that
-	// Close is idempotent and safe to call multiple times, including concurrently.
-	// It is typically used for a single logical execution. When a Session is created
-	// directly via Plan.NewSession, it may be reused for multiple sequential runs as
-	// long as the environment and encoding registry are not modified between runs.
-	// Helper APIs such as Engine.Run may take ownership of the Session and close it
-	// after a single execution, in which case the caller must not attempt to reuse it.
-	Session struct {
-		logger            logging.Logger
-		closeErr          error
-		network           ferretnet.Network
-		hooks             sessionHooks
-		fs                fs.FileSystem
-		env               *vm.Environment
-		encoding          *encoding.Registry
-		vm                *vm.VM
-		release           sessionPermitRelease
-		resources         *resource.Manager
-		outputContentType string
-		closeOnce         sync.Once
-		closed            atomic.Bool
-	}
-)
+// Session represents the execution of a compiled Ferret program.
+// It holds the state of the execution, including the virtual machine, environment, and encoding registry.
+// A Session is created from a Plan and can be run to obtain results.
+//
+// Session is not safe for concurrent use by multiple goroutines, except that
+// Close is idempotent and safe to call multiple times, including concurrently.
+// It is typically used for a single logical execution. When a Session is created
+// directly via Plan.NewSession, it may be reused for multiple sequential runs as
+// long as the environment and encoding registry are not modified between runs.
+// Helper APIs such as Engine.Run may take ownership of the Session and close it
+// after a single execution, in which case the caller must not attempt to reuse it.
+type Session struct {
+	logger            logging.Logger
+	closeErr          error
+	network           ferretnet.Network
+	hooks             *host.SessionHooks
+	fs                fs.FileSystem
+	env               *vm.Environment
+	encoding          *encoding.Registry
+	vm                *vm.VM
+	release           enginesession.PermitRelease
+	resources         *resource.Manager
+	outputContentType string
+	closeOnce         sync.Once
+	closed            atomic.Bool
+}
 
 // Run executes the session with the provided context and returns encoded output.
 // Successful output remains available alongside after-run hook or result-cleanup
@@ -64,7 +62,7 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 	}
 
 	// Before-run hooks can replace the context used for the rest of execution.
-	ctx, err := s.hooks.runBeforeRunHooks(c)
+	ctx, err := s.hooks.RunBeforeRun(c)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("before run hooks: %w", err), c.Err())
 	}
@@ -85,7 +83,7 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 
 	// Successful before-run hooks must be paired even when context validation
 	// prevents VM entry. Every after-run hook receives the same primary error.
-	hookErr := s.hooks.runAfterRunHooks(ctx, err)
+	hookErr := s.hooks.RunAfterRun(ctx, err)
 	if hookErr != nil {
 		hookErr = fmt.Errorf("after run hooks: %w", hookErr)
 	}
@@ -98,7 +96,7 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 		return nil, err
 	}
 
-	output, outputErr := newOutput(s.encoding, s.outputContentType, out)
+	output, outputErr := enginesession.Materialize(s.encoding, s.outputContentType, out)
 	closeErr := out.Close()
 
 	if outputErr != nil {
@@ -132,7 +130,7 @@ func (s *Session) Close() error {
 		s.fs = nil
 		s.resources = nil
 
-		if hookErr := s.hooks.runCloseHooks(); hookErr != nil {
+		if hookErr := s.hooks.RunClose(); hookErr != nil {
 			s.closeErr = fmt.Errorf("close hooks: %w", hookErr)
 		}
 

@@ -207,11 +207,11 @@ func TestEngineNetworkOwnershipFollowsLastOption(t *testing.T) {
 
 			eng := mustNewEngine(t, setters...)
 			if tt.managedLast {
-				if got := eng.host.network.HTTP(); got != managedClient {
+				if got := eng.host.Network.HTTP(); got != managedClient {
 					t.Fatalf("expected network options client, got %T", got)
 				}
-			} else if eng.host.network != injectedNetwork {
-				t.Fatalf("expected injected network, got %T", eng.host.network)
+			} else if eng.host.Network != injectedNetwork {
+				t.Fatalf("expected injected network, got %T", eng.host.Network)
 			}
 
 			wantManagedCloses := 1
@@ -257,7 +257,7 @@ func TestEngineClosesSupersededManagedNetworks(t *testing.T) {
 		WithNetworkOptions(ferretnet.WithHTTPClient(secondClient)),
 	)
 
-	if got := eng.host.network.HTTP(); got != secondClient {
+	if got := eng.host.Network.HTTP(); got != secondClient {
 		t.Fatalf("expected second managed network to be selected, got %T", got)
 	}
 

@@ -155,7 +155,7 @@ func TestEngineResourceCleanupIsOnceOnly(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			engine.host.fs = replacement
+			engine.host.FileSystem = replacement
 			results := make([]error, 8)
 			var wg sync.WaitGroup
 

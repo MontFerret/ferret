@@ -513,12 +513,12 @@ func TestWithStdlibSafeRegistersSelectedGroups(t *testing.T) {
 	eng := mustNewEngine(t, WithStdlib(stdlib.Safe()))
 	defer func() { _ = eng.Close() }()
 
-	if !eng.host.functions.Has("CONCAT") {
+	if !eng.host.Functions.Has("CONCAT") {
 		t.Fatal("expected safe stdlib to register non-IO functions")
 	}
 
 	for _, name := range []string{"IO::FS::READ", "IO::NET::HTTP::GET"} {
-		if eng.host.functions.Has(name) {
+		if eng.host.Functions.Has(name) {
 			t.Fatalf("expected safe stdlib to exclude %s", name)
 		}
 	}
@@ -537,7 +537,7 @@ func TestWithFunctionsRegistrarPreservesQualifiedHostFunctionNames(t *testing.T)
 	)
 	defer func() { _ = eng.Close() }()
 
-	if got := eng.host.functions.List(); !slices.Equal(got, []string{"Tools::Risk::Calculate_Risk"}) {
+	if got := eng.host.Functions.List(); !slices.Equal(got, []string{"Tools::Risk::Calculate_Risk"}) {
 		t.Fatalf("expected declared host metadata, got %v", got)
 	}
 
@@ -633,8 +633,8 @@ func TestWithStdlibEmptyMatchesWithoutStdlib(t *testing.T) {
 	eng := mustNewEngine(t, WithStdlib(stdlib.Empty()))
 	defer func() { _ = eng.Close() }()
 
-	if eng.host.functions.Size() != 0 {
-		t.Fatalf("expected empty stdlib to register no functions, got %d", eng.host.functions.Size())
+	if eng.host.Functions.Size() != 0 {
+		t.Fatalf("expected empty stdlib to register no functions, got %d", eng.host.Functions.Size())
 	}
 }
 
@@ -644,15 +644,15 @@ func TestStdlibOptionsUseLastSelection(t *testing.T) {
 	withoutThenFull := mustNewEngine(t, WithoutStdlib(), WithStdlib(stdlib.Full()))
 	defer func() { _ = withoutThenFull.Close() }()
 
-	if !withoutThenFull.host.functions.Has("CONCAT") {
+	if !withoutThenFull.host.Functions.Has("CONCAT") {
 		t.Fatal("expected WithStdlib after WithoutStdlib to restore full stdlib")
 	}
 
 	fullThenWithout := mustNewEngine(t, WithStdlib(stdlib.Full()), WithoutStdlib())
 	defer func() { _ = fullThenWithout.Close() }()
 
-	if fullThenWithout.host.functions.Size() != 0 {
-		t.Fatalf("expected WithoutStdlib after WithStdlib to disable stdlib, got %d functions", fullThenWithout.host.functions.Size())
+	if fullThenWithout.host.Functions.Size() != 0 {
+		t.Fatalf("expected WithoutStdlib after WithStdlib to disable stdlib, got %d functions", fullThenWithout.host.Functions.Size())
 	}
 }
 

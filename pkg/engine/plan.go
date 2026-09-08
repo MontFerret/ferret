@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
+	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -15,11 +17,11 @@ import (
 // Callers own directly created sessions and must close them before the plan.
 type Plan struct {
 	closeErr     error
-	hooks        planHooks
-	sessionHooks sessionHooks
+	hooks        *host.PlanHooks
+	sessionHooks *host.SessionHooks
 	prog         *bytecode.Program
-	host         *host
-	limiter      *sessionLimiter
+	host         *host.Host
+	limiter      *enginesession.Limiter
 	pool         *vm.Pool
 	closed       chan struct{}
 	closeOnce    sync.Once
@@ -82,7 +84,7 @@ func (p *Plan) Close() error {
 	p.closeOnce.Do(func() {
 		close(p.closed)
 
-		if hookErr := p.hooks.runCloseHooks(); hookErr != nil {
+		if hookErr := p.hooks.RunClose(); hookErr != nil {
 			p.closeErr = fmt.Errorf("close hooks: %w", hookErr)
 		}
 

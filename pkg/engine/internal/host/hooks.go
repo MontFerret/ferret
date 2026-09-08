@@ -1,4 +1,4 @@
-package engine
+package host
 
 import (
 	"context"
@@ -9,76 +9,69 @@ import (
 )
 
 type (
-	engineHooks interface {
-		runInitHooks() error
-		runCloseHooks() error
+	// Hooks groups the mutable registrars and snapshots their callbacks for execution.
+	Hooks struct {
+		EngineHooks  *EngineHooks
+		PlanHooks    *PlanHooks
+		SessionHooks *SessionHooks
 	}
 
-	planHooks interface {
-		runBeforeCompileHooks(ctx context.Context) error
-		runAfterCompileHooks(ctx context.Context, err error) error
-		runCloseHooks() error
-	}
-
-	sessionHooks interface {
-		runBeforeRunHooks(ctx context.Context) (context.Context, error)
-		runAfterRunHooks(ctx context.Context, err error) error
-		runCloseHooks() error
-	}
-
-	hookRegistry struct {
-		engine  *engineHookRegistry
-		plan    *planHookRegistry
-		session *sessionHookRegistry
-	}
-
-	engineHookRegistry struct {
+	// EngineHooks stores initialization and shutdown callbacks.
+	EngineHooks struct {
 		onInit  []module.EngineInitHook
 		onClose []module.EngineCloseHook
 	}
 
-	planHookRegistry struct {
+	// PlanHooks stores compilation and plan shutdown callbacks.
+	PlanHooks struct {
 		beforeCompile []module.BeforeCompileHook
 		afterCompile  []module.AfterCompileHook
 		onClose       []module.PlanCloseHook
 	}
 
-	sessionHookRegistry struct {
+	// SessionHooks stores execution and session shutdown callbacks.
+	SessionHooks struct {
 		beforeRun []module.BeforeRunHook
 		afterRun  []module.AfterRunHook
 		onClose   []module.SessionCloseHook
 	}
 )
 
-func newHookRegistry() *hookRegistry {
-	return &hookRegistry{
-		engine:  &engineHookRegistry{},
-		plan:    &planHookRegistry{},
-		session: &sessionHookRegistry{},
+// NewHooks creates empty registrars for each native lifecycle stage.
+func NewHooks() *Hooks {
+	return &Hooks{
+		EngineHooks:  &EngineHooks{},
+		PlanHooks:    &PlanHooks{},
+		SessionHooks: &SessionHooks{},
 	}
 }
 
-func (hr *hookRegistry) Engine() module.EngineHookRegistrar {
-	return hr.engine
+// Engine exposes engine hook registration.
+func (hr *Hooks) Engine() module.EngineHookRegistrar {
+	return hr.EngineHooks
 }
 
-func (hr *hookRegistry) Plan() module.PlanHookRegistrar {
-	return hr.plan
+// Plan exposes plan hook registration.
+func (hr *Hooks) Plan() module.PlanHookRegistrar {
+	return hr.PlanHooks
 }
 
-func (hr *hookRegistry) Session() module.SessionHookRegistrar {
-	return hr.session
+// Session exposes session hook registration.
+func (hr *Hooks) Session() module.SessionHookRegistrar {
+	return hr.SessionHooks
 }
 
-func (hr *hookRegistry) clone() *hookRegistry {
-	return &hookRegistry{
-		engine:  hr.engine.clone(),
-		plan:    hr.plan.clone(),
-		session: hr.session.clone(),
+// Clone isolates the execution callbacks from subsequent module registration.
+func (hr *Hooks) Clone() *Hooks {
+	return &Hooks{
+		EngineHooks:  hr.EngineHooks.clone(),
+		PlanHooks:    hr.PlanHooks.clone(),
+		SessionHooks: hr.SessionHooks.clone(),
 	}
 }
 
-func (e *engineHookRegistry) OnInit(hook module.EngineInitHook) {
+// OnInit appends a non-nil initialization callback.
+func (e *EngineHooks) OnInit(hook module.EngineInitHook) {
 	if hook == nil {
 		return
 	}
@@ -90,7 +83,8 @@ func (e *engineHookRegistry) OnInit(hook module.EngineInitHook) {
 	e.onInit = append(e.onInit, hook)
 }
 
-func (e *engineHookRegistry) OnClose(hook module.EngineCloseHook) {
+// OnClose appends a non-nil shutdown callback.
+func (e *EngineHooks) OnClose(hook module.EngineCloseHook) {
 	if hook == nil {
 		return
 	}
@@ -102,14 +96,8 @@ func (e *engineHookRegistry) OnClose(hook module.EngineCloseHook) {
 	e.onClose = append(e.onClose, hook)
 }
 
-func (e *engineHookRegistry) clone() *engineHookRegistry {
-	return &engineHookRegistry{
-		onInit:  slices.Clone(e.onInit),
-		onClose: slices.Clone(e.onClose),
-	}
-}
-
-func (e *engineHookRegistry) runInitHooks() error {
+// RunInit runs callbacks in registration order, stopping at the first error.
+func (e *EngineHooks) RunInit() error {
 	if len(e.onInit) == 0 {
 		return nil
 	}
@@ -123,7 +111,8 @@ func (e *engineHookRegistry) runInitHooks() error {
 	return nil
 }
 
-func (e *engineHookRegistry) runCloseHooks() error {
+// RunClose unwinds all shutdown callbacks and joins their failures.
+func (e *EngineHooks) RunClose() error {
 	if len(e.onClose) == 0 {
 		return nil
 	}
@@ -143,7 +132,8 @@ func (e *engineHookRegistry) runCloseHooks() error {
 	return errors.Join(errs...)
 }
 
-func (p *planHookRegistry) BeforeCompile(hook module.BeforeCompileHook) {
+// BeforeCompile appends a non-nil before-compilation callback.
+func (p *PlanHooks) BeforeCompile(hook module.BeforeCompileHook) {
 	if hook == nil {
 		return
 	}
@@ -155,7 +145,8 @@ func (p *planHookRegistry) BeforeCompile(hook module.BeforeCompileHook) {
 	p.beforeCompile = append(p.beforeCompile, hook)
 }
 
-func (p *planHookRegistry) AfterCompile(hook module.AfterCompileHook) {
+// AfterCompile appends a non-nil after-compilation callback.
+func (p *PlanHooks) AfterCompile(hook module.AfterCompileHook) {
 	if hook == nil {
 		return
 	}
@@ -167,7 +158,8 @@ func (p *planHookRegistry) AfterCompile(hook module.AfterCompileHook) {
 	p.afterCompile = append(p.afterCompile, hook)
 }
 
-func (p *planHookRegistry) OnClose(hook module.PlanCloseHook) {
+// OnClose appends a non-nil shutdown callback.
+func (p *PlanHooks) OnClose(hook module.PlanCloseHook) {
 	if hook == nil {
 		return
 	}
@@ -179,15 +171,8 @@ func (p *planHookRegistry) OnClose(hook module.PlanCloseHook) {
 	p.onClose = append(p.onClose, hook)
 }
 
-func (p *planHookRegistry) clone() *planHookRegistry {
-	return &planHookRegistry{
-		beforeCompile: slices.Clone(p.beforeCompile),
-		afterCompile:  slices.Clone(p.afterCompile),
-		onClose:       slices.Clone(p.onClose),
-	}
-}
-
-func (p *planHookRegistry) runBeforeCompileHooks(ctx context.Context) error {
+// RunBeforeCompile runs callbacks in registration order, stopping at the first error.
+func (p *PlanHooks) RunBeforeCompile(ctx context.Context) error {
 	if len(p.beforeCompile) == 0 {
 		return nil
 	}
@@ -201,7 +186,8 @@ func (p *planHookRegistry) runBeforeCompileHooks(ctx context.Context) error {
 	return nil
 }
 
-func (p *planHookRegistry) runAfterCompileHooks(ctx context.Context, err error) error {
+// RunAfterCompile unwinds callbacks with the same primary error and joins their failures.
+func (p *PlanHooks) RunAfterCompile(ctx context.Context, err error) error {
 	if len(p.afterCompile) == 0 {
 		return nil
 	}
@@ -220,7 +206,8 @@ func (p *planHookRegistry) runAfterCompileHooks(ctx context.Context, err error) 
 	return errors.Join(errs...)
 }
 
-func (p *planHookRegistry) runCloseHooks() error {
+// RunClose unwinds all shutdown callbacks and joins their failures.
+func (p *PlanHooks) RunClose() error {
 	if len(p.onClose) == 0 {
 		return nil
 	}
@@ -240,7 +227,8 @@ func (p *planHookRegistry) runCloseHooks() error {
 	return errors.Join(errs...)
 }
 
-func (s *sessionHookRegistry) BeforeRun(hook module.BeforeRunHook) {
+// BeforeRun appends a non-nil before-run callback.
+func (s *SessionHooks) BeforeRun(hook module.BeforeRunHook) {
 	if hook == nil {
 		return
 	}
@@ -252,7 +240,8 @@ func (s *sessionHookRegistry) BeforeRun(hook module.BeforeRunHook) {
 	s.beforeRun = append(s.beforeRun, hook)
 }
 
-func (s *sessionHookRegistry) AfterRun(hook module.AfterRunHook) {
+// AfterRun appends a non-nil after-run callback.
+func (s *SessionHooks) AfterRun(hook module.AfterRunHook) {
 	if hook == nil {
 		return
 	}
@@ -264,7 +253,8 @@ func (s *sessionHookRegistry) AfterRun(hook module.AfterRunHook) {
 	s.afterRun = append(s.afterRun, hook)
 }
 
-func (s *sessionHookRegistry) OnClose(hook module.SessionCloseHook) {
+// OnClose appends a non-nil shutdown callback.
+func (s *SessionHooks) OnClose(hook module.SessionCloseHook) {
 	if hook == nil {
 		return
 	}
@@ -276,15 +266,8 @@ func (s *sessionHookRegistry) OnClose(hook module.SessionCloseHook) {
 	s.onClose = append(s.onClose, hook)
 }
 
-func (s *sessionHookRegistry) clone() *sessionHookRegistry {
-	return &sessionHookRegistry{
-		beforeRun: slices.Clone(s.beforeRun),
-		afterRun:  slices.Clone(s.afterRun),
-		onClose:   slices.Clone(s.onClose),
-	}
-}
-
-func (s *sessionHookRegistry) runBeforeRunHooks(ctx context.Context) (context.Context, error) {
+// RunBeforeRun chains callback contexts in registration order, stopping at the first error.
+func (s *SessionHooks) RunBeforeRun(ctx context.Context) (context.Context, error) {
 	if len(s.beforeRun) == 0 {
 		return ctx, nil
 	}
@@ -294,7 +277,6 @@ func (s *sessionHookRegistry) runBeforeRunHooks(ctx context.Context) (context.Co
 
 		// Each hook receives the context returned by the previous hook.
 		ctx, err = hook(ctx)
-
 		if err != nil {
 			return ctx, err
 		}
@@ -303,7 +285,8 @@ func (s *sessionHookRegistry) runBeforeRunHooks(ctx context.Context) (context.Co
 	return ctx, nil
 }
 
-func (s *sessionHookRegistry) runAfterRunHooks(ctx context.Context, err error) error {
+// RunAfterRun unwinds callbacks with the same primary error and joins their failures.
+func (s *SessionHooks) RunAfterRun(ctx context.Context, err error) error {
 	if len(s.afterRun) == 0 {
 		return nil
 	}
@@ -323,7 +306,8 @@ func (s *sessionHookRegistry) runAfterRunHooks(ctx context.Context, err error) e
 	return errors.Join(errs...)
 }
 
-func (s *sessionHookRegistry) runCloseHooks() error {
+// RunClose unwinds all shutdown callbacks and joins their failures.
+func (s *SessionHooks) RunClose() error {
 	if len(s.onClose) == 0 {
 		return nil
 	}
@@ -341,4 +325,27 @@ func (s *sessionHookRegistry) runCloseHooks() error {
 	}
 
 	return errors.Join(errs...)
+}
+
+func (e *EngineHooks) clone() *EngineHooks {
+	return &EngineHooks{
+		onInit:  slices.Clone(e.onInit),
+		onClose: slices.Clone(e.onClose),
+	}
+}
+
+func (p *PlanHooks) clone() *PlanHooks {
+	return &PlanHooks{
+		beforeCompile: slices.Clone(p.beforeCompile),
+		afterCompile:  slices.Clone(p.afterCompile),
+		onClose:       slices.Clone(p.onClose),
+	}
+}
+
+func (s *SessionHooks) clone() *SessionHooks {
+	return &SessionHooks{
+		beforeRun: slices.Clone(s.beforeRun),
+		afterRun:  slices.Clone(s.afterRun),
+		onClose:   slices.Clone(s.onClose),
+	}
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/module"
@@ -25,7 +26,7 @@ type (
 		library           runtime.Library
 		network           ferretnet.Network
 		resources         *resource.Manager
-		hooks             *hookRegistry
+		hooks             *host.Hooks
 		encoding          *encoding.Registry
 		params            runtime.Params
 		programLoader     *artifact.Loader
@@ -66,7 +67,7 @@ func defaultConfig() config {
 		params:            make(map[string]runtime.Value),
 		encoding:          encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
 		programLoader:     artifact.NewDefaultLoader(),
-		hooks:             newHookRegistry(),
+		hooks:             host.NewHooks(),
 		optimizationLevel: OptimizationFull,
 		maxActiveSessions: defaultMaxActiveSessions,
 		maxIdleVMsPerPlan: defaultVMPoolSize,
@@ -375,7 +376,7 @@ func WithEngineInitHook(hook EngineInitHook) Option {
 			return fmt.Errorf("engine init hook is nil")
 		}
 
-		opts.hooks.engine.OnInit(hook)
+		opts.hooks.EngineHooks.OnInit(hook)
 
 		return nil
 	}
@@ -389,7 +390,7 @@ func WithEngineCloseHook(hook EngineCloseHook) Option {
 			return fmt.Errorf("engine close hook is nil")
 		}
 
-		opts.hooks.engine.OnClose(hook)
+		opts.hooks.EngineHooks.OnClose(hook)
 
 		return nil
 	}
@@ -403,7 +404,7 @@ func WithBeforeCompileHook(hook BeforeCompileHook) Option {
 			return fmt.Errorf("before compile hook is nil")
 		}
 
-		opts.hooks.plan.BeforeCompile(hook)
+		opts.hooks.PlanHooks.BeforeCompile(hook)
 
 		return nil
 	}
@@ -417,7 +418,7 @@ func WithAfterCompileHook(hook AfterCompileHook) Option {
 			return fmt.Errorf("after compile hook is nil")
 		}
 
-		opts.hooks.plan.AfterCompile(hook)
+		opts.hooks.PlanHooks.AfterCompile(hook)
 
 		return nil
 	}
@@ -431,7 +432,7 @@ func WithPlanCloseHook(hook PlanCloseHook) Option {
 			return fmt.Errorf("plan close hook is nil")
 		}
 
-		opts.hooks.plan.OnClose(hook)
+		opts.hooks.PlanHooks.OnClose(hook)
 
 		return nil
 	}
@@ -446,7 +447,7 @@ func WithBeforeRunHook(hook BeforeRunHook) Option {
 			return fmt.Errorf("before run hook is nil")
 		}
 
-		opts.hooks.session.BeforeRun(hook)
+		opts.hooks.SessionHooks.BeforeRun(hook)
 
 		return nil
 	}
@@ -460,7 +461,7 @@ func WithAfterRunHook(hook AfterRunHook) Option {
 			return fmt.Errorf("after run hook is nil")
 		}
 
-		opts.hooks.session.AfterRun(hook)
+		opts.hooks.SessionHooks.AfterRun(hook)
 
 		return nil
 	}
@@ -474,7 +475,7 @@ func WithSessionCloseHook(hook SessionCloseHook) Option {
 			return fmt.Errorf("session close hook is nil")
 		}
 
-		opts.hooks.session.OnClose(hook)
+		opts.hooks.SessionHooks.OnClose(hook)
 
 		return nil
 	}

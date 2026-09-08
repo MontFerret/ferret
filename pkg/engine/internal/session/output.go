@@ -1,0 +1,36 @@
+package session
+
+import (
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
+)
+
+// Materialize encodes a VM result and adopts resources discovered by the encoder.
+// The caller remains responsible for closing the result, including on failure.
+func Materialize(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Output, error) {
+	codec, err := registry.Codec(contentType)
+	if err != nil {
+		return nil, err
+	}
+
+	return vm.Materialize[*encoding.Output](res, func(value runtime.Value) (vm.Materialized[*encoding.Output], error) {
+		enc := codec.EncodeWith().PreHook(func(value runtime.Value) error {
+			res.AdoptValue(value)
+
+			return nil
+		}).Encoder()
+
+		data, err := enc.Encode(value)
+		if err != nil {
+			return vm.Materialized[*encoding.Output]{}, err
+		}
+
+		return vm.Materialized[*encoding.Output]{
+			Value: &encoding.Output{
+				ContentType: codec.ContentType(),
+				Content:     data,
+			},
+		}, nil
+	})
+}

@@ -4,17 +4,18 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 )
 
 func closeEngine(
-	hooks *engineHookRegistry,
+	hooks *host.EngineHooks,
 	resources *resource.Manager,
 ) error {
 	var hookErr error
 
 	if hooks != nil {
-		hookErr = hooks.runCloseHooks()
+		hookErr = hooks.RunClose()
 	}
 
 	resourceErr := resources.Close()
@@ -28,7 +29,7 @@ func closeEngine(
 
 func closeEngineOnError(
 	err error,
-	hooks *engineHookRegistry,
+	hooks *host.EngineHooks,
 	resources *resource.Manager,
 ) error {
 	if err != nil {

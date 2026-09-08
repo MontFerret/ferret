@@ -10,7 +10,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
+	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -22,10 +24,10 @@ type Engine struct {
 	compiler          *compiler.Compiler
 	debugCompiler     *compiler.Compiler
 	loader            *artifact.Loader
-	host              *host
-	hooks             *hookRegistry
+	host              *host.Host
+	hooks             *host.Hooks
 	resources         *resource.Manager
-	limiter           *sessionLimiter
+	limiter           *enginesession.Limiter
 	closeOnce         sync.Once
 	closed            atomic.Bool
 	optimizationLevel compiler.OptimizationLevel
@@ -46,7 +48,7 @@ func New(setters ...Option) (engine *Engine, resultErr error) {
 
 	// Host resources are already owned after option application. Close hooks
 	// join rollback only once bootstrap succeeds, as in normal construction.
-	var rollbackHooks *engineHookRegistry
+	var rollbackHooks *host.EngineHooks
 
 	defer func() {
 		resultErr = closeEngineOnError(resultErr, rollbackHooks, opts.resources)
@@ -67,12 +69,20 @@ func New(setters ...Option) (engine *Engine, resultErr error) {
 		return nil, fmt.Errorf("debug compiler: %w", err)
 	}
 
-	boot, err := newBootstrap(&opts)
+	boot, err := host.NewBootstrap(host.Config{
+		Library:    opts.library,
+		Params:     opts.params,
+		Encoding:   opts.encoding,
+		Logger:     opts.logger,
+		FSRoot:     opts.fsRoot,
+		Network:    opts.network,
+		FSReadOnly: opts.fsReadOnly,
+	}, opts.hooks, opts.resources)
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap: %w", err)
 	}
 
-	rollbackHooks = boot.hooks.engine
+	rollbackHooks = opts.hooks.EngineHooks
 
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
@@ -80,16 +90,16 @@ func New(setters ...Option) (engine *Engine, resultErr error) {
 		}
 	}
 
-	h, err := boot.host.Build()
+	h, err := boot.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	hooks := boot.hooks.clone()
-	rollbackHooks = hooks.engine
+	hooks := opts.hooks.Clone()
+	rollbackHooks = hooks.EngineHooks
 
 	// Run init hooks after bootstrap is finalized and before returning the engine.
-	if err := hooks.engine.runInitHooks(); err != nil {
+	if err := hooks.EngineHooks.RunInit(); err != nil {
 		return nil, fmt.Errorf("init hooks: %w", err)
 	}
 
@@ -101,7 +111,7 @@ func New(setters ...Option) (engine *Engine, resultErr error) {
 		host:              h,
 		hooks:             hooks,
 		resources:         opts.resources,
-		limiter:           newSessionLimiter(opts.maxActiveSessions),
+		limiter:           enginesession.NewLimiter(opts.maxActiveSessions),
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil
@@ -176,7 +186,7 @@ func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (ou
 func (e *Engine) Close() error {
 	e.closeOnce.Do(func() {
 		e.closed.Store(true)
-		e.closeErr = closeEngine(e.hooks.engine, e.resources)
+		e.closeErr = closeEngine(e.hooks.EngineHooks, e.resources)
 	})
 
 	return e.closeErr
@@ -224,7 +234,7 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 		}
 	}
 
-	if err := e.hooks.plan.runBeforeCompileHooks(ctx); err != nil {
+	if err := e.hooks.PlanHooks.RunBeforeCompile(ctx); err != nil {
 		err = fmt.Errorf("before compile hooks: %w", err)
 		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
 			err = errors.Join(err, ctxErr)
@@ -244,7 +254,7 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 		err = errors.Join(err, ctxErr)
 	}
 
-	if hookErr := e.hooks.plan.runAfterCompileHooks(ctx, err); hookErr != nil {
+	if hookErr := e.hooks.PlanHooks.RunAfterCompile(ctx, err); hookErr != nil {
 		err = errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
 	}
 
@@ -264,8 +274,8 @@ func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {
 		prog:         prog,
 		closed:       make(chan struct{}),
 		host:         e.host,
-		hooks:        e.hooks.plan,
-		sessionHooks: e.hooks.session,
+		hooks:        e.hooks.PlanHooks,
+		sessionHooks: e.hooks.SessionHooks,
 		limiter:      e.limiter,
 		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
 	}, nil

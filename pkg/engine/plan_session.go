@@ -7,7 +7,9 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
+	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -21,11 +23,11 @@ type (
 
 	planSessionDependencies struct {
 		logger     logging.Logger
-		hooks      sessionHooks
+		hooks      *host.SessionHooks
 		filesystem fs.FileSystem
 		program    *bytecode.Program
-		host       *host
-		limiter    *sessionLimiter
+		host       *host.Host
+		limiter    *enginesession.Limiter
 		pool       *vm.Pool
 		resources  *resource.Manager
 		options    sessionConfig
@@ -80,7 +82,7 @@ func newPlanSession[T interface{ Close() error }](
 		return session, err
 	}
 
-	logger, err := logging.NewFrom(h.logger, options.logger...)
+	logger, err := logging.NewFrom(h.Logger, options.logger...)
 	if err != nil {
 		return session, fmt.Errorf("logger: %w", err)
 	}
@@ -116,9 +118,9 @@ func newPlanSession[T interface{ Close() error }](
 		return session, err
 	}
 
-	filesystem := h.fs
+	filesystem := h.FileSystem
 	if options.fsRoot != "" {
-		filesystem, err = fs.New(fs.WithRoot(options.fsRoot), fs.WithReadOnly(h.fsReadOnly))
+		filesystem, err = fs.New(fs.WithRoot(options.fsRoot), fs.WithReadOnly(h.FSReadOnly))
 		if err != nil {
 			return session, fmt.Errorf("filesystem: %w", err)
 		}
@@ -179,11 +181,11 @@ func buildSession(dependencies planSessionDependencies) (*Session, error) {
 		env:               environment,
 		logger:            dependencies.logger,
 		fs:                dependencies.filesystem,
-		network:           dependencies.host.network,
-		encoding:          dependencies.host.encoding,
+		network:           dependencies.host.Network,
+		encoding:          dependencies.host.Encoding,
 		outputContentType: dependencies.options.outputContentType,
 		hooks:             dependencies.hooks,
-		release:           newSessionPermitRelease(dependencies.limiter, dependencies.pool),
+		release:           enginesession.NewPermitRelease(dependencies.limiter, dependencies.pool),
 		resources:         dependencies.resources,
 	}, nil
 }
@@ -208,15 +210,15 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 	session, err := debugger.NewSession(debugger.Config{
 		Execution: execution,
 		Values:    vm.NewDebugValueAccess(),
-		Services: &debugSessionServices{
-			hooks:             dependencies.hooks,
-			releasePermit:     newSessionPermitRelease(dependencies.limiter, nil),
-			encoding:          dependencies.host.encoding,
-			outputContentType: dependencies.options.outputContentType,
-			logger:            dependencies.logger,
-			fs:                dependencies.filesystem,
-			network:           dependencies.host.network,
-			resources:         dependencies.resources,
+		Services: &enginesession.DebugServices{
+			Hooks:             dependencies.hooks,
+			ReleasePermit:     enginesession.NewPermitRelease(dependencies.limiter, nil),
+			Encoding:          dependencies.host.Encoding,
+			OutputContentType: dependencies.options.outputContentType,
+			Logger:            dependencies.logger,
+			FileSystem:        dependencies.filesystem,
+			Network:           dependencies.host.Network,
+			Resources:         dependencies.resources,
 		},
 		Source:      dependencies.program.Source,
 		DebugPoints: dependencies.program.Metadata.DebugPoints,
@@ -232,9 +234,9 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 	return session, nil
 }
 
-func newPlanSessionEnvironment(h *host, options sessionConfig) (*vm.Environment, error) {
+func newPlanSessionEnvironment(h *host.Host, options sessionConfig) (*vm.Environment, error) {
 	return vm.ExtendEnvironment(&vm.Environment{
-		Functions: h.functions,
-		Params:    h.params,
+		Functions: h.Functions,
+		Params:    h.Params,
 	}, options.env)
 }

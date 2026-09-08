@@ -1,4 +1,4 @@
-package engine
+package session
 
 import (
 	"sync"
@@ -6,9 +6,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// newSessionPermitRelease transfers permit ownership to an idempotent callback.
+// PermitRelease returns a session permit and, when configured, its borrowed VM.
+type PermitRelease func(*vm.VM)
+
+// NewPermitRelease transfers permit ownership to an idempotent callback.
 // Normal sessions also use it to return their borrowed VM to the plan pool.
-func newSessionPermitRelease(limiter *sessionLimiter, pool *vm.Pool) sessionPermitRelease {
+func NewPermitRelease(limiter *Limiter, pool *vm.Pool) PermitRelease {
 	var once sync.Once
 
 	return func(instance *vm.VM) {

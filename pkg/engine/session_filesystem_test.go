@@ -171,7 +171,7 @@ func TestSessionClosesOwnedFSRootWithoutClosingBorrowedRoot(t *testing.T) {
 	if err := borrowed.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := engine.host.fs.Stat("."); err != nil {
+	if _, err := engine.host.FileSystem.Stat("."); err != nil {
 		t.Fatalf("closing a default session closed the engine filesystem: %v", err)
 	}
 
@@ -426,10 +426,9 @@ func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
 			if _, err := filesystem.Stat("."); err == nil {
 				t.Fatal("canceled publication retained its owned filesystem")
 			}
-			if len(engine.limiter.ch) != 0 {
-				t.Fatal("canceled publication retained its permit")
-			}
-			sibling, err := plan.NewSession(t.Context())
+			admissionCtx, admissionCancel := context.WithTimeout(t.Context(), time.Second)
+			defer admissionCancel()
+			sibling, err := plan.NewSession(admissionCtx)
 			if err != nil {
 				t.Fatal(err)
 			}
