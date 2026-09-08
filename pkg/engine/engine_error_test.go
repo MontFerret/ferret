@@ -52,8 +52,8 @@ func TestEnginePreservesDiagnosticFormatting(t *testing.T) {
 					t.Fatal("expected compiler diagnostic")
 				}
 
-				if err != observed || FormatError(err) != FormatError(directErr) {
-					t.Fatalf("diagnostic changed: hook=%T returned=%T\nwant:\n%s\ngot:\n%s", observed, err, FormatError(directErr), FormatError(err))
+				if err != observed || diagnostics.Format(err) != diagnostics.Format(directErr) {
+					t.Fatalf("diagnostic changed: hook=%T returned=%T\nwant:\n%s\ngot:\n%s", observed, err, diagnostics.Format(directErr), diagnostics.Format(err))
 				}
 			})
 		}
@@ -84,8 +84,8 @@ func TestEngineRunPreservesRuntimeDiagnosticFormatting(t *testing.T) {
 				t.Fatalf("expected runtime failures: direct=%v engine=%v", directErr, runErr)
 			}
 
-			if FormatError(runErr) != FormatError(directErr) {
-				t.Fatalf("want:\n%s\ngot:\n%s", FormatError(directErr), FormatError(runErr))
+			if diagnostics.Format(runErr) != diagnostics.Format(directErr) {
+				t.Fatalf("want:\n%s\ngot:\n%s", diagnostics.Format(directErr), diagnostics.Format(runErr))
 			}
 		})
 	}
@@ -123,7 +123,7 @@ func TestEngineCompilationPreservesDiagnosticAndAdditionalFailures(t *testing.T)
 		t.Fatalf("lost failure cause: %v", err)
 	}
 
-	if FormatError(err) != err.Error() {
+	if diagnostics.Format(err) != err.Error() {
 		t.Fatal("rendering of joined failures changed")
 	}
 }

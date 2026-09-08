@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/engine"
 )
 
@@ -185,7 +186,7 @@ func publicExports() []publicExport {
 		{name: "ProgramFormatJSON", kind: token.CONST, root: ferret.ProgramFormatJSON, native: engine.ProgramFormatJSON},
 		{name: "ProgramFormatMsgPack", kind: token.CONST, root: ferret.ProgramFormatMsgPack, native: engine.ProgramFormatMsgPack},
 
-		{name: "FormatError", kind: token.FUNC, root: ferret.FormatError, native: engine.FormatError},
+		{name: "FormatError", kind: token.FUNC, root: ferret.FormatError, native: diagnostics.Format},
 		{name: "MarshalProgram", kind: token.FUNC, root: ferret.MarshalProgram, native: engine.MarshalProgram},
 		{name: "MustParseLogLevel", kind: token.FUNC, root: ferret.MustParseLogLevel, native: engine.MustParseLogLevel},
 		{name: "New", kind: token.FUNC, root: ferret.New, native: engine.New},
