@@ -4,23 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Engine compiles queries into reusable plans and runs them against the configured host.
+// Callers own directly created plans and must close them before the engine.
 type Engine struct {
+	closeErr          error
 	compiler          *compiler.Compiler
 	debugCompiler     *compiler.Compiler
 	loader            *artifact.Loader
 	host              *host
 	hooks             *hookRegistry
 	limiter           *sessionLimiter
-	lifecycle         creationLifecycle
+	closeOnce         sync.Once
+	closed            atomic.Bool
 	optimizationLevel compiler.OptimizationLevel
 	idleCap           int
 	totalCap          int
@@ -118,26 +124,32 @@ func New(setters ...Option) (*Engine, error) {
 
 // Compile synchronously compiles source into a reusable execution plan. Omitted
 // optimization inherits the engine configuration; explicit per-plan options do
-// not mutate the engine. The context must be non-nil.
+// not mutate the engine. The context must be non-nil. Compilation admitted before
+// Close may finish afterward; callers must settle it before releasing resources
+// used by their compile hooks.
 func (e *Engine) Compile(ctx context.Context, src Source, opts ...PlanOption) (*Plan, error) {
 	return e.compile(ctx, src, false, opts)
 }
 
 // CompileDebug compiles a reusable plan with debug metadata and no optimization.
+// Context, concurrent closure, and ownership follow Compile.
 func (e *Engine) CompileDebug(ctx context.Context, src Source, opts ...PlanOption) (*Plan, error) {
 	return e.compile(ctx, src, true, opts)
 }
 
 func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []PlanOption) (*Plan, error) {
-	if err := e.lifecycle.checkContext(ctx); err != nil {
+	if ctx == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
-	if err := e.lifecycle.enter(); err != nil {
-		return nil, err
+	if e.closed.Load() {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is closed")
 	}
 
-	defer e.lifecycle.leave()
 	level := e.optimizationLevel
 
 	if debug {
@@ -195,10 +207,6 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 		err = errors.Join(err, ctxErr)
 	}
 
-	if lifecycleErr := e.lifecycle.check(); lifecycleErr != nil {
-		err = errors.Join(err, lifecycleErr)
-	}
-
 	if err != nil {
 		return nil, err
 	}
@@ -207,19 +215,14 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 }
 
 // Load decodes a serialized program artifact and wraps it in a reusable plan.
+// An admitted load may finish after Close; the caller owns the returned plan.
 func (e *Engine) Load(data []byte) (*Plan, error) {
-	if err := e.lifecycle.enter(); err != nil {
-		return nil, err
+	if e.closed.Load() {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is closed")
 	}
-
-	defer e.lifecycle.leave()
 
 	prog, err := e.loader.Load(data)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := e.lifecycle.check(); err != nil {
 		return nil, err
 	}
 
@@ -258,20 +261,27 @@ func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (ou
 
 // Close runs the engine close hooks and releases engine-scoped resources,
 // including the configured rooted filesystem and owned network idle connections.
-// It rejects new children, waits for admitted construction, and retains its
-// result across concurrent/repeated calls. Callers must close children first.
+// It rejects new compilation and loading without waiting for admitted operations
+// or closing descendants. Callers must settle outstanding work and close children
+// first. Concurrent/repeated calls retain the cleanup result. An engine close
+// hook must not recursively call Close on the same engine.
 func (e *Engine) Close() error {
-	return e.lifecycle.close(func() error { return closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork) })
+	e.closeOnce.Do(func() {
+		e.closed.Store(true)
+		e.closeErr = closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork)
+	})
+
+	return e.closeErr
 }
 
 func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {
 	return &Plan{
-		prog:            prog,
-		engineLifecycle: &e.lifecycle,
-		host:            e.host,
-		hooks:           e.hooks.plan,
-		sessionHooks:    e.hooks.session,
-		limiter:         e.limiter,
-		pool:            vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
+		prog:         prog,
+		closed:       make(chan struct{}),
+		host:         e.host,
+		hooks:        e.hooks.plan,
+		sessionHooks: e.hooks.session,
+		limiter:      e.limiter,
+		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
 	}, nil
 }

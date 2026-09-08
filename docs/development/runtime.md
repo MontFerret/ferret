@@ -86,7 +86,7 @@ missing-codec failures must still close all resources already owned or adopted.
 
 ## Engine, plan, and session lifecycle
 
-The root embedding lifecycle is hierarchical:
+Native Ferret protects object integrity; callers orchestrate object lifetime:
 
 * `Engine` owns the configured host, compilers, loader, module hooks, session
   limiter, filesystem, and any network service it created.
@@ -102,8 +102,8 @@ The root embedding lifecycle is hierarchical:
 `Engine.Run` owns its temporary session and plan, closes them in that order,
 and joins execution and cleanup errors while retaining available encoded output.
 Successful cleanup preserves the original runtime diagnostic. Compilation also
-preserves the original diagnostic when hooks, cancellation checks, and lifecycle
-checks add no failure, so `FormatError` retains its source locations and hints.
+preserves the original diagnostic when hooks and cancellation checks add no
+failure, so `FormatError` retains its source locations and hints.
 Actual additional failures are joined without changing aggregate error rendering.
 A caller that creates children directly closes sessions before plans, and plans
 before the engine. Parents have no descendant registries. Ordinary execution
@@ -111,17 +111,31 @@ owners cancel and settle `Run` before closing their session; debug closure
 terminates and settles active commands.
 
 Engine, Plan, and Session closure is concurrency-safe and idempotent, retaining
-the completed cleanup result. Closing parents reject new children and wait for
-admitted construction to finish or roll back. Hooks and resource cleanup execute
-outside state locks. A lifecycle hook must not synchronously close the same
-resource or an ancestor waiting for that hook's operation to finish.
-`Session.Close` returns its VM to the pool; `Plan.Close` releases pooled VMs.
-Engine cleanup continues even when a hook fails.
+the completed cleanup result. Engine uses an atomic closed flag; Plan uses one
+close channel for its closed state and capacity-waiter notification. Each owns
+its own once-only cleanup. Closed state becomes visible before close hooks run,
+and immutable program and host references remain intact during cleanup.
+
+Engine rejects new compilation and loading without waiting for admitted work.
+Plan rejects new sessions and wakes pending capacity acquisition without waiting
+for constructors. The session limiter observes the request context and that
+Plan's close channel, never Engine shutdown. Once capacity is acquired, parent
+closure does not roll back a constructed session. Ordinary construction may
+still fail if the VM pool closes before acquisition finishes; the pool owns that
+synchronization. A successfully returned session remains caller-owned.
+
+Hosts must settle outstanding work before closing resources used by their hooks
+or services. Native closure does not orchestrate graceful hierarchical shutdown.
+No admission lock spans options, hooks, or cleanup; a close hook must not
+recursively close its own object. `Session.Close` returns its VM to the pool;
+`Plan.Close` closes idle VMs, leaving borrowed VMs with sessions until returned.
+Engine and Plan cleanup continue even when a hook fails.
 
 Execution, compilation, and debugger context boundaries require non-nil contexts.
 Embedding/session admission rejects existing cancellation before options or hooks
-and rechecks cancellation before publishing resources. Raw VM execution retains
-its existing cancellation safepoints within an admitted run.
+and rechecks request cancellation before returning constructed resources, closing
+them on cancellation. Raw VM execution retains its existing cancellation
+safepoints within an admitted run.
 
 `Compiler.Compile(ctx, src)` synchronously checks cancellation between parsing,
 lowering, and program construction; phases are not individually preempted. The

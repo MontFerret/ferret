@@ -63,6 +63,11 @@ func TestPlanClose(t *testing.T) {
 	if !strings.Contains(err.Error(), "close hooks") {
 		t.Fatalf("expected close hooks label, got: %v", err)
 	}
+
+	if instance, err := plan.pool.Acquire(); !errors.Is(err, vm.ErrPoolClosed) {
+		plan.pool.Release(instance)
+		t.Fatalf("hook failure prevented pool cleanup: %v", err)
+	}
 }
 
 func TestPlanNewSessionReleasesLimiterOnEnvironmentError(t *testing.T) {
@@ -183,7 +188,7 @@ func TestSessionPermitReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
 		t.Fatalf("expected direct pool acquire to succeed, got: %v", err)
 	}
 
-	if err := plan.limiter.Acquire(context.Background()); err != nil {
+	if err := plan.limiter.Acquire(context.Background(), plan.closed); err != nil {
 		t.Fatalf("expected limiter acquire to succeed, got: %v", err)
 	}
 
@@ -210,7 +215,7 @@ func TestSessionPermitReleaseIsConcurrentSafeAndIdempotent(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if err := plan.limiter.Acquire(ctx); err != nil {
+	if err := plan.limiter.Acquire(ctx, plan.closed); err != nil {
 		t.Fatalf("expected concurrent release to free the limiter slot, got: %v", err)
 	}
 

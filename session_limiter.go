@@ -20,9 +20,15 @@ func newSessionLimiter(max int) *sessionLimiter {
 	}
 }
 
-func (l *sessionLimiter) Acquire(ctx context.Context, parents ...*creationLifecycle) error {
+func (l *sessionLimiter) Acquire(ctx context.Context, planClosed <-chan struct{}) error {
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+
+	select {
+	case <-planClosed:
+		return runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
+	default:
 	}
 
 	if l == nil || l.ch == nil {
@@ -30,26 +36,8 @@ func (l *sessionLimiter) Acquire(ctx context.Context, parents ...*creationLifecy
 	}
 
 	select {
-	case l.ch <- struct{}{}:
-		return nil
-	default:
-	}
-
-	var planStopped, engineStopped <-chan struct{}
-
-	if len(parents) > 0 && parents[0] != nil {
-		planStopped = parents[0].stopped()
-	}
-
-	if len(parents) > 1 && parents[1] != nil {
-		engineStopped = parents[1].stopped()
-	}
-
-	select {
-	case <-planStopped:
+	case <-planClosed:
 		return runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
-	case <-engineStopped:
-		return runtime.Error(runtime.ErrInvalidOperation, "engine is closed")
 	case l.ch <- struct{}{}:
 		return nil
 	case <-ctx.Done():

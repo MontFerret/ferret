@@ -42,22 +42,18 @@ func newPlanSession[T interface{ Close() error }](
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	}
 
-	if err := plan.lifecycle.checkContext(ctx); err != nil {
+	if ctx == nil {
+		return session, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := ctx.Err(); err != nil {
 		return session, err
 	}
 
-	if err := plan.lifecycle.enter(); err != nil {
-		return session, err
-	}
-
-	defer plan.lifecycle.leave()
-	// The engine gate protects borrowed host resources during construction.
-	if plan.engineLifecycle != nil {
-		if err := plan.engineLifecycle.enter(); err != nil {
-			return session, err
-		}
-
-		defer plan.engineLifecycle.leave()
+	select {
+	case <-plan.closed:
+		return session, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
+	default:
 	}
 
 	program := plan.prog
@@ -72,7 +68,11 @@ func newPlanSession[T interface{ Close() error }](
 
 	options, err := newSessionOptions(setters)
 	if err != nil {
-		return session, errors.Join(err, ctx.Err())
+		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+			err = errors.Join(err, ctxErr)
+		}
+
+		return session, err
 	}
 
 	if err := ctx.Err(); err != nil {
@@ -84,7 +84,7 @@ func newPlanSession[T interface{ Close() error }](
 		return session, fmt.Errorf("logger: %w", err)
 	}
 
-	if err = limiter.Acquire(ctx, &plan.lifecycle, plan.engineLifecycle); err != nil {
+	if err = limiter.Acquire(ctx, plan.closed); err != nil {
 		return session, err
 	}
 
@@ -112,7 +112,9 @@ func newPlanSession[T interface{ Close() error }](
 
 	defer func() {
 		if ownsFileSystem && !fileSystemTransferred {
-			err = errors.Join(err, closeFileSystem(filesystem))
+			if closeErr := closeFileSystem(filesystem); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
 		}
 	}()
 
@@ -129,18 +131,16 @@ func newPlanSession[T interface{ Close() error }](
 	})
 
 	if err == nil {
-		// The constructed session now owns the permit/filesystem, even if publication
-		// loses a race with cancellation or parent close and must roll back.
+		// The constructed session now owns the permit/filesystem. Only request
+		// cancellation rolls it back; parent close does not revoke ownership.
 		releaseOnReturn = false
 		fileSystemTransferred = true
 
-		err = errors.Join(ctx.Err(), plan.lifecycle.check())
-		if plan.engineLifecycle != nil {
-			err = errors.Join(err, plan.engineLifecycle.check())
-		}
+		if err = ctx.Err(); err != nil {
+			if closeErr := session.Close(); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
 
-		if err != nil {
-			err = errors.Join(err, session.Close())
 			var zero T
 
 			return zero, err

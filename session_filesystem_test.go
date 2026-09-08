@@ -295,7 +295,7 @@ func TestNewPlanSessionClosesOwnedFSRootOnBuildFailure(t *testing.T) {
 			return nil, buildErr
 		},
 	)
-	if !errors.Is(err, buildErr) {
+	if err != buildErr {
 		t.Fatalf("session construction error = %v, want %v", err, buildErr)
 	}
 	if _, err := filesystem.Stat("."); err == nil {
