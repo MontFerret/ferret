@@ -5,19 +5,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 )
-
-type failingCloseFileSystem struct {
-	ferretfs.FileSystem
-	closeErr error
-}
-
-func (f *failingCloseFileSystem) Close() error {
-	return errors.Join(f.closeErr, f.FileSystem.Close())
-}
 
 func TestEngineCloseClosesRootFileSystem(t *testing.T) {
 	t.Parallel()
@@ -121,6 +113,14 @@ func TestNewJoinsConstructionHookAndFileSystemCloseErrors(t *testing.T) {
 	hookErr := errors.New("hook close failed")
 	filesystemErr := errors.New("filesystem close failed")
 	client := &recordingHTTPClient{}
+	var resources *resource.Manager
+
+	filesystem, err := ferretfs.New(ferretfs.WithRoot(t.TempDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	replacement := &failingCloseFileSystem{FileSystem: filesystem, closeErr: filesystemErr}
 	mod := testModule{
 		registerFn: func(boot module.Bootstrap) error {
 			internal, ok := boot.(*bootstrap)
@@ -128,11 +128,11 @@ func TestNewJoinsConstructionHookAndFileSystemCloseErrors(t *testing.T) {
 				t.Fatalf("expected internal bootstrap, got %T", boot)
 			}
 
-			internal.host.fs = &failingCloseFileSystem{
-				FileSystem: internal.host.fs,
-				closeErr:   filesystemErr,
+			if err := resources.Own(resource.FileSystem, replacement.Close); err != nil {
+				t.Fatal(err)
 			}
-			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
+
+			internal.host.fs = replacement
 			boot.Hooks().Engine().OnClose(func() error {
 				return hookErr
 			})
@@ -141,7 +141,16 @@ func TestNewJoinsConstructionHookAndFileSystemCloseErrors(t *testing.T) {
 		},
 	}
 
-	_, err := New(WithFSRoot(t.TempDir()), WithModules(mod))
+	_, err = New(
+		WithFSRoot(t.TempDir()),
+		WithNetworkOptions(ferretnet.WithHTTPClient(client)),
+		func(opts *config) error {
+			resources = opts.resources
+
+			return nil
+		},
+		WithModules(mod),
+	)
 	if !errors.Is(err, registerErr) {
 		t.Fatalf("expected registration error, got %v", err)
 	}
@@ -164,5 +173,13 @@ func TestNewJoinsConstructionHookAndFileSystemCloseErrors(t *testing.T) {
 
 	if got := client.idleCloseCount(); got != 1 {
 		t.Fatalf("expected network cleanup after close errors, got %d calls", got)
+	}
+
+	if got := replacement.closes.Load(); got != 1 {
+		t.Fatalf("expected filesystem cleanup once, got %d calls", got)
+	}
+
+	if _, err := filesystem.Stat("."); err == nil {
+		t.Fatal("expected filesystem closure despite cleanup errors")
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -298,6 +299,7 @@ func TestNewPlanSessionReleasesLimiterOnBuilderPanic(t *testing.T) {
 
 	eng := mustNewEngine(t, WithMaxActiveSessions(1))
 	plan := mustCompilePlan(t, eng, coverageValidQuery)
+	var filesystem ferretfs.FileSystem
 
 	func() {
 		defer func() {
@@ -309,13 +311,19 @@ func TestNewPlanSessionReleasesLimiterOnBuilderPanic(t *testing.T) {
 		_, _ = newPlanSession(
 			plan,
 			context.Background(),
-			nil,
+			[]SessionOption{WithSessionFSRoot(t.TempDir())},
 			planSessionSetup{},
-			func(planSessionDependencies) (*Session, error) {
+			func(dependencies planSessionDependencies) (*Session, error) {
+				filesystem = dependencies.filesystem
+
 				panic("session builder failed")
 			},
 		)
 	}()
+
+	if _, err := filesystem.Stat("."); err == nil {
+		t.Fatal("builder panic left its filesystem open")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

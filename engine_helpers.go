@@ -4,39 +4,35 @@ import (
 	"errors"
 	"fmt"
 
-	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
-	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	"github.com/MontFerret/ferret/v2/internal/resource"
 )
 
 func closeEngine(
 	hooks *engineHookRegistry,
-	filesystem ferretfs.FileSystem,
-	network ferretnet.Network,
-	ownsNetwork bool,
+	resources *resource.Manager,
 ) error {
-	hookErr := hooks.runCloseHooks()
-	filesystemErr := closeFileSystem(filesystem)
+	var hookErr error
 
-	if ownsNetwork {
-		ferretnet.CloseIdleNetworkConnections(network)
+	if hooks != nil {
+		hookErr = hooks.runCloseHooks()
 	}
+
+	resourceErr := resources.Close()
 
 	if hookErr != nil {
 		hookErr = errors.Join(hookErr, fmt.Errorf("close hooks: %w", hookErr))
 	}
 
-	return errors.Join(hookErr, filesystemErr)
+	return errors.Join(hookErr, resourceErr)
 }
 
 func closeEngineOnError(
 	err error,
 	hooks *engineHookRegistry,
-	filesystem ferretfs.FileSystem,
-	network ferretnet.Network,
-	ownsNetwork bool,
+	resources *resource.Manager,
 ) error {
 	if err != nil {
-		closeErr := closeEngine(hooks, filesystem, network, ownsNetwork)
+		closeErr := closeEngine(hooks, resources)
 
 		if closeErr != nil {
 			return errors.Join(err, fmt.Errorf("close engine: %w", closeErr))
@@ -44,12 +40,4 @@ func closeEngineOnError(
 	}
 
 	return err
-}
-
-func closeFileSystem(filesystem ferretfs.FileSystem) error {
-	if err := filesystem.Close(); err != nil {
-		return fmt.Errorf("close filesystem: %w", err)
-	}
-
-	return nil
 }

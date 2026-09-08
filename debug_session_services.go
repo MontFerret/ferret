@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -13,14 +14,14 @@ import (
 )
 
 type debugSessionServices struct {
-	hooks             sessionHooks
-	encoding          *encoding.Registry
 	logger            logging.Logger
+	hooks             sessionHooks
 	fs                fs.FileSystem
 	network           ferretnet.Network
+	encoding          *encoding.Registry
 	releasePermit     sessionPermitRelease
+	resources         *resource.Manager
 	outputContentType string
-	ownsFileSystem    bool
 }
 
 func (s *debugSessionServices) BeforeRun(ctx context.Context) (context.Context, error) {
@@ -52,11 +53,11 @@ func (s *debugSessionServices) Close() error {
 		}
 	}
 
-	if s.ownsFileSystem {
-		err = errors.Join(err, closeFileSystem(s.fs))
-		s.fs = nil
-		s.ownsFileSystem = false
+	if closeErr := s.resources.Close(); closeErr != nil {
+		err = errors.Join(err, closeErr)
 	}
+
+	s.fs = nil
 
 	if s.releasePermit != nil {
 		s.releasePermit(nil)

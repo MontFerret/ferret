@@ -1,12 +1,14 @@
 package ferret
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	gooptions "github.com/ziflex/go-options"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
@@ -22,7 +24,7 @@ type (
 	config struct {
 		library           runtime.Library
 		network           ferretnet.Network
-		managedNetworks   []ferretnet.Network
+		resources         *resource.Manager
 		hooks             *hookRegistry
 		encoding          *encoding.Registry
 		params            runtime.Params
@@ -35,7 +37,6 @@ type (
 		maxActiveSessions int
 		maxIdleVMsPerPlan int
 		maxVMsPerPlan     int
-		hostNetwork       bool
 		fsReadOnly        bool
 	}
 
@@ -61,6 +62,7 @@ func (c encodingCodecAlias) ContentType() string {
 func defaultConfig() config {
 	return config{
 		library:           runtime.NewLibrary(),
+		resources:         resource.NewManager(),
 		params:            make(map[string]runtime.Value),
 		encoding:          encoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default),
 		programLoader:     artifact.NewDefaultLoader(),
@@ -81,22 +83,11 @@ func newConfig(setters []Option) (config, error) {
 		}
 	}
 
-	managedNetworks := opts.managedNetworks
-	if err == nil && !opts.hostNetwork && len(managedNetworks) > 0 {
-		// Managed networks are recorded in option order, so the last entry is
-		// the selected network when the final network option is managed.
-		managedNetworks = managedNetworks[:len(managedNetworks)-1]
-	}
-
-	for _, network := range managedNetworks {
-		ferretnet.CloseIdleNetworkConnections(network)
-	}
-
-	// Tracking references must not outlive option finalization. On success,
-	// only the selected network is transferred to Engine ownership.
-	opts.managedNetworks = nil
-
 	if err != nil {
+		if closeErr := opts.resources.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+
 		return config{}, err
 	}
 
@@ -605,14 +596,14 @@ func WithNetwork(network ferretnet.Network) Option {
 		}
 
 		opts.network = network
-		opts.hostNetwork = true
 
-		return nil
+		return opts.resources.Borrow(resource.Network)
 	}
 }
 
 // WithNetworkOptions creates an Option that constructs a new network service using the provided Ferret network options.
-// If no options are provided, the engine will use the default network service.
+// The engine owns the resulting service and cleans it up when replaced, on
+// construction failure, or at shutdown. If no options are provided, it is a no-op.
 func WithNetworkOptions(setters ...ferretnet.Option) Option {
 	return func(opts *config) error {
 		if len(setters) == 0 {
@@ -620,15 +611,16 @@ func WithNetworkOptions(setters ...ferretnet.Option) Option {
 		}
 
 		net, err := ferretnet.New(setters...)
-
 		if err != nil {
 			return fmt.Errorf("create network: %w", err)
 		}
 
 		opts.network = net
-		opts.managedNetworks = append(opts.managedNetworks, net)
-		opts.hostNetwork = false
 
-		return nil
+		return opts.resources.Own(resource.Network, func() error {
+			ferretnet.CloseIdleNetworkConnections(net)
+
+			return nil
+		})
 	}
 }

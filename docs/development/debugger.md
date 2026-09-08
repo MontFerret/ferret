@@ -84,6 +84,12 @@ Debug session services apply the same before-run, after-run, encoding,
 filesystem, network, logging, and close-hook behavior as normal sessions.
 Completion materializes output through the embedding layer.
 
+The embedding services receive their own host-resource manager from session
+construction. It borrows Engine services and owns a session filesystem override,
+if configured. Service closure runs close hooks, closes owned host resources,
+and releases the limiter permit. Retained VM execution remains owned and closed
+by the debugger session rather than by this manager.
+
 When all before-run hooks succeed but context validation prevents VM entry,
 `Start` settles that attempt's after-run hooks immediately. The session remains
 new and accepts a later valid `Start`; `Close` does not repeat the aborted

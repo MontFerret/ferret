@@ -1,9 +1,9 @@
 package ferret
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -44,13 +44,23 @@ func newHostContext(opts *config) (*hostContext, error) {
 		return nil, err
 	}
 
+	if err := opts.resources.Own(resource.FileSystem, rootFs.Close); err != nil {
+		return nil, err
+	}
+
 	network := opts.network
 	if network == nil {
 		network, err = ferretnet.New()
 		if err != nil {
-			networkErr := fmt.Errorf("network: %w", err)
+			return nil, fmt.Errorf("network: %w", err)
+		}
 
-			return nil, errors.Join(networkErr, closeFileSystem(rootFs))
+		if err := opts.resources.Own(resource.Network, func() error {
+			ferretnet.CloseIdleNetworkConnections(network)
+
+			return nil
+		}); err != nil {
+			return nil, err
 		}
 	}
 

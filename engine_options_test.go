@@ -27,6 +27,12 @@ func mustNewOptionsForTest(t *testing.T, setters ...Option) *config {
 		t.Fatalf("failed to create options: %v", err)
 	}
 
+	t.Cleanup(func() {
+		if err := opts.resources.Close(); err != nil {
+			t.Errorf("close configured resources: %v", err)
+		}
+	})
+
 	return &opts
 }
 
@@ -457,15 +463,20 @@ func TestNewOptionsRejectsBlankFSRoot(t *testing.T) {
 func TestWithNetworkOptionsWithoutSettersIsNoOp(t *testing.T) {
 	t.Parallel()
 
-	network := mustNewTestNetwork(t)
+	client := &recordingHTTPClient{}
+	network := mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 	opts := mustNewOptionsForTest(t, WithNetwork(network), WithNetworkOptions())
 
 	if opts.network != network {
 		t.Fatalf("expected injected network to remain configured, got %T", opts.network)
 	}
 
-	if !opts.hostNetwork {
-		t.Fatal("expected injected network to remain caller-owned")
+	if err := opts.resources.Close(); err != nil {
+		t.Fatalf("close configured resources: %v", err)
+	}
+
+	if got := client.idleCloseCount(); got != 0 {
+		t.Fatalf("expected injected network to remain caller-owned, got %d closes", got)
 	}
 }
 
