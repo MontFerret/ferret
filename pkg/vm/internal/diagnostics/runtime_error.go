@@ -13,18 +13,6 @@ import (
 
 const vmStackNotePrefix = "VM stack: "
 
-type (
-	// RuntimeError represents a VM execution error with source context.
-	RuntimeError struct {
-		*diagnostics.Diagnostic
-	}
-
-	// RuntimeErrorSet is a specialized diagnostics.Diagnostics type for RuntimeError.
-	RuntimeErrorSet struct {
-		diagnostics.Diagnostics[*RuntimeError]
-	}
-)
-
 func NewRuntimeError(
 	program *bytecode.Program,
 	pc int,
@@ -57,10 +45,21 @@ func WrapRuntimeError(program *bytecode.Program, pc int, callStack []frame.Trace
 		return nil
 	}
 
+	var runtimeSet *RuntimeErrorSet
+	if errors.As(err, &runtimeSet) && runtimeSet != nil {
+		for _, item := range runtimeSet.Errors() {
+			attachCallStack(item, program, callStack)
+		}
+
+		return err
+	}
+
 	var runtimeError *RuntimeError
 
 	if errors.As(err, &runtimeError) {
-		return attachCallStack(runtimeError, program, callStack)
+		attachCallStack(runtimeError, program, callStack)
+
+		return err
 	}
 
 	var wpErrorSet *WarmupErrorSet

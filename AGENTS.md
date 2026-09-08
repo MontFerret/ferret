@@ -276,6 +276,20 @@ Avoid comments such as `// Close closes the result.`
 These rules are mandatory for handwritten Go code. Blank lines separate logical
 units and make control transfer visible.
 
+### Declaration ordering
+
+Within a file, place exported/public declarations before unexported/private declarations.
+
+Do not interleave private helpers between public methods or functions. Keep the public API grouped toward the top of the file and implementation helpers below it.
+
+Prefer:
+
+`Public1 → Public2 → Public3 → Private1 → Private2`
+
+over:
+
+`Public1 → Public2 → Private1 → Public3 → Private2`
+
 ### Producer and immediate check
 
 A declaration, assignment, call, assertion, lookup, or parse operation stays

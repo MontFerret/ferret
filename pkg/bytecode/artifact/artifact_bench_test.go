@@ -89,7 +89,7 @@ RETURN FOR u IN users
 		b.Fatalf("create compiler: %v", err)
 	}
 
-	program, err := compilerInstance.Compile(src)
+	program, err := compilerInstance.Compile(b.Context(), src)
 	if err != nil {
 		b.Fatalf("compile failed: %v", err)
 	}

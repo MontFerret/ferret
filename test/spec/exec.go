@@ -28,7 +28,7 @@ func Compile(expression string, level ...compiler.OptimizationLevel) (*bytecode.
 
 	c := mustNewCompiler(compiler.WithOptimizationLevel(oplevel))
 
-	return c.Compile(source.New("", expression))
+	return c.Compile(context.Background(), source.New("", expression))
 }
 
 func newTestContext() context.Context {

@@ -82,13 +82,13 @@ func diagnosticsFromHandler(src source.Source, handler *parserd.ErrorHandler) []
 	}
 
 	out := make([]*diagnostics.Diagnostic, 0, handler.Errors().Size())
-	byteOffsets := analysisByteOffsets(src)
+	byteOffsets := sourceByteOffsets(src)
 
 	for _, diagnostic := range handler.Errors().Errors() {
 		cloned := cloneDiagnostic(diagnostic)
 		if cloned != nil {
 			for i := range cloned.Spans {
-				cloned.Spans[i].Span = analysisByteSpan(byteOffsets, cloned.Spans[i].Span)
+				cloned.Spans[i].Span = sourceByteSpan(byteOffsets, cloned.Spans[i].Span)
 			}
 		}
 

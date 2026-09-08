@@ -32,7 +32,7 @@ const (
 	DebugReasonCompleted    = debugger.ReasonCompleted
 	DebugReasonTerminated   = debugger.ReasonTerminated
 
-	DebugBreakpointBindNextExecutableInFile     = debugger.BreakpointBindNextExecutableInFile
+	DebugBreakpointBindNextExecutableInSource   = debugger.BreakpointBindNextExecutableInSource
 	DebugBreakpointBindExact                    = debugger.BreakpointBindExact
 	DebugBreakpointBindNextExecutableInFunction = debugger.BreakpointBindNextExecutableInFunction
 )

@@ -20,7 +20,11 @@ func evaluateExpression(ctx context.Context, text string, scope evalScope) (runt
 	}
 
 	if ctx == nil {
-		ctx = context.Background()
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	p := parser.New(text)
@@ -41,6 +45,10 @@ func evaluateExpression(ctx context.Context, text string, scope evalScope) (runt
 }
 
 func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope evalScope) (runtime.Value, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	node, ok := expr.(*fql.ExpressionContext)
 
 	if !ok || node == nil {

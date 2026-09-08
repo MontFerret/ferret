@@ -26,12 +26,12 @@ type (
 		limiter        *sessionLimiter
 		pool           *vm.Pool
 		filesystem     fs.FileSystem
-		options        sessionOptions
+		options        sessionConfig
 		ownsFileSystem bool
 	}
 )
 
-func newPlanSession[T any](
+func newPlanSession[T interface{ Close() error }](
 	plan *Plan,
 	ctx context.Context,
 	setters []SessionOption,
@@ -43,14 +43,17 @@ func newPlanSession[T any](
 	}
 
 	if ctx == nil {
-		ctx = context.Background()
+		return session, runtime.Error(runtime.ErrInvalidArgument, "context is required")
 	}
 
-	plan.mu.RLock()
-	if plan.closed {
-		plan.mu.RUnlock()
+	if err := ctx.Err(); err != nil {
+		return session, err
+	}
 
+	select {
+	case <-plan.closed:
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
+	default:
 	}
 
 	program := plan.prog
@@ -58,14 +61,21 @@ func newPlanSession[T any](
 	hooks := plan.sessionHooks
 	limiter := plan.limiter
 	pool := plan.pool
-	plan.mu.RUnlock()
 
 	if setup.requiresDebugInfo && len(program.Metadata.DebugPoints) == 0 {
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan was not compiled for debugging")
 	}
 
-	options, err := newSessionOptions(setters)
+	options, err := newSessionConfig(setters)
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+			err = errors.Join(err, ctxErr)
+		}
+
+		return session, err
+	}
+
+	if err := ctx.Err(); err != nil {
 		return session, err
 	}
 
@@ -74,7 +84,7 @@ func newPlanSession[T any](
 		return session, fmt.Errorf("logger: %w", err)
 	}
 
-	if err = limiter.Acquire(ctx); err != nil {
+	if err = limiter.Acquire(ctx, plan.closed); err != nil {
 		return session, err
 	}
 
@@ -102,7 +112,9 @@ func newPlanSession[T any](
 
 	defer func() {
 		if ownsFileSystem && !fileSystemTransferred {
-			err = errors.Join(err, closeFileSystem(filesystem))
+			if closeErr := closeFileSystem(filesystem); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
 		}
 	}()
 
@@ -119,8 +131,20 @@ func newPlanSession[T any](
 	})
 
 	if err == nil {
+		// The constructed session now owns the permit/filesystem. Only request
+		// cancellation rolls it back; parent close does not revoke ownership.
 		releaseOnReturn = false
 		fileSystemTransferred = true
+
+		if err = ctx.Err(); err != nil {
+			if closeErr := session.Close(); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
+
+			var zero T
+
+			return zero, err
+		}
 	}
 
 	return session, err
@@ -199,7 +223,7 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 	return session, nil
 }
 
-func newPlanSessionEnvironment(h *host, options sessionOptions) (*vm.Environment, error) {
+func newPlanSessionEnvironment(h *host, options sessionConfig) (*vm.Environment, error) {
 	return vm.ExtendEnvironment(&vm.Environment{
 		Functions: h.functions,
 		Params:    h.params,

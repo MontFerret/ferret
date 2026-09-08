@@ -12,38 +12,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type trackingJSONCloser struct {
-	closeErr error
-	name     string
-	payload  string
-	closed   int
-}
-
-func newTrackingJSONCloser(name, payload string) *trackingJSONCloser {
-	return &trackingJSONCloser{name: name, payload: payload}
-}
-
-func (c *trackingJSONCloser) Close() error {
-	c.closed++
-	return c.closeErr
-}
-
-func (c *trackingJSONCloser) MarshalJSON() ([]byte, error) {
-	return []byte(c.payload), nil
-}
-
-func (c *trackingJSONCloser) String() string {
-	return c.name
-}
-
-func (c *trackingJSONCloser) Hash() uint64 {
-	return runtime.NewString(c.name).Hash()
-}
-
-func (c *trackingJSONCloser) Copy() runtime.Value {
-	return c
-}
-
 type aliasCodec struct {
 	base        ferretencoding.Codec
 	contentType string

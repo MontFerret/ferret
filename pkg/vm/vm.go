@@ -66,8 +66,13 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 
 // Run executes the program until completion, failure, or a VM cancellation
 // safepoint. Context-aware external operations receive ctx and remain
-// responsible for observing cancellation while they retain control.
+// responsible for observing cancellation while they retain control. A nil
+// context is invalid; callers must supply an explicit execution lifetime.
 func (vm *VM) Run(ctx context.Context, env *Environment) (*Result, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return nil, err
+	}
+
 	if vm == nil || vm.closed {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "vm is closed")
 	}

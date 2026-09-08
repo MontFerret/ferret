@@ -54,7 +54,7 @@ func testingDiagnosticSpec(t *testing.T, name, description string) spec.Spec {
 	input := spec.NewProgramSourceInput(spec.ProgramSource{
 		Name: scriptName,
 		Build: func(_ string, c *compiler.Compiler) (*bytecode.Program, error) {
-			return c.Compile(script)
+			return c.Compile(t.Context(), script)
 		},
 	})
 

@@ -95,7 +95,8 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if breakpoint.Bound != tc.wantBound || breakpoint.PointID != tc.wantPoint ||
+
+			if breakpoint.Bound != tc.wantBound || int(breakpoint.PointID) != int(tc.wantPoint) ||
 				breakpoint.Location.Line != tc.wantLine || breakpoint.Location.Column != tc.wantColumn {
 				t.Fatalf("unexpected breakpoint: %#v", breakpoint)
 			}
@@ -103,15 +104,16 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 				t.Fatalf("unexpected binding mode: %#v", breakpoint)
 			}
 			requested := tc.location
-			requested.File = src.Name()
+
+			requested.SourceName = src.Name()
 			if breakpoint.RequestedLocation != requested {
 				t.Fatalf("unexpected requested location: %#v", breakpoint)
 			}
 			if breakpoint.Bound {
 				resolved := source.Range{
 					Location: source.Location{
-						File:     src.Name(),
-						Position: source.Position{Line: tc.wantLine, Column: tc.wantColumn},
+						SourceName: src.Name(),
+						Position:   source.Position{Line: tc.wantLine, Column: tc.wantColumn},
 					},
 					Span: tc.wantSpan,
 				}
@@ -122,11 +124,12 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 		})
 	}
 
-	legacy, err := session.SetBreakpoint("", 2)
+	legacy, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !legacy.Bound || legacy.PointID != 3 || legacy.BindingMode != BreakpointBindNextExecutableInFile {
+
+	if !legacy.Bound || legacy.PointID != 3 || legacy.BindingMode != BreakpointBindNextExecutableInSource {
 		t.Fatalf("legacy helper did not preserve next-in-file binding: %#v", legacy)
 	}
 }

@@ -149,15 +149,15 @@ func NewDebugExecution(instance *VM, env *Environment) (DebugExecution, error) {
 
 // Start begins execution and stops at the first executable source location.
 func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return nil, err
+	}
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if d.status != DebugExecutionNew {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "debug execution has already started")
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
 	}
 
 	if err := d.vm.state.startRun(d.env); err != nil {
@@ -181,6 +181,10 @@ func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error
 // Resume continues a paused execution according to mode and the active
 // breakpoint PCs.
 func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints map[int]struct{}) (*DebugExecutionEvent, error) {
+	if err := validateOperationContext(ctx); err != nil {
+		return nil, err
+	}
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -189,15 +193,7 @@ func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, break
 	}
 
 	if d.terminalErr != nil {
-		err := d.terminalErr
-		d.vm.state.endRun()
-		d.status = DebugExecutionTerminated
-
-		return &DebugExecutionEvent{Reason: DebugStopTerminated, Error: err}, nil
-	}
-
-	if ctx == nil {
-		ctx = context.Background()
+		return d.terminate(d.terminalErr, nil, 0), nil
 	}
 
 	d.control.mode = mode
@@ -375,6 +371,12 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 
 	root, action, runErr := d.vm.runCore(ctx, nil, true)
 
+	if isExecutionCancellation(runErr) {
+		point, depth := d.errorPoint(), d.vm.state.frames.Len()
+
+		return d.terminate(runErr, point, depth), nil
+	}
+
 	if runErr != nil {
 		d.terminalErr = d.vm.state.wrapRuntimeError(runErr)
 		d.status = DebugExecutionPaused
@@ -389,11 +391,7 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 
 		return &DebugExecutionEvent{Reason: d.control.reason, Point: d.current, Depth: d.vm.state.frames.Len()}, nil
 	case sourcePointTerminate:
-		depth := d.vm.state.frames.Len()
-		d.vm.state.endRun()
-		d.status = DebugExecutionTerminated
-
-		return &DebugExecutionEvent{Reason: DebugStopTerminated, Point: d.current, Depth: depth}, nil
+		return d.terminate(nil, d.current, d.vm.state.frames.Len()), nil
 	}
 
 	result := d.vm.state.finishRun(root)
@@ -401,6 +399,19 @@ func (d *debugExecution) runLocked(ctx context.Context) (event *DebugExecutionEv
 	d.current = nil
 
 	return &DebugExecutionEvent{Reason: DebugStopCompleted, Result: result}, nil
+}
+
+func (d *debugExecution) terminate(err error, point *bytecode.DebugPoint, depth int) *DebugExecutionEvent {
+	if closeErr := d.vm.state.endRunWithError(); closeErr != nil {
+		// Close retains cleanup failures, but a clean cancellation must not make
+		// subsequent Close calls fail with the execution's termination cause.
+		d.closeErr = errors.Join(d.closeErr, closeErr)
+		err = errors.Join(err, closeErr)
+	}
+
+	d.status = DebugExecutionTerminated
+
+	return &DebugExecutionEvent{Reason: DebugStopTerminated, Error: err, Point: point, Depth: depth}
 }
 
 func (d *debugExecution) errorPoint() *bytecode.DebugPoint {

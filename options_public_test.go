@@ -2,10 +2,23 @@ package ferret_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
+	"github.com/MontFerret/api"
 	ferret "github.com/MontFerret/ferret/v2"
 )
+
+func TestNativeOptionsAreDistinctFromUniversalOptions(t *testing.T) {
+	for _, pair := range [][2]reflect.Type{
+		{reflect.TypeFor[ferret.PlanOption](), reflect.TypeFor[api.PlanOption]()},
+		{reflect.TypeFor[ferret.SessionOption](), reflect.TypeFor[api.SessionOption]()},
+	} {
+		if pair[0].AssignableTo(pair[1]) || pair[1].AssignableTo(pair[0]) {
+			t.Fatalf("native and Universal options are assignable: %v, %v", pair[0], pair[1])
+		}
+	}
+}
 
 func TestPublicOptionTypesRemainUsable(t *testing.T) {
 	t.Parallel()
@@ -104,6 +117,7 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 	plan, err := engine.Compile(
 		context.Background(),
 		ferret.NewAnonymousSource("RETURN @engineParam + @engineValue + @sessionParam + @sessionValue"),
+		ferret.WithPlanOptimizationLevel(ferret.OptimizationNone),
 	)
 	if err != nil {
 		t.Fatalf("compile: %v", err)

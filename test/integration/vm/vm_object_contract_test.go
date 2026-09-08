@@ -28,6 +28,7 @@ func TestObjectContracts(t *testing.T) {
 		S(`return object::from_entries([["a", 1], ["b", 2], ["a", 3]]) == {a: 3, b: 2}`, true),
 		S(`return object::zip([], []) == {} and object::from_entries([]) == {}`, true),
 		S(`let value = {a: [1, none], b: {c: 2}} return object::from_entries(object::entries(value)) == value`, true),
+		S(`return (for pair in object::entries({"": none, "é 😀": [1], a: {b: 2}}) return is_string(pair[0])) == [true, true, true]`, true),
 		S(`let value = {a: 1, b: "two", c: none} return (for pair in object::entries(value) return value[pair[0]] == pair[1]) == [true, true, true]`, true),
 		S(`let base = {a: {left: 1}, b: [1]} let result = object::merge_deep(base, {a: {right: 2}}) return base == {a: {left: 1}, b: [1]} and result.a == {left: 1, right: 2}`, true),
 	}

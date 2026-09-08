@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"context"
+
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
@@ -11,6 +13,7 @@ import (
 )
 
 func runFrontend(
+	ctx context.Context,
 	src source.Source,
 	errors *parserd.ErrorHandler,
 	level optimization.Level,
@@ -41,7 +44,7 @@ func runFrontend(
 	p.AddErrorListener(parserd.NewErrorListener(src, errors, tokenHistory))
 	p.Program()
 
-	if errors.HasErrors() {
+	if ctx.Err() != nil || errors.HasErrors() {
 		return nil
 	}
 

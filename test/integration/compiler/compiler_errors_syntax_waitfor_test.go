@@ -180,7 +180,7 @@ func TestSyntaxErrorsWaitfor(t *testing.T) {
 
 func TestSyntaxErrorsWaitforEmptyGroupDoesNotHijackEarlierError(t *testing.T) {
 	query := "RETURN [1,,2]\nRETURN WAITFOR ANY {}"
-	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
@@ -197,7 +197,7 @@ func TestSyntaxErrorsWaitforEmptyGroupDoesNotHijackEarlierError(t *testing.T) {
 
 func TestSyntaxErrorsWaitforEmptyGroupsUseTheirOwnSpans(t *testing.T) {
 	query := "LET first = WAITFOR ANY {}\nRETURN WAITFOR VALUE ALL {}"
-	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

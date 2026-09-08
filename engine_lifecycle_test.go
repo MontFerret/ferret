@@ -471,7 +471,7 @@ func TestRunClosesPlanWhenSessionCreationFails(t *testing.T) {
 	}
 }
 
-func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
+func TestRunReturnsDeferredCleanupErrorsWithOutput(t *testing.T) {
 	t.Parallel()
 
 	sessionCloseErr := errors.New("session close failed")
@@ -493,32 +493,15 @@ func TestRunLogsDeferredCleanupErrorsWithoutChangingRunResult(t *testing.T) {
 	}
 
 	result, err := eng.Run(context.Background(), source.NewAnonymous("RETURN 1"))
-	if err != nil {
-		t.Fatalf("expected run result error to be unchanged by cleanup failures, got: %v", err)
+	if !errors.Is(err, sessionCloseErr) || !errors.Is(err, planCloseErr) {
+		t.Fatalf("expected both cleanup causes, got: %v", err)
 	}
 
 	if got := strings.TrimSpace(string(result.Content)); got != "1" {
 		t.Fatalf("expected run result to stay successful, got: %s", got)
 	}
 
-	logs := logOutput.String()
-	if !strings.Contains(logs, `"phase":"session"`) {
-		t.Fatalf("expected cleanup logs to include session phase, got: %s", logs)
-	}
-
-	if !strings.Contains(logs, `"phase":"plan"`) {
-		t.Fatalf("expected cleanup logs to include plan phase, got: %s", logs)
-	}
-
-	if !strings.Contains(logs, `"operation":"close"`) {
-		t.Fatalf("expected cleanup logs to include close operation, got: %s", logs)
-	}
-
-	if !strings.Contains(logs, sessionCloseErr.Error()) {
-		t.Fatalf("expected cleanup logs to include session close error, got: %s", logs)
-	}
-
-	if !strings.Contains(logs, planCloseErr.Error()) {
-		t.Fatalf("expected cleanup logs to include plan close error, got: %s", logs)
+	if logs := logOutput.String(); logs != "" {
+		t.Fatalf("cleanup error was both returned and logged: %s", logs)
 	}
 }

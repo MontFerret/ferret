@@ -6,7 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	apidebugger "github.com/MontFerret/api/debugger"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -32,7 +33,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint("debug.fql", 2)
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "debug.fql", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,14 +120,15 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint("same-line.fql", 1)
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "same-line.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !breakpoint.Bound {
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
-	if breakpoint.RequestedLocation.Column != 0 || breakpoint.FunctionID != bytecode.NoFunction {
+
+	if breakpoint.RequestedLocation.Column != 0 || breakpoint.FunctionID != apidebugger.NoFunction {
 		t.Fatalf("unexpected same-line breakpoint identity: %#v", breakpoint)
 	}
 	if _, err := session.Start(context.Background()); err != nil {
@@ -159,7 +161,7 @@ func TestDebugSessionBreakpointLifecyclePreservesIDs(t *testing.T) {
 	}
 	defer session.Close()
 
-	first, err := session.SetBreakpoint("other.fql", 1)
+	first, err := session.SetBreakpoint(source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +171,8 @@ func TestDebugSessionBreakpointLifecyclePreservesIDs(t *testing.T) {
 	if err := session.DeleteBreakpoint(first.ID); err != nil {
 		t.Fatal(err)
 	}
-	second, err := session.SetBreakpoint("breakpoints.fql", 1)
+
+	second, err := session.SetBreakpoint(source.Location{SourceName: "breakpoints.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -608,5 +611,34 @@ func TestDebugSessionStopsOnRepeatedLoopLocation(t *testing.T) {
 	}
 	if first.Location.Line != 2 || second.Location.Line != 2 {
 		t.Fatalf("expected repeated loop stops, got %#v then %#v", first, second)
+	}
+}
+
+func TestDebugCompletionPreservesOutputOnAfterHookFailure(t *testing.T) {
+	failure := errors.New("after hook")
+	engine := mustNewEngine(t, WithAfterRunHook(func(context.Context, error) error { return failure }))
+	t.Cleanup(func() { _ = engine.Close() })
+
+	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 42"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = plan.Close() })
+
+	session, err := plan.NewDebugSession(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = session.Close() })
+
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	event, err := session.Continue(t.Context())
+	if !errors.Is(err, failure) || event == nil || event.Output == nil || string(event.Output.Content) != "42" || event.Reason != DebugReasonCompleted {
+		t.Fatalf("event=%+v err=%v", event, err)
 	}
 }

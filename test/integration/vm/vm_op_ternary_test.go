@@ -38,7 +38,7 @@ func TestTernaryOperator(t *testing.T) {
 			val := val
 
 			t.Run(val, func(t *testing.T) {
-				p, err := c.Compile(source.NewAnonymous(fmt.Sprintf(`
+				p, err := c.Compile(t.Context(), source.NewAnonymous(fmt.Sprintf(`
 			RETURN FOR i IN [%s, 1, 2, 3]
 				RETURN i ? i * 2 : 'no value'
 		`, val)))

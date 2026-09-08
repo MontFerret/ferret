@@ -378,7 +378,7 @@ FOR user IN users
     FILTER ` + tt.predicate + `
     RETURN user.name`
 
-			_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+			_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 			if err == nil {
 				t.Fatal("expected compilation error")
 			}
@@ -433,7 +433,7 @@ FOR user IN users
     FILTER user.active = true
     RETURN user.name`
 
-	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

@@ -2,7 +2,6 @@ package compiler
 
 import (
 	"errors"
-	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -67,31 +66,6 @@ func semanticNamespace(kind SymbolKind) string {
 	default:
 		return "binding"
 	}
-}
-
-func analysisByteSpan(offsets []int, span source.Span) source.Span {
-	if span.Start < 0 || span.End < 0 || span.Start >= len(offsets) || span.End >= len(offsets) {
-		return span
-	}
-
-	return source.Span{Start: offsets[span.Start], End: offsets[span.End]}
-}
-
-func analysisByteOffsets(src source.Source) []int {
-	if src.Empty() {
-		return []int{0}
-	}
-
-	text := src.Content()
-	offsets := make([]int, 0, utf8.RuneCountInString(text)+1)
-
-	for offset := range text {
-		offsets = append(offsets, offset)
-	}
-
-	offsets = append(offsets, len(text))
-
-	return offsets
 }
 
 func analysisError(analysis *Analysis) error {

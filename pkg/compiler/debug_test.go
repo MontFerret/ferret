@@ -11,7 +11,7 @@ import (
 )
 
 func TestWithDebugInfoEmitsLogicalPointsAndForcesNone(t *testing.T) {
-	program, err := mustNewCompiler(t, WithOptimizationLevel(Full), WithDebugInfo()).Compile(
+	program, err := mustNewCompiler(t, WithOptimizationLevel(Full), WithDebugInfo()).Compile(t.Context(),
 		source.New("debug.fql", "LET x = 1\nVAR y = 2\ny = y + x\nRETURN y"),
 	)
 	if err != nil {
@@ -45,7 +45,7 @@ func TestWithDebugInfoForcesNoneAfterLaterOptimizationOption(t *testing.T) {
 		t,
 		WithDebugInfo(),
 		WithOptimizationLevel(Full),
-	).Compile(source.NewAnonymous("RETURN 1"))
+	).Compile(t.Context(), source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestWithDebugInfoForcesNoneAfterLaterOptimizationOption(t *testing.T) {
 }
 
 func TestDebugInfoArtifactRoundTrip(t *testing.T) {
-	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(source.New("debug.fql", "FOR i IN 1..2\n  RETURN i"))
+	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(t.Context(), source.New("debug.fql", "FOR i IN 1..2\n  RETURN i"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestDebugInfoArtifactRoundTrip(t *testing.T) {
 }
 
 func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
-	program, err := mustNewCompiler(t, WithOptimizationLevel(Full)).Compile(source.NewAnonymous("LET x = 1\nRETURN x"))
+	program, err := mustNewCompiler(t, WithOptimizationLevel(Full)).Compile(t.Context(), source.NewAnonymous("LET x = 1\nRETURN x"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestNormalCompilationDoesNotEmitDebugPoints(t *testing.T) {
 }
 
 func TestDebugInfoIncludesUDFArgumentsCapturesAndLoopVariables(t *testing.T) {
-	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(source.New("bindings.fql", `
+	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(t.Context(), source.New("bindings.fql", `
 LET base = 10
 FUNC add(value) => base + value
 RETURN (
@@ -148,7 +148,7 @@ RETURN (
 }
 
 func TestDebugInfoHidesForwardingOnlyCaptures(t *testing.T) {
-	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(source.New("hidden_capture.fql", `
+	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(t.Context(), source.New("hidden_capture.fql", `
 LET base = 10
 FUNC target(value) => base + value
 FUNC forward(value) => target(value)
@@ -190,7 +190,7 @@ RETURN forward(1)
 }
 
 func TestDebugInfoPreservesLexicalShadowing(t *testing.T) {
-	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(source.New("shadow.fql", `LET x = 1
+	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(t.Context(), source.New("shadow.fql", `LET x = 1
 RETURN (
   FOR x IN [2]
     RETURN x
@@ -224,7 +224,7 @@ RETURN (
 }
 
 func TestDebugInfoClassifiesReturnAndFunctionEntryPoints(t *testing.T) {
-	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(source.New("kinds.fql", `LET seed = 1
+	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(t.Context(), source.New("kinds.fql", `LET seed = 1
 FUNC add(a) {
   LET b = a + 1
   RETURN b
@@ -260,7 +260,7 @@ RETURN add(seed)`))
 }
 
 func TestDebugInfoFunctionEntryTakesPrecedenceForSinglePointUDF(t *testing.T) {
-	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(source.New("entry.fql", "FUNC one() => 1\nRETURN one()"))
+	program, err := mustNewCompiler(t, WithDebugInfo()).Compile(t.Context(), source.New("entry.fql", "FUNC one() => 1\nRETURN one()"))
 	if err != nil {
 		t.Fatal(err)
 	}

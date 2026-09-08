@@ -4,9 +4,10 @@ import (
 	"errors"
 	"testing"
 
+	sharedoptions "github.com/ziflex/go-options"
+
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
-	sharedoptions "github.com/ziflex/go-options"
 )
 
 func TestWithOptimizationLevelConfiguresEngineCompiler(t *testing.T) {
@@ -163,5 +164,41 @@ func TestNewDoesNotCloseInjectedNetworkAfterOptimizationLevelError(t *testing.T)
 	}
 	if got := client.idleCloseCount(); got != 0 {
 		t.Fatalf("injected network idle closes = %d, want 0", got)
+	}
+}
+
+func TestPerPlanOptimizationDoesNotChangeEngineDefaults(t *testing.T) {
+	engine := mustNewEngine(t, WithOptimizationLevel(OptimizationBasic))
+	t.Cleanup(func() { _ = engine.Close() })
+	t.Run("concurrent overrides", func(t *testing.T) {
+		for _, level := range []OptimizationLevel{OptimizationNone, OptimizationBasic, OptimizationFull} {
+			t.Run(level.String(), func(t *testing.T) {
+				t.Parallel()
+				plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1 + 2"), WithPlanOptimizationLevel(level))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if got := plan.prog.Metadata.OptimizationLevel; got != int(level) {
+					t.Fatalf("actual optimization=%d, want %d", got, level)
+				}
+
+				if err := plan.Close(); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
+
+	})
+
+	plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1 + 2"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = plan.Close() })
+
+	if got := plan.prog.Metadata.OptimizationLevel; got != int(OptimizationBasic) {
+		t.Fatalf("engine default mutated to %d", got)
 	}
 }

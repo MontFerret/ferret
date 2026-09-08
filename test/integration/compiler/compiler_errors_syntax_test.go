@@ -325,7 +325,7 @@ FUNC fib(n) => {
 
 RETURN fib(10)`
 
-	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}
@@ -382,7 +382,7 @@ func TestMissingFunctionParamsCloseDiagnosticDoesNotCascade(t *testing.T) {
 
 RETURN fib(10)`
 
-	_, err := mustNewCompiler(t).Compile(source.NewAnonymous(query))
+	_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(query))
 	if err == nil {
 		t.Fatal("expected compilation error")
 	}

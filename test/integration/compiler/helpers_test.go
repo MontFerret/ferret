@@ -24,7 +24,7 @@ func compileWithLevel(t *testing.T, level compiler.OptimizationLevel, expr strin
 	t.Helper()
 
 	c := mustNewCompiler(t, compiler.WithOptimizationLevel(level))
-	prog, err := c.Compile(source.NewAnonymous(expr))
+	prog, err := c.Compile(t.Context(), source.NewAnonymous(expr))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}

@@ -3,6 +3,8 @@ package debugger
 import (
 	"context"
 
+	apidebugger "github.com/MontFerret/api/debugger"
+
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -10,68 +12,26 @@ import (
 )
 
 type (
-	// Reason identifies why a debug execution stopped.
-	Reason string
-
-	// BreakpointID identifies a breakpoint within one debugger session.
-	BreakpointID int
-
-	// ValueReference identifies an expandable debugger value within one paused
-	// session state. References are invalidated when execution starts or resumes.
-	ValueReference int
-
-	// BreakpointBindingMode selects how a requested source location resolves to
-	// an executable debug point.
-	BreakpointBindingMode int
-
-	// Value is a safely formatted debugger value.
-	Value struct {
-		Type      string
-		Display   string
-		Reference ValueReference
-	}
-
-	// Variable describes a visible local or bind parameter.
-	Variable struct {
-		Name    string
-		Value   Value
-		Mutable bool
-		Param   bool
-	}
-
-	// Frame describes the paused top frame or one of its callers.
-	Frame struct {
-		Name       string
-		Location   source.Location
-		FunctionID bytecode.FunctionID
-	}
-
-	// Breakpoint describes a requested source-location breakpoint and its resolved
-	// executable location, when one exists.
-	Breakpoint struct {
-		RequestedLocation source.Location `json:"requestedLocation"`
-		Location          source.Range    `json:"location"`
-		ID                BreakpointID
-		PointID           bytecode.DebugPointID
-		FunctionID        bytecode.FunctionID
-		BindingMode       BreakpointBindingMode
-		Bound             bool
-	}
-
-	// BreakpointOptions configures how a requested source location binds.
-	BreakpointOptions struct {
-		BindingMode BreakpointBindingMode
-	}
-
+	// Reason identifies why execution stopped.
+	Reason = apidebugger.Reason
+	// BreakpointID identifies a breakpoint within one session.
+	BreakpointID = apidebugger.BreakpointID
+	// ValueReference identifies an expandable value in one paused state.
+	ValueReference = apidebugger.ValueReference
+	// BreakpointBindingMode selects how a source location binds.
+	BreakpointBindingMode = apidebugger.BreakpointBindingMode
+	// Value is a safely formatted portable debugger value.
+	Value = apidebugger.Value
+	// Variable describes a local or bind parameter.
+	Variable = apidebugger.Variable
+	// Frame describes the paused frame or one of its callers.
+	Frame = apidebugger.Frame
+	// Breakpoint describes requested and resolved source locations.
+	Breakpoint = apidebugger.Breakpoint
+	// BreakpointOptions configures source-location binding.
+	BreakpointOptions = apidebugger.BreakpointOptions
 	// Event reports a debugger stop, completion, or termination.
-	Event struct {
-		Error            error
-		Output           *encoding.Output
-		Reason           Reason
-		HitBreakpointIDs []BreakpointID
-		Location         source.Range
-		Depth            int
-	}
+	Event = apidebugger.Event
 
 	// FormatOptions bounds debugger value traversal and rendered output.
 	FormatOptions struct {
@@ -102,21 +62,16 @@ type (
 )
 
 const (
-	ReasonEntry        Reason = "entry"
-	ReasonBreakpoint   Reason = "breakpoint"
-	ReasonStep         Reason = "step"
-	ReasonPause        Reason = "pause"
-	ReasonRuntimeError Reason = "runtime-error"
-	ReasonCompleted    Reason = "completed"
-	ReasonTerminated   Reason = "terminated"
-)
-
-const (
-	// BreakpointBindNextExecutableInFile preserves the friendly legacy binding
-	// behavior and is the zero-value default.
-	BreakpointBindNextExecutableInFile BreakpointBindingMode = iota
-	BreakpointBindExact
-	BreakpointBindNextExecutableInFunction
+	ReasonEntry                            = apidebugger.ReasonEntry
+	ReasonBreakpoint                       = apidebugger.ReasonBreakpoint
+	ReasonStep                             = apidebugger.ReasonStep
+	ReasonPause                            = apidebugger.ReasonPause
+	ReasonRuntimeError                     = apidebugger.ReasonRuntimeError
+	ReasonCompleted                        = apidebugger.ReasonCompleted
+	ReasonTerminated                       = apidebugger.ReasonTerminated
+	BreakpointBindNextExecutableInSource   = apidebugger.BreakpointBindNextExecutableInSource
+	BreakpointBindExact                    = apidebugger.BreakpointBindExact
+	BreakpointBindNextExecutableInFunction = apidebugger.BreakpointBindNextExecutableInFunction
 )
 
 // DefaultFormatOptions returns conservative debugger formatting limits.
@@ -124,7 +79,4 @@ func DefaultFormatOptions() FormatOptions {
 	return FormatOptions{MaxDepth: 3, MaxItems: 8, MaxBytes: 1024}
 }
 
-// Valid reports whether the reference can be used to request child variables.
-func (r ValueReference) Valid() bool {
-	return r > 0
-}
+var _ apidebugger.Session = (*Session)(nil)

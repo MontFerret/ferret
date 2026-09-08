@@ -8,12 +8,17 @@ import (
 )
 
 type fakeSessionServices struct {
+	beforeRun   func(context.Context) (context.Context, error)
 	afterRunErr error
 	afterCalls  int
 	closed      bool
 }
 
 func (f *fakeSessionServices) BeforeRun(ctx context.Context) (context.Context, error) {
+	if f.beforeRun != nil {
+		return f.beforeRun(ctx)
+	}
+
 	return ctx, nil
 }
 

@@ -47,7 +47,17 @@ type (
 )
 
 // Run executes the session with the provided context and returns encoded output.
+// Successful output remains available alongside after-run hook or result-cleanup
+// errors. The caller owns the encoded data; Run releases the underlying VM result.
 func (s *Session) Run(c context.Context) (*Output, error) {
+	if c == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := c.Err(); err != nil {
+		return nil, err
+	}
+
 	if s.closed.Load() {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "session is closed")
 	}
@@ -55,17 +65,35 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 	// Before-run hooks can replace the context used for the rest of execution.
 	ctx, err := s.hooks.runBeforeRunHooks(c)
 	if err != nil {
-		return nil, fmt.Errorf("before run hooks: %w", err)
+		return nil, errors.Join(fmt.Errorf("before run hooks: %w", err), c.Err())
 	}
 
-	out, err := s.vm.Run(s.extendContext(ctx), s.env)
+	err = c.Err()
+	if ctx == nil {
+		ctx = c
+		err = errors.Join(err, runtime.Error(runtime.ErrInvalidArgument, "before run hooks returned nil context"))
+	} else if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
+		err = errors.Join(err, ctxErr)
+	}
 
-	// After-run hooks always run and receive the VM run error (if any).
-	if hookErr := s.hooks.runAfterRunHooks(ctx, err); hookErr != nil {
-		return nil, errors.Join(err, fmt.Errorf("after run hooks: %w", hookErr))
+	var out *vm.Result
+
+	if err == nil {
+		out, err = s.vm.Run(s.extendContext(ctx), s.env)
+	}
+
+	// Successful before-run hooks must be paired even when context validation
+	// prevents VM entry. Every after-run hook receives the same primary error.
+	hookErr := s.hooks.runAfterRunHooks(ctx, err)
+	if hookErr != nil {
+		hookErr = fmt.Errorf("after run hooks: %w", hookErr)
 	}
 
 	if err != nil {
+		if hookErr != nil {
+			return nil, errors.Join(err, hookErr)
+		}
+
 		return nil, err
 	}
 
@@ -73,23 +101,14 @@ func (s *Session) Run(c context.Context) (*Output, error) {
 	closeErr := out.Close()
 
 	if outputErr != nil {
-		return nil, errors.Join(outputErr, closeErr)
+		return nil, errors.Join(hookErr, outputErr, closeErr)
 	}
 
-	if closeErr != nil {
-		return output, closeErr
+	if hookErr != nil {
+		return output, errors.Join(hookErr, closeErr)
 	}
 
-	return output, nil
-}
-
-func (s *Session) extendContext(ctx context.Context) context.Context {
-	ctx = s.logger.WithContext(ctx)
-	ctx = encoding.WithRegistry(ctx, s.encoding)
-	ctx = fs.WithFileSystem(ctx, s.fs)
-	ctx = ferretnet.WithNetwork(ctx, s.network)
-
-	return ctx
+	return output, closeErr
 }
 
 // Close releases the session's borrowed VM, runs close hooks, and closes any
@@ -129,4 +148,13 @@ func (s *Session) Close() error {
 	})
 
 	return s.closeErr
+}
+
+func (s *Session) extendContext(ctx context.Context) context.Context {
+	ctx = s.logger.WithContext(ctx)
+	ctx = encoding.WithRegistry(ctx, s.encoding)
+	ctx = fs.WithFileSystem(ctx, s.fs)
+	ctx = ferretnet.WithNetwork(ctx, s.network)
+
+	return ctx
 }

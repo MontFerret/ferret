@@ -84,10 +84,23 @@ Debug session services apply the same before-run, after-run, encoding,
 filesystem, network, logging, and close-hook behavior as normal sessions.
 Completion materializes output through the embedding layer.
 
+When all before-run hooks succeed but context validation prevents VM entry,
+`Start` settles that attempt's after-run hooks immediately. The session remains
+new and accepts a later valid `Start`; `Close` does not repeat the aborted
+attempt's hooks or consume the later run's hook obligation.
+
 `Close` requests termination, waits for an active command to leave the retained
 execution, invalidates value references, runs after-run handling when needed,
 closes retained VM state, and releases embedding-owned resources. Cleanup errors
 are aggregated without skipping later cleanup.
+
+Termination events include both the execution cause and retained-state cleanup
+failures. The debug execution caches cleanup failures for repeated and concurrent
+`Close` calls. Cancellation itself is not cached as a cleanup failure, so a clean
+cancellation does not make later `Close` calls fail. Ordinary runtime errors
+remain inspectable until the next resume or close releases their retained state.
+If `Close` wins while the VM returns a paused or runtime-error stop, the session
+drains that state before reporting termination and preserves concurrent failures.
 
 Debugger state must not change normal VM execution. Debugger-only work on a
 normal execution path must be explicit, measurable, and immediately bypassable.
@@ -109,3 +122,22 @@ interaction cost.
 * [Architecture](architecture.md)
 * [Runtime and lifecycle](runtime.md)
 * [Development workflow](workflow.md)
+
+## Portable debugger boundary
+
+Coordinates, values, variables, frames, breakpoints, reasons, and events alias
+the Universal API types. Native source text/indexing and compiler debug tables
+remain native. Table identifiers are validated natively and converted only when
+constructing portable debugger values. The Universal API debugger package owns
+`NoFunction` for the top-level body and the positive value-reference convention;
+references are usable only in their paused state.
+
+Native source positions use one-based lines and byte columns; spans are
+zero-based half-open byte offsets. Source names can be anonymous or non-path
+identities. The compiler converts ANTLR rune offsets into byte spans when
+publishing diagnostics and program metadata, including debug points and
+call-argument spans. Analysis already publishes byte spans. Breakpoint creation accepts a source location and optional binding
+mode; unknown modes are rejected. Command cancellation reports termination while
+preserving cancellation identity. Ordinary runtime failures remain inspectable
+runtime-error stops. Completion retains an event and available output even when
+an after-run hook or later result cleanup fails.

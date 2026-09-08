@@ -1,12 +1,16 @@
 package compiler
 
 import (
+	"context"
+	"errors"
+
 	"github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/optimization"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -35,10 +39,30 @@ func New(setters ...Option) (*Compiler, error) {
 	}, nil
 }
 
-// Compile parses and compiles a source into a bytecode program.
-//
-// Compile is safe for concurrent use by multiple goroutines.
-func (c *Compiler) Compile(src source.Source) (program *bytecode.Program, err error) {
+// Compile synchronously compiles source and checks cancellation between
+// parsing, lowering, and program construction. Individual phases are not preempted.
+// The context must be non-nil. The compiler remains safe for concurrent use.
+func (c *Compiler) Compile(ctx context.Context, src source.Source) (program *bytecode.Program, err error) {
+	if ctx == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			if err == nil {
+				err = ctxErr
+			} else if !errors.Is(err, ctxErr) {
+				err = errors.Join(err, ctxErr)
+			}
+
+			program = nil
+		}
+	}()
+
 	if src.Empty() {
 		return nil, parserd.NewEmptyQueryError(src)
 	}
@@ -52,6 +76,17 @@ func (c *Compiler) Compile(src source.Source) (program *bytecode.Program, err er
 			program = nil
 			err = errorHandler.Unwrap()
 		}
+
+		// The handler and lowering keep ANTLR offsets until compilation settles.
+		// Convert the owned diagnostics in place to preserve their error tree.
+		if errorHandler.HasErrors() {
+			offsets := sourceByteOffsets(src)
+			for _, diagnostic := range errorHandler.Errors().Errors() {
+				for i := range diagnostic.Spans {
+					diagnostic.Spans[i].Span = sourceByteSpan(offsets, diagnostic.Spans[i].Span)
+				}
+			}
+		}
 	}()
 
 	level := c.config.Level
@@ -59,7 +94,11 @@ func (c *Compiler) Compile(src source.Source) (program *bytecode.Program, err er
 		level = optimization.None
 	}
 
-	visitor := runFrontend(src, errorHandler, level, c.config.DebugInfo, nil, nil)
+	visitor := runFrontend(ctx, src, errorHandler, level, c.config.DebugInfo, nil, nil)
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	if errorHandler.HasErrors() {
 		return nil, errorHandler.Unwrap()
@@ -94,7 +133,7 @@ func (c *Compiler) Analyze(src source.Source) (analysis *Analysis, err error) {
 		return analysis, analysisError(analysis)
 	}
 
-	visitor := runFrontend(src, errorHandler, optimization.None, false, recorder, &syntaxTokens)
+	visitor := runFrontend(context.Background(), src, errorHandler, optimization.None, false, recorder, &syntaxTokens)
 	if visitor != nil {
 		recorder.Sort()
 	}

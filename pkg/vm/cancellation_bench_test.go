@@ -156,7 +156,7 @@ func benchmarkDebugCompiledCancellationSafepoint(b *testing.B) {
 func benchmarkCompileCancellationProgram(b *testing.B, c *compiler.Compiler, query string) *bytecode.Program {
 	b.Helper()
 
-	program, err := c.Compile(source.NewAnonymous(query))
+	program, err := c.Compile(b.Context(), source.NewAnonymous(query))
 	if err != nil {
 		b.Fatal(err)
 	}

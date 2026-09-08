@@ -13,10 +13,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func mustNewSessionOptionsForTest(t *testing.T, setters ...SessionOption) *sessionOptions {
+func mustNewSessionConfigForTest(t *testing.T, setters ...SessionOption) *sessionConfig {
 	t.Helper()
 
-	opts, err := newSessionOptions(setters)
+	opts, err := newSessionConfig(setters)
 	if err != nil {
 		t.Fatalf("failed to create session options: %v", err)
 	}
@@ -24,7 +24,7 @@ func mustNewSessionOptionsForTest(t *testing.T, setters ...SessionOption) *sessi
 	return &opts
 }
 
-func mustBuildEnvironmentForTest(t *testing.T, opts *sessionOptions) *vm.Environment {
+func mustBuildEnvironmentForTest(t *testing.T, opts *sessionConfig) *vm.Environment {
 	t.Helper()
 
 	env, err := vm.NewEnvironment(opts.env)
@@ -39,7 +39,7 @@ func TestSessionSimpleOptionsApplyValidValues(t *testing.T) {
 	t.Parallel()
 
 	format := DebugFormatOptions{MaxDepth: 4, MaxItems: 12, MaxBytes: 2048}
-	opts := mustNewSessionOptionsForTest(
+	opts := mustNewSessionConfigForTest(
 		t,
 		WithDebugFormat(format),
 		WithOutputContentType("  application/custom \n"),
@@ -100,7 +100,7 @@ func TestSessionSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := newSessionOptions([]SessionOption{tt.option})
+			_, err := newSessionConfig([]SessionOption{tt.option})
 			if err == nil {
 				t.Fatal("expected validation error")
 			}
@@ -128,7 +128,7 @@ func TestSessionSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	t.Parallel()
 
-	config := defaultSessionOptions()
+	config := defaultSessionConfig()
 	format := config.debugFormat
 	config.outputContentType = "existing"
 	config.fsRoot = "existing"
@@ -156,27 +156,27 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	}
 }
 
-func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
+func TestNewSessionConfigAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 	t.Parallel()
 
 	firstErr := errors.New("first session option failed")
 	secondErr := errors.New("second session option failed")
 	var calls []string
 
-	_, err := newSessionOptions([]SessionOption{
-		func(*sessionOptions) error {
+	_, err := newSessionConfig([]SessionOption{
+		func(*sessionConfig) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(*sessionOptions) error {
+		func(*sessionConfig) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
 		WithOutputContentType(" \t "),
-		func(*sessionOptions) error {
+		func(*sessionConfig) error {
 			calls = append(calls, "second")
 
 			return secondErr
@@ -217,7 +217,7 @@ func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 func TestSessionParamsPreserveConversionErrorIdentity(t *testing.T) {
 	t.Parallel()
 
-	_, err := newSessionOptions([]SessionOption{
+	_, err := newSessionConfig([]SessionOption{
 		WithSessionParams(map[string]any{"unsupported": make(chan int)}),
 	})
 	if err == nil {
@@ -259,10 +259,10 @@ func TestSessionOptionFailureDoesNotAcquirePlanCapacity(t *testing.T) {
 	}
 }
 
-func TestNewSessionOptionsIgnoresEmptySessionParams(t *testing.T) {
+func TestNewSessionConfigIgnoresEmptySessionParams(t *testing.T) {
 	t.Parallel()
 
-	opts := mustNewSessionOptionsForTest(
+	opts := mustNewSessionConfigForTest(
 		t,
 		WithSessionParam("param1", 1),
 		WithSessionParams(nil),
@@ -284,10 +284,10 @@ func TestNewSessionOptionsIgnoresEmptySessionParams(t *testing.T) {
 	}
 }
 
-func TestNewSessionOptionsIgnoresEmptySessionRuntimeParams(t *testing.T) {
+func TestNewSessionConfigIgnoresEmptySessionRuntimeParams(t *testing.T) {
 	t.Parallel()
 
-	opts := mustNewSessionOptionsForTest(
+	opts := mustNewSessionConfigForTest(
 		t,
 		WithSessionRuntimeParam("param1", runtime.NewInt(1)),
 		WithSessionRuntimeParams(nil),
@@ -309,10 +309,10 @@ func TestNewSessionOptionsIgnoresEmptySessionRuntimeParams(t *testing.T) {
 	}
 }
 
-func TestNewSessionOptionsIgnoresEmptySessionLogFields(t *testing.T) {
+func TestNewSessionConfigIgnoresEmptySessionLogFields(t *testing.T) {
 	t.Parallel()
 
-	opts := mustNewSessionOptionsForTest(
+	opts := mustNewSessionConfigForTest(
 		t,
 		WithSessionLogFields(map[string]any{"component": "session"}),
 		WithSessionLogFields(nil),
@@ -324,10 +324,10 @@ func TestNewSessionOptionsIgnoresEmptySessionLogFields(t *testing.T) {
 	}
 }
 
-func TestNewSessionOptionsKeepDefaultOutputContentTypeWithNoopOptions(t *testing.T) {
+func TestNewSessionConfigKeepDefaultOutputContentTypeWithNoopOptions(t *testing.T) {
 	t.Parallel()
 
-	opts := mustNewSessionOptionsForTest(
+	opts := mustNewSessionConfigForTest(
 		t,
 		nil,
 		WithSessionParams(nil),

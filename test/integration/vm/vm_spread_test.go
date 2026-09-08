@@ -441,7 +441,7 @@ func TestLiteralSpreadTypeErrors(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Full} {
 		for _, test := range tests {
 			t.Run(fmt.Sprintf("%s/%s", level, test.message), func(t *testing.T) {
-				program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", test.query))
+				program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(t.Context(), source.New("spread.fql", test.query))
 				if err != nil {
 					t.Fatalf("compile failed: %v", err)
 				}
@@ -526,7 +526,7 @@ func runLiteralSpreadError(
 ) *vm.RuntimeError {
 	t.Helper()
 
-	program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(source.New("spread.fql", query))
+	program, err := mustNewCompiler(t, compiler.WithOptimizationLevel(level)).Compile(t.Context(), source.New("spread.fql", query))
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}
