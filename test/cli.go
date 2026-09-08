@@ -26,7 +26,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/MontFerret/ferret/v2"
+	ferret "github.com/MontFerret/ferret/v2/pkg/engine"
 	//"github.com/MontFerret/ferret/v2/pkg/drivers/cdp"
 	//"github.com/MontFerret/ferret/v2/pkg/drivers/http"
 )
