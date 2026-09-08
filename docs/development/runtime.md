@@ -118,9 +118,23 @@ Consequently, default construction closes the network before the filesystem;
 a network created by an option is acquired earlier and closes after the
 filesystem. Duplicate Engine closure retains the completed cleanup result.
 
-Manager calls are serialized by construction and Engine's existing once-only
-shutdown. The manager has no independent synchronization or resource lookup API.
-It does not manage session filesystems, VM resources, or query-value cleanup.
+Each ordinary or debug session has a separate host-resource manager, created
+after acquiring its limiter permit. It explicitly borrows the Engine filesystem
+and network. `WithSessionFSRoot` replaces only that manager's filesystem entry
+with an owned instance; Engine and sibling managers remain independent.
+Construction errors and builder panics close the untransferred manager, with a
+separate defer retaining permit release even if resource cleanup panics. A
+successful build transfers both responsibilities to the session before the
+cancellation recheck. Cancellation then closes the constructed session through
+its normal cleanup path.
+
+Session close hooks precede host-resource cleanup, which precedes permit release
+and, for ordinary sessions, return of the borrowed VM. Debugger closure still
+settles retained execution before closing the embedding session services.
+Manager calls are serialized by construction and the owner's existing once-only
+shutdown. Managers have no independent synchronization or resource lookup API.
+VM resources, query-value cleanup, and limiter permits retain their separate
+lifecycle mechanisms.
 
 `Engine.Run` owns its temporary session and plan, closes them in that order,
 and joins execution and cleanup errors while retaining available encoded output.

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
@@ -19,15 +20,15 @@ type (
 	}
 
 	planSessionDependencies struct {
-		logger         logging.Logger
-		hooks          sessionHooks
-		program        *bytecode.Program
-		host           *host
-		limiter        *sessionLimiter
-		pool           *vm.Pool
-		filesystem     fs.FileSystem
-		options        sessionConfig
-		ownsFileSystem bool
+		logger     logging.Logger
+		hooks      sessionHooks
+		filesystem fs.FileSystem
+		program    *bytecode.Program
+		host       *host
+		limiter    *sessionLimiter
+		pool       *vm.Pool
+		resources  *resource.Manager
+		options    sessionConfig
 	}
 )
 
@@ -88,53 +89,61 @@ func newPlanSession[T interface{ Close() error }](
 		return session, err
 	}
 
-	releaseOnReturn := true
+	transferred := false
 	defer func() {
 		// Construction errors and panics retain ownership here. Successful
 		// construction transfers the permit release to the returned session.
-		if releaseOnReturn {
+		// Keep this defer separate so resource cleanup cannot skip permit release.
+		if !transferred {
 			limiter.Release()
 		}
 	}()
 
+	resources := resource.NewManager()
+	defer func() {
+		if !transferred {
+			if closeErr := resources.Close(); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
+		}
+	}()
+
+	if err := resources.Borrow(resource.FileSystem); err != nil {
+		return session, err
+	}
+
+	if err := resources.Borrow(resource.Network); err != nil {
+		return session, err
+	}
+
 	filesystem := h.fs
-	ownsFileSystem := false
 	if options.fsRoot != "" {
 		filesystem, err = fs.New(fs.WithRoot(options.fsRoot), fs.WithReadOnly(h.fsReadOnly))
 		if err != nil {
 			return session, fmt.Errorf("filesystem: %w", err)
 		}
 
-		ownsFileSystem = true
+		if err := resources.Own(resource.FileSystem, filesystem.Close); err != nil {
+			return session, err
+		}
 	}
 
-	fileSystemTransferred := false
-
-	defer func() {
-		if ownsFileSystem && !fileSystemTransferred {
-			if closeErr := closeFileSystem(filesystem); closeErr != nil {
-				err = errors.Join(err, closeErr)
-			}
-		}
-	}()
-
 	session, err = build(planSessionDependencies{
-		program:        program,
-		host:           h,
-		hooks:          hooks,
-		limiter:        limiter,
-		pool:           pool,
-		filesystem:     filesystem,
-		options:        options,
-		logger:         logger,
-		ownsFileSystem: ownsFileSystem,
+		program:    program,
+		host:       h,
+		hooks:      hooks,
+		limiter:    limiter,
+		pool:       pool,
+		filesystem: filesystem,
+		options:    options,
+		logger:     logger,
+		resources:  resources,
 	})
 
 	if err == nil {
-		// The constructed session now owns the permit/filesystem. Only request
+		// The constructed session now owns the permit/host resources. Only request
 		// cancellation rolls it back; parent close does not revoke ownership.
-		releaseOnReturn = false
-		fileSystemTransferred = true
+		transferred = true
 
 		if err = ctx.Err(); err != nil {
 			if closeErr := session.Close(); closeErr != nil {
@@ -175,7 +184,7 @@ func buildSession(dependencies planSessionDependencies) (*Session, error) {
 		outputContentType: dependencies.options.outputContentType,
 		hooks:             dependencies.hooks,
 		release:           newSessionPermitRelease(dependencies.limiter, dependencies.pool),
-		ownsFileSystem:    dependencies.ownsFileSystem,
+		resources:         dependencies.resources,
 	}, nil
 }
 
@@ -207,7 +216,7 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 			logger:            dependencies.logger,
 			fs:                dependencies.filesystem,
 			network:           dependencies.host.network,
-			ownsFileSystem:    dependencies.ownsFileSystem,
+			resources:         dependencies.resources,
 		},
 		Source:      dependencies.program.Source,
 		DebugPoints: dependencies.program.Metadata.DebugPoints,

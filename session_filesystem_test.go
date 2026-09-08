@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -195,7 +196,11 @@ func TestSessionCloseJoinsOwnedFileSystemErrorExactlyOnce(t *testing.T) {
 	defer func() { _ = plan.Close() }()
 	session := mustNewSession(t, plan, WithSessionFSRoot(t.TempDir()))
 
-	filesystem := &countingCloseFileSystem{FileSystem: session.fs, closeErr: fileSystemErr}
+	filesystem := newCountingCloseFileSystem(t, t.TempDir(), fileSystemErr)
+	if err := session.resources.Own(resource.FileSystem, filesystem.Close); err != nil {
+		t.Fatal(err)
+	}
+
 	session.fs = filesystem
 	firstErr := session.Close()
 	secondErr := session.Close()
@@ -238,10 +243,11 @@ func TestDebugSessionUsesAndClosesOwnedFSRoot(t *testing.T) {
 		[]SessionOption{WithSessionFSRoot(root)},
 		planSessionSetup{requiresDebugInfo: true},
 		func(dependencies planSessionDependencies) (*DebugSession, error) {
-			filesystem = &countingCloseFileSystem{
-				FileSystem: dependencies.filesystem,
-				closeErr:   fileSystemErr,
+			filesystem = newCountingCloseFileSystem(t, root, fileSystemErr)
+			if err := dependencies.resources.Own(resource.FileSystem, filesystem.Close); err != nil {
+				t.Fatal(err)
 			}
+
 			dependencies.filesystem = filesystem
 
 			return buildDebugSession(dependencies)
@@ -376,6 +382,8 @@ func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
 	for _, debug := range []bool{false, true} {
 		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
 			closeErr := errors.New("session rollback cleanup")
+			resourceErr := errors.New("session host-resource cleanup")
+			resourceCloses := 0
 			engine := mustNewEngine(t, WithMaxActiveSessions(1), WithSessionCloseHook(func() error { return closeErr }))
 			t.Cleanup(func() { _ = engine.Close() })
 			plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
@@ -389,6 +397,14 @@ func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
 			created, err := newPlanSession(plan, ctx, []SessionOption{WithSessionFSRoot(t.TempDir())}, planSessionSetup{requiresDebugInfo: debug},
 				func(dependencies planSessionDependencies) (io.Closer, error) {
 					filesystem = dependencies.filesystem
+					if err := dependencies.resources.Own("publication-service", func() error {
+						resourceCloses++
+
+						return resourceErr
+					}); err != nil {
+						return nil, err
+					}
+
 					var child io.Closer
 					var buildErr error
 					if debug {
@@ -399,9 +415,14 @@ func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
 					cancel()
 					return child, buildErr
 				})
-			if created != nil || !errors.Is(err, context.Canceled) || !errors.Is(err, closeErr) {
+			if created != nil || !errors.Is(err, context.Canceled) || !errors.Is(err, closeErr) || !errors.Is(err, resourceErr) {
 				t.Fatalf("publication=%v error=%v", created, err)
 			}
+
+			if resourceCloses != 1 {
+				t.Fatalf("canceled publication closed host resources %d times, want 1", resourceCloses)
+			}
+
 			if _, err := filesystem.Stat("."); err == nil {
 				t.Fatal("canceled publication retained its owned filesystem")
 			}

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/ferret/v2/internal/resource"
-	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 )
 
 func closeEngine(
@@ -41,12 +40,4 @@ func closeEngineOnError(
 	}
 
 	return err
-}
-
-func closeFileSystem(filesystem ferretfs.FileSystem) error {
-	if err := filesystem.Close(); err != nil {
-		return fmt.Errorf("close filesystem: %w", err)
-	}
-
-	return nil
 }

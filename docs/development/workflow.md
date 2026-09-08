@@ -74,7 +74,7 @@ fixes.
 
 ## Test layout
 
-Package tests live beside their code, including engine host-resource lifecycle
+Package tests live beside their code, including host-resource lifecycle
 tests under `internal/resource`. Root `internal/...` packages participate in
 unit/race tests, coverage, static analysis, and import formatting.
 The root package tests the embedding

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -30,17 +31,17 @@ type (
 	// Helper APIs such as Engine.Run may take ownership of the Session and close it
 	// after a single execution, in which case the caller must not attempt to reuse it.
 	Session struct {
-		hooks             sessionHooks
+		logger            logging.Logger
 		closeErr          error
-		vm                *vm.VM
+		network           ferretnet.Network
+		hooks             sessionHooks
+		fs                fs.FileSystem
 		env               *vm.Environment
 		encoding          *encoding.Registry
-		logger            logging.Logger
-		fs                fs.FileSystem
-		network           ferretnet.Network
+		vm                *vm.VM
 		release           sessionPermitRelease
+		resources         *resource.Manager
 		outputContentType string
-		ownsFileSystem    bool
 		closeOnce         sync.Once
 		closed            atomic.Bool
 	}
@@ -124,20 +125,19 @@ func (s *Session) Close() error {
 
 		instance := s.vm
 		release := s.release
-		filesystem := s.fs
-		ownsFileSystem := s.ownsFileSystem
+		resources := s.resources
 
 		s.vm = nil
 		s.release = nil
 		s.fs = nil
-		s.ownsFileSystem = false
+		s.resources = nil
 
 		if hookErr := s.hooks.runCloseHooks(); hookErr != nil {
 			s.closeErr = fmt.Errorf("close hooks: %w", hookErr)
 		}
 
-		if ownsFileSystem {
-			s.closeErr = errors.Join(s.closeErr, closeFileSystem(filesystem))
+		if closeErr := resources.Close(); closeErr != nil {
+			s.closeErr = errors.Join(s.closeErr, closeErr)
 		}
 
 		if release != nil && instance != nil {

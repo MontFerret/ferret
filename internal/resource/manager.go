@@ -1,4 +1,4 @@
-// Package resource manages ownership and cleanup of engine-scoped host resources.
+// Package resource manages host-resource ownership within an engine or session.
 package resource
 
 import (
@@ -27,15 +27,17 @@ type (
 )
 
 const (
-	// FileSystem identifies the engine's configured filesystem.
+	// FileSystem identifies the filesystem within an ownership scope.
 	FileSystem Name = "filesystem"
-	// Network identifies the engine's configured network service.
+	// Network identifies the network service within an ownership scope.
 	Network Name = "network"
 )
 
 // NewManager creates an empty, open ownership scope.
 func NewManager() *Manager {
-	return &Manager{}
+	// Both Engine and session construction register a filesystem and a network.
+	// Reserve their slots to avoid growing the slice on every session creation.
+	return &Manager{entries: make([]entry, 0, 2)}
 }
 
 // Own takes responsibility for cleanup and retires any previous registration.
