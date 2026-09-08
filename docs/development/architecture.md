@@ -71,6 +71,12 @@ The root package owns composition and lifecycle policy, not the underlying
 semantics of runtime values, modules, codecs, filesystems, networks, or debugger
 inspection.
 
+`internal/resource` owns lifecycle metadata for engine-scoped host services.
+The configuration creates one manager and transfers it to the completed Engine;
+typed filesystem and network references stay in the configuration and host.
+Owned registrations carry cleanup callbacks, while borrowed registrations record
+caller ownership. The manager provides no service lookup or dependency resolution.
+
 ## Package ownership
 
 ### Language frontend and tooling

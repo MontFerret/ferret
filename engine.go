@@ -7,10 +7,10 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/MontFerret/ferret/v2/internal/resource"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
-	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -24,13 +24,13 @@ type Engine struct {
 	loader            *artifact.Loader
 	host              *host
 	hooks             *hookRegistry
+	resources         *resource.Manager
 	limiter           *sessionLimiter
 	closeOnce         sync.Once
 	closed            atomic.Bool
 	optimizationLevel compiler.OptimizationLevel
 	idleCap           int
 	totalCap          int
-	ownsNetwork       bool
 }
 
 // New constructs an Engine from the provided options, registers all modules,
@@ -38,37 +38,32 @@ type Engine struct {
 // option, module registration, or init hook fails. All non-nil options are
 // applied in order, and failures from multiple options are joined before
 // construction stops.
-func New(setters ...Option) (*Engine, error) {
+func New(setters ...Option) (engine *Engine, resultErr error) {
 	opts, err := newConfig(setters)
 	if err != nil {
 		return nil, err
 	}
 
-	ownsNetwork := opts.hostNetwork == false
+	// Host resources are already owned after option application. Close hooks
+	// join rollback only once bootstrap succeeds, as in normal construction.
+	var rollbackHooks *engineHookRegistry
+
+	defer func() {
+		resultErr = closeEngineOnError(resultErr, rollbackHooks, opts.resources)
+	}()
+
 	compilerLevel, err := opts.optimizationLevel.compilerLevel()
 	if err != nil {
-		if ownsNetwork {
-			ferretnet.CloseIdleNetworkConnections(opts.network)
-		}
-
 		return nil, fmt.Errorf("compiler: %w", err)
 	}
 
 	compilerInstance, err := compiler.New(compiler.WithOptimizationLevel(compilerLevel))
 	if err != nil {
-		if ownsNetwork {
-			ferretnet.CloseIdleNetworkConnections(opts.network)
-		}
-
 		return nil, fmt.Errorf("compiler: %w", err)
 	}
 
 	debugCompiler, err := compiler.New(compiler.WithDebugInfo())
 	if err != nil {
-		if ownsNetwork {
-			ferretnet.CloseIdleNetworkConnections(opts.network)
-		}
-
 		return nil, fmt.Errorf("debug compiler: %w", err)
 	}
 
@@ -77,35 +72,25 @@ func New(setters ...Option) (*Engine, error) {
 		return nil, fmt.Errorf("bootstrap: %w", err)
 	}
 
+	rollbackHooks = boot.hooks.engine
+
 	for _, m := range opts.modules {
 		if err := m.Register(boot); err != nil {
-			return nil, closeEngineOnError(
-				err,
-				boot.hooks.engine,
-				boot.host.FileSystem(),
-				boot.host.Network(),
-				ownsNetwork,
-			)
+			return nil, err
 		}
 	}
 
 	h, err := boot.host.Build()
 	if err != nil {
-		return nil, closeEngineOnError(
-			err,
-			boot.hooks.engine,
-			boot.host.FileSystem(),
-			boot.host.Network(),
-			ownsNetwork,
-		)
+		return nil, err
 	}
 
 	hooks := boot.hooks.clone()
+	rollbackHooks = hooks.engine
+
 	// Run init hooks after bootstrap is finalized and before returning the engine.
 	if err := hooks.engine.runInitHooks(); err != nil {
-		initErr := fmt.Errorf("init hooks: %w", err)
-
-		return nil, closeEngineOnError(initErr, hooks.engine, h.fs, h.network, ownsNetwork)
+		return nil, fmt.Errorf("init hooks: %w", err)
 	}
 
 	return &Engine{
@@ -115,10 +100,10 @@ func New(setters ...Option) (*Engine, error) {
 		loader:            opts.programLoader,
 		host:              h,
 		hooks:             hooks,
+		resources:         opts.resources,
 		limiter:           newSessionLimiter(opts.maxActiveSessions),
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
-		ownsNetwork:       ownsNetwork,
 	}, nil
 }
 
@@ -191,7 +176,7 @@ func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (ou
 func (e *Engine) Close() error {
 	e.closeOnce.Do(func() {
 		e.closed.Store(true)
-		e.closeErr = closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork)
+		e.closeErr = closeEngine(e.hooks.engine, e.resources)
 	})
 
 	return e.closeErr

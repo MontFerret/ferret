@@ -57,11 +57,6 @@ func TestNewRunsCloseHooksWhenHostBuildFails(t *testing.T) {
 	mod := testModule{
 		registerFn: func(boot module.Bootstrap) error {
 			moduleRegistered = true
-			internal, ok := boot.(*bootstrap)
-			if !ok {
-				t.Fatalf("expected internal bootstrap, got %T", boot)
-			}
-			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 			boot.Hooks().Engine().OnClose(func() error {
 				closeHookCalled = true
@@ -75,7 +70,7 @@ func TestNewRunsCloseHooksWhenHostBuildFails(t *testing.T) {
 		},
 	}
 
-	_, err := New(WithModules(mod))
+	_, err := New(WithNetworkOptions(ferretnet.WithHTTPClient(client)), WithModules(mod))
 	if err == nil {
 		t.Fatal("expected New to fail when host build fails")
 	}
@@ -132,8 +127,7 @@ func TestEngineCloseClosesOwnedNetworkIdleConnections(t *testing.T) {
 	t.Parallel()
 
 	client := &recordingHTTPClient{}
-	eng := mustNewEngine(t)
-	eng.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
+	eng := mustNewEngine(t, WithNetworkOptions(ferretnet.WithHTTPClient(client)))
 
 	if err := eng.Close(); err != nil {
 		t.Fatalf("close engine: %v", err)
@@ -149,10 +143,9 @@ func TestEngineCloseCleansOwnedNetworkAfterHookFailure(t *testing.T) {
 
 	hookErr := errors.New("close hook failed")
 	client := &recordingHTTPClient{}
-	eng := mustNewEngine(t, WithEngineCloseHook(func() error {
+	eng := mustNewEngine(t, WithNetworkOptions(ferretnet.WithHTTPClient(client)), WithEngineCloseHook(func() error {
 		return hookErr
 	}))
-	eng.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 
 	err := eng.Close()
 	if !errors.Is(err, hookErr) {
@@ -221,10 +214,6 @@ func TestEngineNetworkOwnershipFollowsLastOption(t *testing.T) {
 				t.Fatalf("expected injected network, got %T", eng.host.network)
 			}
 
-			if eng.ownsNetwork != tt.managedLast {
-				t.Fatalf("expected ownsNetwork to be %t", tt.managedLast)
-			}
-
 			wantManagedCloses := 1
 			if tt.managedLast {
 				wantManagedCloses = 0
@@ -267,10 +256,6 @@ func TestEngineClosesSupersededManagedNetworks(t *testing.T) {
 		WithNetworkOptions(ferretnet.WithHTTPClient(firstClient)),
 		WithNetworkOptions(ferretnet.WithHTTPClient(secondClient)),
 	)
-
-	if !eng.ownsNetwork {
-		t.Fatal("expected final managed network to be engine-owned")
-	}
 
 	if got := eng.host.network.HTTP(); got != secondClient {
 		t.Fatalf("expected second managed network to be selected, got %T", got)
@@ -385,18 +370,11 @@ func TestNewCleansOwnedNetworkOnRegistrationFailure(t *testing.T) {
 	client := &recordingHTTPClient{}
 	mod := testModule{
 		registerFn: func(boot module.Bootstrap) error {
-			internal, ok := boot.(*bootstrap)
-			if !ok {
-				t.Fatalf("expected internal bootstrap, got %T", boot)
-			}
-
-			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
-
 			return registerErr
 		},
 	}
 
-	_, err := New(WithModules(mod))
+	_, err := New(WithNetworkOptions(ferretnet.WithHTTPClient(client)), WithModules(mod))
 	if !errors.Is(err, registerErr) {
 		t.Fatalf("expected registration error, got %v", err)
 	}
@@ -413,18 +391,12 @@ func TestNewCleansOwnedNetworkOnInitFailure(t *testing.T) {
 	client := &recordingHTTPClient{}
 	mod := testModule{
 		registerFn: func(boot module.Bootstrap) error {
-			internal, ok := boot.(*bootstrap)
-			if !ok {
-				t.Fatalf("expected internal bootstrap, got %T", boot)
-			}
-
-			internal.host.network = mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
-
 			return nil
 		},
 	}
 
 	_, err := New(
+		WithNetworkOptions(ferretnet.WithHTTPClient(client)),
 		WithModules(mod),
 		WithEngineInitHook(func() error {
 			return initErr

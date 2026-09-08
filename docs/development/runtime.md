@@ -99,6 +99,29 @@ Native Ferret protects object integrity; callers orchestrate object lifetime:
   the engine's read-only policy; the session owns and closes the replacement
   filesystem.
 
+Engine host-resource ownership is recorded in `internal/resource.Manager`.
+The filesystem and Ferret-created networks are owned; `WithNetwork` explicitly
+borrows the caller's network. Each acquisition registers a callback that captures
+that resource instance. Replacing a named resource retires its previous owned
+callback immediately and records the replacement as the newest acquisition.
+Borrowed resources are never closed. A retirement error leaves the replacement
+registered, so construction rollback still cleans it up; retired callbacks are
+never retried.
+
+Failed option application or stdlib registration closes the configuration's
+manager. After configuration succeeds, one constructor rollback path handles
+all later failures, including failures before bootstrap completes. Engine close
+hooks participate only after successful bootstrap. On rollback or shutdown,
+eligible hooks run first, then the manager attempts every remaining owned
+callback in reverse acquisition/replacement order and joins cleanup errors.
+Consequently, default construction closes the network before the filesystem;
+a network created by an option is acquired earlier and closes after the
+filesystem. Duplicate Engine closure retains the completed cleanup result.
+
+Manager calls are serialized by construction and Engine's existing once-only
+shutdown. The manager has no independent synchronization or resource lookup API.
+It does not manage session filesystems, VM resources, or query-value cleanup.
+
 `Engine.Run` owns its temporary session and plan, closes them in that order,
 and joins execution and cleanup errors while retaining available encoded output.
 Successful cleanup preserves the original runtime diagnostic. Compilation also

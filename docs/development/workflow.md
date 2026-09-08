@@ -36,10 +36,10 @@ and their own module files.
 | `make install-tools` | Install the exact auxiliary tool versions selected by the Makefile. |
 | `make compile` | Build `test/cli.go` as `bin/ferret`; this is a repository test harness, not the separate MontFerret CLI product. |
 | `make test` | Run unit/race, integration/race, and security suites. |
-| `make test-unit` | Run race-enabled package, script, tool-module, compatibility, and root tests. |
+| `make test-unit` | Run race-enabled package, root-internal, script, tool-module, compatibility, and root tests. |
 | `make test-integration` | Run race-enabled tests under `test/integration`. |
 | `make test-security` | Run `test/security` without the race flag. |
-| `make cover` | Run package coverage and submit through the configured Codecov script. |
+| `make cover` | Run package and root-internal coverage and submit through the configured Codecov script. |
 | `make lint` | Run `staticcheck` and `revive` with repository exclusions. |
 | `make fmt` | Apply field alignment, Go formatting, and import formatting across configured roots. |
 | `make generate` | Run package generation and then `make fmt`. |
@@ -74,7 +74,10 @@ fixes.
 
 ## Test layout
 
-Package tests live beside their code. The root package tests the embedding
+Package tests live beside their code, including engine host-resource lifecycle
+tests under `internal/resource`. Root `internal/...` packages participate in
+unit/race tests, coverage, static analysis, and import formatting.
+The root package tests the embedding
 lifecycle and cross-package composition. Additional suites are grouped under:
 
 * `test/integration/compiler`: language compilation and semantic behavior;
