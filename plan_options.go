@@ -18,7 +18,7 @@ type (
 	}
 )
 
-func newPlanOptions(level compiler.OptimizationLevel, debug bool, setters []PlanOption) (planConfig, error) {
+func newPlanConfig(level compiler.OptimizationLevel, debug bool, setters []PlanOption) (planConfig, error) {
 	if len(setters) == 0 {
 		return planConfig{level: level, debug: debug}, nil
 	}

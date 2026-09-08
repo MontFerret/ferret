@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"errors"
+
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -22,6 +24,14 @@ func WithParams(params runtime.Params) EnvironmentOption {
 
 func WithParam(name string, value runtime.Value) EnvironmentOption {
 	return func(env *environmentConfig) error {
+		if name == "" {
+			return errors.New("param name cannot be empty")
+		}
+
+		if value == nil {
+			return errors.New("param value cannot be nil")
+		}
+
 		if env.params == nil {
 			env.params = runtime.NewParams()
 		}

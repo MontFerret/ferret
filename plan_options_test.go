@@ -12,7 +12,7 @@ import (
 func TestPlanOptionsApplyInOrderAndJoinFailures(t *testing.T) {
 	firstErr, lastErr := errors.New("first option"), errors.New("last option")
 	var calls []string
-	opts, err := newPlanOptions(compiler.Full, false, []PlanOption{
+	opts, err := newPlanConfig(compiler.Full, false, []PlanOption{
 		nil,
 		func(*planConfig) error {
 			calls = append(calls, "first")
@@ -58,7 +58,7 @@ func TestPlanOptionsDefaultsAndValidation(t *testing.T) {
 		}
 
 		for _, setters := range [][]PlanOption{nil, {nil}} {
-			opts, err := newPlanOptions(initial, debug, setters)
+			opts, err := newPlanConfig(initial, debug, setters)
 			if err != nil || opts.level != initial || opts.debug != debug {
 				t.Fatalf("defaults changed: options=%+v err=%v", opts, err)
 			}

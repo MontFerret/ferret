@@ -20,7 +20,7 @@ func TestNativeOperationsAfterClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	option := func(*sessionOptions) error {
+	option := func(*sessionConfig) error {
 		t.Error("closed plan applied a session option")
 
 		return nil
@@ -222,7 +222,7 @@ func TestNativePlanCloseDuringSessionConstruction(t *testing.T) {
 							close(entered)
 							<-release
 						}
-						var option SessionOption = func(*sessionOptions) error {
+						var option SessionOption = func(*sessionConfig) error {
 							block()
 
 							return nil

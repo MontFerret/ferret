@@ -22,7 +22,7 @@ import (
 func mustNewOptionsForTest(t *testing.T, setters ...Option) *config {
 	t.Helper()
 
-	opts, err := newOptions(setters)
+	opts, err := newConfig(setters)
 	if err != nil {
 		t.Fatalf("failed to create options: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestEngineSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := newOptions([]Option{tt.option})
+			_, err := newConfig([]Option{tt.option})
 			if err == nil {
 				t.Fatal("expected validation error")
 			}
@@ -223,7 +223,7 @@ func TestEngineSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 func TestInvalidEngineBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	t.Parallel()
 
-	config := defaultOptions()
+	config := defaultConfig()
 	registry := config.encoding
 	config.maxActiveSessions = 7
 	config.fsRoot = "existing"
@@ -258,7 +258,7 @@ func TestNewOptionsAppliesAllOptionsAndJoinsFailuresInOrder(t *testing.T) {
 	secondErr := errors.New("second option failed")
 	var calls []string
 
-	_, err := newOptions([]Option{
+	_, err := newConfig([]Option{
 		func(*config) error {
 			calls = append(calls, "first")
 
@@ -302,7 +302,7 @@ func TestNewOptionsAppliesAllOptionsAndJoinsFailuresInOrder(t *testing.T) {
 func TestJoinedEngineOptionFailuresRemainInspectable(t *testing.T) {
 	t.Parallel()
 
-	_, err := newOptions([]Option{
+	_, err := newConfig([]Option{
 		WithMaxActiveSessions(-1),
 		WithParams(map[string]any{"unsupported": make(chan int)}),
 	})
@@ -415,7 +415,7 @@ func TestNewOptionsAcceptsEmptyModulesOption(t *testing.T) {
 func TestNewOptionsRejectsNilModule(t *testing.T) {
 	t.Parallel()
 
-	_, err := newOptions([]Option{WithModules(nil)})
+	_, err := newConfig([]Option{WithModules(nil)})
 	if err == nil {
 		t.Fatal("expected nil module to fail")
 	}
@@ -439,7 +439,7 @@ func TestNewOptionsTrimsFSRoot(t *testing.T) {
 func TestNewOptionsRejectsBlankFSRoot(t *testing.T) {
 	t.Parallel()
 
-	_, err := newOptions([]Option{WithFSRoot(" \t\n ")})
+	_, err := newConfig([]Option{WithFSRoot(" \t\n ")})
 	if err == nil {
 		t.Fatal("expected blank fs root to fail")
 	}
@@ -472,7 +472,7 @@ func TestWithNetworkOptionsWithoutSettersIsNoOp(t *testing.T) {
 func TestWithNetworkOptionsReturnsNetworkConstructionError(t *testing.T) {
 	t.Parallel()
 
-	_, err := newOptions([]Option{WithNetworkOptions(
+	_, err := newConfig([]Option{WithNetworkOptions(
 		ferretnet.WithHTTPPolicies(ferrethttp.WithMaxResponseSize(-1)),
 	)})
 	if err == nil {

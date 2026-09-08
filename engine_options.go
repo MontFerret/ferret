@@ -58,7 +58,7 @@ func (c encodingCodecAlias) ContentType() string {
 	return c.contentType
 }
 
-func defaultOptions() config {
+func defaultConfig() config {
 	return config{
 		library:           runtime.NewLibrary(),
 		params:            make(map[string]runtime.Value),
@@ -73,8 +73,8 @@ func defaultOptions() config {
 	}
 }
 
-func newOptions(setters []Option) (config, error) {
-	opts, err := gooptions.ApplyTo(defaultOptions(), setters...)
+func newConfig(setters []Option) (config, error) {
+	opts, err := gooptions.ApplyTo(defaultConfig(), setters...)
 	if err == nil {
 		if registerErr := opts.stdlib.Register(opts.library); registerErr != nil {
 			err = fmt.Errorf("stdlib: %w", registerErr)

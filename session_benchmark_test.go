@@ -25,7 +25,7 @@ func BenchmarkNewSessionOptions(b *testing.B) {
 			b.ReportAllocs()
 
 			for b.Loop() {
-				if _, err := newSessionOptions(setters); err != nil {
+				if _, err := newSessionConfig(setters); err != nil {
 					b.Fatal(err)
 				}
 			}

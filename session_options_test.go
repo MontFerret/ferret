@@ -13,10 +13,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func mustNewSessionOptionsForTest(t *testing.T, setters ...SessionOption) *sessionOptions {
+func mustNewSessionOptionsForTest(t *testing.T, setters ...SessionOption) *sessionConfig {
 	t.Helper()
 
-	opts, err := newSessionOptions(setters)
+	opts, err := newSessionConfig(setters)
 	if err != nil {
 		t.Fatalf("failed to create session options: %v", err)
 	}
@@ -24,7 +24,7 @@ func mustNewSessionOptionsForTest(t *testing.T, setters ...SessionOption) *sessi
 	return &opts
 }
 
-func mustBuildEnvironmentForTest(t *testing.T, opts *sessionOptions) *vm.Environment {
+func mustBuildEnvironmentForTest(t *testing.T, opts *sessionConfig) *vm.Environment {
 	t.Helper()
 
 	env, err := vm.NewEnvironment(opts.env)
@@ -100,7 +100,7 @@ func TestSessionSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := newSessionOptions([]SessionOption{tt.option})
+			_, err := newSessionConfig([]SessionOption{tt.option})
 			if err == nil {
 				t.Fatal("expected validation error")
 			}
@@ -128,7 +128,7 @@ func TestSessionSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	t.Parallel()
 
-	config := defaultSessionOptions()
+	config := defaultSessionConfig()
 	format := config.debugFormat
 	config.outputContentType = "existing"
 	config.fsRoot = "existing"
@@ -163,20 +163,20 @@ func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 	secondErr := errors.New("second session option failed")
 	var calls []string
 
-	_, err := newSessionOptions([]SessionOption{
-		func(*sessionOptions) error {
+	_, err := newSessionConfig([]SessionOption{
+		func(*sessionConfig) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(*sessionOptions) error {
+		func(*sessionConfig) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
 		WithOutputContentType(" \t "),
-		func(*sessionOptions) error {
+		func(*sessionConfig) error {
 			calls = append(calls, "second")
 
 			return secondErr
@@ -217,7 +217,7 @@ func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 func TestSessionParamsPreserveConversionErrorIdentity(t *testing.T) {
 	t.Parallel()
 
-	_, err := newSessionOptions([]SessionOption{
+	_, err := newSessionConfig([]SessionOption{
 		WithSessionParams(map[string]any{"unsupported": make(chan int)}),
 	})
 	if err == nil {

@@ -39,7 +39,7 @@ type Engine struct {
 // applied in order, and failures from multiple options are joined before
 // construction stops.
 func New(setters ...Option) (*Engine, error) {
-	opts, err := newOptions(setters)
+	opts, err := newConfig(setters)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 		level = compiler.None
 	}
 
-	opts, err := newPlanOptions(level, debug, setters)
+	opts, err := newPlanConfig(level, debug, setters)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
 			err = errors.Join(err, ctxErr)

@@ -26,7 +26,7 @@ type (
 		limiter        *sessionLimiter
 		pool           *vm.Pool
 		filesystem     fs.FileSystem
-		options        sessionOptions
+		options        sessionConfig
 		ownsFileSystem bool
 	}
 )
@@ -66,7 +66,7 @@ func newPlanSession[T interface{ Close() error }](
 		return session, runtime.Error(runtime.ErrInvalidOperation, "plan was not compiled for debugging")
 	}
 
-	options, err := newSessionOptions(setters)
+	options, err := newSessionConfig(setters)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
 			err = errors.Join(err, ctxErr)
@@ -223,7 +223,7 @@ func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, err
 	return session, nil
 }
 
-func newPlanSessionEnvironment(h *host, options sessionOptions) (*vm.Environment, error) {
+func newPlanSessionEnvironment(h *host, options sessionConfig) (*vm.Environment, error) {
 	return vm.ExtendEnvironment(&vm.Environment{
 		Functions: h.functions,
 		Params:    h.params,

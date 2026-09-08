@@ -3,9 +3,6 @@ package ferret
 import (
 	"errors"
 	"fmt"
-	"strings"
-
-	gooptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
@@ -14,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-type sessionOptions struct {
+type sessionConfig struct {
 	logger            []logging.Option
 	outputContentType string
 	fsRoot            string
@@ -22,16 +19,16 @@ type sessionOptions struct {
 	debugFormat       debugger.FormatOptions
 }
 
-func defaultSessionOptions() sessionOptions {
-	return sessionOptions{outputContentType: encodingjson.ContentType, debugFormat: debugger.DefaultFormatOptions()}
+func defaultSessionConfig() sessionConfig {
+	return sessionConfig{outputContentType: encodingjson.ContentType, debugFormat: debugger.DefaultFormatOptions()}
 }
 
-func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
+func newSessionConfig(setters []SessionOption) (sessionConfig, error) {
 	if len(setters) == 0 {
-		return defaultSessionOptions(), nil
+		return defaultSessionConfig(), nil
 	}
 
-	opts := defaultSessionOptions()
+	opts := defaultSessionConfig()
 	var failures []error
 	for _, setter := range setters {
 		if setter != nil {
@@ -42,13 +39,13 @@ func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
 	}
 
 	if err := errors.Join(failures...); err != nil {
-		return sessionOptions{}, err
+		return sessionConfig{}, err
 	}
 
 	return opts, nil
 }
 
-func (o *sessionOptions) setParam(name string, value any) error {
+func (cfg *sessionConfig) setParam(name string, value any) error {
 	if name == "" {
 		return fmt.Errorf("param name cannot be empty")
 	}
@@ -57,10 +54,10 @@ func (o *sessionOptions) setParam(name string, value any) error {
 		return fmt.Errorf("param value cannot be nil")
 	}
 
-	return o.setParams(map[string]any{name: value})
+	return cfg.setParams(map[string]any{name: value})
 }
 
-func (o *sessionOptions) setParams(params map[string]any) error {
+func (cfg *sessionConfig) setParams(params map[string]any) error {
 	if len(params) == 0 {
 		return nil
 	}
@@ -70,17 +67,7 @@ func (o *sessionOptions) setParams(params map[string]any) error {
 		return fmt.Errorf("convert session params: %w", err)
 	}
 
-	o.env = append(o.env, vm.WithParams(converted))
+	cfg.env = append(cfg.env, vm.WithParams(converted))
 
 	return nil
-}
-
-func (o *sessionOptions) setOutputContentType(value string) error {
-	return gooptions.New(func(o *sessionOptions, value string) { o.outputContentType = strings.TrimSpace(value) }).
-		Value(value).Named("output content type").Validators(gooptions.NotBlank[string]()).Build()(o)
-}
-
-func (o *sessionOptions) setFSRoot(value string) error {
-	return gooptions.New(func(o *sessionOptions, value string) { o.fsRoot = strings.TrimSpace(value) }).
-		Value(value).Named("fs root").Validators(gooptions.NotBlank[string]()).Build()(o)
 }
