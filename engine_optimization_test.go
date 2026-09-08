@@ -4,8 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/MontFerret/api"
-
 	sharedoptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/module"
@@ -173,10 +171,10 @@ func TestPerPlanOptimizationDoesNotChangeEngineDefaults(t *testing.T) {
 	engine := mustNewEngine(t, WithOptimizationLevel(OptimizationBasic))
 	t.Cleanup(func() { _ = engine.Close() })
 	t.Run("concurrent overrides", func(t *testing.T) {
-		for _, level := range []api.OptimizationLevel{api.OptimizationNone, api.OptimizationBasic, api.OptimizationFull} {
-			t.Run(OptimizationLevel(level).String(), func(t *testing.T) {
+		for _, level := range []OptimizationLevel{OptimizationNone, OptimizationBasic, OptimizationFull} {
+			t.Run(level.String(), func(t *testing.T) {
 				t.Parallel()
-				plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1 + 2"), api.WithOptimizationLevel(level))
+				plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1 + 2"), WithPlanOptimizationLevel(level))
 				if err != nil {
 					t.Fatal(err)
 				}

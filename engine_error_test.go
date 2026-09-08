@@ -156,8 +156,10 @@ func TestEngineRunPreservesOutputAndAllCleanupFailures(t *testing.T) {
 	for _, query := range []string{"RETURN 42", "RETURN 1 / @zero"} {
 		t.Run(query, func(t *testing.T) {
 			sessionErr, planErr := errors.New("session cleanup"), errors.New("plan cleanup")
+			hookErr := errors.New("after run")
 			var closed []string
 			engine := mustNewEngine(t,
+				WithAfterRunHook(func(context.Context, error) error { return hookErr }),
 				WithSessionCloseHook(func() error {
 					closed = append(closed, "session")
 
@@ -171,7 +173,7 @@ func TestEngineRunPreservesOutputAndAllCleanupFailures(t *testing.T) {
 			)
 			t.Cleanup(func() { _ = engine.Close() })
 			output, err := engine.Run(t.Context(), NewAnonymousSource(query), WithSessionParam("zero", 0))
-			if !errors.Is(err, sessionErr) || !errors.Is(err, planErr) {
+			if !errors.Is(err, hookErr) || !errors.Is(err, sessionErr) || !errors.Is(err, planErr) {
 				t.Fatalf("lost cleanup cause: %v", err)
 			}
 

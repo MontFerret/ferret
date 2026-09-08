@@ -6,23 +6,16 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
-	"github.com/MontFerret/api"
-
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// SessionOption configures the actual session option owner through the portable contract.
-type SessionOption = api.SessionOption
+// SessionOption configures a native execution or debug session before resource acquisition.
+type SessionOption = gooptions.Option[sessionOptions]
 
 // WithDebugFormat configures bounded debugger value formatting.
 func WithDebugFormat(format DebugFormatOptions) SessionOption {
-	return func(target api.SessionOptions) error {
-		session, ok := target.(*sessionOptions)
-		if !ok || session == nil {
-			return fmt.Errorf("debug format requires native Ferret session options")
-		}
-
+	return func(session *sessionOptions) error {
 		return gooptions.New(func(session *sessionOptions, format DebugFormatOptions) {
 			session.debugFormat = format
 		}).
@@ -43,12 +36,7 @@ func WithDebugFormat(format DebugFormatOptions) SessionOption {
 // options to the created session. Prefer the root session options for ordinary
 // embedding configuration.
 func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
-	return func(target api.SessionOptions) error {
-		session, ok := target.(*sessionOptions)
-		if !ok || session == nil {
-			return fmt.Errorf("option requires native Ferret session options")
-		}
-
+	return func(session *sessionOptions) error {
 		if len(opts) == 0 {
 			return nil
 		}
@@ -67,31 +55,32 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 
 // WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(contentType string) SessionOption {
-	return api.WithOutputContentType(contentType)
+	return func(opts *sessionOptions) error {
+		return opts.setOutputContentType(contentType)
+	}
 }
 
 // WithSessionFSRoot selects the rooted filesystem used by one execution
 // session. The session owns the replacement filesystem and inherits the
 // engine's read-only policy.
 func WithSessionFSRoot(root string) SessionOption {
-	return api.WithFSRoot(root)
+	return func(opts *sessionOptions) error {
+		return opts.setFSRoot(root)
+	}
 }
 
 // WithSessionParams merges the provided parameter map into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params map[string]any) SessionOption {
-	return api.WithParams(params)
+	return func(opts *sessionOptions) error {
+		return opts.setParams(params)
+	}
 }
 
 // WithSessionRuntimeParams merges the provided Params into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionRuntimeParams(params Params) SessionOption {
-	return func(target api.SessionOptions) error {
-		s, ok := target.(*sessionOptions)
-		if !ok || s == nil {
-			return fmt.Errorf("option requires native Ferret session options")
-		}
-
+	return func(s *sessionOptions) error {
 		if len(params) == 0 {
 			return nil
 		}
@@ -102,17 +91,14 @@ func WithSessionRuntimeParams(params Params) SessionOption {
 
 // WithSessionParam adds or overrides a single session parameter.
 func WithSessionParam(name string, value any) SessionOption {
-	return api.WithParam(name, value)
+	return func(opts *sessionOptions) error {
+		return opts.setParam(name, value)
+	}
 }
 
 // WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted Value.
 func WithSessionRuntimeParam(name string, value Value) SessionOption {
-	return func(target api.SessionOptions) error {
-		s, ok := target.(*sessionOptions)
-		if !ok || s == nil {
-			return fmt.Errorf("option requires native Ferret session options")
-		}
-
+	return func(s *sessionOptions) error {
 		if name == "" {
 			return fmt.Errorf("param name cannot be empty")
 		}
@@ -128,12 +114,7 @@ func WithSessionRuntimeParam(name string, value Value) SessionOption {
 // WithSessionLog sets the writer for logging output.
 // The writer can be any io.Writer, such as os.Stdout or a file.
 func WithSessionLog(writer io.Writer) SessionOption {
-	return func(target api.SessionOptions) error {
-		opts, ok := target.(*sessionOptions)
-		if !ok || opts == nil {
-			return fmt.Errorf("option requires native Ferret session options")
-		}
-
+	return func(opts *sessionOptions) error {
 		if writer == nil {
 			return fmt.Errorf("log writer cannot be nil")
 		}
@@ -147,12 +128,7 @@ func WithSessionLog(writer io.Writer) SessionOption {
 // WithSessionLogLevel sets the logging level for the session.
 // The logging level determines the severity of log messages that will be recorded.
 func WithSessionLogLevel(lvl LogLevel) SessionOption {
-	return func(target api.SessionOptions) error {
-		opts, ok := target.(*sessionOptions)
-		if !ok || opts == nil {
-			return fmt.Errorf("option requires native Ferret session options")
-		}
-
+	return func(opts *sessionOptions) error {
 		if lvl < LogTrace || lvl > LogDisabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
@@ -166,12 +142,7 @@ func WithSessionLogLevel(lvl LogLevel) SessionOption {
 // WithSessionLogFields sets the fields to be included in log entries for the session.
 // These fields can provide additional context for debugging and monitoring purposes.
 func WithSessionLogFields(fields map[string]any) SessionOption {
-	return func(target api.SessionOptions) error {
-		opts, ok := target.(*sessionOptions)
-		if !ok || opts == nil {
-			return fmt.Errorf("option requires native Ferret session options")
-		}
-
+	return func(opts *sessionOptions) error {
 		if len(fields) == 0 {
 			return nil
 		}

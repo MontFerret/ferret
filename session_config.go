@@ -7,7 +7,6 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
-	"github.com/MontFerret/api"
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
@@ -22,8 +21,6 @@ type sessionOptions struct {
 	env               []vm.EnvironmentOption
 	debugFormat       debugger.FormatOptions
 }
-
-var _ api.SessionOptions = (*sessionOptions)(nil)
 
 func defaultSessionOptions() sessionOptions {
 	return sessionOptions{outputContentType: encodingjson.ContentType, debugFormat: debugger.DefaultFormatOptions()}
@@ -51,7 +48,7 @@ func newSessionOptions(setters []SessionOption) (sessionOptions, error) {
 	return opts, nil
 }
 
-func (o *sessionOptions) SetParam(name string, value any) error {
+func (o *sessionOptions) setParam(name string, value any) error {
 	if name == "" {
 		return fmt.Errorf("param name cannot be empty")
 	}
@@ -60,10 +57,10 @@ func (o *sessionOptions) SetParam(name string, value any) error {
 		return fmt.Errorf("param value cannot be nil")
 	}
 
-	return o.SetParams(map[string]any{name: value})
+	return o.setParams(map[string]any{name: value})
 }
 
-func (o *sessionOptions) SetParams(params map[string]any) error {
+func (o *sessionOptions) setParams(params map[string]any) error {
 	if len(params) == 0 {
 		return nil
 	}
@@ -78,12 +75,12 @@ func (o *sessionOptions) SetParams(params map[string]any) error {
 	return nil
 }
 
-func (o *sessionOptions) SetOutputContentType(value string) error {
+func (o *sessionOptions) setOutputContentType(value string) error {
 	return gooptions.New(func(o *sessionOptions, value string) { o.outputContentType = strings.TrimSpace(value) }).
 		Value(value).Named("output content type").Validators(gooptions.NotBlank[string]()).Build()(o)
 }
 
-func (o *sessionOptions) SetFSRoot(value string) error {
+func (o *sessionOptions) setFSRoot(value string) error {
 	return gooptions.New(func(o *sessionOptions, value string) { o.fsRoot = strings.TrimSpace(value) }).
 		Value(value).Named("fs root").Validators(gooptions.NotBlank[string]()).Build()(o)
 }

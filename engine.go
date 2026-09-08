@@ -137,6 +137,66 @@ func (e *Engine) CompileDebug(ctx context.Context, src Source, opts ...PlanOptio
 	return e.compile(ctx, src, true, opts)
 }
 
+// Load decodes a serialized program artifact and wraps it in a reusable plan.
+// An admitted load may finish after Close; the caller owns the returned plan.
+func (e *Engine) Load(data []byte) (*Plan, error) {
+	if e.closed.Load() {
+		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is closed")
+	}
+
+	prog, err := e.loader.Load(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.newPlan(prog)
+}
+
+// Run compiles source, executes it in a fresh session, and returns encoded output and an error.
+// Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
+// (for example, if execution produced output but an after-run hook or cleanup failed).
+func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (output *Output, resultErr error) {
+	plan, err := e.Compile(ctx, src)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if closeErr := plan.Close(); closeErr != nil {
+			resultErr = errors.Join(resultErr, closeErr)
+		}
+	}()
+
+	session, err := plan.NewSession(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if closeErr := session.Close(); closeErr != nil {
+			resultErr = errors.Join(resultErr, closeErr)
+		}
+	}()
+
+	return session.Run(ctx)
+}
+
+// Close runs the engine close hooks and releases engine-scoped resources,
+// including the configured rooted filesystem and owned network idle connections.
+// It rejects new compilation and loading without waiting for admitted operations
+// or closing descendants. Callers must settle outstanding work and close children
+// first. Concurrent/repeated calls retain the cleanup result. An engine close
+// hook must not recursively call Close on the same engine.
+func (e *Engine) Close() error {
+	e.closeOnce.Do(func() {
+		e.closed.Store(true)
+		e.closeErr = closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork)
+	})
+
+	return e.closeErr
+}
+
 func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []PlanOption) (*Plan, error) {
 	if ctx == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
@@ -212,66 +272,6 @@ func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []
 	}
 
 	return e.newPlan(prog)
-}
-
-// Load decodes a serialized program artifact and wraps it in a reusable plan.
-// An admitted load may finish after Close; the caller owns the returned plan.
-func (e *Engine) Load(data []byte) (*Plan, error) {
-	if e.closed.Load() {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is closed")
-	}
-
-	prog, err := e.loader.Load(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return e.newPlan(prog)
-}
-
-// Run compiles source, executes it in a fresh session, and returns encoded output and an error.
-// Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
-// (for example, if execution produced output but a deferred cleanup step failed).
-func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (output *Output, resultErr error) {
-	plan, err := e.Compile(ctx, src)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		if closeErr := plan.Close(); closeErr != nil {
-			resultErr = errors.Join(resultErr, closeErr)
-		}
-	}()
-
-	session, err := plan.NewSession(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		if closeErr := session.Close(); closeErr != nil {
-			resultErr = errors.Join(resultErr, closeErr)
-		}
-	}()
-
-	return session.Run(ctx)
-}
-
-// Close runs the engine close hooks and releases engine-scoped resources,
-// including the configured rooted filesystem and owned network idle connections.
-// It rejects new compilation and loading without waiting for admitted operations
-// or closing descendants. Callers must settle outstanding work and close children
-// first. Concurrent/repeated calls retain the cleanup result. An engine close
-// hook must not recursively call Close on the same engine.
-func (e *Engine) Close() error {
-	e.closeOnce.Do(func() {
-		e.closed.Store(true)
-		e.closeErr = closeEngine(e.hooks.engine, e.host.fs, e.host.network, e.ownsNetwork)
-	})
-
-	return e.closeErr
 }
 
 func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {

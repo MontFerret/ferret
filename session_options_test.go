@@ -5,8 +5,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/MontFerret/api"
-
 	gooptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
@@ -166,19 +164,19 @@ func TestNewSessionOptionsAppliesAllOptionsAndJoinsFailures(t *testing.T) {
 	var calls []string
 
 	_, err := newSessionOptions([]SessionOption{
-		func(api.SessionOptions) error {
+		func(*sessionOptions) error {
 			calls = append(calls, "first")
 
 			return firstErr
 		},
 		nil,
-		func(api.SessionOptions) error {
+		func(*sessionOptions) error {
 			calls = append(calls, "middle")
 
 			return nil
 		},
 		WithOutputContentType(" \t "),
-		func(api.SessionOptions) error {
+		func(*sessionOptions) error {
 			calls = append(calls, "second")
 
 			return secondErr
@@ -358,25 +356,5 @@ func TestNewSessionOptionsKeepDefaultOutputContentTypeWithNoopOptions(t *testing
 
 	if len(opts.logger) != 0 {
 		t.Fatalf("expected no logger options to be appended, got %d entries", len(opts.logger))
-	}
-}
-
-type foreignSessionOptions struct{ api.SessionOptions }
-
-func TestNativeSessionOptionsRejectForeignAndNilTargets(t *testing.T) {
-	for _, option := range []SessionOption{
-		WithDebugFormat(DebugFormatOptions{MaxDepth: 1, MaxItems: 1, MaxBytes: 64}),
-		WithEnvironmentOptions(),
-		WithSessionRuntimeParams(nil),
-		WithSessionRuntimeParam("value", runtime.NewInt(1)),
-		WithSessionLog(nil),
-		WithSessionLogLevel(LogInfo),
-		WithSessionLogFields(nil),
-	} {
-		for _, target := range []api.SessionOptions{nil, (*sessionOptions)(nil), foreignSessionOptions{}} {
-			if err := option(target); err == nil {
-				t.Fatalf("native option accepted target %T", target)
-			}
-		}
 	}
 }

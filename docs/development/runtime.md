@@ -143,16 +143,29 @@ context is required. Cancellation and deadline identities remain available
 through `errors.Is`, including when cancellation accompanies an option or hook
 failure.
 
-Native `SessionOption` is `api.SessionOption`. Non-nil options target the actual
-native `api.SessionOptions` owner once in order. Validation errors are joined
-before resource acquisition; native-only options reject foreign targets.
-Per-plan options on `Engine.Compile` inherit the engine's optimization when
-omitted, or select API None, Basic, or Full for one compilation. Aggressive is
-unsupported. `CompileDebug` accepts omission or None. Compiler instances remain
-immutable and safe for shared use.
+Native `PlanOption` and `SessionOption` target private native configurations,
+following the root `Option` pattern. They are distinct from Universal API
+functional options. Non-nil options run once in order, joining validation errors
+before resource acquisition. Portable semantic data may be shared with the
+Universal API; runtime-specific option adaptation belongs at a future adapter
+boundary.
+
+`WithPlanOptimizationLevel` on `Engine.Compile` selects native None, Basic, or
+Full for one compilation. Omitting it inherits the engine's optimization;
+overrides do not mutate the engine default. Unsupported levels are rejected.
+`CompileDebug` accepts omission or None. Compiler instances remain immutable and
+safe for shared use.
 
 Encoded `Output` is an alias of `api/result.Output`; native source indexing,
 runtime values, compiler metadata, and diagnostic rendering remain native.
+`Session.Run` retains successful encoded output even when an after-run hook or
+result cleanup fails. Ordinary after-run hooks still precede encoding and receive
+the execution or context-validation error. Ferret encodes the successful VM
+result and closes it exactly once, joining any hook, encoding, and cleanup
+failures. The caller owns the returned encoded data, which has no `Close` method
+and remains available after session cleanup. Failed execution or encoding returns
+no output. A lone execution diagnostic is returned unchanged.
+
 Diagnostic aggregates expose `Unwrap() []error`, and runtime errors unwrap to
 their underlying diagnostic, which in turn retains its cause.
 

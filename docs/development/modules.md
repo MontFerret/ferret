@@ -45,6 +45,10 @@ same execution or validation error. Hook failures are joined with that error.
 Pre-canceled admission and failed before-run hooks do not invoke after-run hooks.
 These rules apply to both normal and debug sessions.
 
+An after-run failure does not discard successful encoded output. Normal sessions
+run these hooks before encoding and result cleanup; the returned error retains
+hook, encoding, and cleanup failures without invalidating available output.
+
 ## SDK authoring layer
 
 `pkg/sdk` is the supported convenience layer for module and host-value authors.

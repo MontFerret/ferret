@@ -1,4 +1,4 @@
-package ferret_test
+package ferret
 
 import (
 	"context"
@@ -10,8 +10,6 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/MontFerret/api"
-	"github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -22,7 +20,7 @@ func TestNativeOperationsAfterClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	option := func(api.SessionOptions) error {
+	option := func(*sessionOptions) error {
 		t.Error("closed plan applied a session option")
 
 		return nil
@@ -43,8 +41,8 @@ func TestNativeOperationsAfterClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, compile := range []func(context.Context, ferret.Source, ...ferret.PlanOption) (*ferret.Plan, error){engine.Compile, engine.CompileDebug} {
-		created, err := compile(t.Context(), ferret.NewAnonymousSource("RETURN 1"), func(api.PlanOptions) error {
+	for _, compile := range []func(context.Context, Source, ...PlanOption) (*Plan, error){engine.Compile, engine.CompileDebug} {
+		created, err := compile(t.Context(), NewAnonymousSource("RETURN 1"), func(*planConfig) error {
 			t.Error("closed engine applied a plan option")
 
 			return nil
@@ -67,19 +65,19 @@ func TestNativeEngineCloseDoesNotWaitForCompile(t *testing.T) {
 				releaseHook := sync.OnceFunc(func() { close(release) })
 				defer releaseHook()
 				var engineCloses, planCloses atomic.Int32
-				engine, err := ferret.New(
-					ferret.WithBeforeCompileHook(func(context.Context) error {
+				engine, err := New(
+					WithBeforeCompileHook(func(context.Context) error {
 						close(entered)
 						<-release
 
 						return nil
 					}),
-					ferret.WithEngineCloseHook(func() error {
+					WithEngineCloseHook(func() error {
 						engineCloses.Add(1)
 
 						return nil
 					}),
-					ferret.WithPlanCloseHook(func() error {
+					WithPlanCloseHook(func() error {
 						planCloses.Add(1)
 
 						return nil
@@ -95,9 +93,9 @@ func TestNativeEngineCloseDoesNotWaitForCompile(t *testing.T) {
 					compile = engine.CompileDebug
 				}
 
-				var plan *ferret.Plan
+				var plan *Plan
 				var compileErr error
-				go func() { plan, compileErr = compile(t.Context(), ferret.NewAnonymousSource("RETURN @value")) }()
+				go func() { plan, compileErr = compile(t.Context(), NewAnonymousSource("RETURN @value")) }()
 				<-entered
 
 				if err := engine.Close(); err != nil {
@@ -134,7 +132,7 @@ func TestNativeCapacityWaitObservesPlanCloseAndContext(t *testing.T) {
 					closing, release := make(chan struct{}), make(chan struct{})
 					releaseHook := sync.OnceFunc(func() { close(release) })
 					closeErr := errors.New("plan cleanup failed")
-					engine, plan := newNativeLifecyclePlan(t, ferret.WithMaxActiveSessions(1), ferret.WithPlanCloseHook(func() error {
+					engine, plan := newNativeLifecyclePlan(t, WithMaxActiveSessions(1), WithPlanCloseHook(func() error {
 						close(closing)
 						<-release
 
@@ -206,12 +204,12 @@ func TestNativePlanCloseDuringSessionConstruction(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					synctest.Test(t, func(t *testing.T) {
 						var closes atomic.Int32
-						engine, plan := newNativeLifecyclePlan(t, ferret.WithMaxActiveSessions(capacity), ferret.WithSessionCloseHook(func() error {
+						engine, plan := newNativeLifecyclePlan(t, WithMaxActiveSessions(capacity), WithSessionCloseHook(func() error {
 							closes.Add(1)
 
 							return nil
 						}))
-						sibling, err := engine.CompileDebug(t.Context(), ferret.NewAnonymousSource("RETURN 1"))
+						sibling, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -224,13 +222,13 @@ func TestNativePlanCloseDuringSessionConstruction(t *testing.T) {
 							close(entered)
 							<-release
 						}
-						var option ferret.SessionOption = func(api.SessionOptions) error {
+						var option SessionOption = func(*sessionOptions) error {
 							block()
 
 							return nil
 						}
 						if admitted {
-							option = ferret.WithEnvironmentOptions(vm.WithFunctionsRegistrar(func(runtime.FunctionDefs) { block() }))
+							option = WithEnvironmentOptions(vm.WithFunctionsRegistrar(func(runtime.FunctionDefs) { block() }))
 						}
 
 						var session io.Closer
@@ -276,7 +274,7 @@ func TestNativeCanceledEnvironmentConstructionReleasesCapacity(t *testing.T) {
 		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
 			var closes atomic.Int32
 			closeErr := errors.New("session cleanup failed")
-			_, plan := newNativeLifecyclePlan(t, ferret.WithMaxActiveSessions(1), ferret.WithMaxVMsPerPlan(1), ferret.WithSessionCloseHook(func() error {
+			_, plan := newNativeLifecyclePlan(t, WithMaxActiveSessions(1), WithMaxVMsPerPlan(1), WithSessionCloseHook(func() error {
 				closes.Add(1)
 
 				return closeErr
@@ -284,8 +282,8 @@ func TestNativeCanceledEnvironmentConstructionReleasesCapacity(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			session, err := createNativeLifecycleSession(plan, ctx, debug,
-				ferret.WithSessionFSRoot(t.TempDir()),
-				ferret.WithEnvironmentOptions(vm.WithFunctionsRegistrar(func(runtime.FunctionDefs) { cancel() })),
+				WithSessionFSRoot(t.TempDir()),
+				WithEnvironmentOptions(vm.WithFunctionsRegistrar(func(runtime.FunctionDefs) { cancel() })),
 			)
 			if session != nil || !errors.Is(err, context.Canceled) || !errors.Is(err, closeErr) || closes.Load() != 1 {
 				t.Fatalf("canceled construction: session=%v err=%v closes=%d", session, err, closes.Load())
@@ -309,12 +307,12 @@ func TestNativeCanceledEnvironmentConstructionReleasesCapacity(t *testing.T) {
 func TestNativeSessionCreationRacesPlanClose(t *testing.T) {
 	for _, debug := range []bool{false, true} {
 		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
-			engine, _ := newNativeLifecyclePlan(t, ferret.WithMaxActiveSessions(1))
+			engine, _ := newNativeLifecyclePlan(t, WithMaxActiveSessions(1))
 			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 			defer cancel()
 
 			for range 50 {
-				plan, err := engine.CompileDebug(t.Context(), ferret.NewAnonymousSource("RETURN 1"))
+				plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -352,15 +350,15 @@ func TestNativeSessionCreationRacesPlanClose(t *testing.T) {
 	}
 }
 
-func newNativeLifecyclePlan(t *testing.T, opts ...ferret.Option) (*ferret.Engine, *ferret.Plan) {
+func newNativeLifecyclePlan(t *testing.T, opts ...Option) (*Engine, *Plan) {
 	t.Helper()
-	engine, err := ferret.New(opts...)
+	engine, err := New(opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Cleanup(func() { _ = engine.Close() })
-	plan, err := engine.CompileDebug(t.Context(), ferret.NewAnonymousSource("RETURN 1"))
+	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -370,7 +368,7 @@ func newNativeLifecyclePlan(t *testing.T, opts ...ferret.Option) (*ferret.Engine
 	return engine, plan
 }
 
-func createNativeLifecycleSession(plan *ferret.Plan, ctx context.Context, debug bool, opts ...ferret.SessionOption) (io.Closer, error) {
+func createNativeLifecycleSession(plan *Plan, ctx context.Context, debug bool, opts ...SessionOption) (io.Closer, error) {
 	if debug {
 		session, err := plan.NewDebugSession(ctx, opts...)
 		if session == nil {
@@ -390,12 +388,12 @@ func createNativeLifecycleSession(plan *ferret.Plan, ctx context.Context, debug 
 
 func runNativeLifecycleSession(t *testing.T, session io.Closer) {
 	t.Helper()
-	var output *ferret.Output
+	var output *Output
 	var err error
 	switch session := session.(type) {
-	case *ferret.Session:
+	case *Session:
 		output, err = session.Run(t.Context())
-	case *ferret.DebugSession:
+	case *DebugSession:
 		if _, err := session.Start(t.Context()); err != nil {
 			t.Fatal(err)
 		}

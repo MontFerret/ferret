@@ -73,8 +73,8 @@ func TestSessionRunReturnsAfterHookErrorOnSuccess(t *testing.T) {
 		t.Fatal("expected session run to fail when after run hook fails")
 	}
 
-	if result != nil {
-		t.Fatal("expected nil result when after run hook fails")
+	if result == nil || result.ContentType != "application/json" || string(result.Content) != "1" {
+		t.Fatalf("expected successful encoded output with after run failure, got %+v", result)
 	}
 
 	if seenRunErr != nil {
