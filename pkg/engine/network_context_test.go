@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -84,7 +85,7 @@ RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/debug" }))
 		t.Fatal(err)
 	}
 
-	if event.Reason != DebugReasonCompleted {
+	if event.Reason != debugger.ReasonCompleted {
 		t.Fatalf("expected debug session to complete, got %#v", event)
 	}
 	if event.Output == nil || string(event.Output.Content) != `"debug-network"` {

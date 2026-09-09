@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -242,7 +243,7 @@ func TestDebugSessionUsesAndClosesOwnedFSRoot(t *testing.T) {
 		context.Background(),
 		[]SessionOption{WithSessionFSRoot(root)},
 		planSessionSetup{requiresDebugInfo: true},
-		func(dependencies planSessionDependencies) (*DebugSession, error) {
+		func(dependencies planSessionDependencies) (*debugger.Session, error) {
 			filesystem = newCountingCloseFileSystem(t, root, fileSystemErr)
 			if err := dependencies.resources.Own(resource.FileSystem, filesystem.Close); err != nil {
 				t.Fatal(err)
@@ -386,7 +387,7 @@ func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
 			resourceCloses := 0
 			engine := mustNewEngine(t, WithMaxActiveSessions(1), WithSessionCloseHook(func() error { return closeErr }))
 			t.Cleanup(func() { _ = engine.Close() })
-			plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+			plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 			if err != nil {
 				t.Fatal(err)
 			}

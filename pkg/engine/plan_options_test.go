@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestPlanOptionsApplyInOrderAndJoinFailures(t *testing.T) {
@@ -89,13 +90,13 @@ func TestCompileDebugRejectsOptimizationBeforeHooks(t *testing.T) {
 	t.Cleanup(func() { _ = engine.Close() })
 
 	for _, level := range []OptimizationLevel{OptimizationBasic, OptimizationFull, -1, 3} {
-		plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"), WithPlanOptimizationLevel(level))
+		plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"), WithPlanOptimizationLevel(level))
 		if plan != nil || err == nil || calls != 0 {
 			t.Fatalf("debug option validation: level=%v plan=%v err=%v hooks=%d", level, plan, err, calls)
 		}
 	}
 
-	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"), WithPlanOptimizationLevel(OptimizationNone))
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"), WithPlanOptimizationLevel(OptimizationNone))
 	if err != nil {
 		t.Fatal(err)
 	}

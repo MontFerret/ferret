@@ -48,7 +48,7 @@ type Session struct {
 // Run executes the session with the provided context and returns encoded output.
 // Successful output remains available alongside after-run hook or result-cleanup
 // errors. The caller owns the encoded data; Run releases the underlying VM result.
-func (s *Session) Run(c context.Context) (*Output, error) {
+func (s *Session) Run(c context.Context) (*encoding.Output, error) {
 	if c == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
 	}

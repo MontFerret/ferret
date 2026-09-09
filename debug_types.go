@@ -1,64 +1,67 @@
 package ferret
 
-import "github.com/MontFerret/ferret/v2/pkg/engine"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/source"
+)
 
 type (
 	// DebugSession retains execution state for source-level debugging.
-	DebugSession = engine.DebugSession
+	DebugSession = debugger.Session
 
 	// DebugReason identifies why a debug session stopped.
-	DebugReason = engine.DebugReason
+	DebugReason = debugger.Reason
 
 	// DebugLocation identifies the source range of a debug stop.
-	DebugLocation = engine.DebugLocation
+	DebugLocation = source.Range
 
 	// DebugValue describes a value inspected in a paused debug session.
-	DebugValue = engine.DebugValue
+	DebugValue = debugger.Value
 
 	// DebugVariable describes a visible variable in a paused debug session.
-	DebugVariable = engine.DebugVariable
+	DebugVariable = debugger.Variable
 
 	// DebugFrame describes a retained call frame.
-	DebugFrame = engine.DebugFrame
+	DebugFrame = debugger.Frame
 
 	// DebugBreakpoint describes a requested breakpoint and its executable binding.
-	DebugBreakpoint = engine.DebugBreakpoint
+	DebugBreakpoint = debugger.Breakpoint
 
 	// DebugBreakpointID identifies a breakpoint within its debug session.
-	DebugBreakpointID = engine.DebugBreakpointID
+	DebugBreakpointID = debugger.BreakpointID
 
 	// DebugBreakpointOptions configures how a requested source location binds.
-	DebugBreakpointOptions = engine.DebugBreakpointOptions
+	DebugBreakpointOptions = debugger.BreakpointOptions
 
 	// DebugBreakpointBindingMode selects how a requested source location is bound.
-	DebugBreakpointBindingMode = engine.DebugBreakpointBindingMode
+	DebugBreakpointBindingMode = debugger.BreakpointBindingMode
 
 	// DebugSourceLocation identifies a position requested for a breakpoint.
-	DebugSourceLocation = engine.DebugSourceLocation
+	DebugSourceLocation = source.Location
 
 	// DebugValueReference identifies an expandable value in the current paused state.
-	DebugValueReference = engine.DebugValueReference
+	DebugValueReference = debugger.ValueReference
 
 	// DebugEvent describes a debug stop, failure, or completed output.
-	DebugEvent = engine.DebugEvent
+	DebugEvent = debugger.Event
 
 	// DebugStateError reports an operation that is invalid in the session's current state.
-	DebugStateError = engine.DebugStateError
+	DebugStateError = debugger.StateError
 
 	// DebugFormatOptions bounds debugger value formatting.
-	DebugFormatOptions = engine.DebugFormatOptions
+	DebugFormatOptions = debugger.FormatOptions
 )
 
 const (
-	DebugReasonEntry        = engine.DebugReasonEntry
-	DebugReasonBreakpoint   = engine.DebugReasonBreakpoint
-	DebugReasonStep         = engine.DebugReasonStep
-	DebugReasonPause        = engine.DebugReasonPause
-	DebugReasonRuntimeError = engine.DebugReasonRuntimeError
-	DebugReasonCompleted    = engine.DebugReasonCompleted
-	DebugReasonTerminated   = engine.DebugReasonTerminated
+	DebugReasonEntry        = debugger.ReasonEntry
+	DebugReasonBreakpoint   = debugger.ReasonBreakpoint
+	DebugReasonStep         = debugger.ReasonStep
+	DebugReasonPause        = debugger.ReasonPause
+	DebugReasonRuntimeError = debugger.ReasonRuntimeError
+	DebugReasonCompleted    = debugger.ReasonCompleted
+	DebugReasonTerminated   = debugger.ReasonTerminated
 
-	DebugBreakpointBindNextExecutableInSource   = engine.DebugBreakpointBindNextExecutableInSource
-	DebugBreakpointBindExact                    = engine.DebugBreakpointBindExact
-	DebugBreakpointBindNextExecutableInFunction = engine.DebugBreakpointBindNextExecutableInFunction
+	DebugBreakpointBindNextExecutableInSource   = debugger.BreakpointBindNextExecutableInSource
+	DebugBreakpointBindExact                    = debugger.BreakpointBindExact
+	DebugBreakpointBindNextExecutableInFunction = debugger.BreakpointBindNextExecutableInFunction
 )

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	apidebugger "github.com/MontFerret/api/debugger"
-
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -45,7 +45,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonEntry || event.Location.Line != 1 {
+	if event.Reason != debugger.ReasonEntry || event.Location.Line != 1 {
 		t.Fatalf("unexpected entry event: %#v", event)
 	}
 	locals, err := session.Locals()
@@ -60,7 +60,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 3 ||
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 3 ||
 		len(event.HitBreakpointIDs) != 1 || event.HitBreakpointIDs[0] != breakpoint.ID {
 		t.Fatalf("unexpected breakpoint event: %#v", event)
 	}
@@ -94,10 +94,10 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
 		t.Fatalf("unexpected completion event: %#v", event)
 	}
-	if _, err := session.Continue(context.Background()); err == nil || !errors.Is(err, &DebugStateError{}) {
+	if _, err := session.Continue(context.Background()); err == nil || !errors.Is(err, &debugger.StateError{}) {
 		t.Fatalf("expected typed invalid-state error, got %v", err)
 	}
 }
@@ -138,7 +138,7 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonCompleted {
+	if event.Reason != debugger.ReasonCompleted {
 		t.Fatalf("expected breakpoint to bind only the first same-line point, got %#v", event)
 	}
 }
@@ -276,7 +276,7 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonPause || event.Location.Line != 2 {
+	if event.Reason != debugger.ReasonPause || event.Location.Line != 2 {
 		t.Fatalf("unexpected pause event: %#v", event)
 	}
 	locals, err := session.Locals()
@@ -317,7 +317,7 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonRuntimeError || event.Error == nil {
+	if event.Reason != debugger.ReasonRuntimeError || event.Error == nil {
 		t.Fatalf("expected runtime error pause, got %#v", event)
 	}
 	if _, ok := event.Error.(diagnostics.Formattable); !ok {
@@ -338,7 +338,7 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonTerminated || event.Error == nil || !strings.Contains(event.Error.Error(), "division") {
+	if event.Reason != debugger.ReasonTerminated || event.Error == nil || !strings.Contains(event.Error.Error(), "division") {
 		t.Fatalf("unexpected termination: %#v", event)
 	}
 	if _, ok := event.Error.(diagnostics.Formattable); !ok {
@@ -374,7 +374,7 @@ func TestDebugSessionRuntimeErrorJoinsAfterRunHookFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonRuntimeError || !errors.Is(event.Error, afterErr) {
+	if event.Reason != debugger.ReasonRuntimeError || !errors.Is(event.Error, afterErr) {
 		t.Fatalf("expected joined after-run hook failure, got %#v", event)
 	}
 	var runtimeErr diagnostics.FormattableError
@@ -425,7 +425,7 @@ func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonCompleted || event.Output == nil || string(event.Output.Content) != `"hook-value"` {
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != `"hook-value"` {
 		t.Fatalf("unexpected completion event: %#v", event)
 	}
 }
@@ -476,17 +476,17 @@ RETURN x`
 	defer session.Close()
 
 	commands := []struct {
-		resume func(context.Context) (*DebugEvent, error)
+		resume func(context.Context) (*debugger.Event, error)
 		name   string
-		reason DebugReason
+		reason debugger.Reason
 		frames []string
 		line   int
 	}{
-		{session.Start, "Start", DebugReasonEntry, []string{"<main>"}, 9},
-		{session.StepIn, "StepIn to outer", DebugReasonStep, []string{"outer", "<main>"}, 6},
-		{session.StepIn, "StepIn to add", DebugReasonStep, []string{"add", "outer", "<main>"}, 2},
-		{session.StepOut, "StepOut to outer", DebugReasonStep, []string{"outer", "<main>"}, 7},
-		{session.StepOut, "StepOut to main", DebugReasonStep, []string{"<main>"}, 10},
+		{session.Start, "Start", debugger.ReasonEntry, []string{"<main>"}, 9},
+		{session.StepIn, "StepIn to outer", debugger.ReasonStep, []string{"outer", "<main>"}, 6},
+		{session.StepIn, "StepIn to add", debugger.ReasonStep, []string{"add", "outer", "<main>"}, 2},
+		{session.StepOut, "StepOut to outer", debugger.ReasonStep, []string{"outer", "<main>"}, 7},
+		{session.StepOut, "StepOut to main", debugger.ReasonStep, []string{"<main>"}, 10},
 	}
 
 	for _, command := range commands {
@@ -549,7 +549,7 @@ RETURN x`
 		t.Fatal(err)
 	}
 
-	if event.Reason != DebugReasonEntry || event.Location.Line != 4 || event.Depth != 0 {
+	if event.Reason != debugger.ReasonEntry || event.Location.Line != 4 || event.Depth != 0 {
 		t.Fatalf("unexpected entry: %#v", event)
 	}
 
@@ -558,7 +558,7 @@ RETURN x`
 		t.Fatal(err)
 	}
 
-	if event.Reason != DebugReasonStep || event.Location.Line != 5 || event.Depth != 0 {
+	if event.Reason != debugger.ReasonStep || event.Location.Line != 5 || event.Depth != 0 {
 		t.Fatalf("expected StepOver to skip UDF, got %#v", event)
 	}
 
@@ -576,7 +576,7 @@ RETURN x`
 		t.Fatal(err)
 	}
 
-	if event.Reason != DebugReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
 		t.Fatalf("expected StepOut from main to complete, got %#v", event)
 	}
 }
@@ -619,7 +619,7 @@ func TestDebugCompletionPreservesOutputOnAfterHookFailure(t *testing.T) {
 	engine := mustNewEngine(t, WithAfterRunHook(func(context.Context, error) error { return failure }))
 	t.Cleanup(func() { _ = engine.Close() })
 
-	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 42"))
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 42"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -638,7 +638,7 @@ func TestDebugCompletionPreservesOutputOnAfterHookFailure(t *testing.T) {
 	}
 
 	event, err := session.Continue(t.Context())
-	if !errors.Is(err, failure) || event == nil || event.Output == nil || string(event.Output.Content) != "42" || event.Reason != DebugReasonCompleted {
+	if !errors.Is(err, failure) || event == nil || event.Output == nil || string(event.Output.Content) != "42" || event.Reason != debugger.ReasonCompleted {
 		t.Fatalf("event=%+v err=%v", event, err)
 	}
 }

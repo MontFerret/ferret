@@ -190,7 +190,7 @@ func buildSession(dependencies planSessionDependencies) (*Session, error) {
 	}, nil
 }
 
-func buildDebugSession(dependencies planSessionDependencies) (*DebugSession, error) {
+func buildDebugSession(dependencies planSessionDependencies) (*debugger.Session, error) {
 	environment, err := newPlanSessionEnvironment(dependencies.host, dependencies.options)
 	if err != nil {
 		return nil, err

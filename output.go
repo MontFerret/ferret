@@ -1,14 +1,17 @@
 package ferret
 
-import "github.com/MontFerret/ferret/v2/pkg/engine"
+import (
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 type (
 	// Output is the encoded result returned from session or engine execution.
-	Output = engine.Output
+	Output = encoding.Output
 
 	// Value is the shared Ferret value contract accepted at the embedding boundary.
-	Value = engine.Value
+	Value = runtime.Value
 
 	// Params contains pre-converted Ferret values keyed by query parameter name.
-	Params = engine.Params
+	Params = runtime.Params
 )

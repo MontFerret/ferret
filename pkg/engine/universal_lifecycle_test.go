@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestCompileCancellationAroundHooks(t *testing.T) {
@@ -22,7 +23,7 @@ func TestCompileCancellationAroundHooks(t *testing.T) {
 				compile = engine.CompileDebug
 			}
 
-			plan, err := compile(ctx, NewAnonymousSource("RETURN 1"))
+			plan, err := compile(ctx, source.NewAnonymous("RETURN 1"))
 			if plan != nil || !errors.Is(err, context.Canceled) {
 				t.Fatalf("plan=%v err=%v", plan, err)
 			}
@@ -55,7 +56,7 @@ func TestNativeCloseRetainsResultForConcurrentCallers(t *testing.T) {
 		t.Fatalf("closes=%d/%d", engines.Load(), plans.Load())
 	}
 
-	if p, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1")); p != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
+	if p, err := engine.Compile(t.Context(), source.NewAnonymous("RETURN 1")); p != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
 		t.Fatalf("compile closed engine: %v/%v", p, err)
 	}
 }
@@ -64,7 +65,7 @@ func TestNativeNilAndCanceledContextsRejectAdmission(t *testing.T) {
 	engine := mustNewEngine(t)
 	t.Cleanup(func() { _ = engine.Close() })
 
-	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,12 +87,12 @@ func TestNativeNilAndCanceledContextsRejectAdmission(t *testing.T) {
 	t.Cleanup(func() { _ = debug.Close() })
 	operations := []func(context.Context) error{
 		func(ctx context.Context) error {
-			_, err := engine.Compile(ctx, NewAnonymousSource("RETURN 1"))
+			_, err := engine.Compile(ctx, source.NewAnonymous("RETURN 1"))
 
 			return err
 		},
 		func(ctx context.Context) error {
-			_, err := engine.CompileDebug(ctx, NewAnonymousSource("RETURN 1"))
+			_, err := engine.CompileDebug(ctx, source.NewAnonymous("RETURN 1"))
 
 			return err
 		},

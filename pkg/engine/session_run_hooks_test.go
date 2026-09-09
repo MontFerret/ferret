@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestRunHooksSettleAbortedAdmission(t *testing.T) {
@@ -88,7 +90,7 @@ func TestRunHooksSettleAbortedAdmission(t *testing.T) {
 					}),
 				)
 				t.Cleanup(func() { _ = engine.Close() })
-				plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN RUN_PROBE()"))
+				plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN RUN_PROBE()"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -114,7 +116,7 @@ func TestRunHooksSettleAbortedAdmission(t *testing.T) {
 						}
 
 						event, runErr = session.Continue(c)
-						if runErr == nil && (event.Reason != DebugReasonCompleted || string(event.Output.Content) != "42") {
+						if runErr == nil && (event.Reason != debugger.ReasonCompleted || string(event.Output.Content) != "42") {
 							t.Fatalf("retry did not complete: %+v", event)
 						}
 

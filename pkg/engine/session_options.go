@@ -7,7 +7,9 @@ import (
 
 	gooptions "github.com/ziflex/go-options"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -15,14 +17,14 @@ import (
 type SessionOption = gooptions.Option[sessionConfig]
 
 // WithDebugFormat configures bounded debugger value formatting.
-func WithDebugFormat(format DebugFormatOptions) SessionOption {
+func WithDebugFormat(format debugger.FormatOptions) SessionOption {
 	return func(session *sessionConfig) error {
-		return gooptions.New(func(session *sessionConfig, format DebugFormatOptions) {
+		return gooptions.New(func(session *sessionConfig, format debugger.FormatOptions) {
 			session.debugFormat = format
 		}).
 			Value(format).
 			Named("debug format").
-			Validators(gooptions.Check(func(format DebugFormatOptions) error {
+			Validators(gooptions.Check(func(format debugger.FormatOptions) error {
 				if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
 					return fmt.Errorf("debug format limits must be positive")
 				}
@@ -86,9 +88,9 @@ func WithSessionParams(params map[string]any) SessionOption {
 	}
 }
 
-// WithSessionRuntimeParams merges the provided Params into the session environment,
+// WithSessionRuntimeParams merges the provided runtime.Params into the session environment,
 // overriding existing keys while preserving any other previously defined parameters.
-func WithSessionRuntimeParams(params Params) SessionOption {
+func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 	return func(s *sessionConfig) error {
 		if len(params) == 0 {
 			return nil
@@ -107,8 +109,8 @@ func WithSessionParam(name string, value any) SessionOption {
 	}
 }
 
-// WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted Value.
-func WithSessionRuntimeParam(name string, value Value) SessionOption {
+// WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
+func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
 	return func(s *sessionConfig) error {
 		s.env = append(s.env, vm.WithParam(name, value))
 
@@ -132,9 +134,9 @@ func WithSessionLog(writer io.Writer) SessionOption {
 
 // WithSessionLogLevel sets the logging level for the session.
 // The logging level determines the severity of log messages that will be recorded.
-func WithSessionLogLevel(lvl LogLevel) SessionOption {
+func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
 	return func(opts *sessionConfig) error {
-		if lvl < LogTrace || lvl > LogDisabled {
+		if lvl < logging.TraceLevel || lvl > logging.Disabled {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
 

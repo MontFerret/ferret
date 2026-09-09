@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/source"
+)
 
 func BenchmarkEngineCompilePlan(b *testing.B) {
 	for _, debug := range []bool{false, true} {
@@ -21,7 +25,7 @@ func BenchmarkEngineCompilePlan(b *testing.B) {
 				compile = engine.CompileDebug
 			}
 
-			src := NewAnonymousSource("RETURN @value + 1")
+			src := source.NewAnonymous("RETURN @value + 1")
 			b.ReportAllocs()
 			b.ResetTimer()
 
@@ -46,7 +50,7 @@ func BenchmarkEngineLoadPlan(b *testing.B) {
 	}
 
 	defer func() { _ = engine.Close() }()
-	plan, err := engine.Compile(b.Context(), NewAnonymousSource("RETURN @value + 1"))
+	plan, err := engine.Compile(b.Context(), source.NewAnonymous("RETURN @value + 1"))
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -37,7 +38,7 @@ RETURN FOR i IN 1..100
 			b.Fatal(startErr)
 		}
 
-		for event.Reason != DebugReasonCompleted {
+		for event.Reason != debugger.ReasonCompleted {
 			event, startErr = session.StepIn(context.Background())
 			if startErr != nil {
 				b.Fatal(startErr)

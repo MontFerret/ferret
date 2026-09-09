@@ -80,11 +80,15 @@ Do not duplicate an owning package's semantics in a consumer. In particular,
 runtime value behavior belongs in `pkg/runtime`, not in VM, stdlib, encoding, or
 debugger-specific type switches.
 
-The embedding dependency direction is `ferret -> pkg/engine ->
-pkg/engine/internal/* -> lower-level pkg/*`:
+The root façade imports `pkg/engine` for native engine semantics and imports
+lower-level owners directly for shared vocabulary. Engine implementation
+dependencies flow through `pkg/engine -> pkg/engine/internal/* -> lower-level
+pkg/*`, with direct lower-level imports where needed:
 
 * Root `ferret` is the curated public embedding façade; it contains no substantial
-  engine implementation.
+  engine implementation. Shared aliases, constants, and convenience functions
+  target their owning packages directly; `pkg/engine` is not an API aggregation
+  layer.
 * `pkg/engine` owns Engine, Plan, Session, their native APIs, and orchestration.
 * `pkg/engine/internal/*` contains engine-owned components, used only within the
   engine subtree; these packages must not import root `ferret` or `pkg/engine`.

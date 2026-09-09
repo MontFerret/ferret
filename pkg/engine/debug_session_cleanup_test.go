@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestDebugTerminationRetainsResourceCleanupFailures(t *testing.T) {
@@ -47,7 +49,7 @@ func TestDebugTerminationRetainsResourceCleanupFailures(t *testing.T) {
 				})
 			}))
 			t.Cleanup(func() { _ = engine.Close() })
-			plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("LET first = FIRST_RESOURCE()\nLET alias = first\nLET second = SECOND_RESOURCE()\nLET borrowed = @borrowed\nBLOCK_UNTIL_FAILURE()\nRETURN [first, alias, second, borrowed]"))
+			plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("LET first = FIRST_RESOURCE()\nLET alias = first\nLET second = SECOND_RESOURCE()\nLET borrowed = @borrowed\nBLOCK_UNTIL_FAILURE()\nRETURN [first, alias, second, borrowed]"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -63,7 +65,7 @@ func TestDebugTerminationRetainsResourceCleanupFailures(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			events := make(chan *DebugEvent, 1)
+			events := make(chan *debugger.Event, 1)
 			commandErrors := make(chan error, 1)
 			go func() {
 				event, err := session.Continue(ctx)
@@ -88,7 +90,7 @@ func TestDebugTerminationRetainsResourceCleanupFailures(t *testing.T) {
 				releaseHost()
 			}
 
-			var event *DebugEvent
+			var event *debugger.Event
 			select {
 			case event = <-events:
 			case <-waitCtx.Done():
@@ -104,7 +106,7 @@ func TestDebugTerminationRetainsResourceCleanupFailures(t *testing.T) {
 				cause = context.DeadlineExceeded
 			} else if mode == "runtime_error" {
 				cause = runtimeErr
-				if event == nil || event.Reason != DebugReasonRuntimeError || first.closed != 0 || second.closed != 0 {
+				if event == nil || event.Reason != debugger.ReasonRuntimeError || first.closed != 0 || second.closed != 0 {
 					t.Fatalf("runtime failure did not retain inspectable state: %+v", event)
 				}
 
@@ -114,7 +116,7 @@ func TestDebugTerminationRetainsResourceCleanupFailures(t *testing.T) {
 				}
 			}
 
-			if event == nil || event.Reason != DebugReasonTerminated || !errors.Is(event.Error, cause) || !errors.Is(event.Error, firstErr) || !errors.Is(event.Error, secondErr) {
+			if event == nil || event.Reason != debugger.ReasonTerminated || !errors.Is(event.Error, cause) || !errors.Is(event.Error, firstErr) || !errors.Is(event.Error, secondErr) {
 				t.Fatalf("termination lost causes: %+v", event)
 			}
 
@@ -168,7 +170,7 @@ func BenchmarkDebugSessionCancellationCleanup(b *testing.B) {
 	}
 
 	defer engine.Close()
-	plan, err := engine.CompileDebug(b.Context(), NewAnonymousSource("LET resource = BENCH_RESOURCE()\nBENCH_CANCEL()\nRETURN resource"))
+	plan, err := engine.CompileDebug(b.Context(), source.NewAnonymous("LET resource = BENCH_RESOURCE()\nBENCH_CANCEL()\nRETURN resource"))
 	if err != nil {
 		b.Fatal(err)
 	}

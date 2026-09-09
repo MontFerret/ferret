@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -55,20 +57,20 @@ func (p *Plan) NewSession(ctx context.Context, setters ...SessionOption) (*Sessi
 // non-nil options are applied in order after the plan's debug metadata is
 // validated, and failures from multiple options are joined before session
 // resources are acquired. Context, admission, and ownership follow NewSession.
-func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*DebugSession, error) {
+func (p *Plan) NewDebugSession(ctx context.Context, setters ...SessionOption) (*debugger.Session, error) {
 	return newPlanSession(p, ctx, setters, planSessionSetup{requiresDebugInfo: true}, buildDebugSession)
 }
 
 // Marshal serializes the plan's compiled program using the provided program options.
 // It rejects a closed plan; serialization admitted before Close may finish afterward.
-func (p *Plan) Marshal(opts ...ProgramOption) ([]byte, error) {
+func (p *Plan) Marshal(opts ...artifact.Option) ([]byte, error) {
 	select {
 	case <-p.closed:
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "plan is closed")
 	default:
 	}
 
-	return MarshalProgram(p.prog, opts...)
+	return artifact.Marshal(p.prog, opts...)
 }
 
 // Close rejects new sessions, wakes capacity waiters, runs cleanup hooks, and

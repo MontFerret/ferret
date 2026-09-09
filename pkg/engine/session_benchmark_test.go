@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func BenchmarkNewSessionOptions(b *testing.B) {
@@ -16,8 +20,8 @@ func BenchmarkNewSessionOptions(b *testing.B) {
 			setters = []SessionOption{
 				WithSessionParam("value", 42),
 				WithOutputContentType("application/json"),
-				WithSessionLogLevel(LogInfo),
-				WithDebugFormat(DebugFormatOptions{MaxDepth: 4, MaxItems: 12, MaxBytes: 2048}),
+				WithSessionLogLevel(logging.InfoLevel),
+				WithDebugFormat(debugger.FormatOptions{MaxDepth: 4, MaxItems: 12, MaxBytes: 2048}),
 			}
 		}
 
@@ -53,7 +57,7 @@ func BenchmarkSessionRun(b *testing.B) {
 			}
 
 			defer func() { _ = engine.Close() }()
-			plan, err := engine.Compile(b.Context(), NewAnonymousSource("RETURN @value + 1"))
+			plan, err := engine.Compile(b.Context(), source.NewAnonymous("RETURN @value + 1"))
 			if err != nil {
 				b.Fatal(err)
 			}

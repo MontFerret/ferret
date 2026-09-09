@@ -10,10 +10,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -122,13 +124,13 @@ func New(setters ...Option) (engine *Engine, resultErr error) {
 // not mutate the engine. The context must be non-nil. Compilation admitted before
 // Close may finish afterward; callers must settle it before releasing resources
 // used by their compile hooks.
-func (e *Engine) Compile(ctx context.Context, src Source, opts ...PlanOption) (*Plan, error) {
+func (e *Engine) Compile(ctx context.Context, src source.Source, opts ...PlanOption) (*Plan, error) {
 	return e.compile(ctx, src, false, opts)
 }
 
 // CompileDebug compiles a reusable plan with debug metadata and no optimization.
 // Context, concurrent closure, and ownership follow Compile.
-func (e *Engine) CompileDebug(ctx context.Context, src Source, opts ...PlanOption) (*Plan, error) {
+func (e *Engine) CompileDebug(ctx context.Context, src source.Source, opts ...PlanOption) (*Plan, error) {
 	return e.compile(ctx, src, true, opts)
 }
 
@@ -148,9 +150,9 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 }
 
 // Run compiles source, executes it in a fresh session, and returns encoded output and an error.
-// Similar to Session.Run, it may return a non-nil *Output together with a non-nil error
+// Similar to Session.Run, it may return a non-nil *encoding.Output together with a non-nil error
 // (for example, if execution produced output but an after-run hook or cleanup failed).
-func (e *Engine) Run(ctx context.Context, src Source, opts ...SessionOption) (output *Output, resultErr error) {
+func (e *Engine) Run(ctx context.Context, src source.Source, opts ...SessionOption) (output *encoding.Output, resultErr error) {
 	plan, err := e.Compile(ctx, src)
 
 	if err != nil {
@@ -192,7 +194,7 @@ func (e *Engine) Close() error {
 	return e.closeErr
 }
 
-func (e *Engine) compile(ctx context.Context, src Source, debug bool, setters []PlanOption) (*Plan, error) {
+func (e *Engine) compile(ctx context.Context, src source.Source, debug bool, setters []PlanOption) (*Plan, error) {
 	if ctx == nil {
 		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
 	}

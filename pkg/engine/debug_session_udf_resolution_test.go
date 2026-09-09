@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	apidebugger "github.com/MontFerret/api/debugger"
-
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -78,14 +77,14 @@ RETURN value`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 6 {
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 6 {
 		t.Fatalf("expected caller breakpoint, got %#v", event)
 	}
 	event, err = session.Continue(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 3 || event.Depth != 1 {
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 3 || event.Depth != 1 {
 		t.Fatalf("expected UDF body breakpoint, got %#v", event)
 	}
 }
@@ -142,14 +141,14 @@ RETURN a + b`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 2 {
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 2 {
 		t.Fatalf("expected first UDF breakpoint, got %#v", event)
 	}
 	event, err = session.Continue(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 5 {
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 5 {
 		t.Fatalf("expected second UDF breakpoint, got %#v", event)
 	}
 }
@@ -182,8 +181,8 @@ RETURN add(seed)`
 	defer session.Close()
 
 	inside, err := session.SetBreakpointAt(
-		DebugSourceLocation{SourceName: "udf-binding.fql", Position: source.Position{Line: 4}},
-		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
+		source.Location{SourceName: "udf-binding.fql", Position: source.Position{Line: 4}},
+		debugger.BreakpointOptions{BindingMode: debugger.BreakpointBindNextExecutableInFunction},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -194,8 +193,8 @@ RETURN add(seed)`
 	}
 
 	before, err := session.SetBreakpointAt(
-		DebugSourceLocation{SourceName: "udf-binding.fql", Position: source.Position{Line: 2}},
-		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
+		source.Location{SourceName: "udf-binding.fql", Position: source.Position{Line: 2}},
+		debugger.BreakpointOptions{BindingMode: debugger.BreakpointBindNextExecutableInFunction},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -205,8 +204,8 @@ RETURN add(seed)`
 	}
 
 	after, err := session.SetBreakpointAt(
-		DebugSourceLocation{SourceName: "udf-binding.fql", Position: source.Position{Line: 7}},
-		DebugBreakpointOptions{BindingMode: DebugBreakpointBindNextExecutableInFunction},
+		source.Location{SourceName: "udf-binding.fql", Position: source.Position{Line: 7}},
+		debugger.BreakpointOptions{BindingMode: debugger.BreakpointBindNextExecutableInFunction},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -307,7 +306,7 @@ RETURN y`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonRuntimeError || event.Location.Line != 4 || event.Error == nil {
+	if event.Reason != debugger.ReasonRuntimeError || event.Location.Line != 4 || event.Error == nil {
 		t.Fatalf("unexpected UDF runtime error: %#v", event)
 	}
 	formatted := diagnostics.Format(event.Error)
@@ -369,7 +368,7 @@ RETURN outer(2) + x + @input + box.value - 10`
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != DebugReasonBreakpoint || event.Location.Line != 5 || event.Depth != 2 {
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 5 || event.Depth != 2 {
 		t.Fatalf("unexpected nested stop: %#v", event)
 	}
 

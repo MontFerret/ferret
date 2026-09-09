@@ -10,7 +10,10 @@ import (
 	"testing/synctest"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -41,8 +44,8 @@ func TestNativeOperationsAfterClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, compile := range []func(context.Context, Source, ...PlanOption) (*Plan, error){engine.Compile, engine.CompileDebug} {
-		created, err := compile(t.Context(), NewAnonymousSource("RETURN 1"), func(*planConfig) error {
+	for _, compile := range []func(context.Context, source.Source, ...PlanOption) (*Plan, error){engine.Compile, engine.CompileDebug} {
+		created, err := compile(t.Context(), source.NewAnonymous("RETURN 1"), func(*planConfig) error {
 			t.Error("closed engine applied a plan option")
 
 			return nil
@@ -95,7 +98,7 @@ func TestNativeEngineCloseDoesNotWaitForCompile(t *testing.T) {
 
 				var plan *Plan
 				var compileErr error
-				go func() { plan, compileErr = compile(t.Context(), NewAnonymousSource("RETURN @value")) }()
+				go func() { plan, compileErr = compile(t.Context(), source.NewAnonymous("RETURN @value")) }()
 				<-entered
 
 				if err := engine.Close(); err != nil {
@@ -209,7 +212,7 @@ func TestNativePlanCloseDuringSessionConstruction(t *testing.T) {
 
 							return nil
 						}))
-						sibling, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+						sibling, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -312,7 +315,7 @@ func TestNativeSessionCreationRacesPlanClose(t *testing.T) {
 			defer cancel()
 
 			for range 50 {
-				plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+				plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -358,7 +361,7 @@ func newNativeLifecyclePlan(t *testing.T, opts ...Option) (*Engine, *Plan) {
 	}
 
 	t.Cleanup(func() { _ = engine.Close() })
-	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -388,12 +391,12 @@ func createNativeLifecycleSession(plan *Plan, ctx context.Context, debug bool, o
 
 func runNativeLifecycleSession(t *testing.T, session io.Closer) {
 	t.Helper()
-	var output *Output
+	var output *encoding.Output
 	var err error
 	switch session := session.(type) {
 	case *Session:
 		output, err = session.Run(t.Context())
-	case *DebugSession:
+	case *debugger.Session:
 		if _, err := session.Start(t.Context()); err != nil {
 			t.Fatal(err)
 		}

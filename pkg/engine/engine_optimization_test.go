@@ -8,6 +8,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/module"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestWithOptimizationLevelConfiguresEngineCompiler(t *testing.T) {
@@ -34,7 +35,7 @@ func TestWithOptimizationLevelConfiguresEngineCompiler(t *testing.T) {
 				}
 			})
 
-			plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1"))
+			plan, err := engine.Compile(t.Context(), source.NewAnonymous("RETURN 1"))
 			if err != nil {
 				t.Fatalf("Compile() error = %v", err)
 			}
@@ -80,7 +81,7 @@ func TestCompileDebugUsesOptimizationNone(t *testing.T) {
 		}
 	})
 
-	plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 	if err != nil {
 		t.Fatalf("CompileDebug() error = %v", err)
 	}
@@ -174,7 +175,7 @@ func TestPerPlanOptimizationDoesNotChangeEngineDefaults(t *testing.T) {
 		for _, level := range []OptimizationLevel{OptimizationNone, OptimizationBasic, OptimizationFull} {
 			t.Run(level.String(), func(t *testing.T) {
 				t.Parallel()
-				plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1 + 2"), WithPlanOptimizationLevel(level))
+				plan, err := engine.Compile(t.Context(), source.NewAnonymous("RETURN 1 + 2"), WithPlanOptimizationLevel(level))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -191,7 +192,7 @@ func TestPerPlanOptimizationDoesNotChangeEngineDefaults(t *testing.T) {
 
 	})
 
-	plan, err := engine.Compile(t.Context(), NewAnonymousSource("RETURN 1 + 2"))
+	plan, err := engine.Compile(t.Context(), source.NewAnonymous("RETURN 1 + 2"))
 	if err != nil {
 		t.Fatal(err)
 	}

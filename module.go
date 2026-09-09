@@ -1,32 +1,32 @@
 package ferret
 
-import "github.com/MontFerret/ferret/v2/pkg/engine"
+import "github.com/MontFerret/ferret/v2/pkg/module"
 
 type (
 	// Module is an engine extension registered during Ferret initialization.
-	Module = engine.Module
+	Module = module.Module
 
 	// EngineInitHook runs during engine initialization.
-	EngineInitHook = engine.EngineInitHook
+	EngineInitHook = module.EngineInitHook
 
 	// EngineCloseHook runs during engine shutdown.
-	EngineCloseHook = engine.EngineCloseHook
+	EngineCloseHook = module.EngineCloseHook
 
 	// BeforeCompileHook runs before compilation starts.
-	BeforeCompileHook = engine.BeforeCompileHook
+	BeforeCompileHook = module.BeforeCompileHook
 
 	// AfterCompileHook runs after each compilation attempt.
-	AfterCompileHook = engine.AfterCompileHook
+	AfterCompileHook = module.AfterCompileHook
 
 	// PlanCloseHook runs when a compiled plan is closed.
-	PlanCloseHook = engine.PlanCloseHook
+	PlanCloseHook = module.PlanCloseHook
 
 	// BeforeRunHook runs before each session execution and may derive its context.
-	BeforeRunHook = engine.BeforeRunHook
+	BeforeRunHook = module.BeforeRunHook
 
 	// AfterRunHook runs after each session execution attempt.
-	AfterRunHook = engine.AfterRunHook
+	AfterRunHook = module.AfterRunHook
 
 	// SessionCloseHook runs when a session is closed.
-	SessionCloseHook = engine.SessionCloseHook
+	SessionCloseHook = module.SessionCloseHook
 )

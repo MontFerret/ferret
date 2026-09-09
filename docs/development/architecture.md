@@ -52,9 +52,12 @@ value behavior.
 ## Embedding layer
 
 The root `ferret` package is the preferred public embedding façade. It contains
-curated aliases, constants, and forwarding functions over `pkg/engine`, without
-substantial engine implementation. `pkg/engine` owns the native engine API and
-composes the compiler, bytecode loader, runtime host, VM pool, modules,
+curated aliases, constants, and forwarding functions over `pkg/engine` and the
+owning source, runtime, encoding, module, logging, diagnostics, artifact, and
+debugger packages, without substantial engine implementation. Shared vocabulary
+targets those owners directly, preserving type identity without an engine relay.
+`pkg/engine` owns the native engine API and composes the compiler, bytecode
+loader, runtime host, VM pool, modules,
 filesystem, network, encoders, hooks, and logging:
 
 ```text
@@ -73,9 +76,14 @@ The native engine owns composition and lifecycle policy, not the underlying
 semantics of runtime values, modules, codecs, filesystems, networks, or debugger
 inspection.
 
-The dependency direction is `ferret -> pkg/engine -> pkg/engine/internal/* ->
-lower-level pkg/*`. Engine internals are used only within the engine subtree and
-must not import the native engine or root façade. Lower-level production
+The façade fans out to `pkg/engine` for native engine semantics and directly to
+lower-level packages for shared vocabulary and convenience helpers. Engine
+implementation dependencies flow through `pkg/engine -> pkg/engine/internal/* ->
+lower-level pkg/*`, with direct lower-level imports where needed.
+`pkg/engine` exposes engine configuration, behavior, and semantic vocabulary; it
+does not republish lower-level APIs for the façade. Engine internals are used
+only within the engine subtree and must not import the native engine or root
+façade. Lower-level production
 packages must not import root `ferret`; compiler, runtime, VM, bytecode, and
 stdlib remain independent of both embedding packages. Integrations such as
 compatibility adapters and the SDK test harness may use `pkg/engine` because

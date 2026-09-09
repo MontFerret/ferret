@@ -1,19 +1,21 @@
 # Engine Boundary Audit
 
-Task 4 of PR #1024 audits the native engine extraction, curated root façade,
-and engine-owned internal packages. The audit preserves the root API, FQL
-semantics, error identity, and existing lifecycle ownership. No additional
-package extraction or abstraction is needed.
+Tasks 4 and 5 of PR #1024 audit the native engine extraction, curated root
+façade, and engine-owned internal packages, then remove redundant engine API
+relays. The root API, FQL semantics, error identity, and lifecycle ownership
+remain unchanged. Native callers use lower-level owners for shared vocabulary;
+no additional package extraction or abstraction is needed.
 
 ## Native exports
 
-All 119 package-level exports in `pkg/engine` correspond to existing root
-exports. The groups below account for each one. Native contracts remain public;
-the remaining aliases and forwarding helpers stay exported because the root
-façade uses them. No package-level native export exists solely to cross a Task 3
-internal package boundary. The explicit façade inventory remains in
-[`api_contract_test.go`](../../api_contract_test.go); future native exports must
-not automatically expand the root API.
+`pkg/engine` retains 55 package-level exports: seven types, three constants,
+and 45 functions. Each represents native engine configuration, behavior, or
+semantic vocabulary. Task 5 removes 35 aliases, 21 constants, and seven forwarding
+functions; the earlier diagnostics cleanup already removed `engine.FormatError`.
+The root retains all 119 exports. Independent root and native inventories in
+[`api_contract_test.go`](../../api_contract_test.go) prevent relay reintroduction
+and accidental façade growth. Future native exports must not automatically
+expand the root API.
 
 ### Native engine contracts: retained
 
@@ -47,13 +49,17 @@ The 13 methods declared on native public types are intentional API:
 * `Session`: `Run`, `Close`.
 * `OptimizationLevel`: `String`.
 
-Engine, Plan, and Session fields remain private. Aliased types retain their
-owning packages' method sets; the extraction introduces no extra methods on them.
+Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
+`SessionOption` remain aliases instantiated with engine-owned configuration
+types. `OptimizationLevel` remains a distinct engine type with validated
+conversion to compiler levels, rather than a compiler alias.
 
-### Façade vocabulary and helpers: retained
+### Shared vocabulary and helpers: direct owner references
 
-These names preserve existing façade signatures and type identity. Their
-semantics remain in the indicated lower-level owner.
+The names below remain at root and target their lower-level owners directly.
+Their engine equivalents are removed. Root types remain aliases, root constants
+retain their types and values, and convenience functions remain declared
+functions rather than assignable function variables.
 
 * Source: `Source`, `Position`, `Span`, `Range`, `Location`, `NewSource`,
   `NewAnonymousSource` forward to `pkg/source`.
@@ -68,8 +74,9 @@ semantics remain in the indicated lower-level owner.
 * Debugger types: `DebugSession`, `DebugReason`, `DebugValue`, `DebugVariable`,
   `DebugFrame`, `DebugBreakpoint`, `DebugBreakpointID`, `DebugBreakpointOptions`,
   `DebugBreakpointBindingMode`, `DebugValueReference`, `DebugEvent`,
-  `DebugStateError`, `DebugFormatOptions` alias `pkg/debugger`; `DebugLocation`
-  and `DebugSourceLocation` alias `pkg/source`.
+  `DebugStateError`, `DebugFormatOptions` alias `pkg/debugger`, with
+  `DebugSession = debugger.Session`; `DebugLocation = source.Range` and
+  `DebugSourceLocation = source.Location` target `pkg/source`.
 * Debugger constants: `DebugReasonEntry`, `DebugReasonBreakpoint`,
   `DebugReasonStep`, `DebugReasonPause`, `DebugReasonRuntimeError`,
   `DebugReasonCompleted`, `DebugReasonTerminated`,
@@ -80,9 +87,22 @@ semantics remain in the indicated lower-level owner.
   `UnmarshalProgram` forward to `pkg/bytecode/artifact`. The standalone marshal
   helpers are existing low-level compatibility APIs; ordinary embedding uses
   `Plan.Marshal` and `Engine.Load`.
-* Diagnostics: `FormatError` is a historical function variable initialized from
-  `pkg/diagnostics`. The root declared function forwards to that variable; its
-  mutability is retained for this task and deferred below.
+* Diagnostics: the declared root `FormatError` function already forwards
+  directly to `diagnostics.Format` and remains unchanged in Task 5.
+
+The source constructors call `source.New` and `source.NewAnonymous`; logging
+parsers call `logging.ParseLogLevel` and `logging.MustParseLogLevel`. Program
+helpers call `artifact.WithFormat`, `artifact.Marshal`, and `artifact.Unmarshal`.
+Native `Plan.Marshal` also calls `artifact.Marshal` directly, retaining its
+closed-plan guard.
+
+Native callers must replace removed `engine.*` names with the owners above;
+there are no compatibility aliases. For example, compilation takes
+`source.Source`, execution returns `*encoding.Output`, `Plan.NewDebugSession`
+returns `*debugger.Session`, and serialization accepts `artifact.Option`.
+Option constructors remain in `pkg/engine`, accepting `module` hook types,
+`runtime` values/parameters, `logging.LogLevel`, and `debugger.FormatOptions`
+directly. Root callers keep their existing names and assignability.
 
 ## Internal contracts and ownership
 
@@ -130,13 +150,14 @@ The remaining private code does not justify another extraction.
 
 | Consumer | Import and reason |
 | --- | --- |
-| Root façade implementation | `pkg/engine`, for aliases and forwarding |
-| Root API tests | root `ferret`; contract tests also compare native identities |
+| Root façade implementation | `pkg/engine` for engine semantics; lower-level owners for shared vocabulary and helpers |
+| Root API tests | root `ferret`; contract tests compare owner identities, direct targets, and separate export inventories |
 | README embedding example | root `ferret`, modeling downstream usage |
 | SDK registration example, authoring tests, external harness test | corrected to root `ferret`, exercising supported authoring/embedding usage |
-| `pkg/sdk/sdktest` implementation | retains `pkg/engine`, owning native executions and exposing its engine for lower-level assertions |
+| `pkg/sdk/sdktest` implementation | retains `pkg/engine`, owning native executions and exposing its engine for lower-level assertions; output uses `pkg/encoding` directly |
 | Compatibility adapters | retain `pkg/engine`, adapting native execution |
-| Test CLI and security suites | retain `pkg/engine`, exercising native implementation behavior |
+| Test CLI | root `ferret`, exercising the embedding façade |
+| Security suites | retain `pkg/engine`, exercising native implementation behavior |
 | Native engine/component tests | test their owning package directly |
 
 Production imports and test imports were classified separately. No lower-level
@@ -146,21 +167,19 @@ engine internals import neither their parent engine nor the root. Internal
 dependencies flow from session to host/resource, and from host to resource.
 No generic helper causes an upward dependency, so no abstraction needs moving.
 
-## Deferred to Task 5
+## Deliberately unchanged
 
-* Decide whether the native `FormatError` function variable should become a
-  declared function. Reassignment currently changes root formatting through its
-  forwarder; removing that behavior needs an explicit API decision.
-* Reconsider the advanced façade contracts only as a separate API task:
-  raw-bytecode marshal helpers, artifact-loader configuration, VM environment
-  options, and debugger vocabulary. Their existing root declarations are
-  protected here, not candidates for opportunistic removal.
+* Raw-bytecode root marshal helpers remain convenience APIs; artifact-loader
+  configuration, VM environment options, and debugger formatting options remain
+  native engine configuration. Removing vocabulary relays does not remove or
+  redesign these contracts.
 * Revisit host snapshot fields and combined hook registration/execution only if
   a concrete mutation or ownership problem appears. Their present shape is an
   intentional internal contract, not unfinished accessor work.
 
-Root alias/signature/constant/export tests remain unchanged. Existing native
-tests cover rollback, cancellation, filesystem isolation, output, and debugger
-closure; focused debugger-service tests cover cleanup order, errors, and sibling
-permit preservation. This cleanup changes no documented public behavior and
-requires no website documentation update.
+Root tests preserve the full alias/signature/constant/export inventory and check
+direct ownership using resolved import paths. Native tests and benchmarks use
+owner-qualified names while preserving rollback, cancellation, filesystem
+isolation, output, debugger closure, cleanup order, errors, and sibling permit
+coverage. Only native import spellings change; execution semantics do not.
+Existing website examples use the unchanged root API and require no update.

@@ -106,7 +106,7 @@ func TestEngineCompilationPreservesDiagnosticAndAdditionalFailures(t *testing.T)
 	t.Cleanup(func() { releaseHook(); _ = engine.Close() })
 	errorsCh := make(chan error, 1)
 	go func() {
-		_, err := engine.Compile(ctx, NewAnonymousSource("RETURN missing"))
+		_, err := engine.Compile(ctx, source.NewAnonymous("RETURN missing"))
 		errorsCh <- err
 	}()
 	select {
@@ -144,7 +144,7 @@ func TestEngineCompilationDoesNotRepeatCancellation(t *testing.T) {
 				compile = engine.CompileDebug
 			}
 
-			_, err := compile(ctx, NewAnonymousSource("RETURN 1"))
+			_, err := compile(ctx, source.NewAnonymous("RETURN 1"))
 			if err != context.Canceled {
 				t.Fatalf("cancellation was rewrapped or duplicated: %v", err)
 			}
@@ -172,7 +172,7 @@ func TestEngineRunPreservesOutputAndAllCleanupFailures(t *testing.T) {
 				}),
 			)
 			t.Cleanup(func() { _ = engine.Close() })
-			output, err := engine.Run(t.Context(), NewAnonymousSource(query), WithSessionParam("zero", 0))
+			output, err := engine.Run(t.Context(), source.NewAnonymous(query), WithSessionParam("zero", 0))
 			if !errors.Is(err, hookErr) || !errors.Is(err, sessionErr) || !errors.Is(err, planErr) {
 				t.Fatalf("lost cleanup cause: %v", err)
 			}

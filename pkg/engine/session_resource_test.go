@@ -14,6 +14,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -26,7 +27,7 @@ func TestSessionHostResourcesAreIsolated(t *testing.T) {
 					client := &recordingHTTPClient{}
 					engine := mustNewEngine(t, WithFSRoot(t.TempDir()), WithNetworkOptions(ferretnet.WithHTTPClient(client)), WithMaxActiveSessions(2))
 					t.Cleanup(func() { _ = engine.Close() })
-					plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+					plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -123,7 +124,7 @@ func TestSessionManagerCleanupIsConcurrentAndRetainsErrors(t *testing.T) {
 					return hookErr
 				}))
 				t.Cleanup(func() { _ = engine.Close() })
-				plan, err := engine.CompileDebug(t.Context(), NewAnonymousSource("RETURN 1"))
+				plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
 				if err != nil {
 					t.Fatal(err)
 				}
