@@ -210,8 +210,17 @@ order, joining validation errors before resource acquisition. The private
 session option target contains internal
 `session.Config`, which owns applied settings, defaults, and host-parameter
 conversion; native option constructors retain validation and ordering. Portable
-semantic data may be shared with the Universal API; runtime-specific option
-adaptation belongs at a future adapter boundary.
+semantic data may be shared with the Universal API; portable option translation
+belongs in `pkg/universal`, which produces Native options without changing their
+private targets.
+
+The [Universal adapter](universal.md) borrows its Native engine and implements
+the portable close contract separately. Runtime close rejects new calls and waits
+for admitted calls without canceling them. Adapter plan close cancels only
+pending constructor contexts, waits for construction to settle, then closes the
+Native plan. It never revokes published sessions. The host still owns descendant
+cleanup and must close the borrowed engine last. Synchronous close from an option
+or hook inside an admitted operation on that same adapter parent is unsupported.
 
 `WithPlanOptimizationLevel` on `Engine.Compile` selects native None, Basic, or
 Full for one compilation. Omitting it inherits the engine's optimization;
