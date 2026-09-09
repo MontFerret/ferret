@@ -171,11 +171,16 @@ remain in `pkg/engine`. Configuration failures retain their original cleanup
 paths; bootstrap owns subsequent construction rollback. Native shutdown and
 bootstrap rollback separately orchestrate hooks and the resource manager,
 preserving error aggregation without a cleanup callback dependency.
-`engine_helpers.go` remains for native shutdown and failures translating public
-optimization levels before bootstrap takes ownership.
+`engine.go` retains the public Engine API and pre-bootstrap optimization-level
+failure cleanup. Private compilation and plan construction live in
+`engine_compile.go`; `engine_close.go` owns native shutdown. Engine configuration
+and defaults live in `engine_config.go`, with public options grouped by core
+program/limit settings, runtime registration, I/O, and lifecycle hooks.
 
 Per-plan compiler selection, plan construction, session admission, and the final
-session cancellation check remain in `pkg/engine`. Successful construction
+session cancellation check remain in `pkg/engine`. Plan-specific session
+orchestration lives in `plan_session.go`; public session options retain their
+native configuration bridge. Successful construction
 transfers ownership before that check; cancellation closes the completed native
 or debugger session, while parent closure does not revoke its ownership.
 Partial construction rollback belongs to the internal acquisition owner and

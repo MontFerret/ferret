@@ -3,6 +3,7 @@ package ferret_test
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"reflect"
 	"strings"
 	"testing"
@@ -69,6 +70,68 @@ func TestPublicConstructorPreservesErrorIdentity(t *testing.T) {
 
 	if !errors.Is(err, hookErr) {
 		t.Fatalf("lost initialization error: %v", err)
+	}
+}
+
+func TestPublicEngineCloseErrorsAppearOnce(t *testing.T) {
+	for _, rollback := range []bool{false, true} {
+		t.Run(map[bool]string{false: "shutdown", true: "rollback"}[rollback], func(t *testing.T) {
+			hookErr := &fs.PathError{Op: "flush", Path: "hook", Err: errors.New("failed")}
+			initErr := errors.New("initialization failed")
+			closes := 0
+			eng, err := ferret.New(
+				ferret.WithEngineInitHook(func() error {
+					if rollback {
+						return initErr
+					}
+
+					return nil
+				}),
+				ferret.WithEngineCloseHook(func() error {
+					closes++
+
+					return hookErr
+				}),
+			)
+
+			wantError := "close hooks: flush hook: failed"
+
+			if rollback {
+				if eng != nil {
+					_ = eng.Close()
+
+					t.Fatal("failed constructor returned an engine")
+				}
+
+				if !errors.Is(err, initErr) {
+					t.Fatalf("lost initialization error: %v", err)
+				}
+
+				wantError = "init hooks: initialization failed\nclose engine: " + wantError
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				err = eng.Close()
+				if repeated := eng.Close(); repeated != err {
+					t.Fatalf("repeated close changed the error: %v", repeated)
+				}
+			}
+
+			var typed *fs.PathError
+			if !errors.Is(err, hookErr) || !errors.As(err, &typed) || typed != hookErr {
+				t.Fatalf("lost hook error identity: %v", err)
+			}
+
+			if err.Error() != wantError {
+				t.Errorf("cleanup error = %q, want %q", err.Error(), wantError)
+			}
+
+			if closes != 1 {
+				t.Fatalf("close hook calls = %d, want one", closes)
+			}
+		})
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -17,7 +16,6 @@ import (
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Engine compiles queries into reusable plans and runs them against the configured host.
@@ -51,7 +49,12 @@ func New(setters ...Option) (*Engine, error) {
 
 	compilerLevel, err := opts.optimizationLevel.compilerLevel()
 	if err != nil {
-		return nil, closeEngineOnError(fmt.Errorf("compiler: %w", err), nil, opts.resources)
+		err = fmt.Errorf("compiler: %w", err)
+		if closeErr := opts.resources.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close engine: %w", closeErr))
+		}
+
+		return nil, err
 	}
 
 	state, err := bootstrap.Build(bootstrap.Config{
@@ -123,7 +126,6 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 // (for example, if execution produced output but an after-run hook or cleanup failed).
 func (e *Engine) Run(ctx context.Context, src source.Source, opts ...SessionOption) (output *encoding.Output, resultErr error) {
 	plan, err := e.Compile(ctx, src)
-
 	if err != nil {
 		return nil, err
 	}
@@ -157,97 +159,8 @@ func (e *Engine) Run(ctx context.Context, src source.Source, opts ...SessionOpti
 func (e *Engine) Close() error {
 	e.closeOnce.Do(func() {
 		e.closed.Store(true)
-		e.closeErr = closeEngine(e.hooks.EngineHooks, e.resources)
+		e.closeErr = e.close()
 	})
 
 	return e.closeErr
-}
-
-func (e *Engine) compile(ctx context.Context, src source.Source, debug bool, setters []PlanOption) (*Plan, error) {
-	if ctx == nil {
-		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
-	}
-
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
-	if e.closed.Load() {
-		return nil, runtime.Error(runtime.ErrInvalidOperation, "engine is closed")
-	}
-
-	level := e.optimizationLevel
-
-	if debug {
-		level = compiler.None
-	}
-
-	opts, err := newPlanConfig(level, debug, setters)
-	if err != nil {
-		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
-			err = errors.Join(err, ctxErr)
-		}
-
-		return nil, err
-	}
-
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
-	selected := e.compiler
-	if debug {
-		selected = e.debugCompiler
-	} else if opts.level != e.optimizationLevel {
-		selected, err = compiler.New(compiler.WithOptimizationLevel(opts.level))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := e.hooks.PlanHooks.RunBeforeCompile(ctx); err != nil {
-		err = fmt.Errorf("before compile hooks: %w", err)
-		if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
-			err = errors.Join(err, ctxErr)
-		}
-
-		return nil, err
-	}
-
-	var prog *bytecode.Program
-
-	err = ctx.Err()
-	if err == nil {
-		prog, err = selected.Compile(ctx, src)
-	}
-
-	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
-		err = errors.Join(err, ctxErr)
-	}
-
-	if hookErr := e.hooks.PlanHooks.RunAfterCompile(ctx, err); hookErr != nil {
-		err = errors.Join(err, fmt.Errorf("after compile hooks: %w", hookErr))
-	}
-
-	if ctxErr := ctx.Err(); ctxErr != nil && !errors.Is(err, ctxErr) {
-		err = errors.Join(err, ctxErr)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return e.newPlan(prog)
-}
-
-func (e *Engine) newPlan(prog *bytecode.Program) (*Plan, error) {
-	return &Plan{
-		prog:         prog,
-		closed:       make(chan struct{}),
-		host:         e.host,
-		hooks:        e.hooks.PlanHooks,
-		sessionHooks: e.hooks.SessionHooks,
-		limiter:      e.limiter,
-		pool:         vm.NewPoolWithLimits(prog, e.idleCap, e.totalCap),
-	}, nil
 }
