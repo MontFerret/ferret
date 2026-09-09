@@ -3,28 +3,28 @@ package ferret
 import "github.com/MontFerret/ferret/v2/pkg/source"
 
 type (
-	// Source represents the input data for a Ferret query.
+	// Source retains source text and its name for compilation and diagnostics.
 	Source = source.Source
 
-	// Position represents a specific point in a source file, defined by line and column numbers.
+	// Position identifies a one-based line and byte column in source text.
 	Position = source.Position
 
-	// Span represents a range of characters in a source file, defined by start and end positions.
+	// Span identifies a zero-based, half-open byte interval in source text.
 	Span = source.Span
 
-	// Location represents the location of a specific point in a source file, including the file name and position.
+	// Location identifies a position in a named source.
 	Location = source.Location
 
-	// Range represents a range of characters in a source file, including the location and span.
+	// Range identifies a range of positions in a named source.
 	Range = source.Range
 )
 
-// NewSource creates a new Source instance with the given name and content.
+// NewSource creates a named source for compilation and diagnostics.
 func NewSource(name, content string) Source {
 	return source.New(name, content)
 }
 
-// NewAnonymousSource creates a new anonymous Source instance with the given content.
+// NewAnonymousSource creates a source without a name.
 func NewAnonymousSource(content string) Source {
 	return source.NewAnonymous(content)
 }

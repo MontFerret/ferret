@@ -4,7 +4,8 @@ import (
 	"context"
 	"testing"
 
-	ferret "github.com/MontFerret/ferret/v2"
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	ferret "github.com/MontFerret/ferret/v2/pkg/engine"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -46,6 +47,6 @@ func (h *Harness) Run(
 	ctx context.Context,
 	query string,
 	options ...ferret.SessionOption,
-) (*ferret.Output, error) {
+) (*encoding.Output, error) {
 	return h.engine.Run(ctx, source.NewAnonymous(query), options...)
 }

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/v2"
+	ferret "github.com/MontFerret/ferret/v2/pkg/engine"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 	"github.com/MontFerret/ferret/v2/pkg/source"

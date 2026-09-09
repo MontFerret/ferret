@@ -1,0 +1,644 @@
+package engine
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+
+	apidebugger "github.com/MontFerret/api/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
+)
+
+func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	src := source.New("debug.fql", "LET x = 1\n\nVAR y = 2\ny = y + x\nRETURN y")
+	plan, err := engine.CompileDebug(context.Background(), src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "debug.fql", Position: source.Position{Line: 2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !breakpoint.Bound || breakpoint.Location.Line != 3 {
+		t.Fatalf("unexpected breakpoint: %#v", breakpoint)
+	}
+
+	event, err := session.Start(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonEntry || event.Location.Line != 1 {
+		t.Fatalf("unexpected entry event: %#v", event)
+	}
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 0 {
+		t.Fatalf("declaration must not be visible before execution: %#v", locals)
+	}
+
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonBreakpoint || event.Location.Line != 3 ||
+		len(event.HitBreakpointIDs) != 1 || event.HitBreakpointIDs[0] != breakpoint.ID {
+		t.Fatalf("unexpected breakpoint event: %#v", event)
+	}
+	locals, err = session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || locals[0].Name != "x" || locals[0].Value.Display != "1" {
+		t.Fatalf("unexpected locals: %#v", locals)
+	}
+
+	event, err = session.StepIn(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Location.Line != 4 {
+		t.Fatalf("unexpected StepIn location: %#v", event)
+	}
+	value, err := session.Evaluate(context.Background(), "x + y")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value.Display != "3" {
+		t.Fatalf("unexpected evaluated value: %#v", value)
+	}
+	if _, err := session.Evaluate(context.Background(), "LENGTH([1])"); err == nil {
+		t.Fatal("expected function call evaluation to be rejected")
+	}
+
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
+		t.Fatalf("unexpected completion event: %#v", event)
+	}
+	if _, err := session.Continue(context.Background()); err == nil || !errors.Is(err, &debugger.StateError{}) {
+		t.Fatalf("expected typed invalid-state error, got %v", err)
+	}
+}
+
+func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("same-line.fql", "LET x = 1 RETURN x"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "same-line.fql", Position: source.Position{Line: 1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !breakpoint.Bound {
+		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
+	}
+
+	if breakpoint.RequestedLocation.Column != 0 || breakpoint.FunctionID != apidebugger.NoFunction {
+		t.Fatalf("unexpected same-line breakpoint identity: %#v", breakpoint)
+	}
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonCompleted {
+		t.Fatalf("expected breakpoint to bind only the first same-line point, got %#v", event)
+	}
+}
+
+func TestDebugSessionBreakpointLifecyclePreservesIDs(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("breakpoints.fql", "RETURN 1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	first, err := session.SetBreakpoint(source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Bound {
+		t.Fatalf("expected unbound breakpoint: %#v", first)
+	}
+	if err := session.DeleteBreakpoint(first.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := session.SetBreakpoint(source.Location{SourceName: "breakpoints.fql", Position: source.Position{Line: 1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !second.Bound || second.ID <= first.ID {
+		t.Fatalf("unexpected replacement breakpoint: %#v after %#v", second, first)
+	}
+	if got := session.Breakpoints(); len(got) != 1 || got[0].ID != second.ID {
+		t.Fatalf("unexpected breakpoint snapshot: %#v", got)
+	}
+}
+
+func TestDebugSessionLocalsIncludeDeclaredBindParameters(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("params.fql", "RETURN @input"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(
+		context.Background(),
+		WithSessionParam("input", 4),
+		WithSessionParam("unrelated", 9),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || locals[0].Name != "@input" || !locals[0].Param || locals[0].Value.Display != "4" {
+		t.Fatalf("unexpected bind parameters: %#v", locals)
+	}
+	value, err := session.Evaluate(context.Background(), "@input + 1")
+	if err != nil || value.Display != "5" {
+		t.Fatalf("unexpected parameter evaluation: %#v, %v", value, err)
+	}
+}
+
+func TestDebugPlanRunsNormally(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("normal.fql", "LET x = 2\nRETURN x + 1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	output, err := session.Run(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(output.Content) != "3" {
+		t.Fatalf("unexpected output: %s", output.Content)
+	}
+}
+
+func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+	plan, err := engine.CompileDebug(context.Background(), source.New("object.fql", "LET obj = {b: 2, a: 1}\nRETURN obj"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if err := session.Pause(); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonPause || event.Location.Line != 2 {
+		t.Fatalf("unexpected pause event: %#v", event)
+	}
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || locals[0].Value.Display != `{"a": 1, "b": 2}` {
+		t.Fatalf("unexpected formatted object: %#v", locals)
+	}
+	value, err := session.Evaluate(context.Background(), "obj.a")
+	if err != nil || value.Display != "1" {
+		t.Fatalf("unexpected member evaluation: %#v, %v", value, err)
+	}
+}
+
+func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("error.fql", "LET x = 7\nRETURN x / 0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonRuntimeError || event.Error == nil {
+		t.Fatalf("expected runtime error pause, got %#v", event)
+	}
+	if _, ok := event.Error.(diagnostics.Formattable); !ok {
+		t.Fatalf("expected formattable runtime error, got %T", event.Error)
+	}
+	formatted := diagnostics.Format(event.Error)
+	if !strings.Contains(formatted, "error.fql:2") || !strings.Contains(formatted, "RETURN x / 0") {
+		t.Fatalf("expected formatted source diagnostic, got:\n%s", formatted)
+	}
+	locals, err := session.Locals()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locals) != 1 || locals[0].Name != "x" || locals[0].Value.Display != "7" {
+		t.Fatalf("unexpected post-error locals: %#v", locals)
+	}
+	event, err = session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonTerminated || event.Error == nil || !strings.Contains(event.Error.Error(), "division") {
+		t.Fatalf("unexpected termination: %#v", event)
+	}
+	if _, ok := event.Error.(diagnostics.Formattable); !ok {
+		t.Fatalf("expected formattable termination error, got %T", event.Error)
+	}
+}
+
+func TestDebugSessionRuntimeErrorJoinsAfterRunHookFailure(t *testing.T) {
+	afterErr := errors.New("after run failed")
+	engine, err := New(WithAfterRunHook(func(context.Context, error) error {
+		return afterErr
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("error.fql", "RETURN 1 / 0"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonRuntimeError || !errors.Is(event.Error, afterErr) {
+		t.Fatalf("expected joined after-run hook failure, got %#v", event)
+	}
+	var runtimeErr diagnostics.FormattableError
+	if !errors.As(event.Error, &runtimeErr) {
+		t.Fatalf("expected joined runtime diagnostic, got %T", event.Error)
+	}
+}
+
+func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
+	type contextKey string
+
+	const key contextKey = "debug-session-value"
+	engine, err := New(
+		WithBeforeRunHook(func(ctx context.Context) (context.Context, error) {
+			return context.WithValue(ctx, key, "hook-value"), nil
+		}),
+		WithFunctionsRegistrar(func(ns runtime.Namespace) {
+			ns.Function().A0().Add("DEBUG_CONTEXT_VALUE", func(ctx context.Context) (runtime.Value, error) {
+				value, _ := ctx.Value(key).(string)
+				return runtime.NewString(value), nil
+			})
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(
+		context.Background(),
+		source.New("context.fql", "LET x = 1\nRETURN DEBUG_CONTEXT_VALUE()"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != `"hook-value"` {
+		t.Fatalf("unexpected completion event: %#v", event)
+	}
+}
+
+func TestPlanNewDebugSessionRequiresDebugCompilation(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+	plan, err := engine.Compile(context.Background(), source.NewAnonymous("RETURN 1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	if _, err := plan.NewDebugSession(context.Background()); err == nil {
+		t.Fatal("expected non-debug plan to be rejected")
+	}
+}
+
+func TestDebugSessionStepInAndStepOut(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	query := `FUNC add(a) {
+  LET b = a + 1
+  RETURN b
+}
+FUNC outer(a) {
+  LET b = add(a)
+  RETURN b
+}
+LET x = outer(2)
+RETURN x`
+	plan, err := engine.CompileDebug(context.Background(), source.New("udf.fql", query))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	commands := []struct {
+		resume func(context.Context) (*debugger.Event, error)
+		name   string
+		reason debugger.Reason
+		frames []string
+		line   int
+	}{
+		{session.Start, "Start", debugger.ReasonEntry, []string{"<main>"}, 9},
+		{session.StepIn, "StepIn to outer", debugger.ReasonStep, []string{"outer", "<main>"}, 6},
+		{session.StepIn, "StepIn to add", debugger.ReasonStep, []string{"add", "outer", "<main>"}, 2},
+		{session.StepOut, "StepOut to outer", debugger.ReasonStep, []string{"outer", "<main>"}, 7},
+		{session.StepOut, "StepOut to main", debugger.ReasonStep, []string{"<main>"}, 10},
+	}
+
+	for _, command := range commands {
+		event, err := command.resume(context.Background())
+		if err != nil {
+			t.Fatalf("%s: %v", command.name, err)
+		}
+
+		if event.Reason != command.reason || event.Location.Line != command.line || event.Depth != len(command.frames)-1 {
+			t.Fatalf("%s: unexpected stop: %#v", command.name, event)
+		}
+
+		frames, err := session.Frames()
+		if err != nil {
+			t.Fatalf("%s: %v", command.name, err)
+		}
+
+		if len(frames) != len(command.frames) {
+			t.Fatalf("%s: unexpected frames: %#v", command.name, frames)
+		}
+
+		for i, name := range command.frames {
+			if frames[i].Name != name {
+				t.Fatalf("%s: frame %d: got %q, want %q", command.name, i, frames[i].Name, name)
+			}
+		}
+
+		if frames[0].Location.Line != command.line {
+			t.Fatalf("%s: unexpected current frame location: %#v", command.name, frames[0])
+		}
+	}
+}
+
+func TestDebugSessionStepOverCallAndStepOutFromMainCompletes(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	query := `FUNC add(a) {
+  RETURN a + 1
+}
+LET x = add(2)
+RETURN x`
+	plan, err := engine.CompileDebug(context.Background(), source.New("step-over.fql", query))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	event, err := session.Start(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Reason != debugger.ReasonEntry || event.Location.Line != 4 || event.Depth != 0 {
+		t.Fatalf("unexpected entry: %#v", event)
+	}
+
+	event, err = session.StepOver(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Reason != debugger.ReasonStep || event.Location.Line != 5 || event.Depth != 0 {
+		t.Fatalf("expected StepOver to skip UDF, got %#v", event)
+	}
+
+	frames, err := session.Frames()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(frames) != 1 || frames[0].Name != "<main>" || frames[0].Location.Line != 5 {
+		t.Fatalf("unexpected frames after StepOver: %#v", frames)
+	}
+
+	event, err = session.StepOut(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
+		t.Fatalf("expected StepOut from main to complete, got %#v", event)
+	}
+}
+
+func TestDebugSessionStopsOnRepeatedLoopLocation(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+	plan, err := engine.CompileDebug(context.Background(), source.New("loop.fql", "FOR i IN 1..2\n  RETURN i"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+	session, err := plan.NewDebugSession(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	first, err := session.StepIn(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := session.StepIn(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Location.Line != 2 || second.Location.Line != 2 {
+		t.Fatalf("expected repeated loop stops, got %#v then %#v", first, second)
+	}
+}
+
+func TestDebugCompletionPreservesOutputOnAfterHookFailure(t *testing.T) {
+	failure := errors.New("after hook")
+	engine := mustNewEngine(t, WithAfterRunHook(func(context.Context, error) error { return failure }))
+	t.Cleanup(func() { _ = engine.Close() })
+
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 42"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = plan.Close() })
+
+	session, err := plan.NewDebugSession(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = session.Close() })
+
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	event, err := session.Continue(t.Context())
+	if !errors.Is(err, failure) || event == nil || event.Output == nil || string(event.Output.Content) != "42" || event.Reason != debugger.ReasonCompleted {
+		t.Fatalf("event=%+v err=%v", event, err)
+	}
+}

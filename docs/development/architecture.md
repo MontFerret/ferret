@@ -51,9 +51,14 @@ value behavior.
 
 ## Embedding layer
 
-The root `ferret` package composes the compiler, bytecode loader, runtime host,
-VM pool, modules, filesystem, network, encoders, hooks, and logging into the
-embedding API:
+The root `ferret` package is the preferred public embedding façade. It contains
+curated aliases, constants, and forwarding functions over `pkg/engine` and the
+owning source, runtime, encoding, module, logging, diagnostics, artifact, and
+debugger packages, without substantial engine implementation. Shared vocabulary
+targets those owners directly, preserving type identity without an engine relay.
+`pkg/engine` owns the native engine API and composes the compiler, bytecode
+loader, runtime host, VM pool, modules,
+filesystem, network, encoders, hooks, and logging:
 
 ```text
 Engine -> Plan -> Session -> Output
@@ -67,17 +72,42 @@ settings. A `DebugSession` uses retained VM state and debugger metadata. These
 objects have explicit cleanup responsibilities described in
 [Runtime and lifecycle](runtime.md) and [Debugger architecture](debugger.md).
 
-The root package owns composition and lifecycle policy, not the underlying
+The native engine owns composition and lifecycle policy, not the underlying
 semantics of runtime values, modules, codecs, filesystems, networks, or debugger
 inspection.
 
-`internal/resource` owns lifecycle metadata for host services within one owner.
+The façade fans out to `pkg/engine` for native engine semantics and directly to
+lower-level packages for shared vocabulary and convenience helpers. Engine
+implementation dependencies flow through `pkg/engine -> pkg/engine/internal/* ->
+lower-level pkg/*`, with direct lower-level imports where needed.
+`pkg/engine` exposes engine configuration, behavior, and semantic vocabulary; it
+does not republish lower-level APIs for the façade. Engine internals are used
+only within the engine subtree and must not import the native engine or root
+façade. Lower-level production
+packages must not import root `ferret`; compiler, runtime, VM, bytecode, and
+stdlib remain independent of both embedding packages. Integrations such as
+compatibility adapters and the SDK test harness may use `pkg/engine` because
+they construct and own native executions. Public API tests and downstream-style
+examples use root `ferret`.
+
+`pkg/engine/internal/host` builds module bootstrap services and snapshots host
+registries and lifecycle hooks. `pkg/engine/internal/session` supplies session
+admission, permit release, debugger services, and result materialization.
+The native engine retains option application, construction rollback, ownership
+transfer, and Engine/Plan/Session orchestration.
+
+`pkg/engine/internal/resource` owns lifecycle metadata for host services within
+one owner.
 The configuration creates one manager and transfers it to the completed Engine;
 session construction creates a separate manager for each ordinary or debug
 session. Typed filesystem and network references stay with their consumers.
 Owned registrations carry cleanup callbacks, while borrowed registrations record
 ownership outside the scope. The manager provides no service lookup or dependency
 resolution.
+
+See the [engine boundary audit](engine-boundary-audit.md) for the retained export
+inventory, internal API rationale, consumer classifications, and deferred API
+questions.
 
 ## Package ownership
 
@@ -126,8 +156,8 @@ See [Modules, SDK, and standard library](modules.md) and
 | Execution or cleanup | `pkg/vm` | runtime ownership, embedding lifecycle, benchmarks |
 | Output materialization | `pkg/encoding` | VM results and runtime resource ownership |
 | Source formatting | `pkg/formatter` | parser grammar and formatter fixtures |
-| File or network policy | `pkg/fs` or `pkg/net` | root host/session context and stdlib adapters |
-| Embedding API | root package | compiler, modules, VM, runtime, and integration tests |
+| File or network policy | `pkg/fs` or `pkg/net` | native engine host/session context and stdlib adapters |
+| Embedding API | root façade and `pkg/engine` | modules, VM, runtime, and public API tests |
 
 Start with the primary owner even when a behavior has several consumers. Shared
 semantics should flow outward from their owner rather than being recreated at
@@ -170,8 +200,8 @@ state, cleanup, encoding/materialization, and debugger integration are
 implementation-sensitive and should be verified in current code before being
 changed.
 
-The root package and `pkg/module`, `pkg/runtime`, and `pkg/sdk` are public,
-API-sensitive surfaces. `pkg/bytecode` artifacts also carry explicit versions
+The root package and `pkg/engine`, `pkg/module`, `pkg/runtime`, and `pkg/sdk` are
+public, API-sensitive surfaces. `pkg/bytecode` artifacts also carry explicit versions
 and validation. Do not infer compatibility promises from obsolete design notes
 or the v1 branch.
 

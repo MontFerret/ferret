@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/api"
-	ferret "github.com/MontFerret/ferret/v2"
+	"github.com/MontFerret/ferret/v2"
 )
 
 func TestNativeOptionsAreDistinctFromUniversalOptions(t *testing.T) {

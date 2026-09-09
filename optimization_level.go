@@ -1,46 +1,17 @@
 package ferret
 
-import (
-	"fmt"
-
-	"github.com/MontFerret/ferret/v2/pkg/compiler"
-)
+import "github.com/MontFerret/ferret/v2/pkg/engine"
 
 // OptimizationLevel controls the optimizer pipeline used during normal query compilation.
-type OptimizationLevel int
+type OptimizationLevel = engine.OptimizationLevel
 
 const (
 	// OptimizationNone disables optimizer passes.
-	OptimizationNone OptimizationLevel = iota
+	OptimizationNone OptimizationLevel = engine.OptimizationNone
+
 	// OptimizationBasic enables the reduced pipeline without register coalescing.
-	OptimizationBasic
+	OptimizationBasic OptimizationLevel = engine.OptimizationBasic
+
 	// OptimizationFull is the default and enables the complete supported pipeline.
-	OptimizationFull
+	OptimizationFull OptimizationLevel = engine.OptimizationFull
 )
-
-// String returns the semantic name of the optimization level.
-func (l OptimizationLevel) String() string {
-	switch l {
-	case OptimizationNone:
-		return "none"
-	case OptimizationBasic:
-		return "basic"
-	case OptimizationFull:
-		return "full"
-	default:
-		return "unknown"
-	}
-}
-
-func (l OptimizationLevel) compilerLevel() (compiler.OptimizationLevel, error) {
-	switch l {
-	case OptimizationNone:
-		return compiler.None, nil
-	case OptimizationBasic:
-		return compiler.Basic, nil
-	case OptimizationFull:
-		return compiler.Full, nil
-	default:
-		return 0, fmt.Errorf("unsupported optimization level %d", l)
-	}
-}

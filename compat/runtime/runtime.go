@@ -6,7 +6,7 @@ import (
 	"context"
 	"io"
 
-	ferret "github.com/MontFerret/ferret/v2"
+	ferret "github.com/MontFerret/ferret/v2/pkg/engine"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"

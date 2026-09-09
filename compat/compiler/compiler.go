@@ -6,9 +6,9 @@ import (
 	"context"
 	"sync"
 
-	ferret "github.com/MontFerret/ferret/v2"
 	compatruntime "github.com/MontFerret/ferret/v2/compat/runtime"
 	"github.com/MontFerret/ferret/v2/compat/runtime/core"
+	ferret "github.com/MontFerret/ferret/v2/pkg/engine"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
