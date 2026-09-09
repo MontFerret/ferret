@@ -21,9 +21,8 @@ func rollback(err error, hooks *host.EngineHooks, resources *resource.Manager) e
 
 	resourceErr := resources.Close()
 
-	// Keep the native shutdown error shape, including both hook error entries.
 	if hookErr != nil {
-		hookErr = errors.Join(hookErr, fmt.Errorf("close hooks: %w", hookErr))
+		hookErr = fmt.Errorf("close hooks: %w", hookErr)
 	}
 
 	closeErr := errors.Join(hookErr, resourceErr)

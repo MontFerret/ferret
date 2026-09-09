@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"errors"
+	"io/fs"
 	"slices"
 	"testing"
 
@@ -92,10 +93,11 @@ func TestBuildRollbackPreservesErrorsAndCleanupOrder(t *testing.T) {
 		t.Run(map[bool]string{false: "successful cleanup", true: "failing cleanup"}[failingCleanup], func(t *testing.T) {
 			config := newTestConfig(t)
 			registerErr := errors.New("registration failed")
+			hookFailure := &fs.PathError{Op: "flush", Path: "hook", Err: errors.New("failed")}
 			var hookErr, firstErr, secondErr error
 
 			if failingCleanup {
-				hookErr = errors.New("hook failed")
+				hookErr = hookFailure
 				firstErr = errors.New("first failed")
 				secondErr = errors.New("second failed")
 			}
@@ -143,15 +145,39 @@ func TestBuildRollbackPreservesErrorsAndCleanupOrder(t *testing.T) {
 			}
 
 			if failingCleanup {
-				for _, cause := range []error{hookErr, firstErr, secondErr} {
-					if !errors.Is(err, cause) {
-						t.Fatalf("lost cleanup cause %v: %v", cause, err)
+				counts := make(map[error]int)
+				pending := []error{err}
+				for len(pending) > 0 {
+					current := pending[len(pending)-1]
+					pending = pending[:len(pending)-1]
+					counts[current]++
+
+					switch wrapped := current.(type) {
+					case interface{ Unwrap() []error }:
+						pending = append(pending, wrapped.Unwrap()...)
+					case interface{ Unwrap() error }:
+						pending = append(pending, wrapped.Unwrap())
 					}
 				}
 
-				const wantError = "registration failed\nclose engine: hook failed\nclose hooks: hook failed\nclose second: second failed\nclose first: first failed"
+				for _, cause := range []error{registerErr, hookErr, firstErr, secondErr} {
+					if !errors.Is(err, cause) {
+						t.Fatalf("lost cleanup cause %v: %v", cause, err)
+					}
+
+					if counts[cause] != 1 {
+						t.Errorf("rollback cause %v occurs %d times, want once", cause, counts[cause])
+					}
+				}
+
+				var typed *fs.PathError
+				if !errors.As(err, &typed) || typed != hookFailure {
+					t.Fatalf("lost typed hook error: %v", err)
+				}
+
+				const wantError = "registration failed\nclose engine: close hooks: flush hook: failed\nclose second: second failed\nclose first: first failed"
 				if err.Error() != wantError {
-					t.Fatalf("rollback error = %q, want %q", err.Error(), wantError)
+					t.Errorf("rollback error = %q, want %q", err.Error(), wantError)
 				}
 			} else if err != registerErr {
 				t.Fatalf("successful cleanup wrapped the registration error: %v", err)

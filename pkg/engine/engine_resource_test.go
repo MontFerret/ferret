@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"io/fs"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -118,20 +119,32 @@ func TestNewRollsBackResourcesAtEveryConstructionStage(t *testing.T) {
 }
 
 func TestEngineResourceCleanupIsOnceOnly(t *testing.T) {
-	for _, failing := range []bool{false, true} {
-		t.Run(map[bool]string{false: "success", true: "cleanup errors"}[failing], func(t *testing.T) {
+	hookFailure := &fs.PathError{Op: "flush", Path: "hook", Err: errors.New("failed")}
+	filesystemFailure := errors.New("filesystem failed")
+
+	for _, tc := range []struct {
+		hookErr       error
+		filesystemErr error
+		name          string
+		wantError     string
+	}{
+		{name: "success"},
+		{name: "hook error", hookErr: hookFailure, wantError: "close hooks: flush hook: failed"},
+		{name: "resource error", filesystemErr: filesystemFailure, wantError: "close filesystem: filesystem failed"},
+		{
+			name:          "combined errors",
+			hookErr:       hookFailure,
+			filesystemErr: filesystemFailure,
+			wantError:     "close hooks: flush hook: failed\nclose filesystem: filesystem failed",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			filesystem, err := ferretfs.New(ferretfs.WithRoot(t.TempDir()))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			var hookErr, filesystemErr error
-
-			if failing {
-				hookErr, filesystemErr = errors.New("hook failed"), errors.New("filesystem failed")
-			}
-
-			replacement := &failingCloseFileSystem{FileSystem: filesystem, closeErr: filesystemErr}
+			replacement := &failingCloseFileSystem{FileSystem: filesystem, closeErr: tc.filesystemErr}
 			client := &recordingHTTPClient{}
 			var hooks atomic.Int32
 
@@ -148,7 +161,7 @@ func TestEngineResourceCleanupIsOnceOnly(t *testing.T) {
 						t.Error("network closed before hook")
 					}
 
-					return hookErr
+					return tc.hookErr
 				}),
 			)
 			if err := engine.resources.Own(resource.FileSystem, replacement.Close); err != nil {
@@ -166,12 +179,49 @@ func TestEngineResourceCleanupIsOnceOnly(t *testing.T) {
 			wg.Wait()
 
 			for _, err := range results {
-				if !errors.Is(err, hookErr) || !errors.Is(err, filesystemErr) {
-					t.Fatalf("lost cleanup cause: %v", err)
-				}
-
 				if err != results[0] {
 					t.Fatalf("concurrent close did not retain the same result: %v", err)
+				}
+			}
+
+			closeErr := results[0]
+			if (closeErr == nil) != (tc.wantError == "") {
+				t.Fatalf("cleanup error = %v, want %q", closeErr, tc.wantError)
+			}
+
+			if closeErr != nil && closeErr.Error() != tc.wantError {
+				t.Errorf("cleanup error = %q, want %q", closeErr.Error(), tc.wantError)
+			}
+
+			if tc.hookErr != nil {
+				var typed *fs.PathError
+				if !errors.As(results[0], &typed) || typed != hookFailure {
+					t.Fatalf("lost typed hook error: %v", results[0])
+				}
+			}
+
+			counts := make(map[error]int)
+			pending := []error{results[0]}
+			for len(pending) > 0 {
+				current := pending[len(pending)-1]
+				pending = pending[:len(pending)-1]
+				counts[current]++
+
+				switch wrapped := current.(type) {
+				case interface{ Unwrap() []error }:
+					pending = append(pending, wrapped.Unwrap()...)
+				case interface{ Unwrap() error }:
+					pending = append(pending, wrapped.Unwrap())
+				}
+			}
+
+			for _, cause := range []error{tc.hookErr, tc.filesystemErr} {
+				if cause != nil && !errors.Is(closeErr, cause) {
+					t.Fatalf("lost cleanup cause %v: %v", cause, closeErr)
+				}
+
+				if cause != nil && counts[cause] != 1 {
+					t.Errorf("cleanup cause %v occurs %d times, want once", cause, counts[cause])
 				}
 			}
 

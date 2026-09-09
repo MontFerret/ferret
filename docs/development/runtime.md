@@ -128,7 +128,11 @@ Consequently, default construction closes the network before the filesystem;
 a network created by an option is acquired earlier and closes after the
 filesystem. Bootstrap rollback and native Engine shutdown keep separate
 orchestration with the same cleanup ordering and error aggregation. Duplicate
-Engine closure retains the completed cleanup result.
+Engine closure retains the completed cleanup result. Both shutdown and bootstrap
+rollback wrap the close-hook aggregate once with `close hooks:` before joining
+resource failures; they do not also insert the unwrapped hook aggregate as a
+second cause. All original causes remain available through `errors.Is` and
+`errors.As`.
 
 Each ordinary or debug session has a separate host-resource manager, created
 after acquiring its limiter permit. It explicitly borrows the Engine filesystem
