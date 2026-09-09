@@ -10,7 +10,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/jarcoal/httpmock v1.4.2
 	github.com/rs/zerolog v1.35.1
-	github.com/smarty/assertions v1.15.0
+	github.com/smarty/assertions v1.16.0
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/ziflex/go-options v1.3.1
