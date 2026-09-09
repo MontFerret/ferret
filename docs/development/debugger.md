@@ -34,11 +34,12 @@ source-level policy into the dispatch loop.
   presentation limits;
 * running embedding lifecycle services and materializing final output.
 
-`pkg/engine` wires a plan's VM, host services, hooks, source, and output
-configuration into `pkg/debugger.Session`. Its internal session package supplies
-the native debugger services. Root `ferret` aliases the supported debugger types
-through the curated embedding API; source-level debugger policy stays in
-`pkg/debugger`.
+`pkg/engine` validates admission, debug metadata, and native session options.
+Its internal session constructor assembles a dedicated VM, host services, hooks,
+source, and output configuration into `pkg/debugger.Session`, using the same
+acquisition owner as ordinary execution. Root `ferret` aliases the supported
+debugger types through the curated embedding API; source-level debugger policy
+stays in `pkg/debugger`.
 
 ## Session state and concurrency
 
@@ -91,9 +92,10 @@ if configured. Service closure runs close hooks, closes owned host resources,
 and releases the limiter permit. Retained VM execution remains owned and closed
 by the debugger session rather than by this manager. Native debug services bind
 the concrete limiter and resource manager through a constructor and keep them
-private. They never receive a pooled VM or a VM-return callback. The session
-builder retains rollback until construction succeeds; the debugger serializes
-service use and invokes service closure once.
+private. They never receive an ordinary `session.Execution`, pooled VM, or
+VM-return callback. The internal acquisition owner retains rollback until
+construction succeeds; the debugger serializes service use and invokes service
+closure once.
 
 When all before-run hooks succeed but context validation prevents VM entry,
 `Start` settles that attempt's after-run hooks immediately. The session remains

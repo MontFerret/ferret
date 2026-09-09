@@ -78,7 +78,11 @@ Package tests live beside their code. Native embedding lifecycle and composition
 tests live in `pkg/engine`; component tests live in `pkg/engine/internal/bootstrap`,
 `pkg/engine/internal/host`, `pkg/engine/internal/resource`, and
 `pkg/engine/internal/session`. Bootstrap tests cover construction ownership
-transfer, rollback ordering and errors, and initialization hook snapshots. These
+transfer, rollback ordering and errors, and initialization hook snapshots. Session
+component tests cover acquisition failure and panic rollback, transfer to ordinary
+execution or debugger services, exact permit/VM release, concurrent cleanup,
+and materialization error separation. Native tests retain admission, cancellation,
+option, hook, and output contracts without accessing execution internals. These
 packages participate in the existing `pkg/...` unit/race, coverage, static
 analysis, and formatting targets. Root tests guard the curated façade's exported
 declarations, type aliases, function signatures, constants, and public embedding behavior.

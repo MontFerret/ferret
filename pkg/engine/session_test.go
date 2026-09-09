@@ -240,25 +240,23 @@ func TestSessionCloseIsIdempotentAndReturnsSameError(t *testing.T) {
 	}
 }
 
-func TestSessionCloseReturnsBorrowedVMToPool(t *testing.T) {
-	t.Parallel()
+func TestSessionCloseRejectsRunsBeforeCloseHooks(t *testing.T) {
+	var session *Session
+	hooks := 0
+	engine := mustNewEngine(t, WithSessionCloseHook(func() error {
+		hooks++
+		output, err := session.Run(t.Context())
+		if output != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Errorf("close hook observed an open session: output=%v error=%v", output, err)
+		}
 
-	eng := mustNewEngine(t, WithMaxIdleVMsPerPlan(1))
-	plan := mustCompilePlan(t, eng, coverageValidQuery)
-	first := mustNewSession(t, plan)
-	firstVM := first.vm
+		return nil
+	}))
+	plan := mustCompilePlan(t, engine, coverageValidQuery)
+	session = mustNewSession(t, plan)
 
-	if err := first.Close(); err != nil {
-		t.Fatalf("expected first session close to succeed, got: %v", err)
-	}
-
-	second := mustNewSession(t, plan)
-	defer func() {
-		_ = second.Close()
-	}()
-
-	if second.vm != firstVM {
-		t.Fatal("expected second session to reuse the pooled VM from the first session")
+	if err := session.Close(); err != nil || hooks != 1 {
+		t.Fatalf("close=%v hooks=%d", err, hooks)
 	}
 }
 
@@ -282,7 +280,6 @@ func TestSessionCloseIsConcurrentSafe(t *testing.T) {
 	}()
 
 	session := mustNewSession(t, plan)
-	firstVM := session.vm
 
 	const callers = 8
 
@@ -331,10 +328,6 @@ func TestSessionCloseIsConcurrentSafe(t *testing.T) {
 	defer func() {
 		_ = nextSession.Close()
 	}()
-
-	if nextSession.vm != firstVM {
-		t.Fatal("expected concurrent close to return the borrowed VM to the pool once")
-	}
 }
 
 func TestSessionCloseAfterPlanCloseReleasesLimiter(t *testing.T) {

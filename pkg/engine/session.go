@@ -4,22 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"sync/atomic"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
-	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
-	"github.com/MontFerret/ferret/v2/pkg/fs"
-	"github.com/MontFerret/ferret/v2/pkg/logging"
-	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Session represents the execution of a compiled Ferret program.
-// It holds the state of the execution, including the virtual machine, environment, and encoding registry.
+// It owns native run admission and hooks, with operational state held by its execution.
 // A Session is created from a Plan and can be run to obtain results.
 //
 // Session is not safe for concurrent use by multiple goroutines, except that
@@ -30,19 +25,9 @@ import (
 // Helper APIs such as Engine.Run may take ownership of the Session and close it
 // after a single execution, in which case the caller must not attempt to reuse it.
 type Session struct {
-	logger            logging.Logger
-	closeErr          error
-	network           ferretnet.Network
-	hooks             *host.SessionHooks
-	fs                fs.FileSystem
-	env               *vm.Environment
-	encoding          *encoding.Registry
-	vm                *vm.VM
-	release           enginesession.PermitRelease
-	resources         *resource.Manager
-	outputContentType string
-	closeOnce         sync.Once
-	closed            atomic.Bool
+	execution *enginesession.Execution
+	hooks     *host.SessionHooks
+	closed    atomic.Bool
 }
 
 // Run executes the session with the provided context and returns encoded output.
@@ -78,7 +63,7 @@ func (s *Session) Run(c context.Context) (*encoding.Output, error) {
 	var out *vm.Result
 
 	if err == nil {
-		out, err = s.vm.Run(s.extendContext(ctx), s.env)
+		out, err = s.execution.Run(ctx)
 	}
 
 	// Successful before-run hooks must be paired even when context validation
@@ -96,8 +81,7 @@ func (s *Session) Run(c context.Context) (*encoding.Output, error) {
 		return nil, err
 	}
 
-	output, outputErr := enginesession.Materialize(s.encoding, s.outputContentType, out)
-	closeErr := out.Close()
+	output, outputErr, closeErr := s.execution.MaterializeAndClose(out)
 
 	if outputErr != nil {
 		return nil, errors.Join(hookErr, outputErr, closeErr)
@@ -110,49 +94,15 @@ func (s *Session) Run(c context.Context) (*encoding.Output, error) {
 	return output, closeErr
 }
 
-// Close releases the session's borrowed VM, runs close hooks, and closes any
-// filesystem created specifically for the session.
+// Close rejects further runs, runs close hooks, closes session-owned host
+// resources, and returns the session permit and borrowed VM.
 // It is idempotent and safe to call multiple times, including concurrently.
 func (s *Session) Close() error {
 	if s == nil {
 		return nil
 	}
 
-	s.closeOnce.Do(func() {
-		s.closed.Store(true)
+	s.closed.Store(true)
 
-		instance := s.vm
-		release := s.release
-		resources := s.resources
-
-		s.vm = nil
-		s.release = nil
-		s.fs = nil
-		s.resources = nil
-
-		if hookErr := s.hooks.RunClose(); hookErr != nil {
-			s.closeErr = fmt.Errorf("close hooks: %w", hookErr)
-		}
-
-		if closeErr := resources.Close(); closeErr != nil {
-			s.closeErr = errors.Join(s.closeErr, closeErr)
-		}
-
-		if release != nil && instance != nil {
-			// Returning the borrowed VM is best-effort cleanup and must still happen when
-			// close hooks fail so the pool/limiter do not leak capacity.
-			release(instance)
-		}
-	})
-
-	return s.closeErr
-}
-
-func (s *Session) extendContext(ctx context.Context) context.Context {
-	ctx = s.logger.WithContext(ctx)
-	ctx = encoding.WithRegistry(ctx, s.encoding)
-	ctx = fs.WithFileSystem(ctx, s.fs)
-	ctx = ferretnet.WithNetwork(ctx, s.network)
-
-	return ctx
+	return s.execution.Close()
 }

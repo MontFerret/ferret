@@ -20,7 +20,7 @@ type SessionOption = gooptions.Option[sessionConfig]
 func WithDebugFormat(format debugger.FormatOptions) SessionOption {
 	return func(session *sessionConfig) error {
 		return gooptions.New(func(session *sessionConfig, format debugger.FormatOptions) {
-			session.debugFormat = format
+			session.config.DebugFormat = format
 		}).
 			Value(format).
 			Named("debug format").
@@ -49,7 +49,7 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 				continue
 			}
 
-			session.env = append(session.env, opt)
+			session.config.Environment = append(session.config.Environment, opt)
 		}
 
 		return nil
@@ -59,7 +59,7 @@ func WithEnvironmentOptions(opts ...vm.EnvironmentOption) SessionOption {
 // WithOutputContentType selects the output codec content type for session results.
 func WithOutputContentType(value string) SessionOption {
 	return gooptions.New(func(cfg *sessionConfig, value string) {
-		cfg.outputContentType = strings.TrimSpace(value)
+		cfg.config.OutputContentType = strings.TrimSpace(value)
 	}).
 		Value(value).
 		Named("output content type").
@@ -72,7 +72,7 @@ func WithOutputContentType(value string) SessionOption {
 // engine's read-only policy.
 func WithSessionFSRoot(value string) SessionOption {
 	return gooptions.New(func(o *sessionConfig, value string) {
-		o.fsRoot = strings.TrimSpace(value)
+		o.config.FSRoot = strings.TrimSpace(value)
 	}).
 		Value(value).
 		Named("fs root").
@@ -84,7 +84,7 @@ func WithSessionFSRoot(value string) SessionOption {
 // overriding existing keys while preserving any other previously defined parameters.
 func WithSessionParams(params map[string]any) SessionOption {
 	return func(opts *sessionConfig) error {
-		return opts.setParams(params)
+		return opts.config.SetParams(params)
 	}
 }
 
@@ -96,7 +96,7 @@ func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 			return nil
 		}
 
-		s.env = append(s.env, vm.WithParams(params))
+		s.config.Environment = append(s.config.Environment, vm.WithParams(params))
 
 		return nil
 	}
@@ -105,14 +105,14 @@ func WithSessionRuntimeParams(params runtime.Params) SessionOption {
 // WithSessionParam adds or overrides a single session parameter.
 func WithSessionParam(name string, value any) SessionOption {
 	return func(opts *sessionConfig) error {
-		return opts.setParam(name, value)
+		return opts.config.SetParam(name, value)
 	}
 }
 
 // WithSessionRuntimeParam adds or overrides a single session parameter using a pre-converted runtime.Value.
 func WithSessionRuntimeParam(name string, value runtime.Value) SessionOption {
 	return func(s *sessionConfig) error {
-		s.env = append(s.env, vm.WithParam(name, value))
+		s.config.Environment = append(s.config.Environment, vm.WithParam(name, value))
 
 		return nil
 	}
@@ -126,7 +126,7 @@ func WithSessionLog(writer io.Writer) SessionOption {
 			return fmt.Errorf("log writer cannot be nil")
 		}
 
-		opts.logger = append(opts.logger, logging.WithWriter(writer))
+		opts.config.Logger = append(opts.config.Logger, logging.WithWriter(writer))
 
 		return nil
 	}
@@ -140,7 +140,7 @@ func WithSessionLogLevel(lvl logging.LogLevel) SessionOption {
 			return fmt.Errorf("invalid log level: %v", lvl)
 		}
 
-		opts.logger = append(opts.logger, logging.WithLevel(lvl))
+		opts.config.Logger = append(opts.config.Logger, logging.WithLevel(lvl))
 
 		return nil
 	}
@@ -154,7 +154,7 @@ func WithSessionLogFields(fields map[string]any) SessionOption {
 			return nil
 		}
 
-		opts.logger = append(opts.logger, logging.WithFields(fields))
+		opts.config.Logger = append(opts.config.Logger, logging.WithFields(fields))
 
 		return nil
 	}

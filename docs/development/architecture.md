@@ -95,10 +95,15 @@ registration and host finalization, snapshots hooks, runs initialization, and
 creates the session limiter. It owns rollback until a successful build transfers
 its dependencies to the native Engine. `pkg/engine/internal/host` builds module
 bootstrap services and snapshots host registries and lifecycle hooks.
-`pkg/engine/internal/session` supplies session admission, permit release,
-debugger services, and result materialization. The native engine retains public
-configuration, option application, stdlib registration, optimization-level
-translation, final Engine assembly, and Engine/Plan/Session orchestration.
+`pkg/engine/internal/session` owns session preparation and rollback. Its
+`Execution` component owns an ordinary session's VM, environment, host-resource
+manager, permit, context services, materialization, and once-only cleanup.
+`engine.Session` remains the native domain type, retaining run admission, run
+hooks, and output/error decisions. Debug construction shares preparation but
+hands retained VM ownership to `pkg/debugger.Session`; `DebugServices` owns only
+host resources and its permit. The native engine retains public configuration,
+option application, stdlib registration, optimization-level translation, final
+Engine assembly, and Engine/Plan/Session orchestration.
 
 `pkg/engine/internal/resource` owns lifecycle metadata for host services within
 one owner.

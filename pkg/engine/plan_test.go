@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -223,49 +222,6 @@ func TestPlanNewDebugSessionMetadataRejectionDoesNotAcquireLimiter(t *testing.T)
 	session, err := plan.NewSession(ctx)
 	if err != nil {
 		t.Fatalf("expected debug metadata rejection not to consume a limiter permit, got: %v", err)
-	}
-	defer func() {
-		_ = session.Close()
-	}()
-}
-
-func TestNewPlanSessionReleasesLimiterOnBuilderPanic(t *testing.T) {
-	t.Parallel()
-
-	eng := mustNewEngine(t, WithMaxActiveSessions(1))
-	plan := mustCompilePlan(t, eng, coverageValidQuery)
-	var filesystem ferretfs.FileSystem
-
-	func() {
-		defer func() {
-			if recover() == nil {
-				t.Fatal("expected session builder panic")
-			}
-		}()
-
-		_, _ = newPlanSession(
-			plan,
-			context.Background(),
-			[]SessionOption{WithSessionFSRoot(t.TempDir())},
-			planSessionSetup{},
-			func(dependencies planSessionDependencies) (*Session, error) {
-				filesystem = dependencies.filesystem
-
-				panic("session builder failed")
-			},
-		)
-	}()
-
-	if _, err := filesystem.Stat("."); err == nil {
-		t.Fatal("builder panic left its filesystem open")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	session, err := plan.NewSession(ctx)
-	if err != nil {
-		t.Fatalf("expected builder panic to release limiter permit, got: %v", err)
 	}
 	defer func() {
 		_ = session.Close()

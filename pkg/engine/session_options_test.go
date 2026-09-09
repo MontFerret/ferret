@@ -27,7 +27,7 @@ func mustNewSessionConfigForTest(t *testing.T, setters ...SessionOption) *sessio
 func mustBuildEnvironmentForTest(t *testing.T, opts *sessionConfig) *vm.Environment {
 	t.Helper()
 
-	env, err := vm.NewEnvironment(opts.env)
+	env, err := vm.NewEnvironment(opts.config.Environment)
 	if err != nil {
 		t.Fatalf("failed to build environment: %v", err)
 	}
@@ -46,16 +46,16 @@ func TestSessionSimpleOptionsApplyValidValues(t *testing.T) {
 		WithSessionFSRoot("  /runtime \n"),
 	)
 
-	if opts.debugFormat != format {
-		t.Fatalf("debug format = %+v, want %+v", opts.debugFormat, format)
+	if opts.config.DebugFormat != format {
+		t.Fatalf("debug format = %+v, want %+v", opts.config.DebugFormat, format)
 	}
 
-	if opts.outputContentType != "application/custom" {
-		t.Fatalf("output content type = %q", opts.outputContentType)
+	if opts.config.OutputContentType != "application/custom" {
+		t.Fatalf("output content type = %q", opts.config.OutputContentType)
 	}
 
-	if opts.fsRoot != "/runtime" {
-		t.Fatalf("filesystem root = %q", opts.fsRoot)
+	if opts.config.FSRoot != "/runtime" {
+		t.Fatalf("filesystem root = %q", opts.config.FSRoot)
 	}
 }
 
@@ -129,9 +129,9 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	t.Parallel()
 
 	config := defaultSessionConfig()
-	format := config.debugFormat
-	config.outputContentType = "existing"
-	config.fsRoot = "existing"
+	format := config.config.DebugFormat
+	config.config.OutputContentType = "existing"
+	config.config.FSRoot = "existing"
 
 	for _, option := range []SessionOption{
 		WithDebugFormat(debugger.FormatOptions{MaxDepth: 0, MaxItems: 8, MaxBytes: 1024}),
@@ -143,16 +143,16 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 		}
 	}
 
-	if config.debugFormat != format {
-		t.Fatalf("invalid debug format mutated the config to %+v", config.debugFormat)
+	if config.config.DebugFormat != format {
+		t.Fatalf("invalid debug format mutated the config to %+v", config.config.DebugFormat)
 	}
 
-	if config.outputContentType != "existing" {
-		t.Fatalf("invalid output content type mutated the config to %q", config.outputContentType)
+	if config.config.OutputContentType != "existing" {
+		t.Fatalf("invalid output content type mutated the config to %q", config.config.OutputContentType)
 	}
 
-	if config.fsRoot != "existing" {
-		t.Fatalf("invalid filesystem root mutated the config to %q", config.fsRoot)
+	if config.config.FSRoot != "existing" {
+		t.Fatalf("invalid filesystem root mutated the config to %q", config.config.FSRoot)
 	}
 }
 
@@ -269,8 +269,8 @@ func TestNewSessionConfigIgnoresEmptySessionParams(t *testing.T) {
 		WithSessionParams(map[string]any{}),
 	)
 
-	if len(opts.env) != 1 {
-		t.Fatalf("expected environment options to remain unchanged, got %d entries", len(opts.env))
+	if len(opts.config.Environment) != 1 {
+		t.Fatalf("expected environment options to remain unchanged, got %d entries", len(opts.config.Environment))
 	}
 
 	env := mustBuildEnvironmentForTest(t, opts)
@@ -294,8 +294,8 @@ func TestNewSessionConfigIgnoresEmptySessionRuntimeParams(t *testing.T) {
 		WithSessionRuntimeParams(runtime.Params{}),
 	)
 
-	if len(opts.env) != 1 {
-		t.Fatalf("expected environment options to remain unchanged, got %d entries", len(opts.env))
+	if len(opts.config.Environment) != 1 {
+		t.Fatalf("expected environment options to remain unchanged, got %d entries", len(opts.config.Environment))
 	}
 
 	env := mustBuildEnvironmentForTest(t, opts)
@@ -319,8 +319,8 @@ func TestNewSessionConfigIgnoresEmptySessionLogFields(t *testing.T) {
 		WithSessionLogFields(map[string]any{}),
 	)
 
-	if len(opts.logger) != 1 {
-		t.Fatalf("expected logger options to remain unchanged, got %d entries", len(opts.logger))
+	if len(opts.config.Logger) != 1 {
+		t.Fatalf("expected logger options to remain unchanged, got %d entries", len(opts.config.Logger))
 	}
 }
 
@@ -338,23 +338,23 @@ func TestNewSessionConfigKeepDefaultOutputContentTypeWithNoopOptions(t *testing.
 		WithSessionLogFields(map[string]any{}),
 	)
 
-	if opts.outputContentType != encodingjson.ContentType {
-		t.Fatalf("expected default output content type %q, got %q", encodingjson.ContentType, opts.outputContentType)
+	if opts.config.OutputContentType != encodingjson.ContentType {
+		t.Fatalf("expected default output content type %q, got %q", encodingjson.ContentType, opts.config.OutputContentType)
 	}
 
-	if opts.debugFormat != debugger.DefaultFormatOptions() {
-		t.Fatalf("expected default debug format, got %+v", opts.debugFormat)
+	if opts.config.DebugFormat != debugger.DefaultFormatOptions() {
+		t.Fatalf("expected default debug format, got %+v", opts.config.DebugFormat)
 	}
 
-	if opts.fsRoot != "" {
-		t.Fatalf("expected no filesystem root override, got %q", opts.fsRoot)
+	if opts.config.FSRoot != "" {
+		t.Fatalf("expected no filesystem root override, got %q", opts.config.FSRoot)
 	}
 
-	if len(opts.env) != 0 {
-		t.Fatalf("expected no environment options to be appended, got %d entries", len(opts.env))
+	if len(opts.config.Environment) != 0 {
+		t.Fatalf("expected no environment options to be appended, got %d entries", len(opts.config.Environment))
 	}
 
-	if len(opts.logger) != 0 {
-		t.Fatalf("expected no logger options to be appended, got %d entries", len(opts.logger))
+	if len(opts.config.Logger) != 0 {
+		t.Fatalf("expected no logger options to be appended, got %d entries", len(opts.config.Logger))
 	}
 }
