@@ -3,8 +3,10 @@
 Tasks 4 and 5 of PR #1024 audit the native engine extraction, curated root
 façade, and engine-owned internal packages, then remove redundant engine API
 relays. The root API, FQL semantics, error identity, and lifecycle ownership
-remain unchanged. Native callers use lower-level owners for shared vocabulary;
-no additional package extraction or abstraction is needed.
+remain unchanged. Native callers use lower-level owners for shared vocabulary.
+The subsequent construction extraction adds `internal/bootstrap` with the
+ownership boundary described below; the native and root export inventories
+remain unchanged.
 
 ## Native exports
 
@@ -106,6 +108,13 @@ directly. Root callers keep their existing names and assignability.
 
 ## Internal contracts and ownership
 
+* Engine construction uses concrete bootstrap `Config`, `Result`, and `Build`.
+  Config supplies applied host inputs, hooks, resources, modules, compiler
+  optimization, and session capacity. Build constructs normal/debug compilers,
+  registers modules, finalizes the host, snapshots and initializes hooks, and
+  creates the limiter. Result transfers these dependencies and the same resource
+  manager to Engine on success. Bootstrap does not import either embedding
+  package or construct the Engine object.
 * Host construction uses concrete `Config`, `NewBootstrap`, and `Bootstrap`.
   `Bootstrap.Host` and `Bootstrap.Hooks` implement the existing module contract;
   `Bootstrap.Build` returns the finalized host. The underlying `hostContext`
@@ -141,10 +150,20 @@ directly. Root callers keep their existing names and assignability.
   resources, then releases and clears its limiter reference. The debug path has
   no VM-return callback; retained VM cleanup belongs to the debugger.
 
-Option validation, module iteration, compiler selection, plan construction,
-session rollback/publication, VM-pool borrowing, and object closure remain in
-`pkg/engine`: they coordinate native object invariants and ownership transfer.
-The remaining private code does not justify another extraction.
+Defaults, option validation/application, stdlib registration, loader
+configuration, public optimization-level translation, and final Engine assembly
+remain in `pkg/engine`. Configuration failures retain their original cleanup
+paths; bootstrap owns subsequent construction rollback. Native shutdown and
+bootstrap rollback separately orchestrate hooks and the resource manager,
+preserving error aggregation without a cleanup callback dependency.
+`engine_helpers.go` remains for native shutdown and failures translating public
+optimization levels before bootstrap takes ownership.
+
+Per-plan compiler selection, plan construction, session rollback/publication,
+VM-pool borrowing, and object closure remain in `pkg/engine`: they coordinate
+native object invariants and ownership transfer. Configuration coupling remains
+with the public options; session execution and debugger decomposition are
+separate follow-up concerns.
 
 ## Consumers and dependency direction
 

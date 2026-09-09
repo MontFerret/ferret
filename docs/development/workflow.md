@@ -75,11 +75,13 @@ fixes.
 ## Test layout
 
 Package tests live beside their code. Native embedding lifecycle and composition
-tests live in `pkg/engine`; component tests live in `pkg/engine/internal/host`,
-`pkg/engine/internal/resource`, and `pkg/engine/internal/session`. These packages
-participate in the existing `pkg/...` unit/race, coverage, static analysis, and
-formatting targets. Root tests guard the curated façade's exported declarations,
-type aliases, function signatures, constants, and public embedding behavior.
+tests live in `pkg/engine`; component tests live in `pkg/engine/internal/bootstrap`,
+`pkg/engine/internal/host`, `pkg/engine/internal/resource`, and
+`pkg/engine/internal/session`. Bootstrap tests cover construction ownership
+transfer, rollback ordering and errors, and initialization hook snapshots. These
+packages participate in the existing `pkg/...` unit/race, coverage, static
+analysis, and formatting targets. Root tests guard the curated façade's exported
+declarations, type aliases, function signatures, constants, and public embedding behavior.
 Additional suites are grouped under:
 
 * `test/integration/compiler`: language compilation and semantic behavior;

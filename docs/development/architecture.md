@@ -90,17 +90,22 @@ compatibility adapters and the SDK test harness may use `pkg/engine` because
 they construct and own native executions. Public API tests and downstream-style
 examples use root `ferret`.
 
-`pkg/engine/internal/host` builds module bootstrap services and snapshots host
-registries and lifecycle hooks. `pkg/engine/internal/session` supplies session
-admission, permit release, debugger services, and result materialization.
-The native engine retains option application, construction rollback, ownership
-transfer, and Engine/Plan/Session orchestration.
+`pkg/engine/internal/bootstrap` constructs compilers, orchestrates module
+registration and host finalization, snapshots hooks, runs initialization, and
+creates the session limiter. It owns rollback until a successful build transfers
+its dependencies to the native Engine. `pkg/engine/internal/host` builds module
+bootstrap services and snapshots host registries and lifecycle hooks.
+`pkg/engine/internal/session` supplies session admission, permit release,
+debugger services, and result materialization. The native engine retains public
+configuration, option application, stdlib registration, optimization-level
+translation, final Engine assembly, and Engine/Plan/Session orchestration.
 
 `pkg/engine/internal/resource` owns lifecycle metadata for host services within
 one owner.
-The configuration creates one manager and transfers it to the completed Engine;
-session construction creates a separate manager for each ordinary or debug
-session. Typed filesystem and network references stay with their consumers.
+The configuration creates one manager and hands it to bootstrap; successful
+construction transfers that manager to the completed Engine. Session construction
+creates a separate manager for each ordinary or debug session. Typed filesystem
+and network references stay with their consumers.
 Owned registrations carry cleanup callbacks, while borrowed registrations record
 ownership outside the scope. The manager provides no service lookup or dependency
 resolution.

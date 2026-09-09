@@ -6,7 +6,8 @@ import (
 )
 
 // Bootstrap exposes mutable host and hook registration during engine construction.
-// The engine owns module iteration, hook snapshotting, initialization, and rollback.
+// The engine's bootstrap component owns module iteration, hook snapshotting,
+// initialization, and rollback.
 type Bootstrap struct {
 	host  *hostContext
 	hooks *Hooks

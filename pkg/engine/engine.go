@@ -11,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/bytecode/artifact"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/engine/internal/bootstrap"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
@@ -42,78 +43,46 @@ type Engine struct {
 // option, module registration, or init hook fails. All non-nil options are
 // applied in order, and failures from multiple options are joined before
 // construction stops.
-func New(setters ...Option) (engine *Engine, resultErr error) {
+func New(setters ...Option) (*Engine, error) {
 	opts, err := newConfig(setters)
 	if err != nil {
 		return nil, err
 	}
 
-	// Host resources are already owned after option application. Close hooks
-	// join rollback only once bootstrap succeeds, as in normal construction.
-	var rollbackHooks *host.EngineHooks
-
-	defer func() {
-		resultErr = closeEngineOnError(resultErr, rollbackHooks, opts.resources)
-	}()
-
 	compilerLevel, err := opts.optimizationLevel.compilerLevel()
 	if err != nil {
-		return nil, fmt.Errorf("compiler: %w", err)
+		return nil, closeEngineOnError(fmt.Errorf("compiler: %w", err), nil, opts.resources)
 	}
 
-	compilerInstance, err := compiler.New(compiler.WithOptimizationLevel(compilerLevel))
-	if err != nil {
-		return nil, fmt.Errorf("compiler: %w", err)
-	}
-
-	debugCompiler, err := compiler.New(compiler.WithDebugInfo())
-	if err != nil {
-		return nil, fmt.Errorf("debug compiler: %w", err)
-	}
-
-	boot, err := host.NewBootstrap(host.Config{
-		Library:    opts.library,
-		Params:     opts.params,
-		Encoding:   opts.encoding,
-		Logger:     opts.logger,
-		FSRoot:     opts.fsRoot,
-		Network:    opts.network,
-		FSReadOnly: opts.fsReadOnly,
-	}, opts.hooks, opts.resources)
-	if err != nil {
-		return nil, fmt.Errorf("bootstrap: %w", err)
-	}
-
-	rollbackHooks = opts.hooks.EngineHooks
-
-	for _, m := range opts.modules {
-		if err := m.Register(boot); err != nil {
-			return nil, err
-		}
-	}
-
-	h, err := boot.Build()
+	state, err := bootstrap.Build(bootstrap.Config{
+		Host: host.Config{
+			Library:    opts.library,
+			Params:     opts.params,
+			Encoding:   opts.encoding,
+			Logger:     opts.logger,
+			FSRoot:     opts.fsRoot,
+			Network:    opts.network,
+			FSReadOnly: opts.fsReadOnly,
+		},
+		Hooks:             opts.hooks,
+		Resources:         opts.resources,
+		Modules:           opts.modules,
+		OptimizationLevel: compilerLevel,
+		MaxActiveSessions: opts.maxActiveSessions,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	hooks := opts.hooks.Clone()
-	rollbackHooks = hooks.EngineHooks
-
-	// Run init hooks after bootstrap is finalized and before returning the engine.
-	if err := hooks.EngineHooks.RunInit(); err != nil {
-		return nil, fmt.Errorf("init hooks: %w", err)
-	}
-
 	return &Engine{
-		compiler:          compilerInstance,
+		compiler:          state.Compiler,
 		optimizationLevel: compilerLevel,
-		debugCompiler:     debugCompiler,
+		debugCompiler:     state.DebugCompiler,
 		loader:            opts.programLoader,
-		host:              h,
-		hooks:             hooks,
-		resources:         opts.resources,
-		limiter:           enginesession.NewLimiter(opts.maxActiveSessions),
+		host:              state.Host,
+		hooks:             state.Hooks,
+		resources:         state.Resources,
+		limiter:           state.Limiter,
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil

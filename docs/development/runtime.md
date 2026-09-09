@@ -112,14 +112,22 @@ registered, so construction rollback still cleans it up; retired callbacks are
 never retried.
 
 Failed option application or stdlib registration closes the configuration's
-manager. After configuration succeeds, one constructor rollback path handles
-all later failures, including failures before bootstrap completes. Engine close
-hooks participate only after successful bootstrap. On rollback or shutdown,
-eligible hooks run first, then the manager attempts every remaining owned
-callback in reverse acquisition/replacement order and joins cleanup errors.
+manager. The native constructor also retains cleanup responsibility if public
+optimization-level translation fails. It then hands the manager to
+`pkg/engine/internal/bootstrap.Build`, which owns rollback for all returned
+construction errors and transfers ownership to Engine on success. Compiler and
+host-service construction failures close resources without close hooks. After
+host services are constructed, registration and host-build failures unwind the
+mutable hooks; initialization failures unwind the finalized hook snapshot.
+Construction panics propagate without error rollback, as before.
+On rollback or shutdown, eligible hooks run first, then the manager attempts
+every remaining owned callback in reverse acquisition/replacement order and
+joins cleanup errors.
 Consequently, default construction closes the network before the filesystem;
 a network created by an option is acquired earlier and closes after the
-filesystem. Duplicate Engine closure retains the completed cleanup result.
+filesystem. Bootstrap rollback and native Engine shutdown keep separate
+orchestration with the same cleanup ordering and error aggregation. Duplicate
+Engine closure retains the completed cleanup result.
 
 Each ordinary or debug session has a separate host-resource manager, created
 after acquiring its limiter permit. It explicitly borrows the Engine filesystem
