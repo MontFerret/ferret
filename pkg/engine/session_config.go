@@ -2,25 +2,18 @@ package engine
 
 import (
 	"errors"
-	"fmt"
 
-	"github.com/MontFerret/ferret/v2/pkg/debugger"
-	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
-	"github.com/MontFerret/ferret/v2/pkg/logging"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
+	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 )
 
+// sessionConfig preserves the native option target while the session component
+// owns the applied settings and their preparation semantics.
 type sessionConfig struct {
-	logger            []logging.Option
-	outputContentType string
-	fsRoot            string
-	env               []vm.EnvironmentOption
-	debugFormat       debugger.FormatOptions
+	config enginesession.Config
 }
 
 func defaultSessionConfig() sessionConfig {
-	return sessionConfig{outputContentType: encodingjson.ContentType, debugFormat: debugger.DefaultFormatOptions()}
+	return sessionConfig{config: enginesession.NewConfig()}
 }
 
 func newSessionConfig(setters []SessionOption) (sessionConfig, error) {
@@ -43,31 +36,4 @@ func newSessionConfig(setters []SessionOption) (sessionConfig, error) {
 	}
 
 	return opts, nil
-}
-
-func (cfg *sessionConfig) setParam(name string, value any) error {
-	if name == "" {
-		return fmt.Errorf("param name cannot be empty")
-	}
-
-	if value == nil {
-		return fmt.Errorf("param value cannot be nil")
-	}
-
-	return cfg.setParams(map[string]any{name: value})
-}
-
-func (cfg *sessionConfig) setParams(params map[string]any) error {
-	if len(params) == 0 {
-		return nil
-	}
-
-	converted, err := runtime.NewParamsFrom(params)
-	if err != nil {
-		return fmt.Errorf("convert session params: %w", err)
-	}
-
-	cfg.env = append(cfg.env, vm.WithParams(converted))
-
-	return nil
 }

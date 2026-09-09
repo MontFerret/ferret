@@ -1,4 +1,4 @@
-// Package session supplies native session admission, debugger services, and output materialization.
+// Package session owns native execution machinery, preparation, admission, and debugger services.
 package session
 
 import (

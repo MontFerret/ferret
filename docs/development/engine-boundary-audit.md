@@ -4,9 +4,9 @@ Tasks 4 and 5 of PR #1024 audit the native engine extraction, curated root
 façade, and engine-owned internal packages, then remove redundant engine API
 relays. The root API, FQL semantics, error identity, and lifecycle ownership
 remain unchanged. Native callers use lower-level owners for shared vocabulary.
-The subsequent construction extraction adds `internal/bootstrap` with the
-ownership boundary described below; the native and root export inventories
-remain unchanged.
+Subsequent construction and session extractions add `internal/bootstrap` and
+`internal/session.Execution` with the ownership boundaries described below;
+the native and root export inventories remain unchanged.
 
 ## Native exports
 
@@ -141,6 +141,21 @@ directly. Root callers keep their existing names and assignability.
   `PermitRelease` and `NewPermitRelease` remain the ordinary session mechanism
   for once-only permit release and returning a borrowed VM to its plan pool.
   `Materialize` remains shared native encoding/resource adoption behavior.
+* Session preparation uses concrete `Config`, `NewConfig`, `NewExecution`, and
+  `NewDebugSession`. Config contains applied settings and parameter conversion;
+  a private native wrapper preserves the `SessionOption` target and native option
+  validation/application. A private acquisition owner shares logger, permit,
+  filesystem, and environment preparation and retains rollback until ownership
+  transfers to the completed execution or debug session. Constructors receive
+  concrete host, hook, limiter, pool/program, and Plan-close dependencies.
+* `Execution` privately owns the ordinary VM, environment, host-resource manager,
+  permit release, logger, filesystem/network references, and encoding settings.
+  `Run` invokes the VM with its context services; `MaterializeAndClose` returns
+  output and separate encoding/cleanup errors; `Close` runs close hooks, closes
+  resources, returns the permit and VM, and retains the once-only cleanup result.
+  Native `Session` retains the execution pointer, run hooks, and closed flag;
+  it owns run admission, hook pairing, and output/error decisions. No operational
+  state accessors or preparation-result bag cross the component boundary.
 * `DebugServices` now has private state. `DebugServicesConfig` supplies only
   borrowed hooks, logger, filesystem, network, codecs, and output content type.
   `NewDebugServices` separately accepts the concrete limiter and resource
@@ -150,7 +165,7 @@ directly. Root callers keep their existing names and assignability.
   resources, then releases and clears its limiter reference. The debug path has
   no VM-return callback; retained VM cleanup belongs to the debugger.
 
-Defaults, option validation/application, stdlib registration, loader
+Engine defaults, option validation/application, stdlib registration, loader
 configuration, public optimization-level translation, and final Engine assembly
 remain in `pkg/engine`. Configuration failures retain their original cleanup
 paths; bootstrap owns subsequent construction rollback. Native shutdown and
@@ -159,11 +174,13 @@ preserving error aggregation without a cleanup callback dependency.
 `engine_helpers.go` remains for native shutdown and failures translating public
 optimization levels before bootstrap takes ownership.
 
-Per-plan compiler selection, plan construction, session rollback/publication,
-VM-pool borrowing, and object closure remain in `pkg/engine`: they coordinate
-native object invariants and ownership transfer. Configuration coupling remains
-with the public options; session execution and debugger decomposition are
-separate follow-up concerns.
+Per-plan compiler selection, plan construction, session admission, and the final
+session cancellation check remain in `pkg/engine`. Successful construction
+transfers ownership before that check; cancellation closes the completed native
+or debugger session, while parent closure does not revoke its ownership.
+Partial construction rollback belongs to the internal acquisition owner and
+runs without session close hooks. Retained debug execution stays debugger-owned;
+debug services do not own an ordinary Execution or borrow from the Plan's pool.
 
 ## Consumers and dependency direction
 

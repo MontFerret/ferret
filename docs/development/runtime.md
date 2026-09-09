@@ -95,9 +95,10 @@ orchestrate object lifetime:
   limiter, filesystem, and any network service it created.
 * `Plan` owns one compiled program, plan/session hooks, and a bounded or
   unbounded pool of VMs for that program.
-* `Session` borrows a VM, constructs an execution environment, injects logging,
-  encoding, filesystem, and network services into the context, and materializes
-  output. By default it borrows the engine filesystem.
+* `Session` owns native run admission, before/after-run hooks, and output/error
+  decisions. Its internal `session.Execution` owns the borrowed VM, environment,
+  logging, encoding, filesystem and network references, materialization, and
+  cleanup. By default it borrows the engine filesystem.
   `ferret.WithSessionFSRoot` replaces only that session's root while retaining
   the engine's read-only policy; the session owns and closes the replacement
   filesystem.
@@ -133,14 +134,18 @@ Each ordinary or debug session has a separate host-resource manager, created
 after acquiring its limiter permit. It explicitly borrows the Engine filesystem
 and network. `WithSessionFSRoot` replaces only that manager's filesystem entry
 with an owned instance; Engine and sibling managers remain independent.
-Construction errors and builder panics close the untransferred manager, with a
-separate defer retaining permit release even if resource cleanup panics. A
-successful build transfers both responsibilities to the session before the
-cancellation recheck. Cancellation then closes the constructed session through
-its normal cleanup path.
+The internal session acquisition owner constructs logging, acquires capacity,
+creates host resources and the environment, and constructs the VM or debugger
+session. Construction errors and panics close the untransferred manager without
+close hooks, with a separate defer retaining permit release even if resource
+cleanup panics. A successful build transfers both responsibilities to ordinary
+`Execution` or debugger services before the native cancellation recheck.
+Cancellation then closes the completed session through its normal cleanup path.
 
 Session close hooks precede host-resource cleanup, which precedes permit release
-and, for ordinary sessions, return of the borrowed VM. Debugger closure still
+and, for ordinary sessions, return of the borrowed VM. `Session.Close` marks the
+native object closed; `Execution.Close` owns this complete once-only sequence and
+caches its error for repeated and concurrent callers. Debugger closure still
 settles retained execution before closing the embedding session services.
 Those services keep their resource manager and acquired limiter permit private;
 their constructor does not transfer construction rollback. Debug services return
@@ -197,10 +202,12 @@ failure.
 Native `PlanOption` and `SessionOption` target private native configurations,
 following the native `Option` pattern also aliased by root `ferret`. They are
 distinct from Universal API functional options. Non-nil options run once in
-order, joining validation errors
-before resource acquisition. Portable semantic data may be shared with the
-Universal API; runtime-specific option adaptation belongs at a future adapter
-boundary.
+order, joining validation errors before resource acquisition. The private
+session option target contains internal
+`session.Config`, which owns applied settings, defaults, and host-parameter
+conversion; native option constructors retain validation and ordering. Portable
+semantic data may be shared with the Universal API; runtime-specific option
+adaptation belongs at a future adapter boundary.
 
 `WithPlanOptimizationLevel` on `Engine.Compile` selects native None, Basic, or
 Full for one compilation. Omitting it inherits the engine's optimization;
@@ -213,10 +220,12 @@ runtime values, compiler metadata, and diagnostic rendering remain native.
 `Session.Run` retains successful encoded output even when an after-run hook or
 result cleanup fails. Ordinary after-run hooks still precede encoding and receive
 the execution or context-validation error. Ferret encodes the successful VM
-result and closes it exactly once, joining any hook, encoding, and cleanup
-failures. The caller owns the returned encoded data, which has no `Close` method
-and remains available after session cleanup. Failed execution or encoding returns
-no output. A lone execution diagnostic is returned unchanged.
+result and closes it exactly once through `Execution.MaterializeAndClose`.
+That operation returns encoding and cleanup errors separately so native
+`Session.Run` preserves their ordering alongside hook failures. The caller owns
+the returned encoded data, which has no `Close` method and remains available
+after session cleanup. Failed execution or encoding returns no output. A lone
+execution diagnostic is returned unchanged.
 
 Diagnostic aggregates expose `Unwrap() []error`, and runtime errors unwrap to
 their underlying diagnostic, which in turn retains its cause.

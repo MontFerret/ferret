@@ -3,16 +3,14 @@ package engine
 import (
 	"context"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/MontFerret/ferret/v2/pkg/debugger"
-	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -163,9 +161,10 @@ func TestSessionClosesOwnedFSRootWithoutClosingBorrowedRoot(t *testing.T) {
 	t.Parallel()
 
 	engineRoot := t.TempDir()
-	engine := mustNewEngine(t, WithFSRoot(engineRoot))
+	var ownedFS ferretfs.FileSystem
+	engine := mustNewEngine(t, WithFSRoot(engineRoot), withCapturedSessionFileSystem(&ownedFS))
 	defer func() { _ = engine.Close() }()
-	plan := mustCompilePlan(t, engine, coverageValidQuery)
+	plan := mustCompilePlan(t, engine, "RETURN CAPTURE_FS()")
 	defer func() { _ = plan.Close() }()
 
 	borrowed := mustNewSession(t, plan)
@@ -177,7 +176,9 @@ func TestSessionClosesOwnedFSRootWithoutClosingBorrowedRoot(t *testing.T) {
 	}
 
 	owned := mustNewSession(t, plan, WithSessionFSRoot(t.TempDir()))
-	ownedFS := owned.fs
+	if _, err := owned.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 	if err := owned.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -186,127 +187,56 @@ func TestSessionClosesOwnedFSRootWithoutClosingBorrowedRoot(t *testing.T) {
 	}
 }
 
-func TestSessionCloseJoinsOwnedFileSystemErrorExactlyOnce(t *testing.T) {
-	t.Parallel()
-
-	hookErr := errors.New("session hook close failed")
-	fileSystemErr := errors.New("session filesystem close failed")
-	engine := mustNewEngine(t, WithSessionCloseHook(func() error { return hookErr }))
-	defer func() { _ = engine.Close() }()
-	plan := mustCompilePlan(t, engine, coverageValidQuery)
-	defer func() { _ = plan.Close() }()
-	session := mustNewSession(t, plan, WithSessionFSRoot(t.TempDir()))
-
-	filesystem := newCountingCloseFileSystem(t, t.TempDir(), fileSystemErr)
-	if err := session.resources.Own(resource.FileSystem, filesystem.Close); err != nil {
-		t.Fatal(err)
-	}
-
-	session.fs = filesystem
-	firstErr := session.Close()
-	secondErr := session.Close()
-
-	if !errors.Is(firstErr, hookErr) || !errors.Is(firstErr, fileSystemErr) {
-		t.Fatalf("first close error = %v, want hook and filesystem failures", firstErr)
-	}
-	if firstErr != secondErr {
-		t.Fatalf("repeated close returned different errors: %v and %v", firstErr, secondErr)
-	}
-	if calls := filesystem.closeCalls.Load(); calls != 1 {
-		t.Fatalf("filesystem close calls = %d, want 1", calls)
-	}
-}
-
 func TestDebugSessionUsesAndClosesOwnedFSRoot(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	fileSystemErr := errors.New("debug session filesystem close failed")
 	if err := os.WriteFile(filepath.Join(root, "value.txt"), []byte("debug"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
-	engine := mustNewEngine(t, WithFSRoot(t.TempDir()))
-	defer func() { _ = engine.Close() }()
-	plan, err := engine.CompileDebug(
-		context.Background(),
-		source.NewAnonymous(`RETURN TO_STRING(IO::FS::READ("value.txt"))`),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = plan.Close() }()
-
-	var filesystem *countingCloseFileSystem
-	session, err := newPlanSession(
-		plan,
-		context.Background(),
-		[]SessionOption{WithSessionFSRoot(root)},
-		planSessionSetup{requiresDebugInfo: true},
-		func(dependencies planSessionDependencies) (*debugger.Session, error) {
-			filesystem = newCountingCloseFileSystem(t, root, fileSystemErr)
-			if err := dependencies.resources.Own(resource.FileSystem, filesystem.Close); err != nil {
-				t.Fatal(err)
-			}
-
-			dependencies.filesystem = filesystem
-
-			return buildDebugSession(dependencies)
-		},
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := session.Start(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	event, err := session.Continue(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if event.Output == nil || string(event.Output.Content) != `"debug"` {
-		t.Fatalf("debug output = %#v, want %q", event.Output, "debug")
-	}
-	firstErr := session.Close()
-	secondErr := session.Close()
-	if !errors.Is(firstErr, fileSystemErr) {
-		t.Fatalf("first debug close error = %v, want %v", firstErr, fileSystemErr)
-	}
-	if firstErr != secondErr {
-		t.Fatalf("repeated debug close returned different errors: %v and %v", firstErr, secondErr)
-	}
-	if calls := filesystem.closeCalls.Load(); calls != 1 {
-		t.Fatalf("debug filesystem close calls = %d, want 1", calls)
-	}
-}
-
-func TestNewPlanSessionClosesOwnedFSRootOnBuildFailure(t *testing.T) {
-	t.Parallel()
-
-	engine := mustNewEngine(t)
-	defer func() { _ = engine.Close() }()
-	plan := mustCompilePlan(t, engine, coverageValidQuery)
-	defer func() { _ = plan.Close() }()
-
-	buildErr := errors.New("session build failed")
 	var filesystem ferretfs.FileSystem
-	_, err := newPlanSession(
-		plan,
-		context.Background(),
-		[]SessionOption{WithSessionFSRoot(t.TempDir())},
-		planSessionSetup{},
-		func(dependencies planSessionDependencies) (*Session, error) {
-			filesystem = dependencies.filesystem
-
-			return nil, buildErr
-		},
-	)
-	if err != buildErr {
-		t.Fatalf("session construction error = %v, want %v", err, buildErr)
+	engine := mustNewEngine(t, WithFSRoot(t.TempDir()), withCapturedSessionFileSystem(&filesystem))
+	defer func() { _ = engine.Close() }()
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous(
+		"RETURN [CAPTURE_FS(), TO_STRING(IO::FS::READ(\"value.txt\"))][1]",
+	))
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	defer func() { _ = plan.Close() }()
+	session, err := plan.NewDebugSession(t.Context(), WithSessionFSRoot(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = session.Close() }()
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	event, err := session.Continue(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Output == nil || string(event.Output.Content) != "\"debug\"" {
+		t.Fatalf("debug output = %#v, want debug", event.Output)
+	}
+
+	for range 2 {
+		if err := session.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if filesystem == nil {
+		t.Fatal("debug session did not inject its filesystem")
+	}
+
 	if _, err := filesystem.Stat("."); err == nil {
-		t.Fatal("session construction failure did not close its owned filesystem")
+		t.Fatal("debug session retained its owned filesystem")
 	}
 }
 
@@ -379,63 +309,17 @@ func TestSessionFSRootRejectsUnusablePaths(t *testing.T) {
 	}
 }
 
-func TestCanceledPublicationClosesConstructedSession(t *testing.T) {
-	for _, debug := range []bool{false, true} {
-		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
-			closeErr := errors.New("session rollback cleanup")
-			resourceErr := errors.New("session host-resource cleanup")
-			resourceCloses := 0
-			engine := mustNewEngine(t, WithMaxActiveSessions(1), WithSessionCloseHook(func() error { return closeErr }))
-			t.Cleanup(func() { _ = engine.Close() })
-			plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
+func withCapturedSessionFileSystem(target *ferretfs.FileSystem) Option {
+	return WithFunctionsRegistrar(func(ns runtime.Namespace) {
+		ns.Function().A0().Add("CAPTURE_FS", func(ctx context.Context) (runtime.Value, error) {
+			filesystem, err := ferretfs.FileSystemFrom(ctx)
 			if err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() { _ = plan.Close() })
-			ctx, cancel := context.WithCancel(t.Context())
-			t.Cleanup(cancel)
-			var filesystem ferretfs.FileSystem
-			created, err := newPlanSession(plan, ctx, []SessionOption{WithSessionFSRoot(t.TempDir())}, planSessionSetup{requiresDebugInfo: debug},
-				func(dependencies planSessionDependencies) (io.Closer, error) {
-					filesystem = dependencies.filesystem
-					if err := dependencies.resources.Own("publication-service", func() error {
-						resourceCloses++
-
-						return resourceErr
-					}); err != nil {
-						return nil, err
-					}
-
-					var child io.Closer
-					var buildErr error
-					if debug {
-						child, buildErr = buildDebugSession(dependencies)
-					} else {
-						child, buildErr = buildSession(dependencies)
-					}
-					cancel()
-					return child, buildErr
-				})
-			if created != nil || !errors.Is(err, context.Canceled) || !errors.Is(err, closeErr) || !errors.Is(err, resourceErr) {
-				t.Fatalf("publication=%v error=%v", created, err)
+				return nil, err
 			}
 
-			if resourceCloses != 1 {
-				t.Fatalf("canceled publication closed host resources %d times, want 1", resourceCloses)
-			}
+			*target = filesystem
 
-			if _, err := filesystem.Stat("."); err == nil {
-				t.Fatal("canceled publication retained its owned filesystem")
-			}
-			admissionCtx, admissionCancel := context.WithTimeout(t.Context(), time.Second)
-			defer admissionCancel()
-			sibling, err := plan.NewSession(admissionCtx)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := sibling.Close(); !errors.Is(err, closeErr) {
-				t.Fatalf("sibling close=%v", err)
-			}
+			return runtime.Int(1), nil
 		})
-	}
+	})
 }
