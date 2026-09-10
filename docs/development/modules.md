@@ -107,7 +107,8 @@ argument, Unicode, formatting, and migration contracts, together with the full
 `path::` namespace registered by the Path group, are described in
 [String, encoding, and crypto contracts](string-library.md).
 
-The Objects group registers immutable functions under `object::`. Shared map
+The Objects group registers immutable functions under `object::` and explicit
+mutation under `object::mut::`. Shared map
 transformations, copy ownership, iterable entry construction, and migration
 behavior are described in [Object library contracts](object-library.md).
 

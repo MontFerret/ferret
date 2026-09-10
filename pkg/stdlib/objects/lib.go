@@ -2,7 +2,7 @@ package objects
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-// RegisterLib registers immutable object functions in the object namespace.
+// RegisterLib registers object functions and explicit mutation under object::mut.
 // @namespace object
 func RegisterLib(ns runtime.Namespace) {
 	ns = ns.Namespace("object")
@@ -20,4 +20,10 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("omit_keys", OmitKeys).
 		Add("merge", Merge).
 		Add("merge_deep", MergeDeep)
+
+	ns.Namespace("mut").Function().Var().
+		Add("keep_keys", KeepKeysMutable).
+		Add("omit_keys", OmitKeysMutable).
+		Add("merge", MergeMutable).
+		Add("merge_deep", MergeDeepMutable)
 }

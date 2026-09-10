@@ -8,7 +8,7 @@ import (
 )
 
 func TestObjectSurface(t *testing.T) {
-	want := []string{"object::entries", "object::from_entries", "object::has_key", "object::keep_keys", "object::keys", "object::merge", "object::merge_deep", "object::omit_keys", "object::values", "object::zip"}
+	want := []string{"object::entries", "object::from_entries", "object::has_key", "object::keep_keys", "object::keys", "object::merge", "object::merge_deep", "object::mut::keep_keys", "object::mut::merge", "object::mut::merge_deep", "object::mut::omit_keys", "object::omit_keys", "object::values", "object::zip"}
 	got := functionNames(buildFunctions(t, stdlib.Only(stdlib.Objects)))
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("object surface = %v, want %v", got, want)
@@ -33,13 +33,25 @@ func TestObjectSurface(t *testing.T) {
 			}
 		}
 
+		for _, name := range []string{"object::mut::merge", "object::mut::merge_deep", "object::mut::keep_keys", "object::mut::omit_keys"} {
+			if !functions.Var().Has(name) {
+				t.Fatalf("%s must have a variadic registration", name)
+			}
+
+			for arity := 0; arity <= 4; arity++ {
+				if hasFixedArity(functions, name, arity) {
+					t.Fatalf("unexpected fixed registration for %s", name)
+				}
+			}
+		}
+
 		for _, name := range want {
 			if !functions.Has(name) || without.Has(name) {
 				t.Fatalf("capability mismatch: %s", name)
 			}
 		}
 
-		for _, name := range []string{"keys", "values", "has", "keep_keys", "merge", "merge_recursive", "zip", "object::has", "object::merge_recursive", "object::from_keys_values", "object::mut::merge"} {
+		for _, name := range []string{"keys", "values", "has", "keep_keys", "merge", "merge_recursive", "zip", "object::has", "object::merge_recursive", "object::from_keys_values", "object::mut_merge", "object::merge_mut", "object::merge_in_place", "object::mut::keys", "object::mut::set", "object::mut::delete"} {
 			if functions.Has(name) {
 				t.Fatalf("unexpected alias: %s", name)
 			}

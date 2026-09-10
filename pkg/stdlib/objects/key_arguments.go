@@ -30,6 +30,19 @@ func filterKeys(ctx context.Context, args []runtime.Value, apply func(context.Co
 	return dst, nil
 }
 
+func filterMutableKeys(ctx context.Context, args []runtime.Value, apply func(context.Context, runtime.Map, ...runtime.String) error) (runtime.Value, error) {
+	dst, keys, err := normalizeKeyArgs(ctx, args)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := apply(ctx, dst, keys...); err != nil {
+		return runtime.None, runtime.ArgError(err, 0)
+	}
+
+	return dst, nil
+}
+
 func normalizeKeyArgs(ctx context.Context, args []runtime.Value) (runtime.Map, []runtime.String, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return nil, nil, err
