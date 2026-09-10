@@ -1,19 +1,19 @@
 module github.com/MontFerret/ferret/v2
 
-go 1.25.0
+go 1.25
 
 require (
-	github.com/MontFerret/api v1.0.0-alpha.14
+	github.com/MontFerret/api v1.0.0-alpha.16
 	github.com/antlr4-go/antlr/v4 v4.13.1
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/goccy/go-json v0.10.6
 	github.com/google/go-cmp v0.7.0
 	github.com/jarcoal/httpmock v1.4.2
 	github.com/rs/zerolog v1.35.1
-	github.com/smarty/assertions v1.15.0
+	github.com/smarty/assertions v1.16.0
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	github.com/ziflex/go-options v1.3.1
+	github.com/ziflex/go-options v1.6.1
 )
 
 require (

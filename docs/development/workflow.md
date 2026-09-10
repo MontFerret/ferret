@@ -86,6 +86,9 @@ option, hook, and output contracts without accessing execution internals. These
 packages participate in the existing `pkg/...` unit/race, coverage, static
 analysis, and formatting targets. Root tests guard the curated façade's exported
 declarations, type aliases, function signatures, constants, and public embedding behavior.
+Universal API adapter tests, external-package examples, and benchmarks live in
+root-level `uapi`. It is explicitly included in unit/race tests, coverage,
+unit benchmarks, static analysis, and import formatting alongside `pkg/...`.
 Additional suites are grouped under:
 
 * `test/integration/compiler`: language compilation and semantic behavior;

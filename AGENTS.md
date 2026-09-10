@@ -30,6 +30,7 @@ every guide for unrelated work.
 
 * [Architecture and package ownership](docs/development/architecture.md)
 * [Runtime, VM, values, and resource lifecycle](docs/development/runtime.md)
+* [Native to Universal API adapter](docs/development/universal.md)
 * [Debugger](docs/development/debugger.md)
 * [Modules, SDK, and standard library](docs/development/modules.md)
 * [Tooling, generation, tests, and benchmarks](docs/development/workflow.md)
@@ -75,6 +76,11 @@ Begin in the package that owns the requested behavior:
 | Controlled filesystem and network access | `pkg/fs`, `pkg/net` |
 | Public embedding façade | top-level `ferret` package |
 | Native embedding lifecycle and composition | `pkg/engine` |
+| Native to Universal API adaptation | `uapi` |
+
+The root `ferret` package is the primary Native embedding entry point. Root-level
+`uapi` is the official Universal API integration entry point; its constructors
+are not re-exported through `ferret`.
 
 Do not duplicate an owning package's semantics in a consumer. In particular,
 runtime value behavior belongs in `pkg/runtime`, not in VM, stdlib, encoding, or
@@ -100,8 +106,8 @@ pkg/*`, with direct lower-level imports where needed:
 
 ## Public API and compatibility
 
-Treat the top-level package, `pkg/engine`, `pkg/module`, `pkg/runtime`, and
-`pkg/sdk` as API-sensitive.
+Treat the top-level package, `pkg/engine`, `uapi`, `pkg/module`,
+`pkg/runtime`, and `pkg/sdk` as API-sensitive.
 
 * Preserve existing public and language-visible behavior unless the task
   explicitly changes it.
