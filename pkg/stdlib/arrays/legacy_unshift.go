@@ -9,26 +9,10 @@ import (
 // unshift prepends value to a given array.
 // @param array {Any[]} Target array.
 // @param value {Any} Target value to prepend.
-// @param unique {Boolean} Optional value indicating whether a value must be unique to be prepended. Default is false.
 // @return {Any[]} New array with prepended value.
-func Unshift(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
-		return runtime.None, err
-	}
-
-	if len(args) == 2 {
-		return unshift2(ctx, args[0], args[1])
-	}
-
-	return unshift3(ctx, args[0], args[1], args[2])
-}
-
-// unshift prepends value to a given array.
-// @param array {Any[]} Target array.
-// @param value {Any} Target value to prepend.
-// @return {Any[]} New array with prepended value.
-func unshift2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
-	return unshift3(ctx, arg1, arg2, runtime.False)
+// @deprecated Use arrays::concat([value], array) and arrays::remove as needed.
+func legacyUnshift2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
+	return legacyUnshift3(ctx, arg1, arg2, runtime.False)
 }
 
 // unshift prepends value to a given array.
@@ -36,9 +20,9 @@ func unshift2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 // @param value {Any} Target value to prepend.
 // @param unique {Boolean} Optional value indicating whether a value must be unique to be prepended. Default is false.
 // @return {Any[]} New array with prepended value.
-func unshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+// @deprecated Use arrays::concat([value], array) and arrays::remove as needed.
+func legacyUnshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg1, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}
@@ -49,7 +33,6 @@ func unshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Valu
 	}
 
 	size, err := list.Length(ctx)
-
 	if err != nil {
 		return runtime.None, err
 	}
@@ -64,7 +47,6 @@ func unshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Valu
 
 			return runtime.True, nil
 		})
-
 		if err != nil {
 			return runtime.None, err
 		}
@@ -86,7 +68,6 @@ func unshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Valu
 
 		return true, nil
 	})
-
 	if err != nil {
 		return runtime.None, err
 	}

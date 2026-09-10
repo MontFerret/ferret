@@ -11,15 +11,14 @@ import (
 // Additionally, the values in the result array will be made unique
 // @param array {Any[]} Target array.
 // @return {Any[]} Sorted array.
-func SortedUnique(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+// @deprecated Use arrays::sorted(arrays::unique(array)).
+func legacySortedUnique(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}
 
-	uniq, err := ToUniqueList(ctx, list)
-
+	uniq, err := toUniqueList(ctx, list)
 	if err != nil {
 		return runtime.None, err
 	}

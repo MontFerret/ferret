@@ -3,26 +3,23 @@ package arrays
 import (
 	"context"
 
-	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// union_distinct returns the union of all passed arrays with unique values.
+// Concat concatenates arrays in input order, retaining duplicates.
 // @param arrays {Any[], repeated} List of arrays to combine.
-// @return {Any[]} All unique array elements combined in a single array, in any order.
-func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+// @return {Any[]} All array elements combined in input order.
+func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
 
 	list, err := runtime.CastArgAt[runtime.List](args, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}
 
 	firstSize, err := list.Length(ctx)
-
 	if err != nil {
 		return runtime.None, err
 	}
@@ -33,29 +30,17 @@ func UnionDistinct(ctx context.Context, args ...runtime.Value) (runtime.Value, e
 		capacity = len(args) * 5
 	}
 
-	seen := valueset.New(0)
 	result := runtime.NewArray(capacity)
 
 	for i, arg := range args {
 		currList, err := runtime.CastArg[runtime.List](arg, i)
-
 		if err != nil {
 			return runtime.None, err
 		}
 
 		err = currList.ForEach(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-			added, err := seen.Add(ctx, value)
-			if err != nil {
-				return false, err
-			}
-
-			if !added {
-				return true, nil
-			}
-
 			return true, result.Append(ctx, value)
 		})
-
 		if err != nil {
 			return runtime.None, err
 		}

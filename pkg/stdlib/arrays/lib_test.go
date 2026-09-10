@@ -10,7 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-func TestToUniqueList(t *testing.T) {
+func TestUniqueListOrder(t *testing.T) {
 	Convey("Should return unique items from a list", t, func() {
 		arr := runtime.NewArrayWith(
 			runtime.NewInt(1),
@@ -25,7 +25,7 @@ func TestToUniqueList(t *testing.T) {
 			runtime.NewInt(6),
 		)
 
-		result, err := arrays.ToUniqueList(context.Background(), arr)
+		result, err := arrays.Unique(context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(result.String(), ShouldEqual, `[1,2,3,4,5,6]`)
@@ -34,7 +34,7 @@ func TestToUniqueList(t *testing.T) {
 	Convey("Should return empty list when input is empty", t, func() {
 		arr := runtime.NewArrayWith()
 
-		result, err := arrays.ToUniqueList(context.Background(), arr)
+		result, err := arrays.Unique(context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(result.String(), ShouldEqual, `[]`)
@@ -49,7 +49,7 @@ func TestToUniqueList(t *testing.T) {
 			runtime.NewString("b"),
 		)
 
-		result, err := arrays.ToUniqueList(context.Background(), arr)
+		result, err := arrays.Unique(context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(result.String(), ShouldEqual, `["a","b","c"]`)
@@ -65,7 +65,7 @@ func TestToUniqueList(t *testing.T) {
 			runtime.NewBoolean(false),
 		)
 
-		result, err := arrays.ToUniqueList(context.Background(), arr)
+		result, err := arrays.Unique(context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(result.String(), ShouldEqual, `[1,"test",true,false]`)

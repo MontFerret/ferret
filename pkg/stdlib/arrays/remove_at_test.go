@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-func TestRemoveNth(t *testing.T) {
+func TestRemoveAt(t *testing.T) {
 	Convey("Should return a copy of an array without an element by its position", t, func() {
 		arr := runtime.NewArrayWith(
 			runtime.NewInt(1),
@@ -21,7 +21,7 @@ func TestRemoveNth(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.RemoveNth(context.Background(), arr, runtime.NewInt(2))
+		out, err := arrays.RemoveAt(context.Background(), arr, runtime.NewInt(2))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,4,5]")
@@ -36,7 +36,7 @@ func TestRemoveNth(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.RemoveNth(context.Background(), arr, runtime.NewInt(6))
+		out, err := arrays.RemoveAt(context.Background(), arr, runtime.NewInt(6))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,3,4,5]")

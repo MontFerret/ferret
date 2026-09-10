@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestPush(t *testing.T) {
@@ -21,7 +19,7 @@ func TestPush(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Push(context.Background(), arr, runtime.NewInt(6))
+		out, err := callLegacy("push", context.Background(), arr, runtime.NewInt(6))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,3,4,5,6]")
@@ -36,7 +34,7 @@ func TestPush(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Push(
+		out, err := callLegacy("push",
 			context.Background(),
 			arr,
 			runtime.NewInt(6),
@@ -46,7 +44,7 @@ func TestPush(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,3,4,5,6]")
 
-		out2, err := arrays.Push(
+		out2, err := callLegacy("push",
 			context.Background(),
 			arr,
 			runtime.NewInt(6),

@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-func TestNth_Basic(t *testing.T) {
+func TestAt_Basic(t *testing.T) {
 	ctx := context.Background()
 
 	Convey("Should return item by index", t, func() {
@@ -23,7 +23,7 @@ func TestNth_Basic(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(1))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(1))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.NewInt(2))
@@ -32,7 +32,7 @@ func TestNth_Basic(t *testing.T) {
 	Convey("Should return None when no value", t, func() {
 		arr := runtime.NewArrayWith()
 
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(1))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(1))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldPointTo, runtime.None)
@@ -41,14 +41,14 @@ func TestNth_Basic(t *testing.T) {
 	Convey("Should return None when passed negative value", t, func() {
 		arr := runtime.NewArrayWith()
 
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(-1))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(-1))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldPointTo, runtime.None)
 	})
 }
 
-func TestNth_EdgeCases(t *testing.T) {
+func TestAt_EdgeCases(t *testing.T) {
 	ctx := context.Background()
 
 	Convey("Should handle very large index", t, func() {
@@ -57,7 +57,7 @@ func TestNth_EdgeCases(t *testing.T) {
 			runtime.NewInt(20),
 			runtime.NewInt(30),
 		)
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(1000))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(1000))
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.None)
 	})
@@ -68,11 +68,11 @@ func TestNth_EdgeCases(t *testing.T) {
 			runtime.NewInt(20),
 			runtime.NewInt(30),
 		)
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(-1))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(-1))
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.None)
 
-		out, err = arrays.Nth(ctx, arr, runtime.NewInt(-100))
+		out, err = arrays.At(ctx, arr, runtime.NewInt(-100))
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.None)
 	})
@@ -83,11 +83,11 @@ func TestNth_EdgeCases(t *testing.T) {
 			runtime.NewInt(20),
 			runtime.NewInt(30),
 		)
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(0))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(0))
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.NewInt(10))
 
-		out, err = arrays.Nth(ctx, arr, runtime.NewInt(2))
+		out, err = arrays.At(ctx, arr, runtime.NewInt(2))
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.NewInt(30))
 	})
@@ -98,13 +98,13 @@ func TestNth_EdgeCases(t *testing.T) {
 			runtime.NewInt(20),
 			runtime.NewInt(30),
 		)
-		out, err := arrays.Nth(ctx, arr, runtime.NewInt(3))
+		out, err := arrays.At(ctx, arr, runtime.NewInt(3))
 		So(err, ShouldBeNil)
 		So(out, ShouldEqual, runtime.None)
 	})
 }
 
-func TestNth_ArgumentValidation(t *testing.T) {
+func TestAt_ArgumentValidation(t *testing.T) {
 	ctx := context.Background()
 
 	Convey("Should reject invalid argument types", t, func() {
@@ -112,15 +112,15 @@ func TestNth_ArgumentValidation(t *testing.T) {
 		nonInt := runtime.NewString("not an int")
 		arr := runtime.NewArrayWith(runtime.NewInt(1))
 
-		_, err := arrays.Nth(ctx, nonArray, runtime.NewInt(0))
+		_, err := arrays.At(ctx, nonArray, runtime.NewInt(0))
 		So(err, ShouldNotBeNil)
 
-		_, err = arrays.Nth(ctx, arr, nonInt)
+		_, err = arrays.At(ctx, arr, nonInt)
 		So(err, ShouldNotBeNil)
 	})
 }
 
-func TestNth_SpecialValues(t *testing.T) {
+func TestAt_SpecialValues(t *testing.T) {
 	ctx := context.Background()
 
 	Convey("Should handle None values correctly", t, func() {
@@ -130,7 +130,7 @@ func TestNth_SpecialValues(t *testing.T) {
 			runtime.NewInt(3),
 		)
 
-		noneVal, err := arrays.Nth(ctx, arr, runtime.NewInt(1))
+		noneVal, err := arrays.At(ctx, arr, runtime.NewInt(1))
 		So(err, ShouldBeNil)
 		So(noneVal, ShouldEqual, runtime.None)
 	})

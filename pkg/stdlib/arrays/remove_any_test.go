@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-func TestRemoveValues(t *testing.T) {
+func TestRemoveAny(t *testing.T) {
 	Convey("Should return a copy of an array without given elements", t, func() {
 		arr := runtime.NewArrayWith(
 			runtime.NewInt(1),
@@ -22,7 +22,7 @@ func TestRemoveValues(t *testing.T) {
 			runtime.NewInt(6),
 		)
 
-		out, err := arrays.RemoveValues(
+		out, err := arrays.RemoveAny(
 			context.Background(),
 			arr,
 			runtime.NewArrayWith(

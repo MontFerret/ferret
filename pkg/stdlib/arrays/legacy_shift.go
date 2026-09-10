@@ -9,9 +9,9 @@ import (
 // shift returns a new array without the first element.
 // @param array {Any[]} Target array.
 // @return {Any[]} Copy of an array without the first element.
-func Shift(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+// @deprecated Use arrays::slice(array, 1).
+func legacyShift(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	list, err := runtime.CastArg[runtime.List](arg, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}

@@ -67,6 +67,7 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 	assertPathNamespace(t, first.Reference, first.Catalog)
 	assertTestingAssertionMetadata(t, first.Reference)
 	assertMutableObjectMetadata(t, first.Reference, first.Catalog)
+	assertArrayMetadata(t, first.Reference, first.Catalog)
 }
 
 func assertMutableObjectMetadata(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {

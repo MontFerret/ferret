@@ -12,9 +12,7 @@ import (
 // @param length {Int} Read indicating how many elements to extract.
 // @return {Any[]} Sliced array.
 func Slice(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	_, _, err := runtime.CastVarArgs2[runtime.List, runtime.Int](args)
-
-	if err != nil {
+	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
 	}
 
@@ -54,7 +52,6 @@ func sliceList(ctx context.Context, arg1, arg2, arg3 runtime.Value, hasLength bo
 	}
 
 	size, err := list.Length(ctx)
-
 	if err != nil {
 		return runtime.None, err
 	}
@@ -73,7 +70,6 @@ func sliceList(ctx context.Context, arg1, arg2, arg3 runtime.Value, hasLength bo
 
 	if hasLength {
 		length, err := runtime.CastArg[runtime.Int](arg3, 2)
-
 		if err != nil {
 			return runtime.None, err
 		}
@@ -83,13 +79,13 @@ func sliceList(ctx context.Context, arg1, arg2, arg3 runtime.Value, hasLength bo
 			return runtime.NewArray(0), nil
 		}
 
-		end = start + length
+		// Compare before adding so an oversized length cannot wrap the endpoint.
+		if length > size-start {
+			end = size
+		} else {
+			end = start + length
+		}
 	} else {
-		end = size
-	}
-
-	// Ensure end doesn't exceed array bounds
-	if end > size {
 		end = size
 	}
 

@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestPosition_Basic(t *testing.T) {
@@ -23,7 +21,7 @@ func TestPosition_Basic(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Position(ctx, arr, runtime.NewInt(3))
+		out, err := callLegacy("position", ctx, arr, runtime.NewInt(3))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "true")
@@ -38,7 +36,7 @@ func TestPosition_Basic(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Position(ctx, arr, runtime.NewInt(6))
+		out, err := callLegacy("position", ctx, arr, runtime.NewInt(6))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "false")
@@ -53,7 +51,7 @@ func TestPosition_Basic(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Position(
+		out, err := callLegacy("position",
 			ctx,
 			arr,
 			runtime.NewInt(3),
@@ -73,7 +71,7 @@ func TestPosition_Basic(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Position(
+		out, err := callLegacy("position",
 			ctx,
 			arr,
 			runtime.NewInt(6),
@@ -94,14 +92,14 @@ func TestPosition_EdgeCases(t *testing.T) {
 			runtime.None,
 			runtime.NewInt(3),
 		)
-		out, err := arrays.Position(ctx, arr, runtime.None)
+		out, err := callLegacy("position", ctx, arr, runtime.None)
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "true")
 	})
 
 	Convey("Should handle empty array", t, func() {
 		arr := runtime.NewArrayWith()
-		out, err := arrays.Position(ctx, arr, runtime.NewInt(1))
+		out, err := callLegacy("position", ctx, arr, runtime.NewInt(1))
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "false")
 	})
@@ -112,7 +110,7 @@ func TestPosition_EdgeCases(t *testing.T) {
 			runtime.NewInt(2),
 			runtime.NewInt(3),
 		)
-		out, err := arrays.Position(ctx, arr, runtime.NewInt(2), runtime.NewBoolean(true))
+		out, err := callLegacy("position", ctx, arr, runtime.NewInt(2), runtime.NewBoolean(true))
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "1")
 	})
@@ -123,7 +121,7 @@ func TestPosition_EdgeCases(t *testing.T) {
 			runtime.None,
 			runtime.NewInt(3),
 		)
-		out, err := arrays.Position(ctx, arr, runtime.None, runtime.NewBoolean(true))
+		out, err := callLegacy("position", ctx, arr, runtime.None, runtime.NewBoolean(true))
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "1")
 	})
@@ -134,7 +132,7 @@ func TestPosition_ArgumentValidation(t *testing.T) {
 
 	Convey("Should reject too few arguments", t, func() {
 		arr := runtime.NewArrayWith(runtime.NewInt(1))
-		_, err := arrays.Position(ctx, arr)
+		_, err := callLegacy("position", ctx, arr)
 		So(err, ShouldNotBeNil)
 	})
 
@@ -143,10 +141,10 @@ func TestPosition_ArgumentValidation(t *testing.T) {
 		nonBool := runtime.NewString("not a bool")
 		arr := runtime.NewArrayWith(runtime.NewInt(1))
 
-		_, err := arrays.Position(ctx, nonArray, runtime.NewInt(1))
+		_, err := callLegacy("position", ctx, nonArray, runtime.NewInt(1))
 		So(err, ShouldNotBeNil)
 
-		_, err = arrays.Position(ctx, arr, runtime.NewInt(1), nonBool)
+		_, err = callLegacy("position", ctx, arr, runtime.NewInt(1), nonBool)
 		So(err, ShouldNotBeNil)
 	})
 }

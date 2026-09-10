@@ -15,6 +15,9 @@ Consumers should use the runtime's shared operations rather than matching
 concrete built-in types. Host values may implement capabilities without being a
 built-in value, and consumers must preserve those contracts.
 
+Array bounds, shallow copy ownership, and independent slice backing storage are
+described in [Array library contracts](array-library.md).
+
 Map destination operations, immutable copies, and mutable object-library
 ownership are described in [Object library contracts](object-library.md). Runtime iterator traversal
 closes acquired closable iterators and preserves both traversal and close errors;

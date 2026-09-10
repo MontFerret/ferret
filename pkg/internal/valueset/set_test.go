@@ -10,36 +10,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type collisionValue struct {
-	err   error
-	label string
-}
-
-func (v collisionValue) String() string {
-	return v.label
-}
-
-func (v collisionValue) Hash() uint64 {
-	return 7
-}
-
-func (v collisionValue) Copy() runtime.Value {
-	return v
-}
-
-func (v collisionValue) Equal(_ context.Context, other runtime.Value) (bool, error) {
-	if v.err != nil {
-		return false, v.err
-	}
-
-	o, ok := other.(collisionValue)
-	if !ok {
-		return false, nil
-	}
-
-	return v.label == o.label, nil
-}
-
 func TestSetPropagatesEqualityErrorsWithoutMutation(t *testing.T) {
 	ctx := context.Background()
 	sentinel := errors.New("equality failed")
@@ -192,5 +162,85 @@ func TestSetSeparatesHashCollisions(t *testing.T) {
 
 	if got := set.Len(); got != 2 {
 		t.Fatalf("expected length 2, got %d", got)
+	}
+}
+
+func TestSetMembershipAndRemoval(t *testing.T) {
+	values := []runtime.Value{collisionValue{label: "first"}, collisionValue{label: "second"}, collisionValue{label: "third"}}
+	for _, order := range [][]int{{0, 1, 2}, {1, 2, 0}, {2, 0, 1}} {
+		set := valueset.New(0)
+		for _, value := range values {
+			if _, err := set.Add(t.Context(), value); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		for step, index := range order {
+			found, err := set.Contains(t.Context(), values[index])
+			if err != nil || !found {
+				t.Fatalf("missing value %d before removal: %v", index, err)
+			}
+
+			removed, err := set.Remove(t.Context(), values[index])
+			if err != nil || !removed || set.Len() != len(values)-step-1 {
+				t.Fatalf("remove %d: %t, %v; size=%d", index, removed, err, set.Len())
+			}
+
+			found, err = set.Contains(t.Context(), values[index])
+			if err != nil || found {
+				t.Fatalf("removed value still present: %t, %v", found, err)
+			}
+
+			removed, err = set.Remove(t.Context(), values[index])
+			if err != nil || removed {
+				t.Fatalf("duplicate removal: %t, %v", removed, err)
+			}
+		}
+
+		if added, err := set.Add(t.Context(), values[0]); err != nil || !added || set.Len() != 1 {
+			t.Fatalf("reuse emptied set: %t, %v; size=%d", added, err, set.Len())
+		}
+	}
+}
+
+func TestSetLookupErrorsPreserveMembership(t *testing.T) {
+	sentinel := errors.New("comparison failed")
+	set := valueset.New(0)
+	if _, err := set.Add(t.Context(), collisionValue{label: "first", err: sentinel}); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, lookup := range []func(context.Context, runtime.Value) (bool, error){set.Contains, set.Remove} {
+		found, err := lookup(t.Context(), collisionValue{label: "second"})
+		if found || !errors.Is(err, sentinel) || set.Len() != 1 {
+			t.Fatalf("failed lookup: %t, %v; size=%d", found, err, set.Len())
+		}
+	}
+
+	canceled, cancel := context.WithCancel(t.Context())
+	cancel()
+	if found, err := set.Remove(canceled, collisionValue{label: "first"}); found || !errors.Is(err, context.Canceled) || set.Len() != 1 {
+		t.Fatalf("canceled removal: %t, %v; size=%d", found, err, set.Len())
+	}
+}
+
+func TestSetMembershipUsesNumericAndNestedEquality(t *testing.T) {
+	for _, pair := range [][2]runtime.Value{
+		{runtime.Int(1), runtime.Float(1)},
+		{runtime.NewArrayWith(runtime.Int(1)), runtime.NewArrayWith(runtime.Float(1))},
+		{runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1)}), runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Float(1)})},
+	} {
+		set := valueset.New(0)
+		if _, err := set.Add(t.Context(), pair[0]); err != nil {
+			t.Fatal(err)
+		}
+
+		if found, err := set.Contains(t.Context(), pair[1]); err != nil || !found {
+			t.Fatalf("equal value absent: %t, %v", found, err)
+		}
+
+		if removed, err := set.Remove(t.Context(), pair[1]); err != nil || !removed || set.Len() != 0 {
+			t.Fatalf("equal value not removed: %t, %v", removed, err)
+		}
 	}
 }

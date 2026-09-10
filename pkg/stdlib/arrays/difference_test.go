@@ -11,7 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-func TestMinus(t *testing.T) {
+func TestDifference(t *testing.T) {
 	Convey("Should find differences between 2 arrays", t, func() {
 		arr1 := runtime.NewArrayWith(
 			runtime.NewInt(1),
@@ -27,7 +27,7 @@ func TestMinus(t *testing.T) {
 			runtime.NewInt(6),
 		)
 
-		out, err := arrays.Minus(context.Background(), arr1, arr2)
+		out, err := arrays.Difference(context.Background(), arr1, arr2)
 
 		check := map[int]bool{
 			1: true,
@@ -73,7 +73,7 @@ func TestMinus(t *testing.T) {
 			runtime.NewInt(8),
 		)
 
-		out, err := arrays.Minus(context.Background(), arr1, arr2, arr3)
+		out, err := arrays.Difference(context.Background(), arr1, arr2, arr3)
 
 		check := map[int]bool{
 			1: true,
