@@ -55,3 +55,59 @@ func TestMapFilterSemantics(t *testing.T) {
 		}
 	}
 }
+
+func TestMapDeepCopyOnWriteIsolation(t *testing.T) {
+	ctx := context.Background()
+	for _, test := range objectcases.MergeCases() {
+		t.Run(test.Name, func(t *testing.T) {
+			dst := test.Sources[0]
+			if err := runtime.MergeMapsDeepCopyOnWriteInto(ctx, dst, test.Sources[1:]...); err != nil {
+				t.Fatal(err)
+			}
+
+			equal, err := runtime.EqualValues(ctx, dst, test.Deep)
+			if err != nil || !equal {
+				t.Fatalf("result=%v want=%v err=%v", dst, test.Deep, err)
+			}
+		})
+	}
+
+	leaf := runtime.NewObjectWith(map[string]runtime.Value{"left": runtime.Int(1)})
+	branch := runtime.NewObjectWith(map[string]runtime.Value{"leaf": leaf})
+	dst := runtime.NewObjectWith(map[string]runtime.Value{"change": branch, "retain": branch})
+	source := runtime.NewObjectWith(map[string]runtime.Value{
+		"change": runtime.NewObjectWith(map[string]runtime.Value{"leaf": runtime.NewObjectWith(map[string]runtime.Value{"right": runtime.Int(2)})}),
+		"copy":   branch,
+	})
+	if err := runtime.MergeMapsDeepCopyOnWriteInto(ctx, dst, source); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, value := range []runtime.Map{branch, leaf} {
+		length, err := value.Length(ctx)
+		if err != nil || length != 1 {
+			t.Fatalf("external alias changed: %v, %v", value, err)
+		}
+	}
+
+	retained, err := dst.Get(ctx, runtime.String("retain"))
+	if err != nil || retained != branch {
+		t.Fatalf("untouched branch identity changed: %v", err)
+	}
+
+	changed, err := dst.Get(ctx, runtime.String("change"))
+	if err != nil || changed == branch {
+		t.Fatalf("conflicting branch was not detached: %v", err)
+	}
+
+	want := runtime.NewObjectWith(map[string]runtime.Value{"leaf": runtime.NewObjectWith(map[string]runtime.Value{"left": runtime.Int(1), "right": runtime.Int(2)})})
+	equal, err := runtime.EqualValues(ctx, changed, want)
+	if err != nil || !equal {
+		t.Fatalf("changed=%v want=%v err=%v", changed, want, err)
+	}
+
+	original, err := source.Get(ctx, runtime.String("copy"))
+	if err != nil || original != branch {
+		t.Fatalf("source alias changed: %v", err)
+	}
+}

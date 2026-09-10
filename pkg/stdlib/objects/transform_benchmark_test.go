@@ -43,3 +43,40 @@ func BenchmarkObjectTransform(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkMutableObjectTransform(b *testing.B) {
+	ctx := context.Background()
+	patch := runtime.NewObjectWith(map[string]runtime.Value{
+		"nested":  runtime.NewObjectWith(map[string]runtime.Value{"right": runtime.Int(2)}),
+		"version": runtime.Int(2),
+	})
+	for _, test := range []struct {
+		name  string
+		apply runtime.Function
+		args  []runtime.Value
+	}{
+		{name: "merge", apply: objects.MergeMutable, args: []runtime.Value{patch}},
+		{name: "merge_deep", apply: objects.MergeDeepMutable, args: []runtime.Value{patch}},
+		{name: "keep_keys", apply: objects.KeepKeysMutable, args: []runtime.Value{runtime.String("nested")}},
+		{name: "omit_keys", apply: objects.OmitKeysMutable, args: []runtime.Value{runtime.String("name")}},
+	} {
+		b.Run(test.name, func(b *testing.B) {
+			args := make([]runtime.Value, len(test.args)+1)
+			copy(args[1:], test.args)
+			b.ReportAllocs()
+			for b.Loop() {
+				b.StopTimer()
+				args[0] = runtime.NewObjectWith(map[string]runtime.Value{
+					"name":   runtime.String("Ferret"),
+					"nested": runtime.NewObjectWith(map[string]runtime.Value{"left": runtime.Int(1)}),
+					"items":  runtime.NewArrayWith(runtime.Int(1), runtime.Int(2)),
+				})
+				b.StartTimer()
+
+				if _, err := test.apply(ctx, args...); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}

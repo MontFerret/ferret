@@ -66,6 +66,52 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 	assertCatalog(t, first.Reference, first.Catalog)
 	assertPathNamespace(t, first.Reference, first.Catalog)
 	assertTestingAssertionMetadata(t, first.Reference)
+	assertMutableObjectMetadata(t, first.Reference, first.Catalog)
+}
+
+func assertMutableObjectMetadata(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {
+	t.Helper()
+
+	want := []string{"keep_keys", "merge", "merge_deep", "omit_keys"}
+	var names []string
+	for _, namespace := range reference.Namespaces {
+		if namespace.Name != "object::mut" {
+			continue
+		}
+
+		for _, function := range namespace.Functions {
+			names = append(names, function.Name)
+			if len(function.Signatures) != 1 || !function.Signatures[0].Variadic {
+				t.Fatalf("%s must have one variadic signature", function.Name)
+			}
+
+			signature := function.Signatures[0]
+			if len(signature.Parameters) != 2 || signature.Parameters[0].Name != "target" || signature.Return.Type.Name != "Map" {
+				t.Fatalf("mutable object signature: %#v", signature)
+			}
+		}
+	}
+
+	if !reflect.DeepEqual(names, want) {
+		t.Fatalf("mutable object functions = %v, want %v", names, want)
+	}
+
+	names = nil
+	for _, category := range catalog.Categories {
+		for _, function := range category.Functions {
+			if function.Namespace == "object::mut" {
+				if category.ID != "objects" {
+					t.Fatalf("mutable object function in category %s", category.ID)
+				}
+
+				names = append(names, function.Name)
+			}
+		}
+	}
+
+	if !reflect.DeepEqual(names, want) {
+		t.Fatalf("mutable object catalog = %v, want %v", names, want)
+	}
 }
 
 func assertPathNamespace(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {

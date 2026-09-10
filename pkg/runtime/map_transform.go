@@ -9,7 +9,7 @@ import (
 // Values are cloned when supported and otherwise copied according to Value.Copy.
 // The caller owns dst; sources are borrowed. An error may leave dst partially updated.
 func MergeMapsInto(ctx context.Context, dst Map, sources ...Map) error {
-	return mergeMapsInto(ctx, dst, false, sources)
+	return mergeMapsInto(ctx, dst, sources, nil)
 }
 
 // MergeMapsDeepInto merges maps recursively, replacing other conflicting values.
@@ -17,52 +17,16 @@ func MergeMapsInto(ctx context.Context, dst Map, sources ...Map) error {
 // cloned or copied before insertion; sources are borrowed. Errors may leave dst
 // partially updated. Arrays are replaced, never concatenated.
 func MergeMapsDeepInto(ctx context.Context, dst Map, sources ...Map) error {
-	return mergeMapsInto(ctx, dst, true, sources)
+	return mergeMapsInto(ctx, dst, sources, mergeOwnedMapBranch)
 }
 
-func mergeMapsInto(ctx context.Context, dst Map, deep bool, sources []Map) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-
-	for _, src := range sources {
-		err := src.ForEach(ctx, func(ctx context.Context, value, key Value) (Boolean, error) {
-			if err := ctx.Err(); err != nil {
-				return false, err
-			}
-
-			if err := mergeMapEntry(ctx, dst, key, value, deep); err != nil {
-				return false, fmt.Errorf("key %q: %w", key.String(), err)
-			}
-
-			return true, nil
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func mergeMapEntry(ctx context.Context, dst Map, key, value Value, deep bool) error {
-	if incoming, ok := value.(Map); deep && ok {
-		existing, found, err := dst.Lookup(ctx, key)
-		if err != nil {
-			return err
-		}
-
-		if nested, ok := existing.(Map); found && ok {
-			return MergeMapsDeepInto(ctx, nested, incoming)
-		}
-	}
-
-	copied, err := CloneOrCopy(ctx, value)
-	if err != nil {
-		return err
-	}
-
-	return dst.Set(ctx, key, copied)
+// MergeMapsDeepCopyOnWriteInto deep merges sources into the original dst while
+// borrowing its existing nested values. Conflicting nested maps are cloned,
+// merged through MergeMapsDeepInto, and replaced only after that merge succeeds.
+// Sources and original nested maps are never mutated. Host clones must provide
+// independent maps. Earlier destination updates may remain after an error.
+func MergeMapsDeepCopyOnWriteInto(ctx context.Context, dst Map, sources ...Map) error {
+	return mergeMapsInto(ctx, dst, sources, mergeSharedMapBranch)
 }
 
 // KeepMapKeys removes all but the selected string keys from dst.
@@ -77,6 +41,75 @@ func KeepMapKeys(ctx context.Context, dst Map, keys ...String) error {
 // are untouched. An error may leave dst partially updated.
 func OmitMapKeys(ctx context.Context, dst Map, keys ...String) error {
 	return filterMapKeys(ctx, dst, keys, false)
+}
+
+type mapBranchMerge func(context.Context, Map, Value, Map, Map) error
+
+func mergeMapsInto(ctx context.Context, dst Map, sources []Map, mergeBranch mapBranchMerge) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	for _, src := range sources {
+		err := src.ForEach(ctx, func(ctx context.Context, value, key Value) (Boolean, error) {
+			if err := ctx.Err(); err != nil {
+				return false, err
+			}
+
+			if err := mergeMapEntry(ctx, dst, key, value, mergeBranch); err != nil {
+				return false, fmt.Errorf("key %q: %w", key.String(), err)
+			}
+
+			return true, nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func mergeMapEntry(ctx context.Context, dst Map, key, value Value, mergeBranch mapBranchMerge) error {
+	if incoming, ok := value.(Map); mergeBranch != nil && ok {
+		existing, found, err := dst.Lookup(ctx, key)
+		if err != nil {
+			return err
+		}
+
+		if nested, ok := existing.(Map); found && ok {
+			return mergeBranch(ctx, dst, key, nested, incoming)
+		}
+	}
+
+	copied, err := CloneOrCopy(ctx, value)
+	if err != nil {
+		return err
+	}
+
+	return dst.Set(ctx, key, copied)
+}
+
+func mergeOwnedMapBranch(ctx context.Context, _ Map, _ Value, nested, incoming Map) error {
+	return MergeMapsDeepInto(ctx, nested, incoming)
+}
+
+func mergeSharedMapBranch(ctx context.Context, dst Map, key Value, nested, incoming Map) error {
+	copied, err := CloneOrCopy(ctx, nested)
+	if err != nil {
+		return err
+	}
+
+	owned, ok := copied.(Map)
+	if !ok {
+		return TypeErrorOf(copied, TypeMap)
+	}
+
+	if err := MergeMapsDeepInto(ctx, owned, incoming); err != nil {
+		return err
+	}
+
+	return dst.Set(ctx, key, owned)
 }
 
 func filterMapKeys(ctx context.Context, dst Map, keys []String, keep bool) error {

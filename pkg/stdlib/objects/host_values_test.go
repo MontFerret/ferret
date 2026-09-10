@@ -26,6 +26,8 @@ type (
 		equalityErr error
 		readingKeys *bool
 		walkCalls   *int
+		setCalls    *int
+		removeCalls *int
 		walk        func(context.Context, runtime.KeyReadablePredicate) error
 	}
 	hostList struct {
@@ -152,6 +154,10 @@ func (m *hostMap) Clone(ctx context.Context) (runtime.Cloneable, error) {
 }
 
 func (m *hostMap) Set(ctx context.Context, key, value runtime.Value) error {
+	if m.setCalls != nil {
+		*m.setCalls++
+	}
+
 	if m.setErr != nil {
 		return m.setErr
 	}
@@ -160,6 +166,10 @@ func (m *hostMap) Set(ctx context.Context, key, value runtime.Value) error {
 }
 
 func (m *hostMap) RemoveKey(ctx context.Context, key runtime.Value) error {
+	if m.removeCalls != nil {
+		*m.removeCalls++
+	}
+
 	if m.readingKeys != nil && *m.readingKeys {
 		return runtime.ErrInvalidOperation
 	}

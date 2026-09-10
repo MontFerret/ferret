@@ -19,7 +19,7 @@ type (
 	}
 )
 
-// MergeCases returns independent inputs for both destination and immutable APIs.
+// MergeCases returns independent inputs for destination, immutable, and mutable APIs.
 func MergeCases() []MergeCase {
 	return []MergeCase{
 		{Name: "empty", Sources: []runtime.Map{runtime.NewObject()}, Shallow: runtime.NewObject(), Deep: runtime.NewObject()},
@@ -27,6 +27,11 @@ func MergeCases() []MergeCase {
 			runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1)}),
 			runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(2)}),
 		}, Shallow: runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(2)}), Deep: runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(2)})},
+		{Name: "three sources", Sources: []runtime.Map{
+			runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1)}),
+			runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.None}),
+			runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(3)}),
+		}, Shallow: runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(3)}), Deep: runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(3)})},
 		{Name: "nested conflicts", Sources: []runtime.Map{
 			runtime.NewObjectWith(map[string]runtime.Value{"map": runtime.NewObjectWith(map[string]runtime.Value{"left": runtime.Int(1)}), "list": runtime.NewArrayWith(runtime.Int(1)), "gone": runtime.Int(1)}),
 			runtime.NewObjectWith(map[string]runtime.Value{"map": runtime.NewObjectWith(map[string]runtime.Value{"right": runtime.Int(2)}), "list": runtime.NewArrayWith(runtime.Int(2)), "gone": runtime.None}),

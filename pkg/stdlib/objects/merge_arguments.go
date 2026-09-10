@@ -7,11 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func normalizeMergeArgs(ctx context.Context, args []runtime.Value) ([]runtime.Map, bool, error) {
-	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
-		return nil, false, err
-	}
-
+func normalizeMergeArgs(ctx context.Context, args []runtime.Value, offset int) ([]runtime.Map, bool, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, false, err
 	}
@@ -34,22 +30,30 @@ func normalizeMergeArgs(ctx context.Context, args []runtime.Value) ([]runtime.Ma
 				return true, nil
 			})
 			if err != nil {
-				return nil, true, runtime.ArgError(err, 0)
+				return nil, true, runtime.ArgError(err, offset)
 			}
 
 			return sources, true, nil
 		}
 	}
 
-	sources, err := runtime.CastArgs[runtime.Map](args)
+	sources := make([]runtime.Map, len(args))
+	for index, value := range args {
+		source, err := runtime.CastArg[runtime.Map](value, index+offset)
+		if err != nil {
+			return nil, false, err
+		}
 
-	return sources, false, err
-}
-
-func mergeArgumentError(err error, index int, listForm bool) error {
-	if listForm {
-		return runtime.ArgError(fmt.Errorf("item %d: %w", index, err), 0)
+		sources[index] = source
 	}
 
-	return runtime.ArgError(err, index)
+	return sources, false, nil
+}
+
+func mergeArgumentError(err error, index int, listForm bool, offset int) error {
+	if listForm {
+		return runtime.ArgError(fmt.Errorf("item %d: %w", index, err), offset)
+	}
+
+	return runtime.ArgError(err, index+offset)
 }
