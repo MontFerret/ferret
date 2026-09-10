@@ -142,19 +142,15 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
-The pinned `api v1.0.0-alpha.14` documentation requires stronger parent-close
-coordination than this adapter implements. The corresponding API contract update
-permits borrowed runtime no-op close, Native parent-close behavior, deferred
-option validation at the point of use (including output encoding), and portable
-translation before operation-context checks.
-The local contract also changes `Runtime.Run` and `Session.Run` to return
-`(*Output, error)` so output presence survives adaptation. Coordinated local
-validation uses a temporary Go workspace containing the API, Ferret, and both
-Ferret tool modules; the pinned release still has the old value-returning API.
-Publish that aligned contract and update Ferret's root and
-API-reference-tool dependency pins before merging this refactor. Do not commit
-local module replacements or workspace files as a substitute. After updating
-the pins, validate again without the temporary workspace.
+The root module and API-reference tool pin `api v1.0.0-alpha.16`. This published
+contract permits borrowed runtime no-op close, Native parent-close behavior,
+deferred option validation at the point of use (including output encoding), and
+portable translation before operation-context checks. `Runtime.Run` and
+`Session.Run` return `(*Output, error)` so output presence survives adaptation.
+
+Validate the root module and both tool modules with `GOWORK=off` to check their
+independent module metadata against published dependencies. When root dependency
+versions change, synchronize the API-reference tool's module files as well.
 
 ferretd migration remains separate. Its composition must retain Native engine
 ownership when replacing its local adapter; daemon shutdown policy stays there.
