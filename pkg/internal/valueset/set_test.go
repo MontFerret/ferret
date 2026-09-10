@@ -3,6 +3,7 @@ package valueset_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -242,5 +243,104 @@ func TestSetMembershipUsesNumericAndNestedEquality(t *testing.T) {
 		if removed, err := set.Remove(t.Context(), pair[1]); err != nil || !removed || set.Len() != 0 {
 			t.Fatalf("equal value not removed: %t, %v", removed, err)
 		}
+	}
+}
+
+func TestSetComparisonErrorsPreserveAllMembers(t *testing.T) {
+	sentinel := errors.New("comparison failed")
+	for _, test := range []struct {
+		name   string
+		index  int
+		target int
+		cancel bool
+	}{
+		{name: "primary", index: 0, target: 2},
+		{name: "collision", index: 1, target: 2},
+		{name: "primary_match_and_error", index: 0, target: 0},
+		{name: "collision_match_and_error", index: 1, target: 1},
+		{name: "canceled", index: 0, target: 2, cancel: true},
+	} {
+		for _, operation := range []string{"add", "contains", "remove"} {
+			t.Run(test.name+"/"+operation, func(t *testing.T) {
+				var calls []string
+				members := []*observedCollisionValue{
+					{label: "first", calls: &calls},
+					{label: "second", calls: &calls},
+					{label: "third", calls: &calls},
+				}
+				set := valueset.New(0)
+				for _, member := range members {
+					if _, err := set.Add(t.Context(), member); err != nil {
+						t.Fatal(err)
+					}
+				}
+
+				calls = nil
+				members[test.index].err = sentinel
+				ctx := t.Context()
+				wantErr := sentinel
+				if test.cancel {
+					var cancel context.CancelFunc
+					ctx, cancel = context.WithCancel(ctx)
+					cancel()
+					wantErr = context.Canceled
+				}
+
+				var result bool
+				var err error
+				switch operation {
+				case "add":
+					result, err = set.Add(ctx, members[test.target])
+				case "contains":
+					result, err = set.Contains(ctx, members[test.target])
+				case "remove":
+					result, err = set.Remove(ctx, members[test.target])
+				}
+
+				if result || !errors.Is(err, wantErr) || set.Len() != len(members) {
+					t.Fatalf("failed %s: %t, %v; size=%d", operation, result, err, set.Len())
+				}
+
+				if want := []string{"first", "second", "third"}[:test.index+1]; !slices.Equal(calls, want) {
+					t.Fatalf("comparison order = %v, want %v", calls, want)
+				}
+
+				members[test.index].err = nil
+				for _, member := range members {
+					if found, err := set.Contains(t.Context(), member); err != nil || !found {
+						t.Fatalf("failed operation changed membership of %s: %t, %v", member, found, err)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestSetPrimaryMatchSkipsCollisionErrors(t *testing.T) {
+	for _, operation := range []string{"add", "contains", "remove"} {
+		t.Run(operation, func(t *testing.T) {
+			set := valueset.New(0)
+			primary := collisionValue{label: "first"}
+			for _, value := range []runtime.Value{primary, collisionValue{label: "second", err: errors.New("must not compare")}} {
+				if _, err := set.Add(t.Context(), value); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			var result bool
+			var err error
+			switch operation {
+			case "add":
+				result, err = set.Add(t.Context(), primary)
+			case "contains":
+				result, err = set.Contains(t.Context(), primary)
+			case "remove":
+				result, err = set.Remove(t.Context(), primary)
+			}
+
+			if err != nil || result != (operation != "add") {
+				t.Fatalf("primary %s: %t, %v", operation, result, err)
+			}
+		})
 	}
 }

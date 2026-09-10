@@ -35,13 +35,18 @@ func (s *Set) Add(ctx context.Context, value runtime.Value) (bool, error) {
 		return true, nil
 	}
 
-	index, err := s.find(ctx, hash, first, value)
+	equal, err := runtime.EqualValues(ctx, first, value)
 	if err != nil {
 		return false, err
 	}
 
-	if index >= 0 {
+	if equal {
 		return false, nil
+	}
+
+	index, err := s.findCollision(ctx, hash, value)
+	if err != nil || index >= 0 {
+		return false, err
 	}
 
 	if s.collisions == nil {
@@ -62,7 +67,16 @@ func (s *Set) Contains(ctx context.Context, value runtime.Value) (bool, error) {
 		return false, nil
 	}
 
-	index, err := s.find(ctx, hash, first, value)
+	equal, err := runtime.EqualValues(ctx, first, value)
+	if err != nil {
+		return false, err
+	}
+
+	if equal {
+		return true, nil
+	}
+
+	index, err := s.findCollision(ctx, hash, value)
 
 	return index >= 0, err
 }
@@ -75,13 +89,13 @@ func (s *Set) Remove(ctx context.Context, value runtime.Value) (bool, error) {
 		return false, nil
 	}
 
-	index, err := s.find(ctx, hash, first, value)
-	if err != nil || index < 0 {
+	equal, err := runtime.EqualValues(ctx, first, value)
+	if err != nil {
 		return false, err
 	}
 
 	bucket := s.collisions[hash]
-	if index == 0 {
+	if equal {
 		if len(bucket) == 0 {
 			delete(s.firstByHash, hash)
 		} else {
@@ -90,7 +104,12 @@ func (s *Set) Remove(ctx context.Context, value runtime.Value) (bool, error) {
 			bucket = bucket[:len(bucket)-1]
 		}
 	} else {
-		copy(bucket[index-1:], bucket[index:])
+		index, err := s.findCollision(ctx, hash, value)
+		if err != nil || index < 0 {
+			return false, err
+		}
+
+		copy(bucket[index:], bucket[index+1:])
 		bucket[len(bucket)-1] = nil
 		bucket = bucket[:len(bucket)-1]
 	}
@@ -110,25 +129,17 @@ func (s *Set) Len() int {
 	return s.count
 }
 
-// Index zero denotes the primary value; subsequent indexes select collisions.
-func (s *Set) find(ctx context.Context, hash uint64, first, value runtime.Value) (int, error) {
-	equal, err := runtime.EqualValues(ctx, first, value)
-	if err != nil {
-		return -1, err
-	}
-
-	if equal {
-		return 0, nil
-	}
-
+// Primary entries are compared in the caller so ordinary duplicates avoid the
+// collision-scanning call. Collision indexes are zero-based within the bucket.
+func (s *Set) findCollision(ctx context.Context, hash uint64, value runtime.Value) (int, error) {
 	for index, existing := range s.collisions[hash] {
-		equal, err = runtime.EqualValues(ctx, existing, value)
+		equal, err := runtime.EqualValues(ctx, existing, value)
 		if err != nil {
 			return -1, err
 		}
 
 		if equal {
-			return index + 1, nil
+			return index, nil
 		}
 	}
 
