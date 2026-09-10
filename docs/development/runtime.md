@@ -192,7 +192,7 @@ recursively close its own object. `Session.Close` returns its VM to the pool;
 Engine and Plan cleanup continue even when a hook fails.
 
 Execution, compilation, and debugger context boundaries require non-nil contexts.
-Embedding/session admission rejects existing cancellation before options or hooks
+Native engine/session admission rejects existing cancellation before Native options or hooks
 and rechecks request cancellation before returning constructed resources, closing
 them on cancellation. Raw VM execution retains its existing cancellation
 safepoints within an admitted run.
@@ -200,7 +200,7 @@ safepoints within an admitted run.
 `Compiler.Compile(ctx, src)` synchronously checks cancellation between parsing,
 lowering, and program construction; phases are not individually preempted. The
 context is required. Cancellation and deadline identities remain available
-through `errors.Is`, including when cancellation accompanies an option or hook
+through `errors.Is`, including when cancellation accompanies a Native option or hook
 failure.
 
 Native `PlanOption` and `SessionOption` target private native configurations,
@@ -217,9 +217,10 @@ private targets.
 The [Universal adapter](universal.md) owns the Native engine created by `New` or
 borrows an existing engine through `Wrap`. Owned runtime close delegates to Native;
 borrowed runtime close is a no-op that leaves the wrapper usable. Plan and session
-close calls delegate to Native. The adapter passes caller contexts through without
-adding cancellation or waiting. Portable session
-setters queue Native options; Native owns validation, conversion, and acquisition.
+close calls delegate to Native. Portable option callbacks run before delegation,
+independently of the operation context. Native receives the original caller context
+and owns context validation and cancellation. Portable session setters queue Native
+options; Native owns validation, conversion, and acquisition.
 Callers settle outstanding work, close sessions and plans, then close their owning
 runtime or the borrowed engine.
 

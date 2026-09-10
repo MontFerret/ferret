@@ -1,7 +1,6 @@
 package universal
 
 import (
-	"context"
 	"errors"
 
 	"github.com/MontFerret/api"
@@ -39,28 +38,18 @@ func (o *sessionOptions) SetFSRoot(value string) error {
 	return nil
 }
 
-func newSessionOptions(ctx context.Context, setters []api.SessionOption) (*sessionOptions, error) {
-	if err := checkOptionContext(ctx); err != nil {
-		return nil, err
-	}
-
+func newSessionOptions(setters []api.SessionOption) (*sessionOptions, error) {
 	opts := &sessionOptions{}
 	var failures []error
 	for _, setter := range setters {
-		if setter != nil {
-			if err := setter(opts); err != nil {
-				failures = append(failures, err)
-			}
+		if setter == nil {
+			continue
+		}
+
+		if err := setter(opts); err != nil {
+			failures = append(failures, err)
 		}
 	}
 
-	if err := ctx.Err(); err != nil {
-		failures = append(failures, err)
-	}
-
-	if err := errors.Join(failures...); err != nil {
-		return nil, err
-	}
-
-	return opts, nil
+	return opts, errors.Join(failures...)
 }

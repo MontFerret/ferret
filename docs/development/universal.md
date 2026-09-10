@@ -47,10 +47,11 @@ is nil. The caller retains responsibility for closing the Native engine.
 | `api.WithOutputContentType` | `engine.WithOutputContentType`; Native validates the value and resolves the codec. |
 | `api.WithFSRoot` | `engine.WithSessionFSRoot`; Native validates, creates, and owns the override, preserving the engine's read-only policy. |
 
-Omitted optimization inherits the engine default. Debug compilation accepts
-omission or None. Plan setters reject unsupported levels immediately, without
-changing prior settings or engine defaults. Native and Universal options remain
-intentionally separate types.
+Omitted optimization inherits the engine default. Plan setters map supported
+levels to queued Native options and reject unmappable levels immediately.
+Native validates the queued levels against the compilation mode: debug compilation
+accepts omission or None, and rejects Basic/Full even if followed by None.
+Native and Universal options remain intentionally separate types.
 
 Non-nil portable option callbacks run once in order. Session setters only queue
 Native options and return nil. Returned callback failures are joined and stop
@@ -92,10 +93,12 @@ concurrent closure, and the completed cleanup result. Repeated projections need
 not have identical pointers. Runtime stores only its Native pointer and an
 immutable ownership flag.
 
-Caller contexts pass through unchanged. The adapter checks nil or already-canceled
-contexts before portable callbacks and retains cancellation alongside callback
-errors. Closed-engine and closed-plan rejection occurs in Native, after portable
-option translation. The adapter adds no closing contexts, waiting, or tracking.
+Portable option callbacks run independently of the operation context. If they
+fail, only their returned errors are projected; cancellation is included only
+when a callback returns it. Otherwise the Native operation receives the original
+caller context and owns context validation, cancellation, and closed-object
+rejection. Even nil, canceled, or expired contexts do not skip portable callbacks.
+The flow remains portable input, translation, Native operation, result projection.
 
 Use caller contexts to stop work, settle it, then close sessions, plans, and the
 owning runtime or borrowed Native engine. Native engine close does not wait for
@@ -108,8 +111,9 @@ See [Runtime and lifecycle](runtime.md).
 
 The pinned `api v1.0.0-alpha.14` documentation requires stronger parent-close
 coordination than this adapter implements. The corresponding API contract update
-permits borrowed runtime no-op close, Native parent-close behavior, and deferred
-option validation. Publish that aligned contract and update Ferret's root and
+permits borrowed runtime no-op close, Native parent-close behavior, deferred
+option validation, and portable translation before operation-context checks.
+Publish that aligned contract and update Ferret's root and
 API-reference-tool dependency pins before merging this refactor. Do not commit
 local module replacements as a substitute.
 

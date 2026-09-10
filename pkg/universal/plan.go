@@ -20,7 +20,7 @@ func (p *plan) Params() []string {
 }
 
 func (p *plan) NewSession(ctx context.Context, setters ...api.SessionOption) (api.Session, error) {
-	opts, err := newSessionOptions(ctx, setters)
+	opts, err := newSessionOptions(setters)
 	if err != nil {
 		return nil, wrapDiagnosticError(err)
 	}
@@ -34,7 +34,7 @@ func (p *plan) NewSession(ctx context.Context, setters ...api.SessionOption) (ap
 }
 
 func (p *plan) NewDebugSession(ctx context.Context, setters ...api.SessionOption) (apidebugger.Session, error) {
-	opts, err := newSessionOptions(ctx, setters)
+	opts, err := newSessionOptions(setters)
 	if err != nil {
 		return nil, wrapDiagnosticError(err)
 	}

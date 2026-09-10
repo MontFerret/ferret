@@ -5,14 +5,12 @@ import (
 	"errors"
 	"reflect"
 	"testing"
-	"time"
 
 	gooptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/api"
 
 	"github.com/MontFerret/ferret/v2/pkg/engine"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -90,84 +88,6 @@ func TestCallbackFailuresAggregateBeforeNativeCalls(t *testing.T) {
 		api.WithOptimizationLevel(api.OptimizationAggressive))
 	if !errors.Is(err, first) || !errors.Is(err, second) || compileCalls != 0 {
 		t.Fatalf("plan options reached Native or lost errors: %v calls=%d", err, compileCalls)
-	}
-}
-
-func TestInvalidContextsSkipPortableOptions(t *testing.T) {
-	r := newTestRuntime(t)
-	p, err := r.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN 1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() { _ = p.Close() })
-	canceled, cancel := context.WithCancel(t.Context())
-	cancel()
-	calls := 0
-	po := func(api.PlanOptions) error {
-		calls++
-
-		return nil
-	}
-
-	so := func(api.SessionOptions) error {
-		calls++
-
-		return nil
-	}
-
-	for _, mode := range []string{"nil", "canceled", "deadline"} {
-		ctx := t.Context()
-		want := runtime.ErrInvalidArgument
-		switch mode {
-		case "nil":
-			ctx = nil
-			want = runtime.ErrInvalidArgument
-		case "canceled":
-			ctx = canceled
-			want = context.Canceled
-		case "deadline":
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
-			defer cancel()
-			want = context.DeadlineExceeded
-		}
-
-		for _, call := range []func() error{
-			func() error {
-				_, err := r.Compile(ctx, api.NewAnonymousSource("RETURN 1"), po)
-
-				return err
-			},
-			func() error {
-				_, err := r.CompileDebug(ctx, api.NewAnonymousSource("RETURN 1"), po)
-
-				return err
-			},
-			func() error {
-				_, err := r.Run(ctx, api.NewAnonymousSource("RETURN 1"), so)
-
-				return err
-			},
-			func() error {
-				_, err := p.NewSession(ctx, so)
-
-				return err
-			},
-			func() error {
-				_, err := p.NewDebugSession(ctx, so)
-
-				return err
-			},
-		} {
-			if err := call(); !errors.Is(err, want) {
-				t.Fatalf("%s context: %v, want %v", mode, err, want)
-			}
-		}
-	}
-
-	if calls != 0 {
-		t.Fatalf("invalid contexts invoked %d options", calls)
 	}
 }
 
@@ -312,5 +232,67 @@ func TestRuntimeRunValidatesNativeOptionsAfterCompileAndClosesPlan(t *testing.T)
 
 	if !reflect.DeepEqual(order, []string{"options", "compile", "close plan"}) {
 		t.Fatalf("Native execution order=%v", order)
+	}
+}
+
+func TestDebugOptimizationValidationIsDelegatedToNative(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		portable []api.OptimizationLevel
+		native   []engine.OptimizationLevel
+		canceled bool
+	}{
+		{name: "basic", portable: []api.OptimizationLevel{api.OptimizationBasic}, native: []engine.OptimizationLevel{engine.OptimizationBasic}},
+		{name: "full", portable: []api.OptimizationLevel{api.OptimizationFull}, native: []engine.OptimizationLevel{engine.OptimizationFull}},
+		{name: "basic then none", portable: []api.OptimizationLevel{api.OptimizationBasic, api.OptimizationNone}, native: []engine.OptimizationLevel{engine.OptimizationBasic, engine.OptimizationNone}},
+		{name: "canceled", portable: []api.OptimizationLevel{api.OptimizationBasic}, native: []engine.OptimizationLevel{engine.OptimizationBasic}, canceled: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var compileCalls int
+			native := newTestEngine(t, engine.WithBeforeCompileHook(func(context.Context) error {
+				compileCalls++
+
+				return nil
+			}))
+			portable := Wrap(native)
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			if tc.canceled {
+				cancel()
+			}
+
+			calls := 0
+			p, got := portable.CompileDebug(ctx, api.NewAnonymousSource("RETURN 1"), func(opts api.PlanOptions) error {
+				calls++
+				for _, level := range tc.portable {
+					if err := opts.SetOptimizationLevel(level); err != nil {
+						t.Fatalf("portable setter duplicated Native debug validation: %v", err)
+					}
+				}
+
+				return nil
+			})
+			if p != nil {
+				_ = p.Close()
+
+				t.Fatal("invalid debug options published a plan")
+			}
+
+			options := make([]engine.PlanOption, 0, len(tc.native))
+			for _, level := range tc.native {
+				options = append(options, engine.WithPlanOptimizationLevel(level))
+			}
+
+			pn, want := native.CompileDebug(ctx, source.NewAnonymous("RETURN 1"), options...)
+			if pn != nil {
+				_ = pn.Close()
+
+				t.Fatal("invalid Native debug options published a plan")
+			}
+
+			if got == nil || want == nil || got.Error() != want.Error() || calls != 1 || compileCalls != 0 {
+				t.Fatalf("Native debug validation: got=%v want=%v callbacks=%d compile hooks=%d", got, want, calls, compileCalls)
+			}
+		})
 	}
 }

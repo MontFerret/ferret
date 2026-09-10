@@ -44,7 +44,7 @@ func Wrap(native *engine.Engine) *Runtime {
 // Run delegates convenience execution and transient session/plan cleanup to
 // Native. Available encoded output is retained alongside execution or cleanup errors.
 func (r *Runtime) Run(ctx context.Context, src api.Source, setters ...api.SessionOption) (api.Output, error) {
-	opts, err := newSessionOptions(ctx, setters)
+	opts, err := newSessionOptions(setters)
 	if err != nil {
 		return api.Output{}, wrapDiagnosticError(err)
 	}
@@ -60,8 +60,8 @@ func (r *Runtime) Compile(ctx context.Context, src api.Source, setters ...api.Pl
 	return r.compile(ctx, src, false, setters)
 }
 
-// CompileDebug creates a reusable plan with Native debugger metadata. Explicit
-// optimization must be api.OptimizationNone.
+// CompileDebug creates a reusable plan with Native debugger metadata. Native
+// validates that explicit optimization is api.OptimizationNone.
 func (r *Runtime) CompileDebug(ctx context.Context, src api.Source, setters ...api.PlanOption) (api.Plan, error) {
 	return r.compile(ctx, src, true, setters)
 }
@@ -79,7 +79,7 @@ func (r *Runtime) Close() error {
 }
 
 func (r *Runtime) compile(ctx context.Context, src api.Source, debug bool, setters []api.PlanOption) (api.Plan, error) {
-	opts, err := newPlanOptions(ctx, debug, setters)
+	opts, err := newPlanOptions(setters)
 	if err != nil {
 		return nil, wrapDiagnosticError(err)
 	}

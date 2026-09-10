@@ -10,8 +10,8 @@
 // owning packages. Source coordinates, encoded output, and debugger values already
 // use portable types; Native diagnostics are projected while retaining their causes.
 //
-// Plan and session close calls delegate to Native. The adapter does not track,
-// wait for, or cancel outstanding operations. Caller contexts pass through to
-// Native unchanged. Ordinary Run calls must settle before session cleanup;
-// Native debug Close terminates and settles active commands.
+// Portable option callbacks run before delegation. Native receives caller
+// contexts unchanged and owns context validation and cancellation. Plan and
+// session close calls delegate to Native. Ordinary Run calls must settle before
+// session cleanup; Native debug Close terminates and settles active commands.
 package universal
