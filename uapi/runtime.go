@@ -43,15 +43,16 @@ func Wrap(native *engine.Engine) *Runtime {
 
 // Run delegates convenience execution and transient session/plan cleanup to
 // Native. Available encoded output is retained alongside execution or cleanup errors.
-func (r *Runtime) Run(ctx context.Context, src api.Source, setters ...api.SessionOption) (api.Output, error) {
+// A nil output means Native produced no output; an empty output remains non-nil.
+func (r *Runtime) Run(ctx context.Context, src api.Source, setters ...api.SessionOption) (*api.Output, error) {
 	opts, err := newSessionOptions(setters)
 	if err != nil {
-		return api.Output{}, wrapDiagnosticError(err)
+		return nil, wrapDiagnosticError(err)
 	}
 
 	output, err := r.native.Run(ctx, source.New(src.Name, src.Content), opts.native...)
 
-	return outputValue(output), wrapDiagnosticError(err)
+	return output, wrapDiagnosticError(err)
 }
 
 // Compile translates portable compilation options and creates a reusable plan.

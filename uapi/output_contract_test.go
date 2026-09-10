@@ -30,10 +30,10 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 			}
 
 			t.Cleanup(func() { _ = p.Close() })
-			var outputs []api.Output
+			var outputs []*api.Output
 			for range 2 {
 				opts := []api.SessionOption{api.WithParam("value", 42), api.WithOutputContentType(" application/custom ")}
-				var out api.Output
+				var out *api.Output
 				if debug {
 					s, err := p.NewDebugSession(t.Context(), opts...)
 					if err != nil {
@@ -49,7 +49,7 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 						t.Fatalf("debug event=%+v err=%v", event, runErr)
 					}
 
-					out = *event.Output
+					out = event.Output
 					_ = s.Close()
 				} else {
 					s, err := p.NewSession(t.Context(), opts...)
@@ -66,7 +66,7 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 					_ = s.Close()
 				}
 
-				if out.ContentType != "application/custom" || string(out.Content) != "42" {
+				if out == nil || out.ContentType != "application/custom" || string(out.Content) != "42" {
 					t.Fatalf("output=%+v", out)
 				}
 
@@ -118,7 +118,7 @@ func TestMissingOutputCodecFailsAtEncodingAndPreservesCleanup(t *testing.T) {
 			}
 
 			src := api.NewAnonymousSource("RETURN MAKE_OUTPUT()")
-			var out api.Output
+			var out *api.Output
 			var operationErr error
 			var p api.Plan
 			var child io.Closer
@@ -161,7 +161,7 @@ func TestMissingOutputCodecFailsAtEncodingAndPreservesCleanup(t *testing.T) {
 				}
 			}
 
-			if !errors.Is(operationErr, encoding.ErrCodecNotFound) || out.Content != nil || out.ContentType != "" {
+			if !errors.Is(operationErr, encoding.ErrCodecNotFound) || out != nil {
 				t.Fatalf("output=%+v err=%v", out, operationErr)
 			}
 
@@ -189,17 +189,5 @@ func TestMissingOutputCodecFailsAtEncodingAndPreservesCleanup(t *testing.T) {
 				t.Fatalf("session/plan/result closes=%d/%d/%d, want 1 each", sessions.Load(), plans.Load(), result.closes.Load())
 			}
 		})
-	}
-}
-
-func TestOutputValueDereferencesWithoutCopyingBytes(t *testing.T) {
-	if out := outputValue(nil); out.Content != nil || out.ContentType != "" {
-		t.Fatalf("nil Native output=%+v", out)
-	}
-
-	native := &api.Output{Content: []byte("42"), ContentType: "application/json"}
-	out := outputValue(native)
-	if out.ContentType != native.ContentType || string(out.Content) != "42" || &out.Content[0] != &native.Content[0] {
-		t.Fatalf("pointer-to-value bridge changed output: %+v", out)
 	}
 }

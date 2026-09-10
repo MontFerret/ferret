@@ -44,7 +44,7 @@ func TestNewOwnsConfiguredEngine(t *testing.T) {
 	}
 
 	out, err := portable.Run(t.Context(), api.NewAnonymousSource("RETURN @value + 1"))
-	if err != nil || string(out.Content) != "42" {
+	if err != nil || out == nil || string(out.Content) != "42" {
 		t.Fatalf("configured runtime: output=%+v err=%v", out, err)
 	}
 }
@@ -61,7 +61,7 @@ func TestNewIgnoresNilNativeOption(t *testing.T) {
 		}
 	})
 	out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 42"))
-	if err != nil || string(out.Content) != "42" {
+	if err != nil || out == nil || string(out.Content) != "42" {
 		t.Fatalf("nil option: output=%+v err=%v", out, err)
 	}
 }
@@ -174,7 +174,7 @@ func TestOwnedRuntimeCloseDelegatesCleanupAndRejection(t *testing.T) {
 		}
 	}
 
-	if out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1")); !errors.Is(err, runtime.ErrInvalidOperation) || out.Content != nil {
+	if out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1")); !errors.Is(err, runtime.ErrInvalidOperation) || out != nil {
 		t.Fatalf("closed owned runtime: output=%+v err=%v", out, err)
 	}
 }

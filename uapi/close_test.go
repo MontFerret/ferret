@@ -48,7 +48,7 @@ func TestRuntimeBorrowsEngineAndLeavesChildrenIndependent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if out, err := first.Run(t.Context(), api.NewAnonymousSource("RETURN 45")); err != nil || string(out.Content) != "45" {
+	if out, err := first.Run(t.Context(), api.NewAnonymousSource("RETURN 45")); err != nil || out == nil || string(out.Content) != "45" {
 		t.Fatalf("adapter after Close: output=%+v err=%v", out, err)
 	}
 
@@ -70,11 +70,11 @@ func TestRuntimeBorrowsEngineAndLeavesChildrenIndependent(t *testing.T) {
 
 	t.Cleanup(func() { _ = child.Close() })
 
-	if out, err := child.Run(t.Context()); err != nil || string(out.Content) != "42" {
+	if out, err := child.Run(t.Context()); err != nil || out == nil || string(out.Content) != "42" {
 		t.Fatalf("published child: output=%+v err=%v", out, err)
 	}
 
-	if out, err := second.Run(t.Context(), api.NewAnonymousSource("RETURN 43")); err != nil || string(out.Content) != "43" {
+	if out, err := second.Run(t.Context(), api.NewAnonymousSource("RETURN 43")); err != nil || out == nil || string(out.Content) != "43" {
 		t.Fatalf("independent adapter: output=%+v err=%v", out, err)
 	}
 
@@ -124,7 +124,7 @@ func TestRuntimeCloseDoesNotWaitOrCancelNativeCalls(t *testing.T) {
 					}
 
 					var p api.Plan
-					var output api.Output
+					var output *api.Output
 					var callErr error
 					go func() {
 						src := api.NewAnonymousSource("RETURN 42")
@@ -152,7 +152,7 @@ func TestRuntimeCloseDoesNotWaitOrCancelNativeCalls(t *testing.T) {
 					}
 
 					if mode == "run" {
-						if string(output.Content) != "42" {
+						if output == nil || string(output.Content) != "42" {
 							t.Fatalf("output=%+v", output)
 						}
 					} else {
@@ -256,7 +256,7 @@ func TestClosePreservesNativeErrorsAndCleansExactlyOnce(t *testing.T) {
 
 			if s, ok := target.(api.Session); ok {
 				out, err := s.Run(t.Context())
-				if !errors.Is(err, runtime.ErrInvalidOperation) || out.Content != nil {
+				if !errors.Is(err, runtime.ErrInvalidOperation) || out != nil {
 					t.Fatalf("closed Native session: output=%+v err=%v", out, err)
 				}
 			}
@@ -278,7 +278,7 @@ func TestRuntimeObservesBorrowedEngineClosure(t *testing.T) {
 		}
 	}
 
-	if out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1")); !errors.Is(err, runtime.ErrInvalidOperation) || out.Content != nil {
+	if out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1")); !errors.Is(err, runtime.ErrInvalidOperation) || out != nil {
 		t.Fatalf("closed Native engine: output=%+v err=%v", out, err)
 	}
 }
@@ -334,7 +334,7 @@ func TestPlanCloseWakesNativeCapacityWaiters(t *testing.T) {
 					t.Fatalf("closed plan: debug session=%v err=%v", s, err)
 				}
 
-				if out, err := holder.Run(t.Context()); err != nil || string(out.Content) != "42" {
+				if out, err := holder.Run(t.Context()); err != nil || out == nil || string(out.Content) != "42" {
 					t.Fatalf("borrowed Native VM: output=%+v err=%v", out, err)
 				}
 			})

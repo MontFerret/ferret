@@ -75,7 +75,7 @@ func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
 		}
 
 		want := "[\"" + value + "\",\"rooted\"]"
-		if output.ContentType != "application/json" || string(output.Content) != want {
+		if output == nil || output.ContentType != "application/json" || string(output.Content) != want {
 			t.Fatalf("output(%s) = %+v, want %s", value, output, want)
 		}
 	}
@@ -103,7 +103,7 @@ func TestRuntimeRunUsesUniversalSessionOptions(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 
-	if output.ContentType != "application/json" || string(output.Content) != `["direct","rooted"]` {
+	if output == nil || output.ContentType != "application/json" || string(output.Content) != `["direct","rooted"]` {
 		t.Fatalf("output = %+v", output)
 	}
 }
@@ -126,8 +126,8 @@ func TestRuntimeOutputsAreIndependentAndDebugSessionsWork(t *testing.T) {
 	}
 
 	firstOutput, err := first.Run(ctx)
-	if err != nil {
-		t.Fatalf("Run first: %v", err)
+	if err != nil || firstOutput == nil || len(firstOutput.Content) == 0 {
+		t.Fatalf("Run first: output=%+v err=%v", firstOutput, err)
 	}
 
 	if err := first.Close(); err != nil {
@@ -142,8 +142,8 @@ func TestRuntimeOutputsAreIndependentAndDebugSessionsWork(t *testing.T) {
 	}
 
 	secondOutput, err := second.Run(ctx)
-	if err != nil {
-		t.Fatalf("Run second: %v", err)
+	if err != nil || secondOutput == nil {
+		t.Fatalf("Run second: output=%+v err=%v", secondOutput, err)
 	}
 
 	if err := second.Close(); err != nil {

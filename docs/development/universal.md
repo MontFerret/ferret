@@ -7,6 +7,8 @@ Use `uapi.New` to create and own a Native engine configured with Native options:
 
 ```go
 import (
+    "fmt"
+
     "github.com/MontFerret/api"
     "github.com/MontFerret/ferret/v2"
     "github.com/MontFerret/ferret/v2/uapi"
@@ -19,7 +21,12 @@ if err != nil {
 defer portable.Close()
 
 output, err := portable.Run(ctx, api.NewAnonymousSource("RETURN @value"))
-// output can contain encoded data even when err reports a later cleanup failure.
+if output != nil {
+    fmt.Printf("%s: %s\n", output.ContentType, output.Content)
+}
+if err != nil {
+    return err
+}
 ```
 
 Use the root `ferret` package for ordinary Native embedding and configuration.
@@ -85,9 +92,13 @@ Nil and empty maps are no-ops when applied. Runtime-specific extension options
 must reject incompatible targets; their errors are propagated.
 
 Source conversion is `source.New(src.Name, src.Content)`. Coordinates and debugger
-values already share portable types. Native output differs only by pointer versus
-value: nil becomes zero output, and dereferencing does not copy encoded bytes.
-Output belongs to the caller and survives cleanup. Debugger commands return Native
+values already share portable types. Native and Universal execution return the
+same `*api.Output` type, so the adapter preserves the Native pointer directly.
+Nil output means no output was produced. Non-nil output with a nil error indicates
+success, including empty output; a non-nil output may also accompany hook or
+cleanup errors. A zero-valued `Output` is not an absence sentinel. Inspect output
+independently of the error. Output belongs to the caller and survives cleanup.
+Debugger commands return Native
 snapshots with diagnostic projection applied to command and event errors.
 
 Diagnostic projection preserves kind, message, hint, note, each diagnostic's source,
@@ -136,9 +147,14 @@ coordination than this adapter implements. The corresponding API contract update
 permits borrowed runtime no-op close, Native parent-close behavior, deferred
 option validation at the point of use (including output encoding), and portable
 translation before operation-context checks.
+The local contract also changes `Runtime.Run` and `Session.Run` to return
+`(*Output, error)` so output presence survives adaptation. Coordinated local
+validation uses a temporary Go workspace containing the API, Ferret, and both
+Ferret tool modules; the pinned release still has the old value-returning API.
 Publish that aligned contract and update Ferret's root and
 API-reference-tool dependency pins before merging this refactor. Do not commit
-local module replacements as a substitute.
+local module replacements or workspace files as a substitute. After updating
+the pins, validate again without the temporary workspace.
 
 ferretd migration remains separate. Its composition must retain Native engine
 ownership when replacing its local adapter; daemon shutdown policy stays there.

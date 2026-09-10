@@ -143,7 +143,7 @@ func BenchmarkReusableSession(b *testing.B) {
 					}
 				} else {
 					out, err := portable.Run(b.Context())
-					if err != nil || string(out.Content) != "42" {
+					if err != nil || out == nil || string(out.Content) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
 					}
 				}
@@ -172,7 +172,7 @@ func BenchmarkRuntimeRun(b *testing.B) {
 					}
 				} else {
 					out, err := portable.Run(b.Context(), portableSource, portableOption)
-					if err != nil || string(out.Content) != "42" {
+					if err != nil || out == nil || string(out.Content) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
 					}
 				}

@@ -46,7 +46,7 @@ func TestSessionOptionsMergeAndConvertWhenNativeAppliesThem(t *testing.T) {
 	t.Cleanup(func() { _ = s.Close() })
 	params["first"] = 100
 	out, err := s.Run(t.Context())
-	if err != nil || string(out.Content) != "[8,3,99,null]" || out.ContentType != "application/json" || !reflect.DeepEqual(order, []int{1, 2}) {
+	if err != nil || out == nil || string(out.Content) != "[8,3,99,null]" || out.ContentType != "application/json" || !reflect.DeepEqual(order, []int{1, 2}) {
 		t.Fatalf("output=%+v err=%v order=%v", out, err, order)
 	}
 }
@@ -226,7 +226,7 @@ func TestRuntimeRunValidatesNativeOptionsAfterCompileAndClosesPlan(t *testing.T)
 		return opts.SetOutputContentType(" ")
 	})
 	var invalid gooptions.ValidationError
-	if !errors.As(err, &invalid) || invalid.Field != "output content type" || !errors.Is(err, closeErr) || out.Content != nil || out.ContentType != "" {
+	if !errors.As(err, &invalid) || invalid.Field != "output content type" || !errors.Is(err, closeErr) || out != nil {
 		t.Fatalf("output=%+v err=%v", out, err)
 	}
 
