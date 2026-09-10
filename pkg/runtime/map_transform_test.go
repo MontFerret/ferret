@@ -56,12 +56,12 @@ func TestMapFilterSemantics(t *testing.T) {
 	}
 }
 
-func TestMapDeepCopyOnWriteIsolation(t *testing.T) {
+func TestMapDeepIsolatedMerge(t *testing.T) {
 	ctx := context.Background()
 	for _, test := range objectcases.MergeCases() {
 		t.Run(test.Name, func(t *testing.T) {
 			dst := test.Sources[0]
-			if err := runtime.MergeMapsDeepCopyOnWriteInto(ctx, dst, test.Sources[1:]...); err != nil {
+			if err := runtime.MergeMapsDeepIsolatedInto(ctx, dst, test.Sources[1:]...); err != nil {
 				t.Fatal(err)
 			}
 
@@ -79,7 +79,7 @@ func TestMapDeepCopyOnWriteIsolation(t *testing.T) {
 		"change": runtime.NewObjectWith(map[string]runtime.Value{"leaf": runtime.NewObjectWith(map[string]runtime.Value{"right": runtime.Int(2)})}),
 		"copy":   branch,
 	})
-	if err := runtime.MergeMapsDeepCopyOnWriteInto(ctx, dst, source); err != nil {
+	if err := runtime.MergeMapsDeepIsolatedInto(ctx, dst, source); err != nil {
 		t.Fatal(err)
 	}
 

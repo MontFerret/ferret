@@ -20,12 +20,12 @@ func MergeMapsDeepInto(ctx context.Context, dst Map, sources ...Map) error {
 	return mergeMapsInto(ctx, dst, sources, mergeOwnedMapBranch)
 }
 
-// MergeMapsDeepCopyOnWriteInto deep merges sources into the original dst while
+// MergeMapsDeepIsolatedInto deep merges sources into the original dst while
 // borrowing its existing nested values. Conflicting nested maps are cloned,
 // merged through MergeMapsDeepInto, and replaced only after that merge succeeds.
 // Sources and original nested maps are never mutated. Host clones must provide
 // independent maps. Earlier destination updates may remain after an error.
-func MergeMapsDeepCopyOnWriteInto(ctx context.Context, dst Map, sources ...Map) error {
+func MergeMapsDeepIsolatedInto(ctx context.Context, dst Map, sources ...Map) error {
 	return mergeMapsInto(ctx, dst, sources, mergeSharedMapBranch)
 }
 

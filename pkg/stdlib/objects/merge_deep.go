@@ -22,5 +22,5 @@ func MergeDeep(ctx context.Context, args ...runtime.Value) (runtime.Value, error
 // @param sources {Map|Map[], repeated} Zero or more maps, or one list of maps.
 // @return {Map} The original target with independently merged nested branches.
 func MergeDeepMutable(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	return mergeMutableObjects(ctx, args, runtime.MergeMapsDeepCopyOnWriteInto)
+	return mergeMutableObjects(ctx, args, runtime.MergeMapsDeepIsolatedInto)
 }

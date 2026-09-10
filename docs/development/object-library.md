@@ -44,7 +44,7 @@ changes the former global ZIP's first-key-wins behavior.
 ## Ownership and shared operations
 
 Runtime owns `MergeMapsInto`, `MergeMapsDeepInto`,
-`MergeMapsDeepCopyOnWriteInto`, `KeepMapKeys`, and `OmitMapKeys`.
+`MergeMapsDeepIsolatedInto`, `KeepMapKeys`, and `OmitMapKeys`.
 FQL arity, list-versus-variadic normalization, and argument
 attribution remain in stdlib. These operations use runtime interfaces without
 depending on concrete Objects. Existing `Map.Merge` behavior is unchanged.
@@ -68,7 +68,7 @@ on their target, without cloning it. Retained existing values are untouched.
 that contract fail with a type error. Host mutation refusals propagate, with no
 copy fallback. No-op calls do not test mutability by issuing speculative writes.
 
-Mutable deep merge uses `MergeMapsDeepCopyOnWriteInto`. It shares traversal,
+Mutable deep merge uses `MergeMapsDeepIsolatedInto`. It shares traversal,
 conflict rules, and recursive merging with the exclusively owned helper.
 Conflicting nested branches are cloned before modification, merged through
 `MergeMapsDeepInto`, then replaced on the target after success. The root keeps
