@@ -52,7 +52,7 @@ constructors remain in `uapi`; the root façade exposes the Native API.
 | --- | --- |
 | `api.WithOptimizationLevel` | Explicit None/Basic/Full mapping to `engine.WithPlanOptimizationLevel`; Aggressive and unknown levels fail. |
 | `api.WithParam`, `api.WithParams` | `engine.WithSessionParam`, `engine.WithSessionParams`; Native owns host-value conversion. |
-| `api.WithOutputContentType` | `engine.WithOutputContentType`; Native validates the value and resolves the codec. |
+| `api.WithOutputContentType` | `engine.WithOutputContentType`; Native validates non-blank input when applying options and resolves the codec during result encoding. |
 | `api.WithFSRoot` | `engine.WithSessionFSRoot`; Native validates, creates, and owns the override, preserving the engine's read-only policy. |
 
 Omitted optimization inherits the engine default. Plan setters map supported
@@ -63,10 +63,18 @@ Native and Universal options remain intentionally separate types.
 
 Non-nil portable option callbacks run once in order. Session setters only queue
 Native options and return nil. Returned callback failures are joined and stop
-delegation. Otherwise Native applies the queued options and joins validation
+delegation. Otherwise Native applies the queued options and joins option-application
 failures before acquiring session resources. `Runtime.Run` delegates to
 `Engine.Run`, so compilation and its hooks can precede Native session validation.
 Native also closes the temporary plan if session validation fails.
+
+The portable contract permits runtime-specific validation at the point of use;
+it does not require all configuration to be checked before compilation, resource
+acquisition, or query execution. Native resolves output codecs when encoding the
+result, after the query has run. An unavailable codec therefore returns an
+operation error after callbacks and session creation succeeded and query side
+effects may have occurred. Native still closes the result, and temporary or
+caller-owned sessions retain their usual cleanup responsibilities.
 
 Later values override earlier values, and parameter maps merge. Maps are
 converted when Native applies the options, after all portable callbacks finish;
@@ -110,8 +118,14 @@ The flow remains portable input, translation, Native operation, result projectio
 
 Use caller contexts to stop work, settle it, then close sessions, plans, and the
 owning runtime or borrowed Native engine. Native engine close does not wait for
-admitted work or close descendants. Native plan close rejects new sessions and
-wakes capacity waiters without waiting for constructors. Ordinary sessions support sequential reuse;
+operations already started or close descendants. Native plan close rejects new
+sessions and wakes capacity waiters without waiting for constructors. These are
+Native delegation guarantees. The portable contract requires cleanup of owned
+resources and rejection of new descendants after plan closure, without requiring
+waiting for constructors or coordinating descendant cleanup. Parent close does
+not implicitly cancel caller-owned work; returned sessions and debug sessions
+retain their own lifecycle. Callers coordinate cleanup when descendants use
+parent-owned resources. Ordinary sessions support sequential reuse;
 settle Run before Close. Native debug Close terminates and settles commands.
 See [Runtime and lifecycle](runtime.md).
 
@@ -120,7 +134,8 @@ See [Runtime and lifecycle](runtime.md).
 The pinned `api v1.0.0-alpha.14` documentation requires stronger parent-close
 coordination than this adapter implements. The corresponding API contract update
 permits borrowed runtime no-op close, Native parent-close behavior, deferred
-option validation, and portable translation before operation-context checks.
+option validation at the point of use (including output encoding), and portable
+translation before operation-context checks.
 Publish that aligned contract and update Ferret's root and
 API-reference-tool dependency pins before merging this refactor. Do not commit
 local module replacements as a substitute.

@@ -3,13 +3,17 @@ package uapi
 import (
 	"context"
 	"errors"
+	"io"
+	"sync/atomic"
 	"testing"
 
 	"github.com/MontFerret/api"
 	apidebugger "github.com/MontFerret/api/debugger"
 
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/engine"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
@@ -79,11 +83,112 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 	}
 }
 
-func TestMissingOutputCodecFailsWithoutOutput(t *testing.T) {
-	r := newTestRuntime(t)
-	out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 42"), api.WithOutputContentType("unknown/codec"))
-	if err == nil || out.Content != nil || out.ContentType != "" {
-		t.Fatalf("output=%+v err=%v", out, err)
+func TestMissingOutputCodecFailsAtEncodingAndPreservesCleanup(t *testing.T) {
+	for _, mode := range []string{"run", "session", "debug session"} {
+		t.Run(mode, func(t *testing.T) {
+			var callbacks, runs, sessions, plans atomic.Int32
+			result := &outputResource{}
+			r := newTestRuntime(t,
+				engine.WithFunctionsRegistrar(func(ns runtime.Namespace) {
+					ns.Function().A0().Add("MAKE_OUTPUT", func(context.Context) (runtime.Value, error) {
+						runs.Add(1)
+
+						return result, nil
+					})
+				}),
+				engine.WithSessionCloseHook(func() error {
+					sessions.Add(1)
+
+					return nil
+				}),
+				engine.WithPlanCloseHook(func() error {
+					plans.Add(1)
+
+					return nil
+				}),
+			)
+			option := func(opts api.SessionOptions) error {
+				callbacks.Add(1)
+				err := api.WithOutputContentType("unknown/codec")(opts)
+				if err != nil {
+					t.Errorf("codec checked during portable callback: %v", err)
+				}
+
+				return err
+			}
+
+			src := api.NewAnonymousSource("RETURN MAKE_OUTPUT()")
+			var out api.Output
+			var operationErr error
+			var p api.Plan
+			var child io.Closer
+			if mode == "run" {
+				out, operationErr = r.Run(t.Context(), src, option)
+			} else {
+				var err error
+				p, err = r.CompileDebug(t.Context(), src)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() { _ = p.Close() })
+				if mode == "session" {
+					s, err := p.NewSession(t.Context(), option)
+					if err != nil {
+						t.Fatalf("session creation checked codec availability: %v", err)
+					}
+
+					child = s
+					t.Cleanup(func() { _ = s.Close() })
+					out, operationErr = s.Run(t.Context())
+				} else {
+					s, err := p.NewDebugSession(t.Context(), option)
+					if err != nil {
+						t.Fatalf("debug session creation checked codec availability: %v", err)
+					}
+
+					child = s
+					t.Cleanup(func() { _ = s.Close() })
+					if _, err := s.Start(t.Context()); err != nil {
+						t.Fatal(err)
+					}
+
+					var event *apidebugger.Event
+					event, operationErr = s.Continue(t.Context())
+					if event == nil || event.Reason != apidebugger.ReasonCompleted || event.Output != nil {
+						t.Fatalf("debug completion event=%+v err=%v", event, operationErr)
+					}
+				}
+			}
+
+			if !errors.Is(operationErr, encoding.ErrCodecNotFound) || out.Content != nil || out.ContentType != "" {
+				t.Fatalf("output=%+v err=%v", out, operationErr)
+			}
+
+			if callbacks.Load() != 1 || runs.Load() != 1 || result.closes.Load() != 1 {
+				t.Fatalf("callbacks=%d query calls=%d result closes=%d, want 1 each", callbacks.Load(), runs.Load(), result.closes.Load())
+			}
+
+			if child != nil {
+				if sessions.Load() != 0 || plans.Load() != 0 {
+					t.Fatalf("encoding failure closed caller-owned session/plan: %d/%d", sessions.Load(), plans.Load())
+				}
+
+				for range 2 {
+					if err := child.Close(); err != nil {
+						t.Fatal(err)
+					}
+
+					if err := p.Close(); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+
+			if sessions.Load() != 1 || plans.Load() != 1 || result.closes.Load() != 1 {
+				t.Fatalf("session/plan/result closes=%d/%d/%d, want 1 each", sessions.Load(), plans.Load(), result.closes.Load())
+			}
+		})
 	}
 }
 
