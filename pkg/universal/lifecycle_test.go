@@ -10,9 +10,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/api"
-	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/engine"
-	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestCancellationAndHookFailureRetainBothCauses(t *testing.T) {
@@ -41,7 +39,7 @@ func TestCancellationAndHookFailureRetainBothCauses(t *testing.T) {
 			}
 
 			t.Cleanup(func() { _ = engine.Close() })
-			runtime := New(engine)
+			runtime := Wrap(engine)
 			t.Cleanup(func() { _ = runtime.Close() })
 			src := api.NewAnonymousSource("RETURN 1")
 
@@ -160,7 +158,7 @@ func TestRuntimeRunPreservesOutputAndAllCleanupErrors(t *testing.T) {
 	}
 
 	t.Cleanup(func() { _ = engine.Close() })
-	runtime := New(engine)
+	runtime := Wrap(engine)
 	t.Cleanup(func() { _ = runtime.Close() })
 
 	output, err := runtime.Run(t.Context(), api.NewAnonymousSource("RETURN 42"))
@@ -262,45 +260,11 @@ func TestCancellationDuringRunHookSurvivesContextReplacement(t *testing.T) {
 	}
 
 	t.Cleanup(func() { _ = engine.Close() })
-	runtime := New(engine)
+	runtime := Wrap(engine)
 	t.Cleanup(func() { _ = runtime.Close() })
 
 	output, err := runtime.Run(ctx, api.NewAnonymousSource("RETURN 42"))
 	if !errors.Is(err, context.Canceled) || len(output.Content) != 0 {
 		t.Fatalf("hook cancellation output=%+v error=%v", output, err)
-	}
-}
-
-func TestDebugCloseRetainsNativeCleanupResult(t *testing.T) {
-	cause := diagnostics.NewUnexpectedError(source.Source{}, "cleanup diagnostic")
-
-	engine, err := engine.New(engine.WithSessionCloseHook(func() error { return cause }))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() { _ = engine.Close() })
-	runtime := New(engine)
-	t.Cleanup(func() { _ = runtime.Close() })
-
-	plan, err := runtime.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN 1"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() { _ = plan.Close() })
-
-	session, err := plan.NewDebugSession(t.Context())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	first, second := session.Close(), session.Close()
-	if first != second { //nolint:errorlint // The completed close result must retain exact identity.
-		t.Fatal("repeated debug close replaced its completed cleanup result")
-	}
-
-	if !errors.Is(first, cause) {
-		t.Fatalf("debug close lost its native cause: %v", first)
 	}
 }

@@ -2,7 +2,6 @@ package universal
 
 import (
 	"context"
-	"sync"
 
 	"github.com/MontFerret/api"
 
@@ -10,9 +9,7 @@ import (
 )
 
 type session struct {
-	native    *engine.Session
-	closeErr  error
-	closeOnce sync.Once
+	native *engine.Session
 }
 
 var _ api.Session = (*session)(nil)
@@ -20,13 +17,9 @@ var _ api.Session = (*session)(nil)
 func (s *session) Run(ctx context.Context) (api.Output, error) {
 	output, err := s.native.Run(ctx)
 
-	return convertOutput(output), wrapDiagnosticError(err)
+	return outputValue(output), wrapDiagnosticError(err)
 }
 
 func (s *session) Close() error {
-	s.closeOnce.Do(func() {
-		s.closeErr = wrapDiagnosticError(s.native.Close())
-	})
-
-	return s.closeErr
+	return wrapDiagnosticError(s.native.Close())
 }

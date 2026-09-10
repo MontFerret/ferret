@@ -26,8 +26,8 @@ func TestRuntimeBorrowsEngineAndLeavesChildrenIndependent(t *testing.T) {
 
 		return nil
 	}))
-	var first api.Runtime = New(native)
-	var second api.Runtime = New(native)
+	var first api.Runtime = Wrap(native)
+	var second api.Runtime = Wrap(native)
 	t.Cleanup(func() { _ = second.Close() })
 	p, err := first.Compile(t.Context(), api.NewAnonymousSource("RETURN 42"))
 	if err != nil {
@@ -42,6 +42,25 @@ func TestRuntimeBorrowsEngineAndLeavesChildrenIndependent(t *testing.T) {
 
 	if closes.Load() != 0 {
 		t.Fatal("adapter closed borrowed engine")
+	}
+
+	if err := first.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if out, err := first.Run(t.Context(), api.NewAnonymousSource("RETURN 45")); err != nil || string(out.Content) != "45" {
+		t.Fatalf("adapter after Close: output=%+v err=%v", out, err)
+	}
+
+	for _, compile := range []func(context.Context, api.Source, ...api.PlanOption) (api.Plan, error){first.Compile, first.CompileDebug} {
+		compiled, err := compile(t.Context(), api.NewAnonymousSource("RETURN 1"))
+		if err != nil {
+			t.Fatalf("compile after adapter Close: %v", err)
+		}
+
+		if err := compiled.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	child, err := p.NewSession(t.Context())
@@ -64,160 +83,86 @@ func TestRuntimeBorrowsEngineAndLeavesChildrenIndependent(t *testing.T) {
 	}
 }
 
-func TestRuntimeCloseWaitsWithoutCancelingAdmittedCalls(t *testing.T) {
-	for _, mode := range []string{"compile", "debug", "run"} {
-		t.Run(mode, func(t *testing.T) {
-			synctest.Test(t, func(t *testing.T) {
-				entered, release := make(chan struct{}), make(chan struct{})
-				block := func(ctx context.Context) error {
-					close(entered)
-					<-release
-
-					return ctx.Err()
-				}
-
-				hook := engine.WithBeforeCompileHook(block)
-				if mode == "run" {
-					hook = engine.WithBeforeRunHook(func(ctx context.Context) (context.Context, error) {
-						return ctx, block(ctx)
-					})
-				}
-
-				r := newTestRuntime(t, hook)
-				var p api.Plan
-				var output api.Output
-				var callErr error
-				go func() {
-					src := api.NewAnonymousSource("RETURN 42")
-					switch mode {
-					case "compile":
-						p, callErr = r.Compile(t.Context(), src)
-					case "debug":
-						p, callErr = r.CompileDebug(t.Context(), src)
-					case "run":
-						output, callErr = r.Run(t.Context(), src)
-					}
-				}()
-				<-entered
-				closed := false
-				go func() { _ = r.Close(); closed = true }()
-				synctest.Wait()
-				if closed {
-					t.Fatal("Close returned before admitted work settled")
-				}
-
-				calls := 0
-				if rejected, err := r.Compile(t.Context(), api.NewAnonymousSource("RETURN 1"), func(api.PlanOptions) error {
-					calls++
-
-					return nil
-				}); rejected != nil || !errors.Is(err, runtime.ErrInvalidOperation) || calls != 0 {
-					t.Fatalf("closed admission: plan=%v err=%v callbacks=%d", rejected, err, calls)
-				}
-
-				close(release)
-				synctest.Wait()
-				if !closed || callErr != nil {
-					t.Fatalf("admitted call was canceled or close stalled: closed=%t err=%v", closed, callErr)
-				}
-
-				if mode == "run" {
-					if string(output.Content) != "42" {
-						t.Fatalf("output=%+v", output)
-					}
-				} else {
-					if p == nil {
-						t.Fatal("admitted compile lost its plan")
-					}
-
-					if err := p.Close(); err != nil {
-						t.Fatal(err)
-					}
-				}
-			})
-		})
-	}
-}
-
-func TestPlanCloseSettlesPendingConstructorsBeforeCleanup(t *testing.T) {
-	for _, debug := range []bool{false, true} {
-		for _, blockedOption := range []bool{false, true} {
-			name := map[bool]string{false: "ordinary", true: "debug"}[debug] + "/" + map[bool]string{false: "capacity", true: "option"}[blockedOption]
-			t.Run(name, func(t *testing.T) {
+func TestRuntimeCloseDoesNotWaitOrCancelNativeCalls(t *testing.T) {
+	for _, owned := range []bool{false, true} {
+		for _, mode := range []string{"compile", "debug", "run"} {
+			t.Run(map[bool]string{false: "borrowed", true: "owned"}[owned]+"/"+mode, func(t *testing.T) {
 				synctest.Test(t, func(t *testing.T) {
-					var planCloses atomic.Int32
-					r := newTestRuntime(t, engine.WithMaxActiveSessions(1), engine.WithPlanCloseHook(func() error {
-						planCloses.Add(1)
-
-						return nil
-					}))
-					p, err := r.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN 42"))
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					t.Cleanup(func() { _ = p.Close() })
-					holder, err := p.NewSession(t.Context())
-					if err != nil {
-						t.Fatal(err)
-					}
-
-					t.Cleanup(func() { _ = holder.Close() })
 					entered, release := make(chan struct{}), make(chan struct{})
-					failure := errors.New("option failure")
-					option := func(api.SessionOptions) error {
-						close(entered)
-						if blockedOption {
-							<-release
-
-							return failure
+					releaseHook := sync.OnceFunc(func() { close(release) })
+					defer releaseHook()
+					caller := t.Context()
+					block := func(ctx context.Context) error {
+						if ctx != caller {
+							t.Error("adapter replaced the caller context")
 						}
 
-						return nil
+						close(entered)
+						<-release
+
+						return ctx.Err()
 					}
 
-					var child io.Closer
-					var createErr error
-					finished := false
-					go func() {
-						if debug {
-							child, createErr = p.NewDebugSession(t.Context(), option)
-						} else {
-							child, createErr = p.NewSession(t.Context(), option)
+					hook := engine.WithBeforeCompileHook(block)
+					if mode == "run" {
+						hook = engine.WithBeforeRunHook(func(ctx context.Context) (context.Context, error) {
+							return ctx, block(ctx)
+						})
+					}
+
+					var r api.Runtime
+					if owned {
+						created, err := New(hook)
+						if err != nil {
+							t.Fatal(err)
 						}
 
-						finished = true
+						r = created
+						t.Cleanup(func() { _ = r.Close() })
+					} else {
+						r = newTestRuntime(t, hook)
+					}
+
+					var p api.Plan
+					var output api.Output
+					var callErr error
+					go func() {
+						src := api.NewAnonymousSource("RETURN 42")
+						switch mode {
+						case "compile":
+							p, callErr = r.Compile(t.Context(), src)
+						case "debug":
+							p, callErr = r.CompileDebug(t.Context(), src)
+						case "run":
+							output, callErr = r.Run(t.Context(), src)
+						}
 					}()
 					<-entered
+					closed := false
+					go func() { _ = r.Close(); closed = true }()
 					synctest.Wait()
-					if finished {
-						t.Fatal("constructor did not block")
+					if !closed {
+						t.Fatal("Close waited for Native work")
 					}
 
-					closed := false
-					go func() { _ = p.Close(); closed = true }()
+					releaseHook()
 					synctest.Wait()
-					if blockedOption {
-						if closed || planCloses.Load() != 0 {
-							t.Fatal("native cleanup ran while an option was active")
+					if !closed || callErr != nil {
+						t.Fatalf("admitted call was canceled or close stalled: closed=%t err=%v", closed, callErr)
+					}
+
+					if mode == "run" {
+						if string(output.Content) != "42" {
+							t.Fatalf("output=%+v", output)
+						}
+					} else {
+						if p == nil {
+							t.Fatal("admitted compile lost its plan")
 						}
 
-						close(release)
-						synctest.Wait()
-					}
-
-					if !closed || !finished || child != nil || !errors.Is(createErr, context.Canceled) || planCloses.Load() != 1 {
-						t.Fatalf("close=%t finished=%t child=%v err=%v cleanup=%d", closed, finished, child, createErr, planCloses.Load())
-					}
-
-					if blockedOption && !errors.Is(createErr, failure) {
-						t.Fatalf("lost option failure: %v", createErr)
-					}
-
-					// The successfully published holder owns its borrowed VM, even
-					// after the plan pool has closed its idle resources.
-					if out, err := holder.Run(t.Context()); err != nil || string(out.Content) != "42" {
-						t.Fatalf("published session revoked: output=%+v err=%v", out, err)
+						if err := p.Close(); err != nil {
+							t.Fatal(err)
+						}
 					}
 				})
 			})
@@ -256,7 +201,7 @@ func TestPublishedDebugSessionDoesNotInheritConstructorCancellation(t *testing.T
 	}
 }
 
-func TestCloseCachesProjectedErrorsAndCleansExactlyOnce(t *testing.T) {
+func TestClosePreservesNativeErrorsAndCleansExactlyOnce(t *testing.T) {
 	for _, kind := range []string{"plan", "session", "debug"} {
 		t.Run(kind, func(t *testing.T) {
 			cause := diagnostics.NewUnexpectedError(source.Source{}, "close diagnostic")
@@ -300,7 +245,7 @@ func TestCloseCachesProjectedErrorsAndCleansExactlyOnce(t *testing.T) {
 			wg.Wait()
 			for _, result := range results {
 				var projected apidiagnostics.Diagnostics
-				if result != results[0] || !errors.Is(result, cause) || !errors.As(result, &projected) || len(projected) != 1 {
+				if !errors.Is(result, cause) || !errors.As(result, &projected) || len(projected) != 1 {
 					t.Fatalf("unstable or incomplete close result: %v", result)
 				}
 			}
@@ -308,40 +253,144 @@ func TestCloseCachesProjectedErrorsAndCleansExactlyOnce(t *testing.T) {
 			if calls.Load() != 1 {
 				t.Fatalf("cleanup calls=%d", calls.Load())
 			}
+
+			if s, ok := target.(api.Session); ok {
+				out, err := s.Run(t.Context())
+				if !errors.Is(err, runtime.ErrInvalidOperation) || out.Content != nil {
+					t.Fatalf("closed Native session: output=%+v err=%v", out, err)
+				}
+			}
 		})
 	}
 }
 
-func TestPanickingOptionsReleaseAdmission(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		r := newTestRuntime(t)
-		p, err := r.Compile(t.Context(), api.NewAnonymousSource("RETURN 1"))
-		if err != nil {
-			t.Fatal(err)
-		}
+func TestRuntimeObservesBorrowedEngineClosure(t *testing.T) {
+	native := newTestEngine(t)
+	r := Wrap(native)
+	if err := native.Close(); err != nil {
+		t.Fatal(err)
+	}
 
-		for _, call := range []func(){
-			func() {
-				_, _ = r.Compile(t.Context(), api.NewAnonymousSource("RETURN 1"), func(api.PlanOptions) error { panic("option") })
-			},
-			func() { _, _ = p.NewSession(t.Context(), func(api.SessionOptions) error { panic("option") }) },
-		} {
-			func() {
-				defer func() {
-					if recover() == nil {
-						t.Error("option panic was swallowed")
+	for _, compile := range []func(context.Context, api.Source, ...api.PlanOption) (api.Plan, error){r.Compile, r.CompileDebug} {
+		p, err := compile(t.Context(), api.NewAnonymousSource("RETURN 1"))
+		if p != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Fatalf("closed Native engine: plan=%v err=%v", p, err)
+		}
+	}
+
+	if out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1")); !errors.Is(err, runtime.ErrInvalidOperation) || out.Content != nil {
+		t.Fatalf("closed Native engine: output=%+v err=%v", out, err)
+	}
+}
+
+func TestPlanCloseWakesNativeCapacityWaiters(t *testing.T) {
+	for _, debug := range []bool{false, true} {
+		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				r := newTestRuntime(t, engine.WithMaxActiveSessions(1))
+				p, err := r.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN 42"))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() { _ = p.Close() })
+				holder, err := p.NewSession(t.Context())
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() { _ = holder.Close() })
+				var child io.Closer
+				var createErr error
+				finished := false
+				go func() {
+					if debug {
+						child, createErr = p.NewDebugSession(t.Context())
+					} else {
+						child, createErr = p.NewSession(t.Context())
+					}
+
+					finished = true
+				}()
+				synctest.Wait()
+				if finished {
+					t.Fatal("constructor did not wait for capacity")
+				}
+
+				if err := p.Close(); err != nil {
+					t.Fatal(err)
+				}
+
+				synctest.Wait()
+				if !finished || child != nil || !errors.Is(createErr, runtime.ErrInvalidOperation) || errors.Is(createErr, context.Canceled) {
+					t.Fatalf("finished=%t child=%v Native closure error=%v", finished, child, createErr)
+				}
+
+				if s, err := p.NewSession(t.Context()); s != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
+					t.Fatalf("closed plan: session=%v err=%v", s, err)
+				}
+
+				if s, err := p.NewDebugSession(t.Context()); s != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
+					t.Fatalf("closed plan: debug session=%v err=%v", s, err)
+				}
+
+				if out, err := holder.Run(t.Context()); err != nil || string(out.Content) != "42" {
+					t.Fatalf("borrowed Native VM: output=%+v err=%v", out, err)
+				}
+			})
+		})
+	}
+}
+
+func TestPlanCloseDoesNotWaitForPortableOptionCallbacks(t *testing.T) {
+	for _, debug := range []bool{false, true} {
+		t.Run(map[bool]string{false: "ordinary", true: "debug"}[debug], func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				var closes atomic.Int32
+				r := newTestRuntime(t, engine.WithPlanCloseHook(func() error {
+					closes.Add(1)
+
+					return nil
+				}))
+				p, err := r.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN 1"))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				t.Cleanup(func() { _ = p.Close() })
+				entered, release := make(chan struct{}), make(chan struct{})
+				releaseOption := sync.OnceFunc(func() { close(release) })
+				defer releaseOption()
+				option := func(api.SessionOptions) error {
+					close(entered)
+					<-release
+
+					return nil
+				}
+
+				var child io.Closer
+				var createErr error
+				go func() {
+					if debug {
+						child, createErr = p.NewDebugSession(t.Context(), option)
+					} else {
+						child, createErr = p.NewSession(t.Context(), option)
 					}
 				}()
-				call()
-			}()
-		}
+				<-entered
+				closed := false
+				go func() { _ = p.Close(); closed = true }()
+				synctest.Wait()
+				if !closed || closes.Load() != 1 {
+					t.Fatal("adapter delayed Native plan cleanup")
+				}
 
-		if err := p.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := r.Close(); err != nil {
-			t.Fatal(err)
-		}
-	})
+				releaseOption()
+				synctest.Wait()
+				if child != nil || !errors.Is(createErr, runtime.ErrInvalidOperation) || errors.Is(createErr, context.Canceled) {
+					t.Fatalf("child=%v Native closure error=%v", child, createErr)
+				}
+			})
+		})
+	}
 }

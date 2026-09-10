@@ -214,13 +214,14 @@ semantic data may be shared with the Universal API; portable option translation
 belongs in `pkg/universal`, which produces Native options without changing their
 private targets.
 
-The [Universal adapter](universal.md) borrows its Native engine and implements
-the portable close contract separately. Runtime close rejects new calls and waits
-for admitted calls without canceling them. Adapter plan close cancels only
-pending constructor contexts, waits for construction to settle, then closes the
-Native plan. It never revokes published sessions. The host still owns descendant
-cleanup and must close the borrowed engine last. Synchronous close from an option
-or hook inside an admitted operation on that same adapter parent is unsupported.
+The [Universal adapter](universal.md) owns the Native engine created by `New` or
+borrows an existing engine through `Wrap`. Owned runtime close delegates to Native;
+borrowed runtime close is a no-op that leaves the wrapper usable. Plan and session
+close calls delegate to Native. The adapter passes caller contexts through without
+adding cancellation or waiting. Portable session
+setters queue Native options; Native owns validation, conversion, and acquisition.
+Callers settle outstanding work, close sessions and plans, then close their owning
+runtime or the borrowed engine.
 
 `WithPlanOptimizationLevel` on `Engine.Compile` selects native None, Basic, or
 Full for one compilation. Omitting it inherits the engine's optimization;

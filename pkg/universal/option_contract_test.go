@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	gooptions "github.com/ziflex/go-options"
 
@@ -12,9 +13,10 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/engine"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func TestSessionOptionsMergeSnapshotAndValidateImmediately(t *testing.T) {
+func TestSessionOptionsMergeAndConvertWhenNativeAppliesThem(t *testing.T) {
 	r := newTestRuntime(t, engine.WithParam("inherited", 7))
 	p, err := r.Compile(t.Context(), api.NewAnonymousSource("RETURN [@inherited, @first, @second, @nil]"))
 	if err != nil {
@@ -23,9 +25,11 @@ func TestSessionOptionsMergeSnapshotAndValidateImmediately(t *testing.T) {
 
 	t.Cleanup(func() { _ = p.Close() })
 	params := map[string]any{"first": 1, "second": 2, "nil": nil}
+	empty := map[string]any{}
 	var order []int
-	s, err := p.NewSession(t.Context(), nil, func(opts api.SessionOptions) error {
+	s, err := p.NewSession(t.Context(), nil, api.WithParams(empty), func(opts api.SessionOptions) error {
 		order = append(order, 1)
+		empty["inherited"] = 8
 
 		return opts.SetParams(params)
 	}, func(opts api.SessionOptions) error {
@@ -35,23 +39,7 @@ func TestSessionOptionsMergeSnapshotAndValidateImmediately(t *testing.T) {
 			return err
 		}
 
-		if err := opts.SetOutputContentType(" application/json "); err != nil {
-			return err
-		}
-
-		for _, setter := range []func() error{
-			func() error { return opts.SetParam("", 1) },
-			func() error { return opts.SetParam("first", nil) },
-			func() error { return opts.SetParams(map[string]any{"first": make(chan int)}) },
-			func() error { return opts.SetOutputContentType(" \t") },
-			func() error { return opts.SetFSRoot(" \t") },
-		} {
-			if err := setter(); err == nil {
-				t.Fatal("setter did not report invalid input immediately")
-			}
-		}
-
-		return nil // Rejected setters must leave the valid earlier options intact.
+		return opts.SetOutputContentType(" application/json ")
 	}, api.WithParams(nil), api.WithParams(map[string]any{}))
 	if err != nil {
 		t.Fatal(err)
@@ -60,12 +48,12 @@ func TestSessionOptionsMergeSnapshotAndValidateImmediately(t *testing.T) {
 	t.Cleanup(func() { _ = s.Close() })
 	params["first"] = 100
 	out, err := s.Run(t.Context())
-	if err != nil || string(out.Content) != "[7,3,2,null]" || out.ContentType != "application/json" || !reflect.DeepEqual(order, []int{1, 2}) {
+	if err != nil || string(out.Content) != "[8,3,99,null]" || out.ContentType != "application/json" || !reflect.DeepEqual(order, []int{1, 2}) {
 		t.Fatalf("output=%+v err=%v order=%v", out, err, order)
 	}
 }
 
-func TestInvalidOptionsAggregateBeforeNativeCalls(t *testing.T) {
+func TestCallbackFailuresAggregateBeforeNativeCalls(t *testing.T) {
 	compileCalls := 0
 	r := newTestRuntime(t, engine.WithBeforeCompileHook(func(context.Context) error {
 		compileCalls++
@@ -92,7 +80,7 @@ func TestInvalidOptionsAggregateBeforeNativeCalls(t *testing.T) {
 		},
 	)
 	var invalid gooptions.ValidationError
-	if !errors.Is(err, first) || !errors.Is(err, second) || !errors.As(err, &invalid) || invalid.Field != "output content type" || compileCalls != 0 || !reflect.DeepEqual(order, []int{1, 2}) {
+	if !errors.Is(err, first) || !errors.Is(err, second) || errors.As(err, &invalid) || compileCalls != 0 || !reflect.DeepEqual(order, []int{1, 2}) {
 		t.Fatalf("err=%v validation=%+v compile=%d order=%v", err, invalid, compileCalls, order)
 	}
 
@@ -105,7 +93,7 @@ func TestInvalidOptionsAggregateBeforeNativeCalls(t *testing.T) {
 	}
 }
 
-func TestContextAndClosedAdmissionSkipOptions(t *testing.T) {
+func TestInvalidContextsSkipPortableOptions(t *testing.T) {
 	r := newTestRuntime(t)
 	p, err := r.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN 1"))
 	if err != nil {
@@ -128,9 +116,9 @@ func TestContextAndClosedAdmissionSkipOptions(t *testing.T) {
 		return nil
 	}
 
-	for _, mode := range []string{"nil", "canceled", "closed"} {
+	for _, mode := range []string{"nil", "canceled", "deadline"} {
 		ctx := t.Context()
-		want := runtime.ErrInvalidOperation
+		want := runtime.ErrInvalidArgument
 		switch mode {
 		case "nil":
 			ctx = nil
@@ -138,9 +126,11 @@ func TestContextAndClosedAdmissionSkipOptions(t *testing.T) {
 		case "canceled":
 			ctx = canceled
 			want = context.Canceled
-		case "closed":
-			_ = p.Close()
-			_ = r.Close()
+		case "deadline":
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+			defer cancel()
+			want = context.DeadlineExceeded
 		}
 
 		for _, call := range []func() error{
@@ -171,13 +161,13 @@ func TestContextAndClosedAdmissionSkipOptions(t *testing.T) {
 			},
 		} {
 			if err := call(); !errors.Is(err, want) {
-				t.Fatalf("%s admission: %v, want %v", mode, err, want)
+				t.Fatalf("%s context: %v, want %v", mode, err, want)
 			}
 		}
 	}
 
 	if calls != 0 {
-		t.Fatalf("rejected admission invoked %d options", calls)
+		t.Fatalf("invalid contexts invoked %d options", calls)
 	}
 }
 
@@ -209,5 +199,118 @@ func TestPlanOptionsValidateEverySetterWithoutMutatingDefaults(t *testing.T) {
 
 	if s, err := p.NewDebugSession(t.Context()); err == nil || s != nil {
 		t.Fatalf("ordinary plan accepted debugging: session=%v err=%v", s, err)
+	}
+}
+
+func TestSessionValidationIsDelegatedToNative(t *testing.T) {
+	native := newTestEngine(t)
+	compiled, err := native.CompileDebug(t.Context(), source.NewAnonymous("RETURN 1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() { _ = compiled.Close() })
+	portable := newPlan(compiled)
+	for _, tc := range []struct {
+		name     string
+		portable []api.SessionOption
+		native   []engine.SessionOption
+	}{
+		{"empty name", []api.SessionOption{api.WithParam("", 1)}, []engine.SessionOption{engine.WithSessionParam("", 1)}},
+		{"nil value", []api.SessionOption{api.WithParam("value", nil)}, []engine.SessionOption{engine.WithSessionParam("value", nil)}},
+		{"unsupported value", []api.SessionOption{api.WithParam("value", make(chan int))}, []engine.SessionOption{engine.WithSessionParam("value", make(chan int))}},
+		{"unsupported map", []api.SessionOption{api.WithParams(map[string]any{"value": make(chan int)})}, []engine.SessionOption{engine.WithSessionParams(map[string]any{"value": make(chan int)})}},
+		{"blank content type", []api.SessionOption{api.WithOutputContentType(" \t")}, []engine.SessionOption{engine.WithOutputContentType(" \t")}},
+		{"blank root", []api.SessionOption{api.WithFSRoot(" \t")}, []engine.SessionOption{engine.WithSessionFSRoot(" \t")}},
+		{"joined failures", []api.SessionOption{api.WithParam("", 1), api.WithOutputContentType(" ")}, []engine.SessionOption{engine.WithSessionParam("", 1), engine.WithOutputContentType(" ")}},
+		{"invalid then valid", []api.SessionOption{api.WithOutputContentType(" "), api.WithOutputContentType("application/json")}, []engine.SessionOption{engine.WithOutputContentType(" "), engine.WithOutputContentType("application/json")}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, debug := range []bool{false, true} {
+				calls := 0
+				option := func(opts api.SessionOptions) error {
+					calls++
+					for _, setter := range tc.portable {
+						if err := setter(opts); err != nil {
+							t.Fatalf("setter validated before Native application: %v", err)
+						}
+					}
+
+					return nil
+				}
+
+				var got, want error
+				if debug {
+					s, err := portable.NewDebugSession(t.Context(), option)
+					if s != nil {
+						_ = s.Close()
+						t.Fatal("invalid options published a debug session")
+					}
+
+					got = err
+					sn, err := compiled.NewDebugSession(t.Context(), tc.native...)
+					if sn != nil {
+						_ = sn.Close()
+						t.Fatal("invalid Native options published a debug session")
+					}
+
+					want = err
+				} else {
+					s, err := portable.NewSession(t.Context(), option)
+					if s != nil {
+						_ = s.Close()
+						t.Fatal("invalid options published a session")
+					}
+
+					got = err
+					sn, err := compiled.NewSession(t.Context(), tc.native...)
+					if sn != nil {
+						_ = sn.Close()
+						t.Fatal("invalid Native options published a session")
+					}
+
+					want = err
+				}
+
+				if got == nil || want == nil || got.Error() != want.Error() || calls != 1 {
+					t.Fatalf("debug=%t calls=%d got=%v want=%v", debug, calls, got, want)
+				}
+			}
+		})
+	}
+}
+
+func TestRuntimeRunValidatesNativeOptionsAfterCompileAndClosesPlan(t *testing.T) {
+	var order []string
+	closeErr := errors.New("plan cleanup")
+	r := newTestRuntime(t,
+		engine.WithBeforeCompileHook(func(context.Context) error {
+			order = append(order, "compile")
+
+			return nil
+		}),
+		engine.WithPlanCloseHook(func() error {
+			order = append(order, "close plan")
+
+			return closeErr
+		}),
+		engine.WithSessionCloseHook(func() error {
+			t.Error("invalid options acquired a Native session")
+
+			return nil
+		}),
+	)
+	out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1"), func(opts api.SessionOptions) error {
+		order = append(order, "options")
+
+		return opts.SetOutputContentType(" ")
+	})
+	var invalid gooptions.ValidationError
+	if !errors.As(err, &invalid) || invalid.Field != "output content type" || !errors.Is(err, closeErr) || out.Content != nil || out.ContentType != "" {
+		t.Fatalf("output=%+v err=%v", out, err)
+	}
+
+	if !reflect.DeepEqual(order, []string{"options", "compile", "close plan"}) {
+		t.Fatalf("Native execution order=%v", order)
 	}
 }

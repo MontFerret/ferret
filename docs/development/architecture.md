@@ -77,12 +77,14 @@ semantics of runtime values, modules, codecs, filesystems, networks, or debugger
 inspection.
 
 `pkg/universal` is the official adapter from Native Ferret to
-`github.com/MontFerret/api`. It imports `pkg/engine` and the portable API, borrows
-the supplied engine, and translates options, source representations, output
-pointers, and diagnostics. Native engine types and options remain independent
-of the portable runtime interfaces. Adapter admission coordination implements
-the Universal close contract without changing Native lifecycle policy or
-tracking descendants. See [Universal adapter](universal.md).
+`github.com/MontFerret/api`. It imports `pkg/engine` and the portable API and
+translates options, source representations, output pointers, and diagnostics.
+Native engine types and options remain independent
+of the portable runtime interfaces. `New` creates and owns a Native engine;
+`Wrap` borrows one. Runtime close delegates to Native for owned engines and is a
+no-op for borrowed engines. Plan and session close calls delegate to Native.
+The adapter owns no admission, cancellation, or descendant tracking.
+See [Universal adapter](universal.md).
 
 The façade fans out to `pkg/engine` for native engine semantics and directly to
 lower-level packages for shared vocabulary and convenience helpers. Engine

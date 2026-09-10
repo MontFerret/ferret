@@ -86,3 +86,15 @@ func TestMissingOutputCodecFailsWithoutOutput(t *testing.T) {
 		t.Fatalf("output=%+v err=%v", out, err)
 	}
 }
+
+func TestOutputValueDereferencesWithoutCopyingBytes(t *testing.T) {
+	if out := outputValue(nil); out.Content != nil || out.ContentType != "" {
+		t.Fatalf("nil Native output=%+v", out)
+	}
+
+	native := &api.Output{Content: []byte("42"), ContentType: "application/json"}
+	out := outputValue(native)
+	if out.ContentType != native.ContentType || string(out.Content) != "42" || &out.Content[0] != &native.Content[0] {
+		t.Fatalf("pointer-to-value bridge changed output: %+v", out)
+	}
+}

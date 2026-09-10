@@ -15,14 +15,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/engine"
 )
 
-func TestNewRequiresNativeEngine(t *testing.T) {
+func TestWrapRequiresNativeEngine(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Fatal("New did not panic for a nil native engine")
+			t.Fatal("Wrap did not panic for a nil native engine")
 		}
 	}()
 
-	New(nil)
+	Wrap(nil)
 }
 
 func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
@@ -240,7 +240,7 @@ func newTestEngine(t testing.TB, options ...engine.Option) *engine.Engine {
 func newTestRuntime(t testing.TB, options ...engine.Option) api.Runtime {
 	t.Helper()
 
-	runtime := New(newTestEngine(t, options...))
+	runtime := Wrap(newTestEngine(t, options...))
 	t.Cleanup(func() {
 		if err := runtime.Close(); err != nil {
 			t.Errorf("runtime Close: %v", err)

@@ -40,6 +40,10 @@ func (o *planOptions) SetOptimizationLevel(level api.OptimizationLevel) error {
 }
 
 func newPlanOptions(ctx context.Context, debug bool, setters []api.PlanOption) (*planOptions, error) {
+	if err := checkOptionContext(ctx); err != nil {
+		return nil, err
+	}
+
 	opts := &planOptions{debug: debug}
 	var failures []error
 	for _, setter := range setters {

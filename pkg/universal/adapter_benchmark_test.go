@@ -17,7 +17,7 @@ func BenchmarkCompile(b *testing.B) {
 		for _, adapter := range []string{"Native", "Universal"} {
 			b.Run(query.name+"/"+adapter, func(b *testing.B) {
 				native := newTestEngine(b)
-				portable := New(native)
+				portable := Wrap(native)
 				b.Cleanup(func() { _ = portable.Close() })
 				b.ReportAllocs()
 				b.ResetTimer()
@@ -145,6 +145,64 @@ func BenchmarkReusableSession(b *testing.B) {
 					out, err := portable.Run(b.Context())
 					if err != nil || string(out.Content) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
+					}
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkRuntimeRun(b *testing.B) {
+	for _, adapter := range []string{"Native", "Universal"} {
+		b.Run(adapter, func(b *testing.B) {
+			native := newTestEngine(b)
+			portable := Wrap(native)
+			b.Cleanup(func() { _ = portable.Close() })
+			nativeSource := source.NewAnonymous("RETURN @value + 1")
+			portableSource := api.NewAnonymousSource("RETURN @value + 1")
+			nativeOption := engine.WithSessionParam("value", 41)
+			portableOption := api.WithParam("value", 41)
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				if adapter == "Native" {
+					out, err := native.Run(b.Context(), nativeSource, nativeOption)
+					if err != nil || out == nil || string(out.Content) != "42" {
+						b.Fatalf("output=%+v err=%v", out, err)
+					}
+				} else {
+					out, err := portable.Run(b.Context(), portableSource, portableOption)
+					if err != nil || string(out.Content) != "42" {
+						b.Fatalf("output=%+v err=%v", out, err)
+					}
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkRuntimeConstruction(b *testing.B) {
+	for _, adapter := range []string{"Native", "Universal"} {
+		b.Run(adapter, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				if adapter == "Native" {
+					native, err := engine.New()
+					if err != nil {
+						b.Fatal(err)
+					}
+
+					if err := native.Close(); err != nil {
+						b.Fatal(err)
+					}
+				} else {
+					portable, err := New()
+					if err != nil {
+						b.Fatal(err)
+					}
+
+					if err := portable.Close(); err != nil {
+						b.Fatal(err)
 					}
 				}
 			}

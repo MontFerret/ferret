@@ -2,7 +2,6 @@ package universal
 
 import (
 	"context"
-	"sync"
 
 	apidebugger "github.com/MontFerret/api/debugger"
 	apisource "github.com/MontFerret/api/source"
@@ -10,9 +9,7 @@ import (
 )
 
 type debugSession struct {
-	closeErr  error
-	native    *debugger.Session
-	closeOnce sync.Once
+	native *debugger.Session
 }
 
 var _ apidebugger.Session = (*debugSession)(nil)
@@ -110,7 +107,5 @@ func (s *debugSession) EvaluateFrame(
 }
 
 func (s *debugSession) Close() error {
-	s.closeOnce.Do(func() { s.closeErr = wrapDiagnosticError(s.native.Close()) })
-
-	return s.closeErr
+	return wrapDiagnosticError(s.native.Close())
 }

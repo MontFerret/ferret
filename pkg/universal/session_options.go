@@ -3,14 +3,10 @@ package universal
 import (
 	"context"
 	"errors"
-	"fmt"
-
-	gooptions "github.com/ziflex/go-options"
 
 	"github.com/MontFerret/api"
 
 	"github.com/MontFerret/ferret/v2/pkg/engine"
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type sessionOptions struct {
@@ -20,45 +16,34 @@ type sessionOptions struct {
 var _ api.SessionOptions = (*sessionOptions)(nil)
 
 func (o *sessionOptions) SetParam(name string, value any) error {
-	if name == "" {
-		return fmt.Errorf("param name cannot be empty")
-	}
+	o.native = append(o.native, engine.WithSessionParam(name, value))
 
-	if value == nil {
-		return fmt.Errorf("param value cannot be nil")
-	}
-
-	return o.SetParams(map[string]any{name: value})
+	return nil
 }
 
 func (o *sessionOptions) SetParams(params map[string]any) error {
-	if len(params) == 0 {
-		return nil
-	}
-
-	converted, err := runtime.NewParamsFrom(params)
-	if err != nil {
-		return fmt.Errorf("convert session params: %w", err)
-	}
-
-	o.native = append(o.native, engine.WithSessionRuntimeParams(converted))
+	o.native = append(o.native, engine.WithSessionParams(params))
 
 	return nil
 }
 
 func (o *sessionOptions) SetOutputContentType(value string) error {
-	return gooptions.New(func(opts *sessionOptions, value string) {
-		opts.native = append(opts.native, engine.WithOutputContentType(value))
-	}).Value(value).Named("output content type").Validators(gooptions.NotBlank[string]()).Build()(o)
+	o.native = append(o.native, engine.WithOutputContentType(value))
+
+	return nil
 }
 
 func (o *sessionOptions) SetFSRoot(value string) error {
-	return gooptions.New(func(opts *sessionOptions, value string) {
-		opts.native = append(opts.native, engine.WithSessionFSRoot(value))
-	}).Value(value).Named("fs root").Validators(gooptions.NotBlank[string]()).Build()(o)
+	o.native = append(o.native, engine.WithSessionFSRoot(value))
+
+	return nil
 }
 
 func newSessionOptions(ctx context.Context, setters []api.SessionOption) (*sessionOptions, error) {
+	if err := checkOptionContext(ctx); err != nil {
+		return nil, err
+	}
+
 	opts := &sessionOptions{}
 	var failures []error
 	for _, setter := range setters {

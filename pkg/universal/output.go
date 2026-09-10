@@ -5,7 +5,7 @@ import (
 	apidebugger "github.com/MontFerret/api/debugger"
 )
 
-func convertOutput(output *api.Output) api.Output {
+func outputValue(output *api.Output) api.Output {
 	if output == nil {
 		return api.Output{}
 	}
