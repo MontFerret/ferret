@@ -81,9 +81,11 @@ There are currently two ways to start with Ferret v2:
 - Native v2 API - recommended for new projects
 - `compat` module - recommended as a first migration step for existing v1 integrations
 
-For integrations using `github.com/MontFerret/api`, use
-`github.com/MontFerret/ferret/v2/pkg/universal`. `universal.New(opts...)` creates
-and owns a Native engine; runtime Close closes it. `universal.Wrap(native)` borrows
+Use `github.com/MontFerret/ferret/v2` and `ferret.New(opts...)` for Native
+embedding. For integrations using `github.com/MontFerret/api`, the official
+adapter is the separate `github.com/MontFerret/ferret/v2/uapi` package.
+`uapi.New(opts...)` creates
+and owns a Native engine; runtime Close closes it. `uapi.Wrap(native)` borrows
 an existing engine; its Close is a no-op that leaves both usable. Settle work and
 close sessions and plans before their owning runtime or borrowed engine. See the
 [Universal adapter guide](docs/development/universal.md) for the supported options

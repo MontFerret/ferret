@@ -211,7 +211,7 @@ session option target contains internal
 `session.Config`, which owns applied settings, defaults, and host-parameter
 conversion; native option constructors retain validation and ordering. Portable
 semantic data may be shared with the Universal API; portable option translation
-belongs in `pkg/universal`, which produces Native options without changing their
+belongs in `uapi`, which produces Native options without changing their
 private targets.
 
 The [Universal adapter](universal.md) owns the Native engine created by `New` or

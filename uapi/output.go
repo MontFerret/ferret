@@ -1,4 +1,4 @@
-package universal
+package uapi
 
 import (
 	"github.com/MontFerret/api"

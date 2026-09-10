@@ -1,4 +1,4 @@
-package universal_test
+package uapi_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/api"
 
 	"github.com/MontFerret/ferret/v2"
-	"github.com/MontFerret/ferret/v2/pkg/universal"
+	"github.com/MontFerret/ferret/v2/uapi"
 )
 
 func ExampleWrap() {
@@ -18,7 +18,7 @@ func ExampleWrap() {
 
 	defer native.Close()
 
-	var portable api.Runtime = universal.Wrap(native)
+	var portable api.Runtime = uapi.Wrap(native)
 	defer portable.Close()
 
 	output, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN @value + 1"), api.WithParam("value", 41))
@@ -31,7 +31,7 @@ func ExampleWrap() {
 }
 
 func ExampleNew() {
-	portable, err := universal.New(ferret.WithParam("value", 41))
+	portable, err := uapi.New(ferret.WithParam("value", 41))
 	if err != nil {
 		panic(err)
 	}

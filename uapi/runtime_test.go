@@ -1,4 +1,4 @@
-package universal
+package uapi
 
 import (
 	"context"
@@ -17,8 +17,8 @@ import (
 
 func TestWrapRequiresNativeEngine(t *testing.T) {
 	defer func() {
-		if recover() == nil {
-			t.Fatal("Wrap did not panic for a nil native engine")
+		if got := recover(); got != "uapi: nil native engine" {
+			t.Fatalf("Wrap(nil) panic = %v, want uapi: nil native engine", got)
 		}
 	}()
 

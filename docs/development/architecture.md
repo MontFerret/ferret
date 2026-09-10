@@ -76,8 +76,10 @@ The native engine owns composition and lifecycle policy, not the underlying
 semantics of runtime values, modules, codecs, filesystems, networks, or debugger
 inspection.
 
-`pkg/universal` is the official adapter from Native Ferret to
-`github.com/MontFerret/api`. It imports `pkg/engine` and the portable API and
+Root-level `uapi` is the official public integration with
+`github.com/MontFerret/api`, alongside the primary Native `ferret` entry point.
+Its constructors are not re-exported through the root façade.
+It imports `pkg/engine` and the portable API and
 translates options, source representations, output pointers, and diagnostics.
 Native engine types and options remain independent
 of the portable runtime interfaces. `New` creates and owns a Native engine;
@@ -178,7 +180,7 @@ See [Modules, SDK, and standard library](modules.md) and
 | Source formatting | `pkg/formatter` | parser grammar and formatter fixtures |
 | File or network policy | `pkg/fs` or `pkg/net` | native engine host/session context and stdlib adapters |
 | Embedding API | root façade and `pkg/engine` | modules, VM, runtime, and public API tests |
-| Native to Universal adaptation | `pkg/universal` | portable contracts, Native options and lifecycle, adapter tests |
+| Native to Universal adaptation | `uapi` | portable contracts, Native options and lifecycle, adapter tests |
 
 Start with the primary owner even when a behavior has several consumers. Shared
 semantics should flow outward from their owner rather than being recreated at
@@ -221,7 +223,7 @@ state, cleanup, encoding/materialization, and debugger integration are
 implementation-sensitive and should be verified in current code before being
 changed.
 
-The root package and `pkg/engine`, `pkg/universal`, `pkg/module`, `pkg/runtime`, and
+The root package and `pkg/engine`, `uapi`, `pkg/module`, `pkg/runtime`, and
 `pkg/sdk` are public, API-sensitive surfaces. `pkg/bytecode` artifacts also carry explicit versions
 and validation. Do not infer compatibility promises from obsolete design notes
 or the v1 branch.

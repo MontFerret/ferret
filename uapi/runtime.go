@@ -1,4 +1,4 @@
-package universal
+package uapi
 
 import (
 	"context"
@@ -35,7 +35,7 @@ func New(opts ...engine.Option) (*Runtime, error) {
 // Wrap panics when native is nil.
 func Wrap(native *engine.Engine) *Runtime {
 	if native == nil {
-		panic("universal: nil native engine")
+		panic("uapi: nil native engine")
 	}
 
 	return &Runtime{native: native}

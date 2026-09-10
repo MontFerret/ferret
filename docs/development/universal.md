@@ -1,12 +1,18 @@
 # Universal API adapter
 
-`pkg/universal` exposes Ferret Native through `github.com/MontFerret/api` by
-translating portable source, options, results, and errors into Native engine
-operations. Use `New` to create and own a Native engine configured with Native
-options:
+Root-level `uapi` is Ferret's official adapter for `github.com/MontFerret/api`.
+It translates portable source, options, results, and errors into Native engine
+operations while keeping Native and Universal APIs independently evolvable.
+Use `uapi.New` to create and own a Native engine configured with Native options:
 
 ```go
-portable, err := universal.New(engine.WithParam("value", 42))
+import (
+    "github.com/MontFerret/api"
+    "github.com/MontFerret/ferret/v2"
+    "github.com/MontFerret/ferret/v2/uapi"
+)
+
+portable, err := uapi.New(ferret.WithParam("value", 42))
 if err != nil {
     return err
 }
@@ -16,27 +22,29 @@ output, err := portable.Run(ctx, api.NewAnonymousSource("RETURN @value"))
 // output can contain encoded data even when err reports a later cleanup failure.
 ```
 
-Import Native and the adapter from `github.com/MontFerret/ferret/v2/pkg/engine`
-and `github.com/MontFerret/ferret/v2/pkg/universal`. The root `ferret.Engine`
-alias is also accepted. `New(opts ...engine.Option)` returns `(*Runtime, error)`;
-Native owns construction and rollback, and the adapter projects construction
-errors. Nil options are handled by Native and skipped.
+Use the root `ferret` package for ordinary Native embedding and configuration.
+`uapi.New` accepts its Native options and returns `(*uapi.Runtime, error)`;
+calling `uapi.New()` uses Native defaults. The adapter internally depends on
+`pkg/engine`; root `ferret.Engine` and `ferret.Option` aliases preserve type
+identity. Native owns construction and rollback, and the adapter projects
+construction errors. Nil options are handled by Native and skipped.
 
-Use `Wrap` to borrow a caller-supplied engine without acquiring resources:
+Use `uapi.Wrap` to borrow a caller-supplied engine without acquiring resources:
 
 ```go
-native, err := engine.New()
+native, err := ferret.New()
 if err != nil {
     return err
 }
 defer native.Close()
 
-var portable api.Runtime = universal.Wrap(native)
+var portable api.Runtime = uapi.Wrap(native)
 ```
 
 Configure Native modules, codecs, host services, and engine defaults before
-wrapping. `Wrap(native *engine.Engine)` returns `*Runtime` and panics when native
-is nil. The caller retains responsibility for closing the Native engine.
+wrapping. `uapi.Wrap(native)` returns `*uapi.Runtime` and panics when native is
+nil. The caller retains responsibility for closing the Native engine. Both
+constructors remain in `uapi`; the root façade exposes the Native API.
 
 ## Options and representation differences
 
@@ -122,7 +130,7 @@ ownership when replacing its local adapter; daemon shutdown policy stays there.
 
 ## Validation
 
-Contract and delegation tests live in `pkg/universal`, including external-package
+Contract and delegation tests live in `uapi`, including external-package
 embedding examples for both constructors. Native/Universal benchmarks cover
 construction and close, compilation, ordinary/debug session creation, reusable
 execution, and convenience Run. Run focused tests before the repository gates in

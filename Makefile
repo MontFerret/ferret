@@ -3,6 +3,7 @@ export CGO_ENABLED=0
 
 DIR_BIN = ./bin
 DIR_PKG = ./pkg
+DIR_UAPI = ./uapi
 DIR_TOOLS = ./tools
 DIR_TOOL_APIREF = ${DIR_TOOLS}/apiref
 DIR_TOOL_APIPUBLISH = ${DIR_TOOLS}/apipublish
@@ -43,7 +44,7 @@ compile:
 test: test-unit test-integration test-security
 
 test-unit:
-	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_SCRIPTS}/... && \
+	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_UAPI}/... ${DIR_SCRIPTS}/... && \
 	CGO_ENABLED=1 go -C ${DIR_TOOL_APIREF} test -race ./... && \
 	CGO_ENABLED=1 go -C ${DIR_TOOL_APIPUBLISH} test -race ./... && \
 	CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
@@ -60,11 +61,11 @@ clean:
 	go clean -testcache
 
 cover:
-	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... && \
+	go test -coverprofile=coverage.txt -covermode=atomic ${DIR_PKG}/... ${DIR_UAPI}/... && \
 	curl -s https://codecov.io/bash | bash
 
 bench-unit:
-	go test ${DIR_PKG}/... -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT} -timeout ${BENCH_TIMEOUT}
+	go test ${DIR_PKG}/... ${DIR_UAPI}/... -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT} -timeout ${BENCH_TIMEOUT}
 
 bench-integration:
 	go test ${DIR_BENCH}/... -run ${BENCH_RUN} -bench ${BENCH_FILTER} -benchmem -count=${BENCH_COUNT} -timeout ${BENCH_TIMEOUT}
@@ -86,12 +87,12 @@ fmt:
 	go fmt ./... && \
 	go -C ${DIR_TOOL_APIREF} fmt ./... && \
 	go -C ${DIR_TOOL_APIPUBLISH} fmt ./... && \
-	goimports -w -local github.com/MontFerret ./*.go ${DIR_PKG} ${DIR_TOOLS} ${DIR_INTEG} ${DIR_E2E}
+	goimports -w -local github.com/MontFerret ./*.go ${DIR_PKG} ${DIR_UAPI} ${DIR_TOOLS} ${DIR_INTEG} ${DIR_E2E}
 
 # https://github.com/mgechev/revive
 # go get github.com/mgechev/revive
 lint:
-	staticcheck ${STATICCHECK_FLAGS} $$(go list . ${DIR_PKG}/... | grep -v /fql) && \
+	staticcheck ${STATICCHECK_FLAGS} $$(go list . ${DIR_PKG}/... ${DIR_UAPI}/... | grep -v /fql) && \
 	(cd ${DIR_TOOL_APIREF} && staticcheck ${STATICCHECK_FLAGS} $$(go list ./...)) && \
 	(cd ${DIR_TOOL_APIPUBLISH} && staticcheck ${STATICCHECK_FLAGS} $$(go list ./...)) && \
 	revive -config revive.toml -formatter stylish -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude ./*_test.go ./...
