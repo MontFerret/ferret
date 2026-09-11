@@ -415,7 +415,12 @@ func (t *Object) Clear(_ context.Context) error {
 	return nil
 }
 
-func (t *Object) Empty(_ context.Context) (Map, error) {
+// New creates an independent empty collection with the receiver's configuration.
+func (t *Object) New(ctx context.Context) (Map, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	return NewObject(), nil
 }
 

@@ -14,3 +14,16 @@ type benchmarkSnapshotList struct {
 func (b *benchmarkSnapshotList) Snapshot(context.Context) (*runtime.Array, error) {
 	return b.snapshot, nil
 }
+
+func (b *benchmarkSnapshotList) New(ctx context.Context) (runtime.List, error) {
+	base, err := b.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *b
+	result.List = base
+	result.snapshot = base.(*runtime.Array)
+
+	return &result, nil
+}

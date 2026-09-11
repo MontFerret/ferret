@@ -29,3 +29,16 @@ func (s *spreadSnapshotObject) ForEach(ctx context.Context, predicate runtime.Ke
 
 	return s.Map.ForEach(ctx, predicate)
 }
+
+func (s *spreadSnapshotObject) New(ctx context.Context) (runtime.Map, error) {
+	base, err := s.Map.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *s
+	result.Map = base
+	result.snapshot = base.(*runtime.Object)
+
+	return &result, nil
+}

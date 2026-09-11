@@ -334,7 +334,7 @@ func mutableOperationArgs(name string, target runtime.Value) []runtime.Value {
 
 func assertNoMutableCopies(t *testing.T, target *mutableHostList) {
 	t.Helper()
-	if target.calls["Copy"]+target.calls["Clone"]+target.calls["Empty"] != 0 {
+	if target.calls["Copy"]+target.calls["Clone"]+target.calls["New"] != 0 {
 		t.Fatalf("mutable operation copied its target: %v", target.calls)
 	}
 }

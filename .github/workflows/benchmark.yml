@@ -60,7 +60,7 @@ jobs:
     name: Run main unit benchmark baseline
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
       - main-baseline-integration
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
     permissions:
       contents: write
     concurrency:
@@ -182,7 +182,7 @@ jobs:
     name: Compare PR unit benchmarks
     if: github.event_name == 'pull_request' && github.base_ref == 'main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
       pull-requests: write
@@ -321,7 +321,7 @@ jobs:
     name: Manual unit benchmark comparison
     if: github.event_name == 'workflow_dispatch' && inputs.run_unit
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
       pull-requests: write

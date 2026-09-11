@@ -281,6 +281,11 @@ func ToRuntimeError(program *bytecode.Program, pc int, callStack []frame.TraceEn
 		spec.Cause = cause
 	}
 
+	if _, joined := err.(interface{ Unwrap() []error }); hasArg && joined {
+		// Retain cleanup siblings without changing ordinary diagnostics' normalized causes.
+		spec.Cause = err
+	}
+
 	return newRuntimeErrorWithSpec(program, callStack, spec)
 }
 

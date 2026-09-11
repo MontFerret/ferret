@@ -61,8 +61,8 @@ func (l *mutableHostList) Clone(context.Context) (runtime.Cloneable, error) {
 	return nil, l.failure
 }
 
-func (l *mutableHostList) Empty(context.Context) (runtime.List, error) {
-	l.calls["Empty"]++
+func (l *mutableHostList) New(context.Context) (runtime.List, error) {
+	l.calls["New"]++
 
 	return nil, l.failure
 }

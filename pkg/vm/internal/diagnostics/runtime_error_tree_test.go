@@ -1,11 +1,13 @@
 package diagnostics
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -31,6 +33,30 @@ func TestRuntimeAggregateUnwrapPreservesEveryCause(t *testing.T) {
 
 	if !errors.Is(set, first) {
 		t.Fatal("unwrap granted mutation of the aggregate")
+	}
+}
+
+func TestArgumentDiagnosticPreservesJoinedCleanup(t *testing.T) {
+	cleanup := errors.New("destination cleanup failed")
+	for _, primary := range []error{errors.New("host failed"), runtime.ErrInvalidType, context.Canceled} {
+		for _, listForm := range []bool{false, true} {
+			cause := primary
+			if listForm {
+				cause = fmt.Errorf("item 1: %w", cause)
+			}
+
+			attributed := runtime.ArgError(cause, 0)
+			before := ToRuntimeError(nil, 0, nil, attributed)
+			joined := errors.Join(attributed, cleanup)
+			result := ToRuntimeError(nil, 0, nil, joined)
+			if !errors.Is(result, primary) || !errors.Is(result, cleanup) || !errors.Is(result, attributed) {
+				t.Fatalf("argument diagnostic lost causes: %v", result)
+			}
+
+			if result.Message != before.Message || result.Note != before.Note || result.Kind != before.Kind {
+				t.Fatal("cleanup changed argument diagnostic presentation")
+			}
+		}
 	}
 }
 
