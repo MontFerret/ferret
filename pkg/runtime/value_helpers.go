@@ -311,7 +311,7 @@ func ToList(ctx context.Context, input Value) (List, error) {
 
 		return NewArrayWith(value), nil
 	case List:
-		return value.Copy().(List), nil
+		return Copy(value)
 	case Iterable:
 		iterator, err := value.Iterate(ctx)
 

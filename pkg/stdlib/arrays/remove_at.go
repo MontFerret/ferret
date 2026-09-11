@@ -22,7 +22,11 @@ func RemoveAt(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 		return runtime.None, err
 	}
 
-	next := list.Copy().(runtime.List)
+	next, err := runtime.Copy(list)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	if index < 0 {
 		return next, nil
 	}

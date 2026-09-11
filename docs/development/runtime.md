@@ -15,6 +15,15 @@ Consumers should use the runtime's shared operations rather than matching
 concrete built-in types. Host values may implement capabilities without being a
 built-in value, and consumers must preserve those contracts.
 
+Use `runtime.Copy(src)` when a caller needs a shallow copy preserving its static
+Go type, including capability interfaces such as `runtime.List`. The helper calls
+`Value.Copy` once and checks the result, returning an error wrapping
+`ErrInvalidType` with source and returned type details when the copy is
+incompatible. An interface copy may have a different concrete type if it still
+implements that interface. This check does not validate storage independence or
+change cloning and resource ownership; those remain the copy implementation's
+responsibility.
+
 Array bounds, shallow copy ownership, and independent slice backing storage are
 described in [Array library contracts](array-library.md).
 

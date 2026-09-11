@@ -37,7 +37,11 @@ func legacyRemoveNth(ctx context.Context, array, index runtime.Value) (runtime.V
 		return runtime.None, err
 	}
 
-	next := list.Copy().(runtime.List)
+	next, err := runtime.Copy(list)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	_, err = next.RemoveAt(ctx, position)
 
 	return next, err

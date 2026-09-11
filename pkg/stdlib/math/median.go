@@ -51,7 +51,10 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.None, nil
 	}
 
-	sorted := numericValues.Copy().(runtime.List)
+	sorted, err := runtime.Copy(numericValues)
+	if err != nil {
+		return runtime.None, err
+	}
 
 	if err := runtime.SortDesc(ctx, sorted); err != nil {
 		return runtime.None, err

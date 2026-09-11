@@ -16,7 +16,11 @@ func Append(ctx context.Context, array, value runtime.Value) (runtime.Value, err
 		return runtime.None, err
 	}
 
-	next := copyForAppend(list)
+	next, err := copyForAppend(list)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	if err := next.Append(ctx, value); err != nil {
 		return runtime.None, err
 	}
@@ -24,10 +28,10 @@ func Append(ctx context.Context, array, value runtime.Value) (runtime.Value, err
 	return next, nil
 }
 
-func copyForAppend(list runtime.List) runtime.List {
+func copyForAppend(list runtime.List) (runtime.List, error) {
 	if array, ok := list.(*runtime.Array); ok {
-		return array.CopyWithGrowth(1)
+		return array.CopyWithGrowth(1), nil
 	}
 
-	return list.Copy().(runtime.List)
+	return runtime.Copy(list)
 }

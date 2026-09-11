@@ -24,7 +24,11 @@ func legacyAppend3(ctx context.Context, array, value, mode runtime.Value) (runti
 		return runtime.None, err
 	}
 
-	next := copyForAppend(list)
+	next, err := copyForAppend(list)
+	if err != nil {
+		return runtime.None, err
+	}
+
 	if unique {
 		index, err := list.IndexOf(ctx, value)
 		if err != nil {

@@ -1,11 +1,42 @@
 package vm_test
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
+
+func TestArraysHostCopyErrors(t *testing.T) {
+	source := &invalidArrayCopy{List: runtime.NewArrayWith(runtime.Int(1), runtime.Int(1))}
+	expectCopyError := func(t *testing.T, actual any, _ ...any) {
+		t.Helper()
+
+		err, ok := actual.(error)
+		if !ok || !errors.Is(err, runtime.ErrInvalidType) {
+			t.Fatalf("expected copy type error, got %v", actual)
+		}
+	}
+
+	var cases []spec.Spec
+	for _, expression := range []string{
+		`arrays::append(@source,1)`, `append(@source,1)`, `push(@source,1)`,
+		`append(@source,1,true)`, `append(@source,1,false)`,
+		`push(@source,1,true)`, `push(@source,1,false)`,
+		`arrays::remove_at(@source,0)`, `arrays::remove_at(@source,-1)`,
+		`remove_nth(@source,0)`, `remove_nth(@source,-1)`,
+	} {
+		cases = append(cases, spec.NewSpec("RETURN "+expression).Expect().ExecError(expectCopyError))
+	}
+
+	RunSpecs(t, cases, vm.WithParam("source", source))
+	if source.String() != "[1,1]" {
+		t.Fatalf("source changed: %v", source)
+	}
+}
 
 func TestArraysNamespace(t *testing.T) {
 	RunSpecs(t, []spec.Spec{

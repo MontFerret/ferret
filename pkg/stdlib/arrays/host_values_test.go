@@ -14,7 +14,7 @@ type (
 	}
 
 	failingList struct {
-		runtime.List
+		*runtime.Array
 		err error
 	}
 
@@ -27,8 +27,20 @@ type (
 	}
 
 	lengthFailingList struct {
-		runtime.List
+		*runtime.Array
 		err error
+	}
+
+	copyFailureList struct {
+		runtime.List
+		copied  runtime.Value
+		copies  int
+		lookups int
+	}
+
+	copyMutationProbe struct {
+		runtime.Value
+		mutations int
 	}
 )
 
@@ -58,7 +70,7 @@ func (l *failingList) Filter(context.Context, runtime.IndexReadablePredicate) (r
 }
 
 func (l *failingList) Copy() runtime.Value {
-	return &failingList{List: l.List.Copy().(runtime.List), err: l.err}
+	return &failingList{Array: l.Array.CopyWithGrowth(0), err: l.err}
 }
 
 func (l *failingList) Append(context.Context, runtime.Value) error {
@@ -111,5 +123,29 @@ func (l *lengthFailingList) Length(context.Context) (runtime.Int, error) {
 }
 
 func (l *lengthFailingList) Copy() runtime.Value {
-	return &lengthFailingList{List: l.List.Copy().(runtime.List), err: l.err}
+	return &lengthFailingList{Array: l.Array.CopyWithGrowth(0), err: l.err}
+}
+
+func (list *copyFailureList) Copy() runtime.Value {
+	list.copies++
+
+	return list.copied
+}
+
+func (list *copyFailureList) IndexOf(ctx context.Context, value runtime.Value) (runtime.Int, error) {
+	list.lookups++
+
+	return list.List.IndexOf(ctx, value)
+}
+
+func (probe *copyMutationProbe) Append(context.Context, runtime.Value) error {
+	probe.mutations++
+
+	return nil
+}
+
+func (probe *copyMutationProbe) RemoveAt(context.Context, runtime.Int) (runtime.Value, error) {
+	probe.mutations++
+
+	return runtime.None, nil
 }

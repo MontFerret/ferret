@@ -172,7 +172,7 @@ func TestCanonicalArrayEdgeCases(t *testing.T) {
 
 func TestCanonicalArrayErrors(t *testing.T) {
 	sentinel := errors.New("host list failed")
-	host := &failingList{List: runtime.NewArrayWith(runtime.Int(1)), err: sentinel}
+	host := &failingList{Array: runtime.NewArrayWith(runtime.Int(1)), err: sentinel}
 	for _, fn := range []func() (runtime.Value, error){
 		func() (runtime.Value, error) { return arrays.Contains(t.Context(), host, runtime.Int(1)) },
 		func() (runtime.Value, error) { return arrays.IndexOf(t.Context(), host, runtime.Int(1)) },
@@ -207,7 +207,7 @@ func TestCanonicalArrayErrors(t *testing.T) {
 
 func TestArrayHostLengthPolicy(t *testing.T) {
 	sentinel := errors.New("length unavailable")
-	list := &lengthFailingList{List: runtime.NewArrayWith(runtime.Int(1), runtime.Int(2)), err: sentinel}
+	list := &lengthFailingList{Array: runtime.NewArrayWith(runtime.Int(1), runtime.Int(2)), err: sentinel}
 	other := runtime.NewArrayWith(runtime.Int(2))
 	for _, name := range []string{"intersection", "outersection"} {
 		if _, err := callLegacy(name, t.Context(), list, other); err != nil {
