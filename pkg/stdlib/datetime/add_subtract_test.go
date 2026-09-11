@@ -1,6 +1,7 @@
 package datetime_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -11,6 +12,18 @@ import (
 var (
 	utcLoc, _ = time.LoadLocation("UTC")
 )
+
+func TestDateArithmeticInvalidUnit(t *testing.T) {
+	for name, fn := range map[string]runtime.Function3{"add": datetime.Add, "subtract": datetime.Subtract} {
+		t.Run(name, func(t *testing.T) {
+			got, err := fn(t.Context(), mustDefaultLayoutDt("2024-01-01T12:00:00Z"), runtime.Int(1), runtime.String("unknown"))
+			position, ok, _ := runtime.InvalidArgumentDetails(err)
+			if got != runtime.None || !errors.Is(err, runtime.ErrInvalidArgument) || !ok || position != 2 {
+				t.Fatalf("unknown unit = %v, %v; want None and an invalid argument error at position 2", got, err)
+			}
+		})
+	}
+}
 
 func TestDateAdd(t *testing.T) {
 	tcs := []*testCase{

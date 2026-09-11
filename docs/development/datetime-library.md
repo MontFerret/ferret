@@ -64,7 +64,11 @@ Two compatibility adapters retain different signatures:
   match. The inclusive component order is year, month, week, day, hour, minute,
   second, millisecond; the default end is millisecond. Week includes ISO
   week-year. Reversed ranges fail. This fixes the old any-component bug and
-  remains distinct from canonical precision equality.
+  remains distinct from canonical precision equality. For example, December 31,
+  2018 and December 31, 2019 at noon UTC have matching month/day/time fields and
+  ISO week number 1, but ISO week-years 2019 and 2020. Comparing month through
+  millisecond therefore returns false; comparing day through millisecond returns
+  true because that range excludes week.
 - `date_diff(a, b, unit[, asFloat])` shares the canonical checked duration
   calculation and supported units. Omitted/false returns an Int truncated
   toward zero by integer division; true returns the canonical Float. Negative

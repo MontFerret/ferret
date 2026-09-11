@@ -51,6 +51,8 @@ func TestDateTimeNamespace(t *testing.T) {
 		S(`return date_compare(date("1999-02-07T00:00:00Z"),date("2000-02-09T00:00:00Z"),"year","day")`, false),
 		S(prefix+`return date_compare(d,d,"year")`, true),
 		S(`return date_compare(date("2020-12-31T12:00:00Z"),date("2021-01-01T12:00:00Z"),"week","week")`, true),
+		S(`return date_compare(date("2018-12-31T12:00:00Z"),date("2019-12-31T12:00:00Z"),"month","millisecond")`, false, "legacy range includes ISO week-year"),
+		S(`return date_compare(date("2018-12-31T12:00:00Z"),date("2019-12-31T12:00:00Z"),"month")`, false, "legacy default range includes ISO week-year"),
 	})
 }
 
@@ -69,6 +71,8 @@ func TestDateTimeNamespaceErrors(t *testing.T) {
 		`datetime::parse("not-a-date")`, `datetime::format(d,1)`, `datetime::year("2024-01-01")`,
 		`datetime::same(d,d)`, `datetime::same(d,d,"year","day")`, `datetime::same(d,d,"unknown")`,
 		`datetime::diff(d,d)`, `datetime::diff(d,d,"hour",true)`, `datetime::diff(d,d,"unknown")`,
+		`datetime::add(d,1,"unknown")`, `datetime::subtract(d,1,"unknown")`,
+		`date_add(d,1,"unknown")`, `date_subtract(d,1,"unknown")`,
 		`date_compare(d,d,"day","year")`, `date_compare(d,d)`, `date_compare(d,d,"year","day",true)`,
 		`date_diff(d,d)`, `date_diff(d,d,"hour",true,true)`, `date_diff(d,d,"hour",1)`,
 		`datetime::compare(d,d,"year")`, `date_now()`,

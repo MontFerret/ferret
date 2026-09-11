@@ -65,6 +65,6 @@ func addUnit(date time.Time, amount int, u unit) time.Time {
 	case year:
 		return date.AddDate(amount, 0, 0)
 	default:
-		return date
+		panic("unreachable")
 	}
 }

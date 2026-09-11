@@ -24,7 +24,15 @@ func TestLegacyComparison(t *testing.T) {
 		{"2024-06-12T10:20:30Z", "2024-06-12T11:20:30Z", "hour", "second", false},
 		{"2024-06-12T10:20:30Z", "2024-06-13T10:20:30Z", "hour", "second", true},
 		{"2024-06-12T10:20:30.123Z", "2024-06-12T10:20:30.123999Z", "year", "millisecond", true},
+		// Both are December 31 in ISO week 1, but their ISO years are 2019 and 2020.
+		// Only the ISO week-year differs within month through millisecond.
+		{"2018-12-31T12:00:00Z", "2019-12-31T12:00:00Z", "month", "millisecond", false},
+		{"2018-12-31T12:00:00Z", "2019-12-31T12:00:00Z", "day", "millisecond", true},
+		// Both share ISO week 2020-W53; selecting month or day still requires a match.
 		{"2020-12-31T12:00:00Z", "2021-01-01T12:00:00Z", "week", "week", true},
+		{"2020-12-31T12:00:00Z", "2021-01-01T12:00:00Z", "month", "week", false},
+		{"2020-12-31T12:00:00Z", "2021-01-01T12:00:00Z", "week", "day", false},
+		{"2020-12-30T12:00:00Z", "2020-12-31T12:00:00Z", "year", "week", true},
 		{"2023-01-02T12:00:00Z", "2024-01-01T12:00:00Z", "week", "week", false},
 		{"2023-01-01T12:00:00Z", "2023-01-09T12:00:00Z", "week", "week", false},
 		{"2023-01-02T12:00:00Z", "2023-01-08T12:00:00Z", "week", "week", true},
