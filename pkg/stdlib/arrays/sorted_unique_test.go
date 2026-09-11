@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestSortedUnique(t *testing.T) {
@@ -26,7 +24,7 @@ func TestSortedUnique(t *testing.T) {
 			runtime.NewInt(4),
 		)
 
-		out, err := arrays.SortedUnique(context.Background(), arr)
+		out, err := callLegacy("sorted_unique", context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,3,4,5,6]")
@@ -46,7 +44,7 @@ func TestSortedUnique(t *testing.T) {
 			runtime.NewString("f"),
 		)
 
-		out, err := arrays.SortedUnique(context.Background(), arr)
+		out, err := callLegacy("sorted_unique", context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, `["a","b","c","d","e","f"]`)
@@ -55,7 +53,7 @@ func TestSortedUnique(t *testing.T) {
 	Convey("Should return empty array", t, func() {
 		arr := runtime.NewArrayWith()
 
-		out, err := arrays.SortedUnique(context.Background(), arr)
+		out, err := callLegacy("sorted_unique", context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, `[]`)

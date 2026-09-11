@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestRemoveValue_Basic(t *testing.T) {
@@ -23,7 +21,7 @@ func TestRemoveValue_Basic(t *testing.T) {
 			runtime.NewInt(3),
 		)
 
-		out, err := arrays.RemoveValue(ctx, arr, runtime.NewInt(3))
+		out, err := callLegacy("remove_value", ctx, arr, runtime.NewInt(3))
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,4]")
@@ -40,7 +38,7 @@ func TestRemoveValue_Basic(t *testing.T) {
 			runtime.NewInt(3),
 		)
 
-		out, err := arrays.RemoveValue(
+		out, err := callLegacy("remove_value",
 			ctx,
 			arr,
 			runtime.NewInt(3),
@@ -62,7 +60,7 @@ func TestRemoveValue_EdgeCases(t *testing.T) {
 			runtime.NewInt(2),
 			runtime.NewInt(3),
 		)
-		out, err := arrays.RemoveValue(ctx, arr, runtime.NewInt(2), runtime.NewInt(0))
+		out, err := callLegacy("remove_value", ctx, arr, runtime.NewInt(2), runtime.NewInt(0))
 		So(err, ShouldBeNil)
 		// With limit 0, nothing should be removed
 		So(out.String(), ShouldEqual, "[1,2,2,3]")
@@ -75,12 +73,12 @@ func TestRemoveValue_EdgeCases(t *testing.T) {
 			runtime.NewInt(2),
 			runtime.NewInt(3),
 		)
-		out, err := arrays.RemoveValue(ctx, arr, runtime.NewInt(2), runtime.NewInt(-1))
+		out, err := callLegacy("remove_value", ctx, arr, runtime.NewInt(2), runtime.NewInt(-1))
 		So(err, ShouldBeNil)
 		// Negative limit should remove all occurrences
 		So(out.String(), ShouldEqual, "[1,3]")
 
-		out, err = arrays.RemoveValue(ctx, arr, runtime.NewInt(2), runtime.NewInt(-10))
+		out, err = callLegacy("remove_value", ctx, arr, runtime.NewInt(2), runtime.NewInt(-10))
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,3]")
 	})
@@ -91,7 +89,7 @@ func TestRemoveValue_EdgeCases(t *testing.T) {
 			runtime.NewInt(2),
 			runtime.NewInt(3),
 		)
-		out, err := arrays.RemoveValue(ctx, arr, runtime.NewInt(999))
+		out, err := callLegacy("remove_value", ctx, arr, runtime.NewInt(999))
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,3]")
 	})
@@ -103,7 +101,7 @@ func TestRemoveValue_EdgeCases(t *testing.T) {
 			runtime.NewInt(2),
 			runtime.NewInt(3),
 		)
-		out, err := arrays.RemoveValue(ctx, arr, runtime.NewInt(2), runtime.NewInt(1))
+		out, err := callLegacy("remove_value", ctx, arr, runtime.NewInt(2), runtime.NewInt(1))
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,2,3]")
 	})
@@ -114,13 +112,13 @@ func TestRemoveValue_ArgumentValidation(t *testing.T) {
 
 	Convey("Should reject too few arguments", t, func() {
 		arr := runtime.NewArrayWith(runtime.NewInt(1))
-		_, err := arrays.RemoveValue(ctx, arr)
+		_, err := callLegacy("remove_value", ctx, arr)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Should reject invalid argument types", t, func() {
 		nonArray := runtime.NewString("not an array")
-		_, err := arrays.RemoveValue(ctx, nonArray, runtime.NewInt(1))
+		_, err := callLegacy("remove_value", ctx, nonArray, runtime.NewInt(1))
 		So(err, ShouldNotBeNil)
 	})
 }
@@ -135,7 +133,7 @@ func TestRemoveValue_SpecialValues(t *testing.T) {
 			runtime.NewInt(3),
 		)
 
-		out, err := arrays.RemoveValue(ctx, arr, runtime.None)
+		out, err := callLegacy("remove_value", ctx, arr, runtime.None)
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[1,3]")
 	})

@@ -10,26 +10,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-type failingEqualityValue struct {
-	err error
-}
-
-func (v failingEqualityValue) String() string {
-	return "failing"
-}
-
-func (v failingEqualityValue) Hash() uint64 {
-	return 11
-}
-
-func (v failingEqualityValue) Copy() runtime.Value {
-	return v
-}
-
-func (v failingEqualityValue) Equal(context.Context, runtime.Value) (bool, error) {
-	return false, v.err
-}
-
 func TestSetOperationsVerifyHashCollisions(t *testing.T) {
 	ctx := context.Background()
 	first := distinctCollisionValue{label: "first"}
@@ -45,7 +25,7 @@ func TestSetOperationsVerifyHashCollisions(t *testing.T) {
 	}
 	assertListContainsExactly(t, ctx, intersection.(runtime.List), first, second)
 
-	outersection, err := arrays.Outersection(
+	outersection, err := callLegacy("outersection",
 		ctx,
 		runtime.NewArrayWith(first, first),
 		runtime.NewArrayWith(second),
@@ -55,7 +35,7 @@ func TestSetOperationsVerifyHashCollisions(t *testing.T) {
 	}
 	assertListContainsExactly(t, ctx, outersection.(runtime.List), first, second)
 
-	minus, err := arrays.Minus(
+	minus, err := arrays.Difference(
 		ctx,
 		runtime.NewArrayWith(first, second, first),
 		runtime.NewArrayWith(first),
@@ -65,7 +45,7 @@ func TestSetOperationsVerifyHashCollisions(t *testing.T) {
 	}
 	assertListContainsExactly(t, ctx, minus.(runtime.List), second)
 
-	remaining, err := arrays.RemoveValues(
+	remaining, err := arrays.RemoveAny(
 		ctx,
 		runtime.NewArrayWith(first, second),
 		runtime.NewArrayWith(first),
@@ -87,25 +67,25 @@ func TestSetOperationsUseNumericEqualityAcrossRepresentations(t *testing.T) {
 	}
 	assertListContainsExactly(t, ctx, intersection.(runtime.List), runtime.NewInt(1))
 
-	outersection, err := arrays.Outersection(ctx, integers, floats)
+	outersection, err := callLegacy("outersection", ctx, integers, floats)
 	if err != nil {
 		t.Fatalf("Outersection: %v", err)
 	}
 	assertListContainsExactly(t, ctx, outersection.(runtime.List))
 
-	minus, err := arrays.Minus(ctx, integers, floats)
+	minus, err := arrays.Difference(ctx, integers, floats)
 	if err != nil {
 		t.Fatalf("Minus: %v", err)
 	}
 	assertListContainsExactly(t, ctx, minus.(runtime.List))
 
-	remaining, err := arrays.RemoveValues(ctx, integers, floats)
+	remaining, err := arrays.RemoveAny(ctx, integers, floats)
 	if err != nil {
 		t.Fatalf("RemoveValues: %v", err)
 	}
 	assertListContainsExactly(t, ctx, remaining.(runtime.List))
 
-	union, err := arrays.UnionDistinct(ctx, integers, floats)
+	union, err := arrays.Union(ctx, integers, floats)
 	if err != nil {
 		t.Fatalf("UnionDistinct: %v", err)
 	}
@@ -129,7 +109,7 @@ func TestSetOperationsUseStrictDurationEquality(t *testing.T) {
 	}
 	assertListContainsExactly(t, ctx, intersection.(runtime.List), duration)
 
-	union, err := arrays.UnionDistinct(
+	union, err := arrays.Union(
 		ctx,
 		runtime.NewArrayWith(durationString, durationNumber),
 		runtime.NewArrayWith(duration, equivalentDuration),
@@ -153,13 +133,13 @@ func TestHashSetOperationsPropagateEqualityErrors(t *testing.T) {
 			return arrays.Intersection(ctx, input, input)
 		}},
 		{name: "outersection", run: func(ctx context.Context) (runtime.Value, error) {
-			return arrays.Outersection(ctx, input, input)
+			return callLegacy("outersection", ctx, input, input)
 		}},
 		{name: "minus", run: func(ctx context.Context) (runtime.Value, error) {
-			return arrays.Minus(ctx, input, input)
+			return arrays.Difference(ctx, input, input)
 		}},
 		{name: "remove values", run: func(ctx context.Context) (runtime.Value, error) {
-			return arrays.RemoveValues(ctx, input, input)
+			return arrays.RemoveAny(ctx, input, input)
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

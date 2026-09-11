@@ -172,12 +172,12 @@ func TestSlice_ArgumentValidation(t *testing.T) {
 		So(err, ShouldNotBeNil)
 	})
 
-	Convey("Should preserve direct Go compatibility for extra arguments", t, func() {
+	Convey("Should reject extra arguments in the canonical Go API", t, func() {
 		arr := runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2), runtime.NewInt(3))
 
 		out, err := arrays.Slice(ctx, arr, runtime.NewInt(1), runtime.NewInt(1), runtime.True)
 
-		So(err, ShouldBeNil)
-		So(out.String(), ShouldEqual, "[2]")
+		So(err, ShouldNotBeNil)
+		So(out, ShouldEqual, runtime.None)
 	})
 }

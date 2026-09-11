@@ -1,0 +1,31 @@
+package arrays
+
+import (
+	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
+
+// sorted_unique sorts all elements in a array.
+// The function will use the default comparison order for FQL value types.
+// Additionally, the values in the result array will be made unique
+// @param array {Any[]} Target array.
+// @return {Any[]} Sorted array.
+// @deprecated Use arrays::sorted(arrays::unique(array)).
+func legacySortedUnique(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	list, err := runtime.CastArg[runtime.List](arg, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	uniq, err := toUniqueList(ctx, list)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := runtime.SortAsc(ctx, uniq); err != nil {
+		return runtime.None, err
+	}
+
+	return uniq, nil
+}

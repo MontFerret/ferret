@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestUnshift(t *testing.T) {
@@ -21,7 +19,7 @@ func TestUnshift(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Unshift(context.Background(), arr, runtime.NewInt(0))
+		out, err := callLegacy("unshift", context.Background(), arr, runtime.NewInt(0))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, arr)
@@ -37,7 +35,7 @@ func TestUnshift(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Unshift(
+		out, err := callLegacy("unshift",
 			context.Background(),
 			arr,
 			runtime.NewInt(0),
@@ -48,7 +46,7 @@ func TestUnshift(t *testing.T) {
 		So(out, ShouldNotEqual, arr)
 		So(out.String(), ShouldEqual, "[0,1,2,3,4,5]")
 
-		out2, err := arrays.Unshift(
+		out2, err := callLegacy("unshift",
 			context.Background(),
 			arr,
 			runtime.NewInt(0),

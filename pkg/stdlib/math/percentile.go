@@ -75,11 +75,10 @@ func percentile(ctx context.Context, arg1, arg2 runtime.Value, method string) (r
 		return runtime.NaN(), errors.New("input is outside of range")
 	}
 
-	sorted := arr.Copy().(runtime.List)
-
-	//if err != nil {
-	//	return runtime.NaN(), err
-	//}
+	sorted, err := runtime.Copy(arr)
+	if err != nil {
+		return runtime.NaN(), err
+	}
 
 	if err := runtime.SortAsc(ctx, sorted); err != nil {
 		return runtime.NaN(), err

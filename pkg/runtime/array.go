@@ -85,25 +85,6 @@ func (t *Array) Equal(ctx context.Context, other Value) (bool, error) {
 	return true, nil
 }
 
-func (t *Array) equalArray(ctx context.Context, other *Array) (bool, error) {
-	if len(t.data) != len(other.data) {
-		return false, nil
-	}
-
-	for idx, value := range t.data {
-		equal, err := EqualValues(ctx, value, other.data[idx])
-		if err != nil {
-			return false, err
-		}
-
-		if !equal {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 func (t *Array) Compare(ctx context.Context, other Value) (Ordering, error) {
 	if otherArray, ok := other.(*Array); ok {
 		return t.compareArray(ctx, otherArray)
@@ -148,29 +129,6 @@ func (t *Array) Compare(ctx context.Context, other Value) (Ordering, error) {
 	return Equal, nil
 }
 
-func (t *Array) compareArray(ctx context.Context, other *Array) (Ordering, error) {
-	if len(t.data) < len(other.data) {
-		return Less, nil
-	}
-
-	if len(t.data) > len(other.data) {
-		return Greater, nil
-	}
-
-	for idx, value := range t.data {
-		comparison, err := CompareValues(ctx, value, other.data[idx])
-		if err != nil {
-			return Equal, err
-		}
-
-		if comparison != Equal {
-			return comparison, nil
-		}
-	}
-
-	return Equal, nil
-}
-
 func (t *Array) Hash() uint64 {
 	h := fnv.New64a()
 
@@ -201,13 +159,6 @@ func (t *Array) Copy() Value {
 
 func (t *Array) CopyWithGrowth(cap Int) *Array {
 	return &Array{data: t.copyInternal(cap)}
-}
-
-func (t *Array) copyInternal(cap Int) []Value {
-	c := make([]Value, 0, len(t.data)+int(cap))
-	c = append(c, t.data...)
-
-	return c
 }
 
 func (t *Array) Clone(ctx context.Context) (Cloneable, error) {
@@ -263,14 +214,9 @@ func (t *Array) IndexOf(ctx context.Context, item Value) (Int, error) {
 	return -1, nil
 }
 
+// At returns None for an index outside the array, including negative indexes.
 func (t *Array) At(_ context.Context, idx Int) (Value, error) {
-	l := Int(len(t.data) - 1)
-
-	if l < 0 {
-		return None, nil
-	}
-
-	if idx > l {
+	if idx < 0 || idx >= Int(len(t.data)) {
 		return None, nil
 	}
 
@@ -278,13 +224,7 @@ func (t *Array) At(_ context.Context, idx Int) (Value, error) {
 }
 
 func (t *Array) LookupAt(_ context.Context, idx Int) (Value, bool, error) {
-	l := Int(len(t.data) - 1)
-
-	if l < 0 {
-		return None, false, nil
-	}
-
-	if idx > l {
+	if idx < 0 || idx >= Int(len(t.data)) {
 		return None, false, nil
 	}
 
@@ -350,10 +290,13 @@ func (t *Array) Find(ctx context.Context, predicate IndexReadablePredicate) (Val
 	return None, false, nil
 }
 
+// Slice returns a shallow copy of [start, end) with independent backing storage.
+// Negative or reversed bounds produce an empty array. End is capped at length.
+// Nested values remain shared; slicing does not clone or acquire their resources.
 func (t *Array) Slice(_ context.Context, start, end Int) (List, error) {
 	length := Int(len(t.data))
 
-	if start >= length {
+	if start < 0 || end < start || start >= length {
 		return NewArray(0), nil
 	}
 
@@ -361,8 +304,8 @@ func (t *Array) Slice(_ context.Context, start, end Int) (List, error) {
 		end = length
 	}
 
-	result := new(Array)
-	result.data = t.data[start:end]
+	result := NewSizedArray(int(end - start))
+	copy(result.data, t.data[start:end])
 
 	return result, nil
 }
@@ -373,10 +316,6 @@ func (t *Array) SortAsc(ctx context.Context) error {
 
 func (t *Array) SortDesc(ctx context.Context) error {
 	return t.sort(ctx, false)
-}
-
-func (t *Array) sort(ctx context.Context, ascending Boolean) error {
-	return SortSlice(ctx, t.data, ascending)
 }
 
 func (t *Array) SortWith(ctx context.Context, comparator Comparator) error {
@@ -409,18 +348,20 @@ func (t *Array) Append(_ context.Context, value Value) error {
 }
 
 func (t *Array) SetAt(_ context.Context, idx Int, value Value) error {
-	last := Int(len(t.data) - 1)
-
-	if last >= idx {
-		t.data[idx] = value
-
-		return nil
+	if idx < 0 || idx >= Int(len(t.data)) {
+		return Error(ErrInvalidOperation, "out of bounds")
 	}
 
-	return Error(ErrInvalidOperation, "out of bounds")
+	t.data[idx] = value
+
+	return nil
 }
 
 func (t *Array) Insert(_ context.Context, idx Int, value Value) error {
+	if idx < 0 || idx > Int(len(t.data)) {
+		return Error(ErrInvalidOperation, "out of bounds")
+	}
+
 	t.data = append(t.data[:idx], append([]Value{value}, t.data[idx:]...)...)
 
 	return nil
@@ -452,10 +393,10 @@ func (t *Array) Remove(ctx context.Context, value Value) error {
 	return err
 }
 
+// RemoveAt removes and returns an element, or returns None without changing the
+// array when the index is outside its bounds.
 func (t *Array) RemoveAt(_ context.Context, idx Int) (Value, error) {
-	edge := Int(len(t.data) - 1)
-
-	if idx > edge {
+	if idx < 0 || idx >= Int(len(t.data)) {
 		return None, nil
 	}
 
@@ -467,6 +408,11 @@ func (t *Array) RemoveAt(_ context.Context, idx Int) (Value, error) {
 }
 
 func (t *Array) Swap(_ context.Context, i, j Int) error {
+	length := Int(len(t.data))
+	if i < 0 || j < 0 || i >= length || j >= length {
+		return Error(ErrInvalidOperation, "out of bounds")
+	}
+
 	t.data[i], t.data[j] = t.data[j], t.data[i]
 
 	return nil
@@ -485,4 +431,57 @@ func (t *Array) Concat(ctx context.Context, other List) error {
 			return true, nil
 		})
 	}
+}
+
+func (t *Array) equalArray(ctx context.Context, other *Array) (bool, error) {
+	if len(t.data) != len(other.data) {
+		return false, nil
+	}
+
+	for idx, value := range t.data {
+		equal, err := EqualValues(ctx, value, other.data[idx])
+		if err != nil {
+			return false, err
+		}
+
+		if !equal {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (t *Array) compareArray(ctx context.Context, other *Array) (Ordering, error) {
+	if len(t.data) < len(other.data) {
+		return Less, nil
+	}
+
+	if len(t.data) > len(other.data) {
+		return Greater, nil
+	}
+
+	for idx, value := range t.data {
+		comparison, err := CompareValues(ctx, value, other.data[idx])
+		if err != nil {
+			return Equal, err
+		}
+
+		if comparison != Equal {
+			return comparison, nil
+		}
+	}
+
+	return Equal, nil
+}
+
+func (t *Array) copyInternal(cap Int) []Value {
+	c := make([]Value, 0, len(t.data)+int(cap))
+	c = append(c, t.data...)
+
+	return c
+}
+
+func (t *Array) sort(ctx context.Context, ascending Boolean) error {
+	return SortSlice(ctx, t.data, ascending)
 }

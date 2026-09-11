@@ -1,0 +1,22 @@
+package arrays
+
+import (
+	"context"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
+
+// shift returns a new array without the first element.
+// @param array {Any[]} Target array.
+// @return {Any[]} Copy of an array without the first element.
+// @deprecated Use arrays::slice(array, 1).
+func legacyShift(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	list, err := runtime.CastArg[runtime.List](arg, 0)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return list.Filter(ctx, func(ctx context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
+		return idx != 0, nil
+	})
+}

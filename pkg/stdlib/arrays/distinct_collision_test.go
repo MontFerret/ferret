@@ -8,31 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-type distinctCollisionValue struct {
-	label string
-}
-
-func (v distinctCollisionValue) String() string {
-	return v.label
-}
-
-func (v distinctCollisionValue) Hash() uint64 {
-	return 7
-}
-
-func (v distinctCollisionValue) Copy() runtime.Value {
-	return v
-}
-
-func (v distinctCollisionValue) Equal(_ context.Context, other runtime.Value) (bool, error) {
-	o, ok := other.(distinctCollisionValue)
-	if !ok {
-		return false, nil
-	}
-
-	return v.label == o.label, nil
-}
-
 func TestUniqueSeparatesHashCollisions(t *testing.T) {
 	ctx := context.Background()
 	first := distinctCollisionValue{label: "first"}
@@ -46,18 +21,18 @@ func TestUniqueSeparatesHashCollisions(t *testing.T) {
 	assertDistinctCollisionValues(t, ctx, result.(runtime.List), first, second)
 }
 
-func TestUnionDistinctSeparatesHashCollisions(t *testing.T) {
+func TestUnionSeparatesHashCollisions(t *testing.T) {
 	ctx := context.Background()
 	first := distinctCollisionValue{label: "first"}
 	second := distinctCollisionValue{label: "second"}
 
-	result, err := arrays.UnionDistinct(
+	result, err := arrays.Union(
 		ctx,
 		runtime.NewArrayWith(first),
 		runtime.NewArrayWith(second, first),
 	)
 	if err != nil {
-		t.Fatalf("UnionDistinct: %v", err)
+		t.Fatalf("Union: %v", err)
 	}
 
 	assertDistinctCollisionValues(t, ctx, result.(runtime.List), first, second)

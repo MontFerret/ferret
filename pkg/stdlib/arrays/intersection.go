@@ -3,82 +3,53 @@ package arrays
 import (
 	"context"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// intersection return the intersection of all arrays specified.
-// The result is an array of values that occur in all arguments.
-// The element order is random. Duplicates are removed.
-// @param arrays {Any[], repeated} An arbitrary number of arrays as multiple arguments (at least 2).
-// @return {Any[]} A single array with only the elements, which exist in all provided arrays.
+// Intersection returns distinct values present in every input, in first-input order.
+// @param arrays {Any[], repeated} At least two arrays.
+// @return {Any[]} Common values, retaining their first representatives.
 func Intersection(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-	return sections(ctx, args, len(args))
-}
-
-func sections(ctx context.Context, args []runtime.Value, count int) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
 
-	type occurrence struct {
-		value      runtime.Value
-		lastSource int
-		count      int
+	first, err := runtime.CastArgAt[runtime.List](args, 0)
+	if err != nil {
+		return runtime.None, err
 	}
 
-	intersections := make(map[uint64][]*occurrence)
-	capacity := len(args)
+	candidates, ordered, err := collectSet(ctx, first)
+	if err != nil {
+		return runtime.None, err
+	}
 
-	for i, arg := range args {
-		list, err := runtime.CastArg[runtime.List](arg, i)
-
+	for index, arg := range args[1:] {
+		list, err := runtime.CastArg[runtime.List](arg, index+1)
 		if err != nil {
 			return runtime.None, err
 		}
 
-		err = list.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-			h := value.Hash()
-			bucket, exists := intersections[h]
-			if exists {
-				for _, entry := range bucket {
-					equal, err := runtime.EqualValues(c, entry.value, value)
-					if err != nil {
-						return false, err
-					}
-					if !equal {
-						continue
-					}
-
-					if entry.lastSource != i {
-						entry.lastSource = i
-						entry.count++
-					}
-
-					return true, nil
-				}
+		next := valueset.New(candidates.Len())
+		err = list.ForEach(ctx, func(ctx context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+			found, err := candidates.Contains(ctx, value)
+			if err != nil {
+				return false, err
 			}
 
-			bucket = append(bucket, &occurrence{value: value, lastSource: i, count: 1})
-			intersections[h] = bucket
+			if found {
+				_, err = next.Add(ctx, value)
+			}
 
-			return true, nil
+			return true, err
 		})
-
 		if err != nil {
 			return runtime.None, err
 		}
+
+		candidates = next
 	}
 
-	result := runtime.NewArray(capacity)
-
-	for _, bucket := range intersections {
-		for _, entry := range bucket {
-			if entry.count == count {
-				// It's safe to ignore the error here because result is a runtime.Array.
-				_ = result.Append(ctx, entry.value)
-			}
-		}
-	}
-
-	return result, nil
+	return filterSet(ctx, ordered, candidates, true)
 }

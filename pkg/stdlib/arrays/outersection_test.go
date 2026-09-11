@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestOutersection(t *testing.T) {
@@ -25,7 +23,7 @@ func TestOutersection(t *testing.T) {
 			runtime.NewInt(4),
 		)
 
-		out, err := arrays.Outersection(context.Background(), arr1, arr2)
+		out, err := callLegacy("outersection", context.Background(), arr1, arr2)
 
 		check := map[int]bool{
 			1: true,
@@ -67,7 +65,7 @@ func TestOutersection(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Outersection(context.Background(), arr1, arr2, arr3)
+		out, err := callLegacy("outersection", context.Background(), arr1, arr2, arr3)
 
 		check := map[int]bool{
 			1: true,

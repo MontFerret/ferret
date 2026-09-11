@@ -107,6 +107,11 @@ argument, Unicode, formatting, and migration contracts, together with the full
 `path::` namespace registered by the Path group, are described in
 [String, encoding, and crypto contracts](string-library.md).
 
+The Arrays group registers immutable functions under `arrays::`, explicit
+mutation under `arrays::mut::`, and frozen global migration aliases.
+Vocabulary, mutation results, set ordering, copy ownership, and
+legacy signatures are described in [Array library contracts](array-library.md).
+
 The Objects group registers immutable functions under `object::` and explicit
 mutation under `object::mut::`. Shared map
 transformations, copy ownership, iterable entry construction, and migration

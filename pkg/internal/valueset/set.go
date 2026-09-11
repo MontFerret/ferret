@@ -28,7 +28,6 @@ func New(capacity int) *Set {
 func (s *Set) Add(ctx context.Context, value runtime.Value) (bool, error) {
 	hash := value.Hash()
 	first, exists := s.firstByHash[hash]
-
 	if !exists {
 		s.firstByHash[hash] = value
 		s.count++
@@ -45,15 +44,9 @@ func (s *Set) Add(ctx context.Context, value runtime.Value) (bool, error) {
 		return false, nil
 	}
 
-	for _, existing := range s.collisions[hash] {
-		equal, err = runtime.EqualValues(ctx, existing, value)
-		if err != nil {
-			return false, err
-		}
-
-		if equal {
-			return false, nil
-		}
+	index, err := s.findCollision(ctx, hash, value)
+	if err != nil || index >= 0 {
+		return false, err
 	}
 
 	if s.collisions == nil {
@@ -66,6 +59,89 @@ func (s *Set) Add(ctx context.Context, value runtime.Value) (bool, error) {
 	return true, nil
 }
 
+// Contains verifies membership using runtime equality within a hash bucket.
+func (s *Set) Contains(ctx context.Context, value runtime.Value) (bool, error) {
+	hash := value.Hash()
+	first, exists := s.firstByHash[hash]
+	if !exists {
+		return false, nil
+	}
+
+	equal, err := runtime.EqualValues(ctx, first, value)
+	if err != nil {
+		return false, err
+	}
+
+	if equal {
+		return true, nil
+	}
+
+	index, err := s.findCollision(ctx, hash, value)
+
+	return index >= 0, err
+}
+
+// Remove deletes an equal value if present. Failed equality leaves the set intact.
+func (s *Set) Remove(ctx context.Context, value runtime.Value) (bool, error) {
+	hash := value.Hash()
+	first, exists := s.firstByHash[hash]
+	if !exists {
+		return false, nil
+	}
+
+	equal, err := runtime.EqualValues(ctx, first, value)
+	if err != nil {
+		return false, err
+	}
+
+	bucket := s.collisions[hash]
+	if equal {
+		if len(bucket) == 0 {
+			delete(s.firstByHash, hash)
+		} else {
+			s.firstByHash[hash] = bucket[len(bucket)-1]
+			bucket[len(bucket)-1] = nil
+			bucket = bucket[:len(bucket)-1]
+		}
+	} else {
+		index, err := s.findCollision(ctx, hash, value)
+		if err != nil || index < 0 {
+			return false, err
+		}
+
+		copy(bucket[index:], bucket[index+1:])
+		bucket[len(bucket)-1] = nil
+		bucket = bucket[:len(bucket)-1]
+	}
+
+	if len(bucket) == 0 {
+		delete(s.collisions, hash)
+	} else {
+		s.collisions[hash] = bucket
+	}
+
+	s.count--
+
+	return true, nil
+}
+
 func (s *Set) Len() int {
 	return s.count
+}
+
+// Primary entries are compared in the caller so ordinary duplicates avoid the
+// collision-scanning call. Collision indexes are zero-based within the bucket.
+func (s *Set) findCollision(ctx context.Context, hash uint64, value runtime.Value) (int, error) {
+	for index, existing := range s.collisions[hash] {
+		equal, err := runtime.EqualValues(ctx, existing, value)
+		if err != nil {
+			return -1, err
+		}
+
+		if equal {
+			return index, nil
+		}
+	}
+
+	return -1, nil
 }

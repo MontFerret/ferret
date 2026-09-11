@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestShift(t *testing.T) {
@@ -21,7 +19,7 @@ func TestShift(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Shift(context.Background(), arr)
+		out, err := callLegacy("shift", context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[2,3,4,5]")
@@ -30,7 +28,7 @@ func TestShift(t *testing.T) {
 	Convey("Should return empty array if a given one is empty", t, func() {
 		arr := runtime.NewArray(0)
 
-		out, err := arrays.Shift(context.Background(), arr)
+		out, err := callLegacy("shift", context.Background(), arr)
 
 		So(err, ShouldBeNil)
 		So(out.String(), ShouldEqual, "[]")

@@ -7,8 +7,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
 	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
 func TestAppend(t *testing.T) {
@@ -21,7 +19,7 @@ func TestAppend(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Append(context.Background(), arr, runtime.NewInt(6))
+		out, err := callLegacy("append", context.Background(), arr, runtime.NewInt(6))
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotEqual, arr)
@@ -39,7 +37,7 @@ func TestAppend(t *testing.T) {
 			runtime.NewInt(5),
 		)
 
-		out, err := arrays.Append(context.Background(), arr, runtime.NewInt(5), runtime.True)
+		out, err := callLegacy("append", context.Background(), arr, runtime.NewInt(5), runtime.True)
 
 		So(err, ShouldBeNil)
 		So(out, ShouldNotPointTo, arr)
@@ -47,7 +45,7 @@ func TestAppend(t *testing.T) {
 		actual, _ := out.(runtime.Measurable).Length(context.Background())
 		So(actual, ShouldEqual, expected)
 
-		out2, err := arrays.Append(context.Background(), arr, runtime.NewInt(6), runtime.True)
+		out2, err := callLegacy("append", context.Background(), arr, runtime.NewInt(6), runtime.True)
 
 		So(err, ShouldBeNil)
 		So(out2, ShouldNotEqual, arr)
