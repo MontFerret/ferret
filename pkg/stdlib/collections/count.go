@@ -21,19 +21,15 @@ func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.ZeroInt, err
 	}
 
-	collection, ok := arg.(runtime.Iterable)
-	if !ok {
-		return runtime.ZeroInt, runtime.ArgError(runtime.TypeErrorOf(arg, runtime.TypeIterable), 0)
-	}
-
 	var (
 		count runtime.Int
 		err   error
 	)
 
-	if measurable, ok := collection.(runtime.Measurable); ok {
-		count, err = measurable.Length(ctx)
-	} else {
+	switch collection := arg.(type) {
+	case measuredIterable:
+		count, err = collection.Length(ctx)
+	case runtime.Iterable:
 		err = runtime.ForEach(ctx, collection, func(c context.Context, _, _ runtime.Value) (runtime.Boolean, error) {
 			if err := c.Err(); err != nil {
 				return false, err
@@ -44,6 +40,8 @@ func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 
 			return err == nil, err
 		})
+	default:
+		return runtime.ZeroInt, runtime.ArgError(runtime.TypeErrorOf(arg, runtime.TypeIterable), 0)
 	}
 
 	if canceled := ctx.Err(); canceled != nil && !errors.Is(err, canceled) {
@@ -55,6 +53,11 @@ func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	return count, nil
+}
+
+type measuredIterable interface {
+	runtime.Iterable
+	runtime.Measurable
 }
 
 func incrementCount(count runtime.Int) (runtime.Int, error) {

@@ -13,7 +13,9 @@ mutation, cloning, membership, equality, or ordering methods. Native ascending
 and descending ranges are supported. Strings and non-iterable scalars remain
 invalid counting inputs.
 
-After iterable validation, `count` calls `Measurable.Length` when available.
+`count` first checks the combined `Iterable` and `Measurable` capability, then
+falls back to `Iterable`. This validates both requirements in one dispatch for
+measured sources; `Measurable` alone is insufficient. It calls `Length` when available.
 It does not create an iterator or retry a failed length operation by scanning.
 Native ranges use this path, including propagation of range-length overflow.
 A host length can perform I/O or take nonconstant time.
@@ -75,6 +77,15 @@ contracts run at None, Basic, and Full optimization; API analyzer tests verify
 capability types and arities. Benchmarks cover measured counting, distinct scans,
 membership dispatch, and native/custom reversal, with new iterable-only counting
 reported separately from previously supported paths.
+
+Context-sensitive benchmarks also cover empty, singleton, small, and larger
+inputs with Background, cancellable, deadline, and layered contexts. Reused
+contexts exclude setup and first `Done` access; fresh contexts include creation,
+the collection operation, and cancellation. Keep these measurements separate:
+first access to a cancellation channel can allocate. Loop checkpoints use
+`ctx.Err()` directly, preserving the caller's context and error identity without
+forcing channel creation. Context polling changes must demonstrate benefits
+across these cases, not only for Background or deeply wrapped contexts.
 
 The Factory rename intentionally breaks Go implementers of List and Map; existing
 FQL names and arities are retained. Counting accepts additional read-only inputs,

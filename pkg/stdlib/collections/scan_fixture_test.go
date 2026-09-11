@@ -15,6 +15,7 @@ type (
 		iterateErr   error
 		nextErr      error
 		closeErr     error
+		onIterate    func()
 		onNext       func(int)
 		onClose      func()
 		values       []runtime.Value
@@ -35,6 +36,10 @@ type (
 		*scanSource
 		onLength    func()
 		length      runtime.Int
+		lengthCalls int
+	}
+
+	measurableOnly struct {
 		lengthCalls int
 	}
 
@@ -63,6 +68,10 @@ func (s *scanSource) Iterate(ctx context.Context) (runtime.Iterator, error) {
 	s.iterations++
 	if s.expected != nil && ctx != s.expected {
 		return nil, errors.New("iterator context changed")
+	}
+
+	if s.onIterate != nil {
+		s.onIterate()
 	}
 
 	if s.iterateErr != nil {
@@ -124,6 +133,16 @@ func (s *measuredSource) Length(ctx context.Context) (runtime.Int, error) {
 	}
 
 	return s.length, s.lengthErr
+}
+
+func (s *measurableOnly) String() string      { return "measurable only" }
+func (s *measurableOnly) Hash() uint64        { return 1 }
+func (s *measurableOnly) Copy() runtime.Value { return s }
+
+func (s *measurableOnly) Length(context.Context) (runtime.Int, error) {
+	s.lengthCalls++
+
+	return 42, nil
 }
 
 func (s *containableSource) Contains(ctx context.Context, _ runtime.Value) (runtime.Boolean, error) {
