@@ -35,6 +35,34 @@ func BenchmarkArrayTransforms(b *testing.B) {
 	}
 }
 
+func BenchmarkLegacyArrayRemoval(b *testing.B) {
+	remove, ok := arrayFunctions(b).A3().Get("remove_value")
+	if !ok {
+		b.Fatal("legacy removal is not registered")
+	}
+
+	for _, name := range []string{"RemoveNone", "RemoveHalf", "RemoveAll"} {
+		for _, size := range []int{16, 1024} {
+			for _, host := range []bool{false, true} {
+				for _, limit := range []runtime.Int{-1, 0, 1} {
+					b.Run(fmt.Sprintf("%s/size=%d/host=%v/limit=%d", name, size, host, limit), func(b *testing.B) {
+						input := transformBenchmarkInput(b.Context(), name, size, host)
+						b.ReportAllocs()
+						b.ResetTimer()
+						for b.Loop() {
+							var err error
+							copyBenchmarkResult, err = remove(b.Context(), input, runtime.Int(0), limit)
+							if err != nil {
+								b.Fatal(err)
+							}
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
 func transformBenchmarkInput(ctx context.Context, name string, size int, host bool) runtime.List {
 	array := runtime.NewArray(size)
 	for index := range size {

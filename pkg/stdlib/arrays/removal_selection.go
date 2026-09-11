@@ -7,14 +7,33 @@ import (
 )
 
 func removeLimited(ctx context.Context, list runtime.List, target runtime.Value, limit runtime.Int) (runtime.Value, error) {
-	return list.Filter(ctx, removalPredicate(target, limit))
+	var keep runtime.IndexReadablePredicate
+	if limit < 0 {
+		keep = removalPredicate(target)
+	} else {
+		keep = limitedRemovalPredicate(target, limit)
+	}
+
+	return list.Filter(ctx, keep)
 }
 
-// The same predicate defines canonical removal and the legacy encounter-order limit.
-func removalPredicate(target runtime.Value, limit runtime.Int) runtime.IndexReadablePredicate {
+// Unlimited removal does not allocate or update legacy limit bookkeeping.
+func removalPredicate(target runtime.Value) runtime.IndexReadablePredicate {
+	return func(ctx context.Context, item runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+		equal, err := runtime.EqualValues(ctx, item, target)
+		if err != nil {
+			return false, err
+		}
+
+		return !equal, nil
+	}
+}
+
+func limitedRemovalPredicate(target runtime.Value, limit runtime.Int) runtime.IndexReadablePredicate {
 	var counter runtime.Int
 
 	return func(ctx context.Context, item runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+		// Even zero or exhausted limits must preserve fallible host comparisons.
 		equal, err := runtime.EqualValues(ctx, item, target)
 		if err != nil {
 			return false, err
@@ -27,7 +46,7 @@ func removalPredicate(target runtime.Value, limit runtime.Int) runtime.IndexRead
 				return true, nil
 			}
 
-			if limit < 0 || counter <= limit {
+			if counter <= limit {
 				return false, nil
 			}
 		}
@@ -44,7 +63,7 @@ func removeMatchingInPlace(ctx context.Context, list runtime.List, target runtim
 		return err
 	}
 
-	keep := removalPredicate(target, -1)
+	keep := removalPredicate(target)
 	write := runtime.ZeroInt
 	for read := runtime.ZeroInt; read < size; read++ {
 		if err := ctx.Err(); err != nil {

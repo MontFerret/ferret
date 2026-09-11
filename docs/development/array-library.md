@@ -64,9 +64,12 @@ Negative host lengths are rejected wherever length is consumed.
 
 The wrappers use existing runtime append, insert, indexed removal, clear, and
 sorting primitives. Mutable and immutable sorting share `runtime.SortAsc`.
-Immutable and legacy removal keep their host `Filter` dispatch and share a
-predicate with mutable removal, including canonical `runtime.EqualValues`
-dispatch. Mutable removal compacts survivors forward and trims the tail,
+Immutable and legacy removal keep their host `Filter` dispatch. Unlimited
+removal, including negative legacy limits, shares a stateless predicate with
+mutable removal. Zero and positive legacy limits use a separate counted
+predicate; equality is still evaluated after the limit is reached so host
+comparison errors are preserved. Both predicates use `runtime.EqualValues`.
+Mutable removal compacts survivors forward and trims the tail,
 preserving survivor order without quadratic native middle removals.
 
 The caller's context reaches host operations and comparisons. Mutable wrappers

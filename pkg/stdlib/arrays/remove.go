@@ -16,5 +16,5 @@ func Remove(ctx context.Context, array, value runtime.Value) (runtime.Value, err
 		return runtime.None, err
 	}
 
-	return removeLimited(ctx, list, value, -1)
+	return list.Filter(ctx, removalPredicate(value))
 }
