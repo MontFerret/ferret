@@ -112,8 +112,10 @@ mutation under `arrays::mut::`, and frozen global migration aliases.
 Vocabulary, mutation results, set ordering, copy ownership, and
 legacy signatures are described in [Array library contracts](array-library.md).
 
-The Objects group registers immutable functions under `object::` and explicit
-mutation under `object::mut::`. Shared map
+The Objects group registers immutable functions under `object::`, explicit
+mutation under `object::mut::`, and seven temporary deprecated global aliases.
+The globals delegate to canonical implementations and advertise replacements
+through structured API metadata, without compiler or runtime warnings. Shared map
 transformations, copy ownership, iterable entry construction, and migration
 behavior are described in [Object library contracts](object-library.md).
 
