@@ -149,3 +149,51 @@ func (probe *copyMutationProbe) RemoveAt(context.Context, runtime.Int) (runtime.
 
 	return runtime.None, nil
 }
+
+func (p *sliceProbe) New(ctx context.Context) (runtime.List, error) {
+	base, err := p.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *p
+	result.List = base
+
+	return &result, nil
+}
+
+func (l *failingList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.Array.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.Array = base.(*runtime.Array)
+
+	return &result, nil
+}
+
+func (l *lengthFailingList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.Array.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.Array = base.(*runtime.Array)
+
+	return &result, nil
+}
+
+func (list *copyFailureList) New(ctx context.Context) (runtime.List, error) {
+	base, err := list.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *list
+	result.List = base
+
+	return &result, nil
+}

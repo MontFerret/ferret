@@ -31,3 +31,15 @@ func (l *conversionErrorList) Iterate(ctx context.Context) (Iterator, error) {
 
 	return l.Array.Iterate(ctx)
 }
+
+func (l *conversionErrorList) New(ctx context.Context) (List, error) {
+	base, err := l.Array.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.Array = base.(*Array)
+
+	return &result, nil
+}

@@ -12,14 +12,14 @@ type (
 		runtime.Map
 		keys        runtime.List
 		values      runtime.List
-		empty       runtime.Map
+		created     runtime.Map
 		cloned      runtime.Cloneable
 		keysErr     error
 		valuesErr   error
 		lookupErr   error
 		containsErr error
 		walkErr     error
-		emptyErr    error
+		newErr      error
 		cloneErr    error
 		setErr      error
 		removeErr   error
@@ -129,16 +129,27 @@ func (m *hostMap) ForEach(ctx context.Context, fn runtime.KeyReadablePredicate) 
 	return m.Map.ForEach(ctx, fn)
 }
 
-func (m *hostMap) Empty(ctx context.Context) (runtime.Map, error) {
-	if m.emptyErr != nil {
-		return nil, m.emptyErr
+func (m *hostMap) New(ctx context.Context) (runtime.Map, error) {
+	if m.newErr != nil {
+		return nil, m.newErr
 	}
 
-	if m.empty != nil {
-		return m.empty, nil
+	if m.created != nil {
+		return m.created, nil
 	}
 
-	return m.Map.Empty(ctx)
+	base, err := m.Map.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *m
+	result.Map = base
+	result.keys = nil
+	result.values = nil
+	result.walk = nil
+
+	return &result, nil
 }
 
 func (m *hostMap) Clone(ctx context.Context) (runtime.Cloneable, error) {
@@ -284,4 +295,16 @@ func (m *hostMap) Equal(ctx context.Context, value runtime.Value) (bool, error) 
 	}
 
 	return m.Map.Equal(ctx, value)
+}
+
+func (l *hostList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.List = base
+
+	return &result, nil
 }

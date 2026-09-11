@@ -149,8 +149,12 @@ func (ds *DataSet) SortDesc(ctx context.Context) error {
 	return ds.values.SortDesc(ctx)
 }
 
-func (ds *DataSet) Empty(_ context.Context) (runtime.List, error) {
-	// TODO: Or should we return an underlying list instead?
+// New creates an independent empty collection with the receiver's configuration.
+func (ds *DataSet) New(ctx context.Context) (runtime.List, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	return NewDataSet(ds.uniqueness != nil), nil
 }
 

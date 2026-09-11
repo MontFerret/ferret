@@ -85,12 +85,19 @@ type (
 	// KeyReadablePredicate is a function type that represents a condition to be evaluated against elements in a collection based on their key.
 	KeyReadablePredicate = func(ctx context.Context, value, key Value) (Boolean, error)
 
-	// Spawnable is an interface for creating new instances of a type.
-	// Generic interface for all types that can create new instances of themselves.
-	Spawnable[T any] interface {
-		// Empty creates a new instance of the type or returns an error if the operation fails.
-		// The new instance should be initialized with default values and ready for use.
-		Empty(ctx context.Context) (T, error)
+	// Factory constructs collections in the receiver's implementation family.
+	// It is a collection capability, not a general-purpose object factory.
+	Factory[T Collection] interface {
+		// New creates a new, empty, independently mutable collection, preserving
+		// relevant implementation configuration such as backend, encoding, limits,
+		// and placement policy. It neither copies elements nor changes the source.
+		// A shared backend is allowed, but logical mutable contents must be distinct.
+		// Unlike Copy and Clone, New contains no source elements; unlike Clear,
+		// it does not mutate the receiver. Creation may perform I/O and must honor
+		// ctx when it may block. Ownership transfers to the caller only on success.
+		// On failure the factory releases partially acquired resources, joining
+		// cleanup failures with the creation error, and returns no owned result.
+		New(ctx context.Context) (T, error)
 	}
 
 	// Collection represents a collection of values.
@@ -119,7 +126,7 @@ type (
 		IndexWritable
 		IndexRemovable
 		ValueRemovable
-		Spawnable[List]
+		Factory[List]
 
 		// Insert adds a value at the specified index in a collection or returns an error if the index is invalid or operation fails.
 		Insert(ctx context.Context, idx Int, value Value) error
@@ -152,7 +159,7 @@ type (
 		KeyWritable
 		KeyRemovable
 		ValueRemovable
-		Spawnable[Map]
+		Factory[Map]
 
 		// Merge merges another map into the current map, combining their key-value pairs or returns an error if merging fails.
 		Merge(ctx context.Context, other Map) error

@@ -1,7 +1,6 @@
 package runtime_test
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"testing"
@@ -27,24 +26,6 @@ func (typedOnly) Hash() uint64 {
 
 func (typedOnly) Copy() runtime.Value {
 	return typedOnly{}
-}
-
-type typedList struct {
-	*runtime.Array
-}
-
-func (t typedList) Concat(ctx context.Context, other runtime.List) error {
-	return t.Array.Concat(ctx, other)
-}
-
-var typeTypedList = runtime.NewType("test", "typedList", func(value runtime.Value) bool {
-	_, ok := value.(typedList)
-
-	return ok
-})
-
-func (t typedList) Type() runtime.Type {
-	return typeTypedList
 }
 
 func TestValidateType(t *testing.T) {

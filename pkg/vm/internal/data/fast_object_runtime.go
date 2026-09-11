@@ -402,7 +402,12 @@ func (t *FastObject) Iterate(_ context.Context) (runtime.Iterator, error) {
 	return &fastObjectIterator{entries: entries, slots: t.slots}, nil
 }
 
-func (t *FastObject) Empty(_ context.Context) (runtime.Map, error) {
+// New creates an independent empty collection with the receiver's configuration.
+func (t *FastObject) New(ctx context.Context) (runtime.Map, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	return NewFastObject(t.cache, t.dictThreshold), nil
 }
 

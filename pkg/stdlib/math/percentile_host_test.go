@@ -36,3 +36,15 @@ func (value *percentileCopySortable) SortDesc(context.Context) error {
 
 	return nil
 }
+
+func (list *percentileCopyList) New(ctx context.Context) (runtime.List, error) {
+	base, err := list.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *list
+	result.List = base
+
+	return &result, nil
+}

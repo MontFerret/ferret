@@ -9,10 +9,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/arrays"
 )
 
-type copyBenchmarkList struct {
-	runtime.List
-}
-
 var copyBenchmarkResult runtime.Value
 
 func BenchmarkListCopyOperations(b *testing.B) {

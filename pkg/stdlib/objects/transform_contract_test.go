@@ -249,7 +249,7 @@ func TestObjectHostErrors(t *testing.T) {
 			return objects.Zip(ctx, keys, &hostList{List: vals, accessErr: sentinel})
 		}, "position 2"},
 		{"zip clone", func() (runtime.Value, error) { return objects.Zip(ctx, keys, runtime.NewArrayWith(badValue)) }, "position 2"},
-		{"merge empty", func() (runtime.Value, error) { return objects.Merge(ctx, &hostMap{Map: basic, emptyErr: sentinel}) }, "position 1"},
+		{"merge construction", func() (runtime.Value, error) { return objects.Merge(ctx, &hostMap{Map: basic, newErr: sentinel}) }, "position 1"},
 		{"merge source", func() (runtime.Value, error) {
 			return objects.Merge(ctx, basic, &hostMap{Map: basic, walkErr: sentinel})
 		}, "position 2"},
@@ -257,10 +257,10 @@ func TestObjectHostErrors(t *testing.T) {
 			return objects.MergeDeep(ctx, runtime.NewArrayWith(basic, &hostMap{Map: basic, walkErr: sentinel}))
 		}, "position 1"},
 		{"merge destination", func() (runtime.Value, error) {
-			return objects.Merge(ctx, &hostMap{Map: basic, empty: &hostMap{Map: runtime.NewObject(), setErr: sentinel}})
+			return objects.Merge(ctx, &hostMap{Map: basic, created: &hostMap{Map: runtime.NewObject(), setErr: sentinel}})
 		}, "position 1"},
 		{"deep lookup", func() (runtime.Value, error) {
-			return objects.MergeDeep(ctx, &hostMap{Map: runtime.NewObjectWith(map[string]runtime.Value{"a": basic}), empty: &hostMap{Map: runtime.NewObject(), lookupErr: sentinel}})
+			return objects.MergeDeep(ctx, &hostMap{Map: runtime.NewObjectWith(map[string]runtime.Value{"a": basic}), created: &hostMap{Map: runtime.NewObject(), lookupErr: sentinel}})
 		}, "position 1"},
 		{"merge list", func() (runtime.Value, error) {
 			return objects.MergeDeep(ctx, &hostList{List: runtime.NewArrayWith(basic), walkErr: sentinel})

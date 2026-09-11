@@ -96,6 +96,10 @@ boundary, preserve argument context in errors, and delegate shared semantics to
 runtime helpers. Reusable module contracts do not belong in stdlib, and
 stdlib-specific behavior does not belong in `pkg/module`.
 
+The Collections group registers global `count`, `count_distinct`, `includes`,
+and `reverse`. Their minimum input capabilities, cancellation boundaries, and
+ownership contracts are described in [Collection library contracts](collection-library.md).
+
 The function definitions registered by `stdlib.Full()` are also the source for
 the published Ferret Core API artifacts. Structured documentation requirements
 and generation checks are described in the

@@ -8,6 +8,9 @@ import (
 
 // MergeDeep copies maps into an independent destination, merging nested maps recursively.
 // Arrays, scalars, and none are replaced by later values.
+// After successful factory construction, population failure closes a closable
+// destination and joins cleanup errors. Successful results transfer to the caller;
+// source maps remain borrowed. Failed construction is the factory's responsibility.
 // @param values {Map|Map[], repeated} Variadic maps, or one list of maps.
 // @return {Map} Deep merge with cloned or copied values.
 func MergeDeep(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {

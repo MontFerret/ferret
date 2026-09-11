@@ -53,3 +53,15 @@ func (l *removalFilterList) Filter(ctx context.Context, predicate runtime.IndexR
 
 	return l.List.Filter(ctx, predicate)
 }
+
+func (l *removalFilterList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.List = base
+
+	return &result, nil
+}
