@@ -27,3 +27,15 @@ func (l *joinTestList) ForEach(ctx context.Context, fn runtime.IndexReadablePred
 
 	return l.failure
 }
+
+func (l *joinTestList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.List = base
+
+	return &result, nil
+}

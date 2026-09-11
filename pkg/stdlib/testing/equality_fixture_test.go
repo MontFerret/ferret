@@ -100,3 +100,53 @@ func (v *diagnosticEqualityProbe) Equal(context.Context, runtime.Value) (bool, e
 
 	return false, v.err
 }
+
+func (s *snapshotList) New(ctx context.Context) (runtime.List, error) {
+	base, err := s.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *s
+	result.List = base
+	result.snapshot = base.(*runtime.Array)
+
+	return &result, nil
+}
+
+func (s *snapshotMap) New(ctx context.Context) (runtime.Map, error) {
+	base, err := s.Map.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *s
+	result.Map = base
+	result.snapshot = base.(*runtime.Object)
+
+	return &result, nil
+}
+
+func (l *unsafeList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.List = base
+
+	return &result, nil
+}
+
+func (m *unsafeMap) New(ctx context.Context) (runtime.Map, error) {
+	base, err := m.Map.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *m
+	result.Map = base
+
+	return &result, nil
+}

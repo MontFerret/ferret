@@ -29,3 +29,16 @@ func (s *spreadSnapshotList) Iterate(ctx context.Context) (runtime.Iterator, err
 
 	return s.List.Iterate(ctx)
 }
+
+func (s *spreadSnapshotList) New(ctx context.Context) (runtime.List, error) {
+	base, err := s.List.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *s
+	result.List = base
+	result.snapshot = base.(*runtime.Array)
+
+	return &result, nil
+}

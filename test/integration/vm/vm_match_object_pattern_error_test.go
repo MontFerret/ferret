@@ -1,8 +1,6 @@
 package vm_test
 
 import (
-	"context"
-	"errors"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -10,14 +8,6 @@ import (
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
-
-type errorMap struct {
-	*runtime.Object
-}
-
-func (m *errorMap) ContainsKey(ctx context.Context, key runtime.Value) (runtime.Boolean, error) {
-	return runtime.False, errors.New("boom")
-}
 
 func TestMatchObjectPatternContainsKeyError(t *testing.T) {
 	RunSpecs(t, []spec.Spec{

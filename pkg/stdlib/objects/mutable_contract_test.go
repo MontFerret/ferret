@@ -103,7 +103,7 @@ func TestMutableMergesNoSourceDoesNotCopyOrWrite(t *testing.T) {
 			unexpected := errors.New("unexpected copy or mutation")
 			nested := runtime.NewObjectWith(map[string]runtime.Value{"a": runtime.Int(1)})
 			target := &hostMap{Map: runtime.NewObjectWith(map[string]runtime.Value{"nested": nested}),
-				cloneErr: unexpected, emptyErr: unexpected, setErr: unexpected, setCalls: &writes}
+				cloneErr: unexpected, newErr: unexpected, setErr: unexpected, setCalls: &writes}
 			args := []runtime.Value{target}
 			switch form {
 			case "empty list":
@@ -130,7 +130,7 @@ func TestMutableShallowOperationsRetainExistingValues(t *testing.T) {
 	for name, apply := range map[string]runtime.Function{"merge": objects.MergeMutable, "keep": objects.KeepKeysMutable, "omit": objects.OmitKeysMutable} {
 		nested := runtime.NewObject()
 		target := &hostMap{Map: runtime.NewObjectWith(map[string]runtime.Value{"nested": nested, "remove": runtime.True}),
-			cloneErr: errors.New("target must not be cloned"), emptyErr: errors.New("target must not be replaced")}
+			cloneErr: errors.New("target must not be cloned"), newErr: errors.New("target must not be replaced")}
 		var argument runtime.Value = runtime.String("remove")
 		if name == "merge" {
 			argument = runtime.NewObjectWith(map[string]runtime.Value{"added": runtime.True})

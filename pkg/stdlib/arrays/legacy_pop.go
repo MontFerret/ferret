@@ -22,7 +22,7 @@ func legacyPop(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	if size == 0 {
-		return arr.Empty(ctx)
+		return arr.New(ctx)
 	}
 
 	return arr.Slice(ctx, 0, size-1)

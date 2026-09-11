@@ -35,3 +35,15 @@ func (l *fallibleDurationList) At(ctx context.Context, idx runtime.Int) (runtime
 
 	return l.Array.At(ctx, idx)
 }
+
+func (l *fallibleDurationList) New(ctx context.Context) (runtime.List, error) {
+	base, err := l.Array.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := *l
+	result.Array = base.(*runtime.Array)
+
+	return &result, nil
+}

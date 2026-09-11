@@ -15,6 +15,37 @@ Consumers should use the runtime's shared operations rather than matching
 concrete built-in types. Host values may implement capabilities without being a
 built-in value, and consumers must preserve those contracts.
 
+## Collection construction and migration
+
+`runtime.Factory[T Collection]` exposes `New(context.Context) (T, error)`.
+`List` embeds `Factory[List]`, and `Map` embeds `Factory[Map]`. This is an
+intentional breaking Go API change from `Spawnable[T].Empty`: implementers must
+rename the method and callers must use `New`. There is no compatibility alias.
+The generic constraint limits this capability to runtime collections.
+
+`New` creates an empty, independently mutable collection in the receiver's
+implementation family. Preserve relevant configuration such as backend,
+encoding, limits, and placement policy. A shared service or backend is allowed;
+shared logical mutable contents are not. The source remains unchanged and no
+elements are copied. Native Array may reserve capacity without populating it;
+FastObject preserves its shape cache and dictionary threshold, and DataSet
+preserves its distinctness policy with fresh membership state.
+
+`Copy` makes a shallow copy containing the elements; `Clone` makes a deep copy;
+`Clear` removes elements from the existing collection. None replaces `New`.
+Construction may perform I/O or fail and must honor the caller's context when
+it may block. Native factories reject pre-canceled calls before allocating.
+Ownership transfers only on success. A failed factory releases its partially
+acquired resources and joins creation and cleanup failures without returning an
+owned result. After successful creation, the caller owns cleanup until it
+transfers the result. Wrappers must implement `New` when an inherited factory
+would discard their implementation family or configuration.
+
+Global collection functions and their iterator/result ownership are described
+in [Collection library contracts](collection-library.md).
+
+## Copying values
+
 Use `runtime.Copy(src)` when a caller needs a shallow copy preserving its static
 Go type, including capability interfaces such as `runtime.List`. The helper calls
 `Value.Copy` once and checks the result, returning an error wrapping

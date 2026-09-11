@@ -373,8 +373,13 @@ func (t *Array) Clear(_ context.Context) error {
 	return nil
 }
 
-func (t *Array) Empty(_ context.Context) (List, error) {
-	return NewArray(0), nil
+// New creates an independent empty collection with the receiver's configuration.
+func (t *Array) New(ctx context.Context) (List, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	return NewArray(len(t.data)), nil
 }
 
 func (t *Array) Remove(ctx context.Context, value Value) error {

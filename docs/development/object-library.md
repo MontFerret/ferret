@@ -21,7 +21,8 @@ non-string key fails the call with an argument-attributed type error.
 
 Both merge functions accept variadic maps or one `runtime.List` of maps.
 At least one argument is required; an empty list produces an empty object.
-The first source's `Empty` method creates the destination. Later sources win.
+The first source's `New` method creates the destination, preserving its
+implementation family and relevant configuration. Later sources win.
 Deep merge recurses only when both conflicting values implement `runtime.Map`;
 arrays, scalars, and `none` are replaced.
 
@@ -81,8 +82,10 @@ Key snapshots are fully traversed before removal, supporting live host key views
 Immutable results have independent containers. Values use `runtime.CloneOrCopy`:
 Cloneable values must honor their deep-clone contract; other values follow
 their shallow `Value.Copy` contract. The library cannot strengthen a host
-value's copy guarantees. Host implementations of `Empty` and `Clone` must
-produce independent destinations.
+value's copy guarantees. Host implementations of `New` and `Clone` must
+produce independent destinations. `New` transfers ownership only on success;
+the factory owns failed-construction cleanup. See the runtime guide's
+[collection construction migration](runtime.md#collection-construction-and-migration).
 
 Mutable shallow merge and key filters use the same runtime operations directly
 on their target, without cloning it. Retained existing values are untouched.

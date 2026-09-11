@@ -37,7 +37,7 @@ func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(cont
 		return runtime.NewObject(), nil
 	}
 
-	dst, err := sources[0].Empty(ctx)
+	dst, err := sources[0].New(ctx)
 	if err != nil {
 		return runtime.None, mergeArgumentError(err, 0, listForm, 0)
 	}
