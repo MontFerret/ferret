@@ -6,13 +6,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// date_dayofyear returns the day of year number of date.
+// DayOfYear returns the day of year number of date.
 // The return value range from 1 to 365 (366 in a leap year).
 // @param date {DateTime} Source DateTime.
 // @return {Int} A day of year number.
-func DateDayOfYear(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+func DayOfYear(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}

@@ -1,112 +1,76 @@
 package datetime
 
 import (
-	"fmt"
 	"strings"
 	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// Unit specifies an unit of time (Millisecond, Second...).
-type Unit int
+type unit int
 
+// Order also defines the inclusive legacy comparison range.
 const (
-	Millisecond Unit = iota
-	Second
-	Minute
-	Hour
-	Day
-	Week
-	Month
-	Year
+	millisecond unit = iota
+	second
+	minute
+	hour
+	day
+	week
+	month
+	year
 )
 
-var nanoseconds = []float64{
-	1e6,
-	1e9,
-	6e10,
-	36e11,
-	864e11,
-	6048e11,
-	26784e11,
-	31536e12,
-}
-
-// Nanosecond returns representation of an Unit
-// in nanosconds
-func (u Unit) Nanosecond() float64 {
-	return nanoseconds[u]
-}
-
-// IsDatesEqual check if two partial dates match.
-// This case the day means not the amount of days in Time,
-// but the day of the month.
-// The same rules applied to each unit.
-func IsDatesEqual(tm1, tm2 time.Time, u Unit) bool {
-	switch u {
-	case Millisecond:
-		tm1Msec := tm1.Nanosecond() / 1e6
-		tm2Msec := tm2.Nanosecond() / 1e6
-		return tm1Msec == tm2Msec
-	case Second:
-		return tm1.Second() == tm2.Second()
-	case Minute:
-		return tm1.Minute() == tm2.Minute()
-	case Hour:
-		return tm1.Hour() == tm2.Hour()
-	case Day:
-		return tm1.Day() == tm2.Day()
-	case Week:
-		_, tm1Week := tm1.ISOWeek()
-		_, tm2Week := tm2.ISOWeek()
-		return tm1Week == tm2Week
-	case Month:
-		return tm1.Month() == tm2.Month()
-	case Year:
-		return tm1.Year() == tm2.Year()
-	}
-	return false
-}
-
-// AddUnit add amount given in u to tm
-func AddUnit(tm time.Time, amount int, u Unit) (res time.Time) {
-	if u < Day {
-		return tm.Add(time.Duration(amount) * time.Duration(int64(u.Nanosecond())))
+func parseUnit(value runtime.Value, position int) (unit, error) {
+	name, err := runtime.CastArg[runtime.String](value, position)
+	if err != nil {
+		return 0, err
 	}
 
-	switch u {
-	case Day:
-		res = tm.AddDate(0, 0, amount*1)
-	case Week:
-		res = tm.AddDate(0, 0, amount*7)
-	case Month:
-		res = tm.AddDate(0, amount*1, 0)
-	case Year:
-		res = tm.AddDate(amount*1, 0, 0)
-	}
-
-	return
-}
-
-// UnitFromString returns true and an Unit object if
-// Unit with that name exists. Returns false, otherwise.
-func UnitFromString(s string) (Unit, error) {
-	switch strings.ToLower(s) {
-	case "y", "year", "years":
-		return Year, nil
-	case "m", "month", "months":
-		return Month, nil
-	case "w", "week", "weeks":
-		return Week, nil
-	case "d", "day", "days":
-		return Day, nil
-	case "h", "hour", "hours":
-		return Hour, nil
-	case "i", "minute", "minutes":
-		return Minute, nil
-	case "s", "second", "seconds":
-		return Second, nil
+	switch strings.ToLower(string(name)) {
 	case "f", "millisecond", "milliseconds":
-		return Millisecond, nil
+		return millisecond, nil
+	case "s", "second", "seconds":
+		return second, nil
+	case "i", "minute", "minutes":
+		return minute, nil
+	case "h", "hour", "hours":
+		return hour, nil
+	case "d", "day", "days":
+		return day, nil
+	case "w", "week", "weeks":
+		return week, nil
+	case "m", "month", "months":
+		return month, nil
+	case "y", "year", "years":
+		return year, nil
 	}
-	return -1, fmt.Errorf("no such unit '%s'", s)
+
+	return 0, runtime.ArgError(runtime.Errorf(runtime.ErrInvalidArgument, "unknown datetime unit %q", name), position)
+}
+
+func fixedDuration(u unit) (time.Duration, bool) {
+	switch u {
+	case millisecond:
+		return time.Millisecond, true
+	case second:
+		return time.Second, true
+	case minute:
+		return time.Minute, true
+	case hour:
+		return time.Hour, true
+	default:
+		return 0, false
+	}
+}
+
+func datePairUnit(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.DateTime, unit, error) {
+	left, right, err := runtime.CastArgs2[runtime.DateTime, runtime.DateTime](arg1, arg2)
+	if err != nil {
+		return runtime.ZeroDateTime, runtime.ZeroDateTime, 0, err
+	}
+
+	u, err := parseUnit(arg3, 2)
+
+	return left, right, u, err
 }

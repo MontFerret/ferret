@@ -6,12 +6,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// date_second returns the second of date as a number.
+// Second returns the second of date as a number.
 // @param date {DateTime} Source DateTime.
 // @return {Int} A second number.
-func DateSecond(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+func Second(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}

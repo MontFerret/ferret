@@ -7,7 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
 )
 
-func TestDateLeapYear(t *testing.T) {
+func TestDateDayOfWeek(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 1 arguments",
@@ -31,18 +31,18 @@ func TestDateLeapYear(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When not a leap year",
-			Expected: runtime.NewBoolean(false),
+			Name:     "When Sunday (0th day)",
+			Expected: runtime.NewInt(0),
 			Args:     []runtime.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},
 		},
 		&testCase{
-			Name:     "When a leap year",
-			Expected: runtime.NewBoolean(true),
-			Args:     []runtime.Value{mustDefaultLayoutDt("1972-12-07T15:04:05Z")},
+			Name:     "When Monday (1th day)",
+			Expected: runtime.NewInt(1),
+			Args:     []runtime.Value{mustDefaultLayoutDt("1999-02-08T15:04:05Z")},
 		},
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn1(datetime.DateLeapYear))
+		tc.Do(t, Fn1(datetime.DayOfWeek))
 	}
 }

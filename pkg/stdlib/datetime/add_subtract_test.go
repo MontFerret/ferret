@@ -1,7 +1,6 @@
 package datetime_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -55,16 +54,8 @@ func TestDateAdd(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name: "When argument have correct types",
-			Expected: func() runtime.Value {
-				expected, _ := datetime.DateAdd(
-					context.Background(),
-					mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-					runtime.NewInt(1),
-					runtime.NewString("day"),
-				)
-				return expected
-			}(),
+			Name:     "When argument have correct types",
+			Expected: mustDefaultLayoutDt("1999-02-08T15:04:05Z"),
 			Args: []runtime.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
 				runtime.NewInt(1),
@@ -148,7 +139,7 @@ func TestDateAdd(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn3(datetime.DateAdd))
+		tc.Do(t, Fn3(datetime.Add))
 	}
 }
 
@@ -194,16 +185,8 @@ func TestDateSubtract(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name: "When argument have correct types",
-			Expected: func() runtime.Value {
-				expected, _ := datetime.DateSubtract(
-					context.Background(),
-					mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-					runtime.NewInt(1),
-					runtime.NewString("day"),
-				)
-				return expected
-			}(),
+			Name:     "When argument have correct types",
+			Expected: mustDefaultLayoutDt("1999-02-06T15:04:05Z"),
 			Args: []runtime.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
 				runtime.NewInt(1),
@@ -287,6 +270,6 @@ func TestDateSubtract(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn3(datetime.DateSubtract))
+		tc.Do(t, Fn3(datetime.Subtract))
 	}
 }
