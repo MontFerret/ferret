@@ -1,8 +1,13 @@
 package datetime
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func TestAddUnitInvalidUnit(t *testing.T) {
@@ -14,13 +19,14 @@ func TestAddUnitInvalidUnit(t *testing.T) {
 		{"above maximum", year + 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			defer func() {
-				if got := recover(); got != "unreachable" {
-					t.Fatalf("addUnit(%d) panic = %v; want unreachable", tc.unit, got)
-				}
-			}()
+			got, err := addUnit(time.Date(2024, time.January, 1, 12, 0, 0, 0, time.UTC), 1, tc.unit)
+			if !got.IsZero() || !errors.Is(err, runtime.ErrUnexpected) {
+				t.Fatalf("addUnit(%d) = %v, %v; want zero time and an unexpected error", tc.unit, got, err)
+			}
 
-			addUnit(time.Date(2024, time.January, 1, 12, 0, 0, 0, time.UTC), 1, tc.unit)
+			if want := fmt.Sprintf("unsupported datetime unit %d", tc.unit); !strings.Contains(err.Error(), want) {
+				t.Fatalf("addUnit(%d) error = %q; want message containing %q", tc.unit, err, want)
+			}
 		})
 	}
 }

@@ -20,7 +20,12 @@ func Add(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, erro
 		return runtime.None, err
 	}
 
-	return runtime.NewDateTime(addUnit(date.Time, int(amount), u)), nil
+	result, err := addUnit(date.Time, int(amount), u)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.NewDateTime(result), nil
 }
 
 // Subtract subtracts an integer number of units from a date. Subday units are
@@ -36,7 +41,12 @@ func Subtract(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value,
 		return runtime.None, err
 	}
 
-	return runtime.NewDateTime(addUnit(date.Time, -int(amount), u)), nil
+	result, err := addUnit(date.Time, -int(amount), u)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.NewDateTime(result), nil
 }
 
 func shiftArguments(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.Int, unit, error) {
@@ -50,21 +60,21 @@ func shiftArguments(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.I
 	return date, amount, u, err
 }
 
-func addUnit(date time.Time, amount int, u unit) time.Time {
+func addUnit(date time.Time, amount int, u unit) (time.Time, error) {
 	if duration, ok := fixedDuration(u); ok {
-		return date.Add(time.Duration(amount) * duration)
+		return date.Add(time.Duration(amount) * duration), nil
 	}
 
 	switch u {
 	case day:
-		return date.AddDate(0, 0, amount)
+		return date.AddDate(0, 0, amount), nil
 	case week:
-		return date.AddDate(0, 0, amount*7)
+		return date.AddDate(0, 0, amount*7), nil
 	case month:
-		return date.AddDate(0, amount, 0)
+		return date.AddDate(0, amount, 0), nil
 	case year:
-		return date.AddDate(amount, 0, 0)
+		return date.AddDate(amount, 0, 0), nil
 	default:
-		panic("unreachable")
+		return time.Time{}, runtime.Errorf(runtime.ErrUnexpected, "unsupported datetime unit %d", u)
 	}
 }
