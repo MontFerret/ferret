@@ -2,7 +2,7 @@ package arrays
 
 import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
-// RegisterLib registers immutable array functions and temporary global aliases.
+// RegisterLib registers arrays, explicit arrays::mut operations, and legacy globals.
 // @namespace arrays
 func RegisterLib(ns runtime.Namespace) {
 	canonical := ns.Namespace("arrays")
@@ -29,6 +29,21 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("intersection", Intersection).
 		Add("difference", Difference).
 		Add("symmetric_difference", SymmetricDifference)
+
+	mutable := canonical.Namespace("mut")
+	mutable.Function().A1().
+		Add("pop", PopMutable).
+		Add("shift", ShiftMutable).
+		Add("clear", ClearMutable).
+		Add("sort", SortMutable)
+	mutable.Function().A2().
+		Add("push", PushMutable).
+		Add("unshift", UnshiftMutable).
+		Add("remove", RemoveMutable).
+		Add("remove_at", RemoveAtMutable)
+	mutable.Function().A3().
+		Add("set", SetMutable).
+		Add("insert", InsertMutable)
 
 	registerLegacy(ns)
 }

@@ -18,10 +18,33 @@ func assertArrayMetadata(t *testing.T, reference *api.Reference, catalog *apicat
 	}
 
 	seen := make(map[string]bool)
+	wantMutable := map[string]int{
+		"pop": 1, "shift": 1, "clear": 1, "sort": 1,
+		"push": 2, "unshift": 2, "remove": 2, "remove_at": 2,
+		"set": 3, "insert": 3,
+	}
+	seenMutable := make(map[string]bool)
 	deprecated := make(map[string]bool)
 	for _, namespace := range reference.Namespaces {
 		if namespace.Name == "arrays::mut" {
-			t.Fatal("array mutation must not be published")
+			for _, function := range namespace.Functions {
+				arity, ok := wantMutable[function.Name]
+				if !ok || len(function.Signatures) != 1 || !hasSignature(function.Signatures, arity, false) {
+					t.Fatalf("unexpected mutable array signature: %s %+v", function.Name, function.Signatures)
+				}
+
+				signature := function.Signatures[0]
+				returnType := "Any[]"
+				if function.Name == "pop" || function.Name == "shift" || function.Name == "remove_at" {
+					returnType = "Any"
+				}
+
+				if signature.Deprecated != "" || signature.Return.Type.Kind != api.TypeKindNamed || signature.Return.Type.Name != returnType {
+					t.Fatalf("incorrect mutable array documentation: %s %+v", function.Name, signature)
+				}
+
+				seenMutable[function.Name] = true
+			}
 		}
 
 		for _, function := range namespace.Functions {
@@ -76,6 +99,10 @@ func assertArrayMetadata(t *testing.T, reference *api.Reference, catalog *apicat
 		t.Fatalf("canonical array metadata incomplete: %v", seen)
 	}
 
+	if len(seenMutable) != len(wantMutable) {
+		t.Fatalf("mutable array metadata incomplete: %v", seenMutable)
+	}
+
 	for _, name := range []string{"append", "push", "position", "remove_value", "remove_nth", "outersection", "sorted_unique", "pop", "shift", "unshift"} {
 		if !deprecated[name] {
 			t.Errorf("legacy adapter %s lacks deprecation metadata", name)
@@ -85,7 +112,7 @@ func assertArrayMetadata(t *testing.T, reference *api.Reference, catalog *apicat
 	categorized := 0
 	for _, category := range catalog.Categories {
 		for _, function := range category.Functions {
-			if function.Namespace == "arrays" {
+			if function.Namespace == "arrays" || function.Namespace == "arrays::mut" {
 				if category.ID != "arrays" {
 					t.Fatalf("array function categorized under %s", category.ID)
 				}
@@ -95,7 +122,7 @@ func assertArrayMetadata(t *testing.T, reference *api.Reference, catalog *apicat
 		}
 	}
 
-	if categorized != len(want) {
-		t.Fatalf("categorized %d canonical arrays, want %d", categorized, len(want))
+	if categorized != len(want)+len(wantMutable) {
+		t.Fatalf("categorized %d array functions, want %d", categorized, len(want)+len(wantMutable))
 	}
 }

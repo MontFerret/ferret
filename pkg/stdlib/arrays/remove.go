@@ -18,30 +18,3 @@ func Remove(ctx context.Context, array, value runtime.Value) (runtime.Value, err
 
 	return removeLimited(ctx, list, value, -1)
 }
-
-func removeLimited(ctx context.Context, arr runtime.List, target runtime.Value, limit runtime.Int) (runtime.Value, error) {
-	var counter runtime.Int
-
-	return arr.Filter(ctx, func(ctx context.Context, item runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		remove, err := runtime.EqualValues(ctx, item, target)
-		if err != nil {
-			return false, err
-		}
-
-		if remove {
-			counter++
-
-			// If limit is 0, don't remove anything
-			if limit == 0 {
-				return true, nil
-			}
-
-			// If limit is negative or we haven't reached the limit, remove the item
-			if limit < 0 || counter <= limit {
-				return false, nil
-			}
-		}
-
-		return true, nil
-	})
-}

@@ -13,7 +13,7 @@ const stdlibPackageMarker = "/pkg/stdlib/"
 
 var (
 	standardLibraryCategories = []apicatalog.Category{
-		{ID: "arrays", Title: "Arrays", Description: "Immutable arrays:: functions and temporary global migration aliases."},
+		{ID: "arrays", Title: "Arrays", Description: "Immutable arrays:: functions, explicit arrays::mut operations, and temporary global migration aliases."},
 		{ID: "collections", Title: "Collections", Description: "Global functions for working with collections."},
 		{ID: "crypto", Title: "Crypto", Description: "Digest and secure token functions in the crypto namespace."},
 		{ID: "datetime", Title: "Date & Time", Description: "Global functions for working with dates and times."},

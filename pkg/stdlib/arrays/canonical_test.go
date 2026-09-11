@@ -26,7 +26,7 @@ func TestCanonicalArrayRegistrations(t *testing.T) {
 	} {
 		var names []string
 		for _, name := range test.got {
-			if strings.HasPrefix(name, "arrays::") {
+			if strings.HasPrefix(name, "arrays::") && !strings.HasPrefix(name, "arrays::mut::") {
 				names = append(names, strings.TrimPrefix(name, "arrays::"))
 			}
 		}

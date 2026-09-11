@@ -1,10 +1,10 @@
 # Array Library Contracts
 
 The Arrays capability group registers the canonical immutable API under
-`arrays::`. Exported Go functions in `pkg/stdlib/arrays` use the same vocabulary
-and semantics. The existing global FQL registrations are frozen migration
-aliases, intended for removal in a later v2 minor release. This change does not
-register `arrays::mut` or introduce mutable array operations.
+`arrays::` and explicit mutation under `arrays::mut::`. Exported Go functions in
+`pkg/stdlib/arrays` use the same vocabulary and semantics; mutable functions use
+the `Mutable` suffix. The existing global FQL registrations are frozen migration
+aliases, intended for removal in a later v2 minor release.
 
 ## Canonical vocabulary
 
@@ -30,6 +30,52 @@ argument. Negative starts or lengths and starts beyond the list return an empty
 array. Oversized lengths are capped using a subtraction comparison before
 addition, preventing integer overflow. The exported Go `Slice` now rejects
 undocumented extra arguments, matching its FQL overloads.
+
+## Explicit mutation
+
+Mutable operations change the original list. Aliases observe those changes;
+there is no implicit copy and no global mutable registration or `mut::` alias.
+
+| Call under `arrays::mut::` | Result |
+| --- | --- |
+| `push(array, value)` | Original array with one appended element |
+| `unshift(array, value)` | Original array with one prepended element |
+| `set(array, index, value)` | Original array with an existing element replaced |
+| `insert(array, index, value)` | Original array with an element inserted |
+| `remove(array, value)` | Original array with all equal values removed |
+| `clear(array)` | Original array with all elements removed |
+| `sort(array)` | Original array, stably sorted in ascending FQL order |
+| `pop(array)` | Removed last value, or `none` when empty |
+| `shift(array)` | Removed first value, or `none` when empty |
+| `remove_at(array, index)` | Removed value |
+
+Indexes must be Int. `set` and mutable `remove_at` require an existing index;
+`insert` allows zero through length inclusive. Negative or missing indexes fail
+before mutation with `ErrInvalidOperation` attributed to the index argument.
+`set` does not grow the array. Immutable `remove_at` retains its unchanged-copy
+behavior for missing indexes. There are no optional modes, removal limits, or
+sort directions in this namespace.
+
+Targets must implement `runtime.List`, whose existing contract includes every
+required mutation method. Missing capabilities and nil targets fail with a type
+error. Host mutation refusals propagate without copying the target; empty
+`pop`/`shift` and removal with no matches do not issue speculative writes.
+Negative host lengths are rejected wherever length is consumed.
+
+The wrappers use existing runtime append, insert, indexed removal, clear, and
+sorting primitives. Mutable and immutable sorting share `runtime.SortAsc`.
+Immutable and legacy removal keep their host `Filter` dispatch and share a
+predicate with mutable removal, including canonical `runtime.EqualValues`
+dispatch. Mutable removal compacts survivors forward and trims the tail,
+preserving survivor order without quadratic native middle removals.
+
+The caller's context reaches host operations and comparisons. Mutable wrappers
+reject pre-canceled calls and poll cancellation during removal. Errors preserve
+their causes and return `runtime.None`; a host, comparison, or cancellation
+failure can leave earlier writes applied. There is no rollback or new panic
+recovery policy. Host implementations must honor their runtime contracts.
+Targets and element values are borrowed: mutation neither clones nor closes
+inserted, retained, or removed values.
 
 ## Equality and deterministic ordering
 
@@ -112,3 +158,9 @@ equality, failed removal, cancellation propagation, and reuse after removal.
 API generator tests check names, signatures, categorization, and adapter
 deprecation metadata. Benchmark slice copying and set operations alongside
 existing DISTINCT consumers whenever the common set implementation changes.
+
+Mutable tests exercise exact result identity, strict bounds, host refusals,
+partial failures, cancellation, shallow resource ownership, and mutation of
+independent slices and copies. FQL mutation tests run at None, Basic, and Full
+optimization. Copy, removal, sorting, and native/custom mutation benchmarks
+track time and allocations; mutable benchmark setup is excluded from timing.
