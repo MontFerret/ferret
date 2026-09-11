@@ -64,6 +64,18 @@ func TestImmutableMergeUsesFirstMapFactory(t *testing.T) {
 				t.Fatal("merge changed source value")
 			}
 
+			if destination.closes != 0 || first.closes != 0 || second.closes != 0 {
+				t.Fatal("successful merge closed a result or borrowed source")
+			}
+
+			if err := destination.Close(); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := empty.(*configuredMap).Close(); err != nil {
+				t.Fatal(err)
+			}
+
 			primary, cleanup := errors.New("factory failed"), errors.New("factory rollback failed")
 			first.newErr = errors.Join(primary, cleanup)
 			result, err = merge(ctx, first)

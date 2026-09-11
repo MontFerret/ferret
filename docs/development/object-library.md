@@ -87,6 +87,14 @@ produce independent destinations. `New` transfers ownership only on success;
 the factory owns failed-construction cleanup. See the runtime guide's
 [collection construction migration](runtime.md#collection-construction-and-migration).
 
+After successful factory construction, immutable merge owns its destination until
+successful return. Population or cancellation failures close that incomplete
+destination exactly once when it implements `io.Closer`, joining cleanup failures
+with the attributed primary error. Failed calls return `runtime.None`; successful
+destinations stay open and transfer through normal result lifecycle handling.
+Sources remain borrowed. This is resource cleanup, not transactional rollback;
+mutable merge never closes its caller-owned target.
+
 Mutable shallow merge and key filters use the same runtime operations directly
 on their target, without cloning it. Retained existing values are untouched.
 `runtime.Map` already includes `Set` and `RemoveKey`; readable values lacking

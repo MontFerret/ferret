@@ -2,11 +2,16 @@ package objects
 
 import (
 	"context"
+	"errors"
+	"io"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 // Merge copies maps into an independent destination; later values replace earlier values.
+// Successful factory construction transfers destination ownership to this call.
+// Population failure closes a closable destination and joins cleanup errors;
+// success transfers the result to the caller. Source maps remain borrowed.
 // @param values {Map|Map[], repeated} Variadic maps, or one list of maps.
 // @return {Map} Shallow merge with cloned or copied values.
 func Merge(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
@@ -23,13 +28,17 @@ func MergeMutable(ctx context.Context, args ...runtime.Value) (runtime.Value, er
 	return mergeMutableObjects(ctx, args, runtime.MergeMapsInto)
 }
 
-func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(context.Context, runtime.Map, ...runtime.Map) error) (runtime.Value, error) {
+func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(context.Context, runtime.Map, ...runtime.Map) error) (_ runtime.Value, err error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
 		return runtime.None, err
 	}
 
 	sources, listForm, err := normalizeMergeArgs(ctx, args, 0)
 	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := ctx.Err(); err != nil {
 		return runtime.None, err
 	}
 
@@ -42,8 +51,27 @@ func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(cont
 		return runtime.None, mergeArgumentError(err, 0, listForm, 0)
 	}
 
+	defer func() {
+		if err != nil {
+			if closer, ok := dst.(io.Closer); ok {
+				if closeErr := closer.Close(); closeErr != nil {
+					err = errors.Join(err, closeErr)
+				}
+			}
+		}
+	}()
+
+	if err := ctx.Err(); err != nil {
+		return runtime.None, mergeArgumentError(err, 0, listForm, 0)
+	}
+
 	for index, src := range sources {
-		if err := mergeInto(ctx, dst, src); err != nil {
+		err := mergeInto(ctx, dst, src)
+		if canceled := ctx.Err(); canceled != nil && !errors.Is(err, canceled) {
+			err = errors.Join(err, canceled)
+		}
+
+		if err != nil {
 			return runtime.None, mergeArgumentError(err, index, listForm, 0)
 		}
 	}

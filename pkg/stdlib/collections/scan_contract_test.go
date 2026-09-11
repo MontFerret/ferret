@@ -3,7 +3,9 @@ package collections_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -68,6 +70,42 @@ func TestCountMeasurementNeverTraverses(t *testing.T) {
 				t.Fatalf("unexpected host work: %+v", source)
 			}
 		})
+	}
+}
+
+func TestCountRejectsNegativeMeasurements(t *testing.T) {
+	for _, length := range []runtime.Int{-1, math.MinInt64, 0, 42} {
+		for _, cancelDuringLength := range []bool{false, true} {
+			t.Run(fmt.Sprintf("length=%d/cancel=%v", length, cancelDuringLength), func(t *testing.T) {
+				ctx, cancel := context.WithCancel(t.Context())
+				defer cancel()
+				source := &measuredSource{scanSource: &scanSource{expected: ctx}, length: length}
+				if cancelDuringLength {
+					source.onLength = cancel
+				}
+
+				result, err := collections.Count(ctx, source)
+				if source.lengthCalls != 1 || source.iterations != 0 || source.closes != 0 || source.sourceCloses != 0 {
+					t.Fatal("measurement traversed or closed a borrowed source")
+				}
+
+				if errors.Is(err, runtime.ErrInvalidOperation) != (length < 0) || errors.Is(err, context.Canceled) != cancelDuringLength {
+					t.Fatalf("error identities lost: %v", err)
+				}
+
+				if length < 0 && !strings.Contains(err.Error(), "negative iterable length") {
+					t.Fatalf("wrong contract error: %v", err)
+				}
+
+				if length < 0 || cancelDuringLength {
+					if result != runtime.ZeroInt || err == nil {
+						t.Fatalf("invalid measurement succeeded: %v, %v", result, err)
+					}
+				} else if result != length || err != nil {
+					t.Fatalf("valid measurement failed: %v, %v", result, err)
+				}
+			})
+		}
 	}
 }
 

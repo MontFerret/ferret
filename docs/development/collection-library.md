@@ -17,6 +17,8 @@ invalid counting inputs.
 falls back to `Iterable`. This validates both requirements in one dispatch for
 measured sources; `Measurable` alone is insufficient. It calls `Length` when available.
 It does not create an iterator or retry a failed length operation by scanning.
+Negative host lengths fail with `ErrInvalidOperation` without traversal; zero is
+valid. Cancellation during measurement is retained alongside an invalid-length error.
 Native ranges use this path, including propagation of range-length overflow.
 A host length can perform I/O or take nonconstant time.
 

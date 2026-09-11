@@ -287,6 +287,8 @@ execution diagnostic is returned unchanged.
 
 Diagnostic aggregates expose `Unwrap() []error`, and runtime errors unwrap to
 their underlying diagnostic, which in turn retains its cause.
+When cleanup failures are joined alongside an attributed argument error,
+argument diagnostics retain the joined causes without changing their presentation.
 
 Before hooks run in registration order. After and close hooks unwind in reverse
 order, with the error behavior defined by `pkg/module` and the engine's internal

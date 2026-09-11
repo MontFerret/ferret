@@ -10,7 +10,8 @@ import (
 
 // Count returns the number of values in an iterable, including map values.
 // A measurable source supplies its length without traversal; computing that length
-// may still perform I/O. Otherwise one traversal may consume a one-shot source,
+// may still perform I/O. Negative measured lengths are rejected without traversal.
+// Otherwise one traversal may consume a one-shot source,
 // perform I/O, or never finish for an unbounded source. The acquired iterator is
 // closed; the source and its values remain borrowed. Traversal, cancellation,
 // overflow, and iterator close failures are returned without a partial count.
@@ -29,6 +30,9 @@ func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	switch collection := arg.(type) {
 	case measuredIterable:
 		count, err = collection.Length(ctx)
+		if err == nil && count < 0 {
+			err = runtime.Error(runtime.ErrInvalidOperation, "negative iterable length")
+		}
 	case runtime.Iterable:
 		err = runtime.ForEach(ctx, collection, func(c context.Context, _, _ runtime.Value) (runtime.Boolean, error) {
 			if err := c.Err(); err != nil {

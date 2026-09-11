@@ -189,7 +189,7 @@ func TestReverseLayeredCancellationBoundaries(t *testing.T) {
 }
 
 func collectionTestContext(kind string) (*doneCountingContext, context.CancelFunc) {
-	var ctx context.Context = context.Background()
+	ctx := context.Background()
 	cancel := func() {}
 	switch kind {
 	case "Open", "Layered", "Closed":
