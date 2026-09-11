@@ -3,8 +3,9 @@
 The Objects capability group registers ten immutable functions under
 `object::`: `keys`, `values`, `entries`, `has_key`, `keep_keys`,
 `omit_keys`, `merge`, `merge_deep`, `zip`, and `from_entries`.
-Old global names are removed. Host-function lookup remains case-insensitive;
-registration and generated API metadata use lowercase names. It also registers
+Seven legacy global names remain temporarily as deprecated compatibility aliases.
+Host-function lookup remains case-insensitive; registration and generated API
+metadata use lowercase names. The group also registers
 `object::mut::{merge,merge_deep,keep_keys,omit_keys}`. The stdlib convention is
 immutable by default, with explicit mutation through a `::mut::` subnamespace.
 
@@ -39,7 +40,28 @@ validated before the first mutation.
 `from_entries` consumes any runtime iterable once. Each entry must implement
 `runtime.Measurable` and `runtime.IndexReadable`, have length two, and contain
 a String key at index zero. Both constructors use last-key-wins; this deliberately
-changes the former global ZIP's first-key-wins behavior.
+changes v1 ZIP's first-key-wins behavior. The deprecated global `zip` delegates
+to `object::zip` and also uses last-key-wins.
+
+## Global compatibility
+
+The deprecated globals `keys`, `values`, `keep_keys`, `merge`, and `zip` map to
+the same names under `object::`. The renamed globals `has` and
+`merge_recursive` map to `object::has_key` and `object::merge_deep` respectively.
+They use canonical signatures and semantics, including unary `keys`; the old
+sorting argument is not restored.
+
+Compatibility registration and private forwarding functions live together in
+`pkg/stdlib/objects/legacy.go`. Each forwarder calls the canonical Go function
+without changing arguments, context, results, or errors. Its structured
+`@deprecated` comment names the replacement in generated Core API metadata,
+using the existing array compatibility mechanism. This does not add compiler
+or runtime deprecation warnings. Canonical signatures remain nondeprecated.
+
+No globals are provided for `entries`, `from_entries`, `omit_keys`, or any
+mutable operation. New code and examples should use canonical namespaces.
+The compatibility file and its tests can be removed when the compatibility
+window ends; no removal release is specified.
 
 ## Ownership and shared operations
 
@@ -100,5 +122,5 @@ optimization. Object benchmarks cover transformation time and allocations.
 CLI source migration is owned by the sibling CLI repository. It rewrites
 unqualified legacy calls and composes literal sorted KEYS calls with `sorted`.
 Unsafe sorting expressions produce the established manual action, leaving the
-file untouched. ZIP's duplicate-key change is documented rather than hidden
-behind an alias.
+file untouched. Compatibility aliases do not replace CLI migration support or
+preserve v1 ZIP's duplicate-key behavior.
