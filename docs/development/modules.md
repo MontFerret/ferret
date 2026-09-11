@@ -123,6 +123,11 @@ through structured API metadata, without compiler or runtime warnings. Shared ma
 transformations, copy ownership, iterable entry construction, and migration
 behavior are described in [Object library contracts](object-library.md).
 
+The DateTime group registers canonical `datetime::` functions and deprecated
+global migration adapters. Local-calendar precision equality, checked elapsed
+differences, calendar arithmetic, and migration changes are described in
+[DateTime library contracts](datetime-library.md).
+
 ## Testing
 
 Use package tests for module registration and hook ordering. Exercise SDK

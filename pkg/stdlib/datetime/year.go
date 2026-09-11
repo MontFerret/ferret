@@ -6,12 +6,11 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// date_year returns the year extracted from the given date.
+// Year returns the year extracted from the given date.
 // @param date {DateTime} Source DateTime.
 // @return {Int} A year number.
-func DateYear(_ context.Context, arg runtime.Value) (runtime.Value, error) {
+func Year(_ context.Context, arg runtime.Value) (runtime.Value, error) {
 	dt, err := runtime.CastArg[runtime.DateTime](arg, 0)
-
 	if err != nil {
 		return runtime.None, err
 	}

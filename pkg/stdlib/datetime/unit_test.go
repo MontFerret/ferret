@@ -1,57 +1,39 @@
-package datetime_test
+package datetime
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-
-	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// Test UnitFromString function which is exported
-func TestUnitFromString(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		hasError bool
-	}{
-		{"Valid year", "year", false},
-		{"Valid y", "y", false},
-		{"Valid years", "years", false},
-		{"Valid month", "month", false},
-		{"Valid m", "m", false},
-		{"Valid months", "months", false},
-		{"Valid week", "week", false},
-		{"Valid w", "w", false},
-		{"Valid weeks", "weeks", false},
-		{"Valid day", "day", false},
-		{"Valid d", "d", false},
-		{"Valid days", "days", false},
-		{"Valid hour", "hour", false},
-		{"Valid h", "h", false},
-		{"Valid hours", "hours", false},
-		{"Valid minute", "minute", false},
-		{"Valid i", "i", false},
-		{"Valid minutes", "minutes", false},
-		{"Valid second", "second", false},
-		{"Valid s", "s", false},
-		{"Valid seconds", "seconds", false},
-		{"Valid millisecond", "millisecond", false},
-		{"Valid f", "f", false},
-		{"Valid milliseconds", "milliseconds", false},
-		{"Invalid unit", "invalid_unit", true},
-		{"Case insensitive", "YEAR", false},
-		{"Case insensitive", "Hour", false},
+func TestUnitParsing(t *testing.T) {
+	for expected, names := range map[unit][]string{
+		millisecond: {"millisecond", "milliseconds", "f"},
+		second:      {"second", "seconds", "s"},
+		minute:      {"minute", "minutes", "i"},
+		hour:        {"hour", "hours", "h"},
+		day:         {"day", "days", "d"},
+		week:        {"week", "weeks", "w"},
+		month:       {"month", "months", "m"},
+		year:        {"year", "years", "y"},
+	} {
+		for _, name := range names {
+			for _, spelling := range []string{name, strings.ToUpper(name)} {
+				got, err := parseUnit(runtime.String(spelling), 2)
+				if err != nil || got != expected {
+					t.Fatalf("%s = %v, %v; want %v", spelling, got, err, expected)
+				}
+			}
+		}
 	}
 
-	for _, tt := range tests {
-		Convey(tt.name, t, func() {
-			_, err := datetime.UnitFromString(tt.input)
-			if tt.hasError {
-				So(err, ShouldNotBeNil)
-			} else {
-				So(err, ShouldBeNil)
-			}
-		})
+	for _, input := range []runtime.Value{runtime.String(""), runtime.String("unknown"), runtime.String(" hour "), runtime.None, runtime.Int(1)} {
+		_, err := parseUnit(input, 3)
+		pos, ok, _ := runtime.InvalidArgumentDetails(err)
+		if !errors.Is(err, runtime.ErrInvalidArgument) || !ok || pos != 3 {
+			t.Fatalf("%v: expected argument 3 error, got %v", input, err)
+		}
 	}
 }

@@ -2,13 +2,12 @@ package datetime_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
 )
 
-func TestDateDayOfYear(t *testing.T) {
+func TestDateLeapYear(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 1 arguments",
@@ -32,25 +31,18 @@ func TestDateDayOfYear(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When 38th day of the year",
-			Expected: runtime.NewInt(38),
+			Name:     "When not a leap year",
+			Expected: runtime.NewBoolean(false),
 			Args:     []runtime.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},
 		},
 		&testCase{
-			Name:     "When 59th day of the year",
-			Expected: runtime.NewInt(59),
-			Args:     []runtime.Value{mustDefaultLayoutDt("1629-02-28T15:59:05Z")},
-		},
-		&testCase{
-			Name:     "When 366th day of the year",
-			Expected: runtime.NewInt(366),
-			Args: []runtime.Value{
-				runtime.NewDateTime(time.Date(1972, time.December, 31, 0, 0, 0, 0, time.Local)),
-			},
+			Name:     "When a leap year",
+			Expected: runtime.NewBoolean(true),
+			Args:     []runtime.Value{mustDefaultLayoutDt("1972-12-07T15:04:05Z")},
 		},
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn1(datetime.DateDayOfYear))
+		tc.Do(t, Fn1(datetime.IsLeapYear))
 	}
 }

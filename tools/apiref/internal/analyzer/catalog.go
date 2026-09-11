@@ -16,7 +16,7 @@ var (
 		{ID: "arrays", Title: "Arrays", Description: "Immutable arrays:: functions, explicit arrays::mut operations, and temporary global migration aliases."},
 		{ID: "collections", Title: "Collections", Description: "Global functions for working with collections."},
 		{ID: "crypto", Title: "Crypto", Description: "Digest and secure token functions in the crypto namespace."},
-		{ID: "datetime", Title: "Date & Time", Description: "Global functions for working with dates and times."},
+		{ID: "datetime", Title: "Date & Time", Description: "Canonical datetime:: functions and deprecated global migration adapters."},
 		{ID: "encoding", Title: "Encoding", Description: "Serialization and escaping functions in the encoding namespace."},
 		{ID: "io", Title: "I/O", Description: "Functions for working with files, networks, and other input/output operations."},
 		{ID: "math", Title: "Math", Description: "Mathematical and numeric global functions."},

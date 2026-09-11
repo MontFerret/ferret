@@ -2,12 +2,13 @@ package datetime_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/datetime"
 )
 
-func TestDateDayOfWeek(t *testing.T) {
+func TestDateDayOfYear(t *testing.T) {
 	tcs := []*testCase{
 		&testCase{
 			Name:     "When more than 1 arguments",
@@ -31,18 +32,25 @@ func TestDateDayOfWeek(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name:     "When Sunday (0th day)",
-			Expected: runtime.NewInt(0),
+			Name:     "When 38th day of the year",
+			Expected: runtime.NewInt(38),
 			Args:     []runtime.Value{mustDefaultLayoutDt("1999-02-07T15:04:05Z")},
 		},
 		&testCase{
-			Name:     "When Monday (1th day)",
-			Expected: runtime.NewInt(1),
-			Args:     []runtime.Value{mustDefaultLayoutDt("1999-02-08T15:04:05Z")},
+			Name:     "When 59th day of the year",
+			Expected: runtime.NewInt(59),
+			Args:     []runtime.Value{mustDefaultLayoutDt("1629-02-28T15:59:05Z")},
+		},
+		&testCase{
+			Name:     "When 366th day of the year",
+			Expected: runtime.NewInt(366),
+			Args: []runtime.Value{
+				runtime.NewDateTime(time.Date(1972, time.December, 31, 0, 0, 0, 0, time.Local)),
+			},
 		},
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn1(datetime.DateDayOfWeek))
+		tc.Do(t, Fn1(datetime.DayOfYear))
 	}
 }

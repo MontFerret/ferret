@@ -43,6 +43,6 @@ func TestDateDay(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn1(datetime.DateDay))
+		tc.Do(t, Fn1(datetime.Day))
 	}
 }

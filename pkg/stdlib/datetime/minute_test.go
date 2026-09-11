@@ -43,6 +43,6 @@ func TestDateMinute(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn1(datetime.DateMinute))
+		tc.Do(t, Fn1(datetime.Minute))
 	}
 }

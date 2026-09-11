@@ -1,7 +1,7 @@
 package datetime_test
 
 import (
-	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -12,6 +12,18 @@ import (
 var (
 	utcLoc, _ = time.LoadLocation("UTC")
 )
+
+func TestDateArithmeticInvalidUnit(t *testing.T) {
+	for name, fn := range map[string]runtime.Function3{"add": datetime.Add, "subtract": datetime.Subtract} {
+		t.Run(name, func(t *testing.T) {
+			got, err := fn(t.Context(), mustDefaultLayoutDt("2024-01-01T12:00:00Z"), runtime.Int(1), runtime.String("unknown"))
+			position, ok, _ := runtime.InvalidArgumentDetails(err)
+			if got != runtime.None || !errors.Is(err, runtime.ErrInvalidArgument) || !ok || position != 2 {
+				t.Fatalf("unknown unit = %v, %v; want None and an invalid argument error at position 2", got, err)
+			}
+		})
+	}
+}
 
 func TestDateAdd(t *testing.T) {
 	tcs := []*testCase{
@@ -55,16 +67,8 @@ func TestDateAdd(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name: "When argument have correct types",
-			Expected: func() runtime.Value {
-				expected, _ := datetime.DateAdd(
-					context.Background(),
-					mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-					runtime.NewInt(1),
-					runtime.NewString("day"),
-				)
-				return expected
-			}(),
+			Name:     "When argument have correct types",
+			Expected: mustDefaultLayoutDt("1999-02-08T15:04:05Z"),
 			Args: []runtime.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
 				runtime.NewInt(1),
@@ -148,7 +152,7 @@ func TestDateAdd(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn3(datetime.DateAdd))
+		tc.Do(t, Fn3(datetime.Add))
 	}
 }
 
@@ -194,16 +198,8 @@ func TestDateSubtract(t *testing.T) {
 			ShouldErr: true,
 		},
 		&testCase{
-			Name: "When argument have correct types",
-			Expected: func() runtime.Value {
-				expected, _ := datetime.DateSubtract(
-					context.Background(),
-					mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
-					runtime.NewInt(1),
-					runtime.NewString("day"),
-				)
-				return expected
-			}(),
+			Name:     "When argument have correct types",
+			Expected: mustDefaultLayoutDt("1999-02-06T15:04:05Z"),
 			Args: []runtime.Value{
 				mustDefaultLayoutDt("1999-02-07T15:04:05Z"),
 				runtime.NewInt(1),
@@ -287,6 +283,6 @@ func TestDateSubtract(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn3(datetime.DateSubtract))
+		tc.Do(t, Fn3(datetime.Subtract))
 	}
 }

@@ -70,6 +70,6 @@ func TestDate(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, datetime.Date)
+		tc.Do(t, datetime.Parse)
 	}
 }

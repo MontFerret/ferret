@@ -43,6 +43,6 @@ func TestDateSecond(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		tc.Do(t, Fn1(datetime.DateSecond))
+		tc.Do(t, Fn1(datetime.Second))
 	}
 }

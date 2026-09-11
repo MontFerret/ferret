@@ -1,39 +1,38 @@
 package datetime
 
-import (
-	"github.com/MontFerret/ferret/v2/pkg/runtime"
-)
+import "github.com/MontFerret/ferret/v2/pkg/runtime"
 
+// RegisterLib registers canonical datetime functions and deprecated global adapters.
+// @namespace datetime
 func RegisterLib(ns runtime.Namespace) {
-	ns.Function().A0().
+	canonical := ns.Namespace("datetime")
+	canonical.Function().A0().
 		Add("now", Now)
 
-	ns.Function().A1().
-		Add("date", date1).
-		Add("date_dayofweek", DateDayOfWeek).
-		Add("date_year", DateYear).
-		Add("date_month", DateMonth).
-		Add("date_day", DateDay).
-		Add("date_hour", DateHour).
-		Add("date_minute", DateMinute).
-		Add("date_second", DateSecond).
-		Add("date_millisecond", DateMillisecond).
-		Add("date_dayofyear", DateDayOfYear).
-		Add("date_leapyear", DateLeapYear).
-		Add("date_quarter", DateQuarter).
-		Add("date_days_in_month", DateDaysInMonth)
+	canonical.Function().A1().
+		Add("parse", parse1).
+		Add("day_of_week", DayOfWeek).
+		Add("year", Year).
+		Add("month", Month).
+		Add("day", Day).
+		Add("hour", Hour).
+		Add("minute", Minute).
+		Add("second", Second).
+		Add("millisecond", Millisecond).
+		Add("day_of_year", DayOfYear).
+		Add("is_leap_year", IsLeapYear).
+		Add("quarter", Quarter).
+		Add("days_in_month", DaysInMonth)
 
-	ns.Function().A2().
-		Add("date", date2).
-		Add("date_format", DateFormat)
+	canonical.Function().A2().
+		Add("parse", parse2).
+		Add("format", Format)
 
-	ns.Function().A3().
-		Add("date_add", DateAdd).
-		Add("date_compare", dateCompare3).
-		Add("date_diff", dateDiff3).
-		Add("date_subtract", DateSubtract)
+	canonical.Function().A3().
+		Add("add", Add).
+		Add("subtract", Subtract)
 
-	ns.Function().A4().
-		Add("date_compare", dateCompare4).
-		Add("date_diff", dateDiff4)
+	canonical.Function().A3().Add("same", Same).Add("diff", Diff)
+
+	registerLegacy(ns)
 }

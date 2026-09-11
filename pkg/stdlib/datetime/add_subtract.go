@@ -2,76 +2,79 @@ package datetime
 
 import (
 	"context"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-var (
-	emptyDateTime runtime.DateTime
-	emptyInt      runtime.Int
-	emptyString   runtime.String
-)
-
-// date_add adds amount given in unit to date.
-// The following units are available:
-// * y, year, year
-// * m, month, months
-// * w, week, weeks
-// * d, day, days
-// * h, hour, hours
-// * i, minute, minutes
-// * s, second, seconds
-// * f, millisecond, milliseconds
+// Add adds an integer number of units to a date. Subday units are elapsed time;
+// calendar units use Go AddDate in the input's location, normalizing month ends
+// rather than clamping them. A calendar day can span 23 or 25 elapsed hours.
 // @param date {DateTime} Source date.
-// @param amount {Int} Amount of units
-// @param unit {String} Unit.
-// @return {DateTime} Calculated date.
-func DateAdd(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	date, amount, unit, err := castArgs(arg1, arg2, arg3)
+// @param amount {Int} Number of units to add; may be negative.
+// @param unit {String} Millisecond, second, minute, hour, day, week, month, or year; plurals are accepted.
+// @return {DateTime} Calculated date, retaining the input's location.
+func Add(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	date, amount, u, err := shiftArguments(arg1, arg2, arg3)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	u, err := UnitFromString(unit.String())
+	result, err := addUnit(date.Time, int(amount), u)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	tm := AddUnit(date.Time, int(amount), u)
-
-	return runtime.NewDateTime(tm), nil
+	return runtime.NewDateTime(result), nil
 }
 
-// date_subtract subtract amount given in unit to date.
-// The following units are available:
-// * y, year, year
-// * m, month, months
-// * w, week, weeks
-// * d, day, days
-// * h, hour, hours
-// * i, minute, minutes
-// * s, second, seconds
-// * f, millisecond, milliseconds
-// @param date {DateTime} source date.
-// @param amount {Int} amount of units
-// @param unit {String} unit.
-// @return {DateTime} calculated date.
-func DateSubtract(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
-	date, amount, unit, err := castArgs(arg1, arg2, arg3)
+// Subtract subtracts an integer number of units from a date. Subday units are
+// elapsed time; calendar units use Go AddDate in the input's location, normalizing
+// month ends rather than clamping them. A calendar day can span 23 or 25 hours.
+// @param date {DateTime} Source date.
+// @param amount {Int} Number of units to subtract; may be negative.
+// @param unit {String} Millisecond, second, minute, hour, day, week, month, or year; plurals are accepted.
+// @return {DateTime} Calculated date, retaining the input's location.
+func Subtract(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+	date, amount, u, err := shiftArguments(arg1, arg2, arg3)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	u, err := UnitFromString(unit.String())
+	result, err := addUnit(date.Time, -int(amount), u)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	tm := AddUnit(date.Time, -1*int(amount), u)
-
-	return runtime.NewDateTime(tm), nil
+	return runtime.NewDateTime(result), nil
 }
 
-func castArgs(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.Int, runtime.String, error) {
-	return runtime.CastArgs3[runtime.DateTime, runtime.Int, runtime.String](arg1, arg2, arg3)
+func shiftArguments(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.Int, unit, error) {
+	date, amount, err := runtime.CastArgs2[runtime.DateTime, runtime.Int](arg1, arg2)
+	if err != nil {
+		return runtime.ZeroDateTime, 0, 0, err
+	}
+
+	u, err := parseUnit(arg3, 2)
+
+	return date, amount, u, err
+}
+
+func addUnit(date time.Time, amount int, u unit) (time.Time, error) {
+	if duration, ok := fixedDuration(u); ok {
+		return date.Add(time.Duration(amount) * duration), nil
+	}
+
+	switch u {
+	case day:
+		return date.AddDate(0, 0, amount), nil
+	case week:
+		return date.AddDate(0, 0, amount*7), nil
+	case month:
+		return date.AddDate(0, amount, 0), nil
+	case year:
+		return date.AddDate(amount, 0, 0), nil
+	default:
+		return time.Time{}, runtime.Errorf(runtime.ErrUnexpected, "unsupported datetime unit %d", u)
+	}
 }

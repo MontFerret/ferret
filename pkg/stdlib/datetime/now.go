@@ -6,7 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// now returns new DateTime object with Time equal to time.Now().
+// Now returns new DateTime object with Time equal to time.Now().
 // @return {DateTime} New DateTime object.
 func Now(_ context.Context) (runtime.Value, error) {
 	return runtime.NewCurrentDateTime(), nil
