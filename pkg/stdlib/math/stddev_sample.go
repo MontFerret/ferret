@@ -7,30 +7,19 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// stddev_sample returns the sample standard deviation of the values in a given array.
-// @param numbers {Int[] | Float[]} arrayList of numbers.
-// @return {Float} The sample standard deviation.
+// stddev_sample returns the square root of the sample variance.
+// @param numbers {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
+// @return {Float} The sample standard deviation, or NaN for fewer than two numbers.
+// @throws {TypeError} An argument or list element has an invalid type.
 func StandardDeviationSample(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
-	arr := arg.(runtime.List)
-	size, err := arr.Length(ctx)
-
+	value, err := variance(ctx, arg.(runtime.List), true)
 	if err != nil {
-		return runtime.NaN(), err
+		return runtime.None, err
 	}
 
-	if size == 0 {
-		return runtime.NaN(), nil
-	}
-
-	vp, err := variance(ctx, arr, runtime.NewInt(1))
-
-	if err != nil {
-		return runtime.NaN(), err
-	}
-
-	return runtime.NewFloat(math.Pow(float64(vp), 0.5)), nil
+	return runtime.Float(math.Sqrt(float64(value))), nil
 }

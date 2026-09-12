@@ -9,10 +9,11 @@ import (
 )
 
 // percentile returns the nth percentile of the values in a given array.
-// @param array {Int[] | Float[]} arrayList of numbers.
+// @param array {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
 // @param number {Int} A number which must be between 0 (excluded) and 100 (included).
-// @param method {String} "rank" or "interpolation".
-// @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
+// @param method {String} "interpolation" uses linear interpolation; all other strings select nearest rank.
+// @return {Int | Float} The selected number or interpolated Float, or NaN for an empty list.
+// @throws {TypeError} An argument or list element has an invalid type.
 func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 2, 3); err != nil {
 		return runtime.None, err
@@ -26,18 +27,20 @@ func Percentile(ctx context.Context, args ...runtime.Value) (runtime.Value, erro
 }
 
 // percentile returns the nth percentile of the values in a given array.
-// @param array {Int[] | Float[]} arrayList of numbers.
+// @param array {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
 // @param number {Int} A number which must be between 0 (excluded) and 100 (included).
-// @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
+// @return {Int | Float} The selected number or interpolated Float, or NaN for an empty list.
+// @throws {TypeError} An argument or list element has an invalid type.
 func percentile2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	return percentile(ctx, arg1, arg2, "rank")
 }
 
 // percentile returns the nth percentile of the values in a given array.
-// @param array {Int[] | Float[]} arrayList of numbers.
+// @param array {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
 // @param number {Int} A number which must be between 0 (excluded) and 100 (included).
-// @param method {String} "rank" or "interpolation".
-// @return {Float} The nth percentile, or null if the array is empty or only null values are contained in it or the percentile cannot be calculated.
+// @param method {String} "interpolation" uses linear interpolation; all other strings select nearest rank.
+// @return {Int | Float} The selected number or interpolated Float, or NaN for an empty list.
+// @throws {TypeError} An argument or list element has an invalid type.
 func percentile3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	method, err := runtime.CastArg[runtime.String](arg3, 2)
 	if err != nil {
@@ -52,19 +55,17 @@ func percentile(ctx context.Context, arg1, arg2 runtime.Value, method string) (r
 		return runtime.None, err
 	}
 
-	arr := arg1.(runtime.List)
-	size, err := arr.Length(ctx)
-
+	values, err := snapshotNumbers(ctx, arg1.(runtime.List))
 	if err != nil {
 		return runtime.None, err
 	}
 
+	size := len(values)
 	if size == 0 {
-		return runtime.NewFloat(math.NaN()), nil
+		return runtime.NaN(), nil
 	}
 
 	num, err := runtime.CastArg[runtime.Int](arg2, 1)
-
 	if err != nil {
 		return runtime.None, err
 	}
@@ -75,19 +76,14 @@ func percentile(ctx context.Context, arg1, arg2 runtime.Value, method string) (r
 		return runtime.NaN(), errors.New("input is outside of range")
 	}
 
-	sorted, err := runtime.Copy(arr)
-	if err != nil {
-		return runtime.NaN(), err
-	}
-
-	if err := runtime.SortAsc(ctx, sorted); err != nil {
+	if err := sortNumbers(ctx, values, true); err != nil {
 		return runtime.NaN(), err
 	}
 
 	switch method {
 	case "interpolation":
 		if size == 1 {
-			return sorted.At(ctx, 0)
+			return values[0], nil
 		}
 
 		pos := (float64(percent) / 100.0) * float64(size-1)
@@ -95,26 +91,11 @@ func percentile(ctx context.Context, arg1, arg2 runtime.Value, method string) (r
 		upper := int(math.Ceil(pos))
 
 		if lower == upper {
-			return sorted.At(ctx, runtime.Int(lower))
+			return values[lower], nil
 		}
 
-		lowerVal, err := sorted.At(ctx, runtime.Int(lower))
-		if err != nil {
-			return runtime.None, err
-		}
-
-		upperVal, err := sorted.At(ctx, runtime.Int(upper))
-		if err != nil {
-			return runtime.None, err
-		}
-
-		if err := runtime.AssertNumber(lowerVal); err != nil {
-			return runtime.None, err
-		}
-
-		if err := runtime.AssertNumber(upperVal); err != nil {
-			return runtime.None, err
-		}
+		lowerVal := values[lower]
+		upperVal := values[upper]
 
 		frac := pos - float64(lower)
 		result := toFloat(lowerVal) + (toFloat(upperVal)-toFloat(lowerVal))*frac
@@ -126,6 +107,6 @@ func percentile(ctx context.Context, arg1, arg2 runtime.Value, method string) (r
 			return runtime.NaN(), errors.New("input is outside of range")
 		}
 
-		return sorted.At(ctx, runtime.Int(pos-1))
+		return values[int(pos)-1], nil
 	}
 }

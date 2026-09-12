@@ -2,82 +2,36 @@ package math
 
 import (
 	"context"
-	"math"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// median returns the median of the values in array.
-// @param array {Int[] | Float[]} arrayList of numbers.
-// @return {Float} The median of the values in array.
+// median returns the middle value of a numeric list, averaging the two middle values for even lengths.
+// @param array {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
+// @return {Int | Float} The selected middle value or their Float mean, or NaN for an empty list.
+// @throws {TypeError} An argument or list element has an invalid type.
 func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
-	arr := arg.(runtime.List)
-	size, err := arr.Length(ctx)
-
+	values, err := snapshotNumbers(ctx, arg.(runtime.List))
 	if err != nil {
 		return runtime.None, err
 	}
 
-	if size == 0 {
-		return runtime.None, nil
+	if len(values) == 0 {
+		return runtime.NaN(), nil
 	}
 
-	// Filter numeric values into a new array
-	numericValues := runtime.NewArray(0)
-	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if runtime.IsNumber(value) {
-			err := numericValues.Append(ctx, value)
-			if err != nil {
-				return false, err
-			}
-		}
-		return true, nil
-	})
-
-	if err != nil {
+	if err := sortNumbers(ctx, values, false); err != nil {
 		return runtime.None, err
 	}
 
-	numericSize, err := numericValues.Length(ctx)
-	if err != nil {
-		return runtime.None, err
+	middle := len(values) / 2
+	if len(values)%2 != 0 {
+		return values[middle], nil
 	}
 
-	if numericSize == 0 {
-		return runtime.None, nil
-	}
-
-	sorted, err := runtime.Copy(numericValues)
-	if err != nil {
-		return runtime.None, err
-	}
-
-	if err := runtime.SortDesc(ctx, sorted); err != nil {
-		return runtime.None, err
-	}
-
-	size, err = sorted.Length(ctx)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	switch {
-	case size == 0:
-		return runtime.NewFloat(math.NaN()), nil
-	case size%2 == 0:
-		sliced, err := sorted.Slice(ctx, 0, size)
-
-		if err != nil {
-			return runtime.None, err
-		}
-
-		return mean(ctx, sliced)
-	default:
-		return sorted.At(ctx, size/2)
-	}
+	return runtime.Float((toFloat(values[middle-1]) + toFloat(values[middle])) / 2), nil
 }
