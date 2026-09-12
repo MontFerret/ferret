@@ -6,50 +6,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// max returns the greatest (arithmetic mean) of the values in array.
-// @param array {Int[] | Float[]} arrayList of numbers.
-// @return {Float} The greatest of the values in array.
+// max returns the largest number in a numeric list.
+// @param array {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
+// @return {Float | None} The largest number as Float, or None for an empty list.
+// @throws {TypeError} An argument or list element has an invalid type.
 func Max(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
-	arr := arg.(runtime.List)
-	size, err := arr.Length(ctx)
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	if size == 0 {
-		return runtime.None, nil
-	}
-
-	var res float64
-	count := 0
-
-	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if !runtime.IsNumber(value) {
-			return true, nil // Skip non-numeric values
-		}
-
-		fv := toFloat(value)
-
-		if count == 0 || fv > res {
-			res = fv
-		}
-		count++
-
-		return true, nil
-	})
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	if count == 0 {
-		return runtime.None, nil
-	}
-
-	return runtime.NewFloat(res), nil
+	return extremum(ctx, arg.(runtime.List), false)
 }

@@ -101,7 +101,9 @@ func range3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value,
 
 func appendAscendingRange(ctx context.Context, arr *runtime.Array, start, end, step float64) error {
 	for value := start; value <= end; {
-		_ = arr.Append(ctx, runtime.NewFloat(value))
+		if err := arr.Append(ctx, runtime.NewFloat(value)); err != nil {
+			return err
+		}
 
 		if value == end {
 			return nil
@@ -120,7 +122,9 @@ func appendAscendingRange(ctx context.Context, arr *runtime.Array, start, end, s
 
 func appendDescendingRange(ctx context.Context, arr *runtime.Array, start, end, step float64) error {
 	for value := start; value >= end; {
-		_ = arr.Append(ctx, runtime.NewFloat(value))
+		if err := arr.Append(ctx, runtime.NewFloat(value)); err != nil {
+			return err
+		}
 
 		if value == end {
 			return nil

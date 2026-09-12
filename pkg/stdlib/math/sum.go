@@ -6,40 +6,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// sum returns the sum of the values in a given array.
-// @param numbers {Int[] | Float[]} arrayList of numbers.
-// @return {Float} The sum of the values.
+// sum returns the sum of a numeric list.
+// @param numbers {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
+// @return {Int | Float} The sum as Float, or integer zero for an empty list.
+// @throws {TypeError} An argument or list element has an invalid type.
 func Sum(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
-	arr := arg.(runtime.List)
-	size, err := arr.Length(ctx)
-
+	sum, count, err := sumNumbers(ctx, arg.(runtime.List))
 	if err != nil {
 		return runtime.None, err
 	}
 
-	if size == 0 {
+	if count == 0 {
 		return runtime.ZeroInt, nil
 	}
 
-	var sum float64
-
-	err = arr.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if !runtime.IsNumber(value) {
-			return true, nil
-		}
-
-		sum += toFloat(value)
-
-		return true, nil
-	})
-
-	if err != nil {
-		return runtime.None, nil
-	}
-
-	return runtime.NewFloat(sum), nil
+	return runtime.Float(sum), nil
 }
