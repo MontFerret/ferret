@@ -11,12 +11,30 @@ import (
 // @param numbers {Any[]} A list whose Int and Float elements are used; other elements are ignored. It is not mutated.
 // @return {Float} The sample standard deviation, or NaN for fewer than two numbers.
 // @throws {TypeError} An argument has an invalid type.
+// @deprecated Use math::stddev_sample instead.
 func StandardDeviationSample(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
-	value, err := variance(ctx, arg.(runtime.List), true)
+	value, err := variance(ctx, arg.(runtime.List), true, filterNonNumbers)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.Float(math.Sqrt(float64(value))), nil
+}
+
+// stddev_sample returns the sample standard deviation.
+// @param values {Int[] | Float[]} Numeric list; non-numeric elements are rejected. The list is not mutated.
+// @return {Float} The statistic, or NaN for fewer than two numbers.
+// @throws {TypeError} An argument or list element has an invalid type.
+func canonicalStddevSample(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
+		return runtime.None, err
+	}
+
+	value, err := variance(ctx, arg.(runtime.List), true, strictNumbers)
 	if err != nil {
 		return runtime.None, err
 	}

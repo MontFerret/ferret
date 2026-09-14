@@ -60,6 +60,19 @@ RETURN FOR v IN values
 	RETURN { g, cnt, sum, min, max, avg }
 `
 
+const genericGroupedCollectAggregateQuery = `
+RETURN FOR v IN 1..10000
+	COLLECT g = v % 100
+	AGGREGATE total = SUM(v), average = AVERAGE(v)
+	RETURN { g, total, average }
+`
+
+const genericGlobalCollectAggregateQuery = `
+RETURN FOR v IN 1..10000
+	COLLECT AGGREGATE total = SUM(v), median = MEDIAN(v)
+	RETURN { total, median }
+`
+
 func BenchmarkGlobalCollectAggregate_None(b *testing.B) {
 	RunBenchmarkNone(b, globalCollectAggregateQuery)
 }
@@ -106,4 +119,28 @@ func BenchmarkGroupedCollectAggregateLarge_Basic(b *testing.B) {
 
 func BenchmarkGroupedCollectAggregateLarge_Full(b *testing.B) {
 	RunBenchmarkFull(b, groupedCollectAggregateLargeQuery)
+}
+
+func BenchmarkGenericGroupedCollectAggregate_None(b *testing.B) {
+	RunBenchmarkNone(b, genericGroupedCollectAggregateQuery)
+}
+
+func BenchmarkGenericGroupedCollectAggregate_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, genericGroupedCollectAggregateQuery)
+}
+
+func BenchmarkGenericGroupedCollectAggregate_Full(b *testing.B) {
+	RunBenchmarkFull(b, genericGroupedCollectAggregateQuery)
+}
+
+func BenchmarkGenericGlobalCollectAggregate_None(b *testing.B) {
+	RunBenchmarkNone(b, genericGlobalCollectAggregateQuery)
+}
+
+func BenchmarkGenericGlobalCollectAggregate_Basic(b *testing.B) {
+	RunBenchmarkBasic(b, genericGlobalCollectAggregateQuery)
+}
+
+func BenchmarkGenericGlobalCollectAggregate_Full(b *testing.B) {
+	RunBenchmarkFull(b, genericGlobalCollectAggregateQuery)
 }

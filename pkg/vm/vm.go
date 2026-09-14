@@ -770,6 +770,16 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 			if err := spreadArray(ctx, destination, reg[src1]); err != nil {
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
+		case bytecode.OpAggregateReduce:
+			values, ok := reg[src1].(runtime.List)
+			if !ok {
+				state.raiseInvariantAt(pc, diagnostics.NewInvariantError("invalid aggregate reduction input", runtime.Errorf(runtime.ErrUnexpected, "expected collected list at pc %d", pc)))
+
+				break
+			}
+
+			value, err := data.ReduceAggregate(ctx, values, bytecode.AggregateKind(src2))
+			state.setOrRaiseDefault(pc, dst, value, err)
 		case bytecode.OpAggregateUpdate:
 			collector, ok := reg[dst].(*data.AggregateCollector)
 			if !ok {

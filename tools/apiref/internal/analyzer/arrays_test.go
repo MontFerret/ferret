@@ -11,7 +11,7 @@ func assertArrayMetadata(t *testing.T, reference *api.Reference, catalog *apicat
 	t.Helper()
 
 	want := map[string][]int{
-		"first": {1}, "last": {1}, "at": {2}, "append": {2}, "concat": {-1},
+		"range": {2, 3}, "first": {1}, "last": {1}, "at": {2}, "append": {2}, "concat": {-1},
 		"flatten": {1, 2}, "slice": {2, 3}, "contains": {2}, "index_of": {2},
 		"unique": {1}, "sorted": {1}, "remove": {2}, "remove_at": {2}, "remove_any": {2},
 		"union": {-1}, "intersection": {-1}, "difference": {-1}, "symmetric_difference": {-1},
@@ -73,6 +73,10 @@ func assertArrayMetadata(t *testing.T, reference *api.Reference, catalog *apicat
 
 				resultType := signature.Return.Type
 				switch function.Name {
+				case "range":
+					if resultType.Kind != api.TypeKindNamed || resultType.Name != "Float[]" {
+						t.Fatalf("incorrect range return type: %+v", resultType)
+					}
 				case "first", "last", "at":
 					if resultType.Kind != api.TypeKindNamed || resultType.Name != "Any" {
 						t.Fatalf("incorrect element return type: %s %+v", function.Name, resultType)

@@ -128,54 +128,73 @@ global migration adapters. Local-calendar precision equality, checked elapsed
 differences, calendar arithmetic, and migration changes are described in
 [DateTime library contracts](datetime-library.md).
 
-## Math collection functions
+## Math functions and compatibility
 
-The global collection functions in `pkg/stdlib/math` use native `Int` and
-`Float` elements and ignore strings, `None`, booleans, and other non-numeric
-values without coercion. Non-finite floats remain numeric inputs. This filtering
-preserves the legacy global contract and does not change the VM's separate
-`COLLECT AGGREGATE` implementation.
+The Math group registers canonical `math::` functions and deprecated global
+compatibility functions. Scalar signatures and calculations are shared. The
+canonical names `mean`, `variance`, and `stddev` replace global `average`,
+`variance_population`, and `stddev_population`; sample forms retain their suffix.
+Global registration uses separate documented declarations where sharing a
+function would also share its deprecation metadata. Deprecation is API metadata,
+not a compiler or runtime warning. Existing exported Go entry points retain
+their compatibility contracts.
+
+Canonical collection math accepts native `Int` and `Float` elements, including
+mixed lists and non-finite floats. Other elements fail with the argument position
+and zero-based element index; there is no coercion. Deprecated globals retain
+numeric filtering. Both policies share traversal and calculation helpers.
 
 Shared traversal uses `runtime.List.ForEach`, checks cancellation, and propagates
 host errors without returning successful partial results. An operation's error
-is returned directly, even if cancellation occurs concurrently; only successful
-traversal or sorting is followed by a final context check. This error policy is
-local to math. Total element and numeric counts come from traversal rather than
-`Length`, so even a nonempty list containing no numbers is distinguishable from
-an empty list.
+is returned directly even if cancellation occurs concurrently; only successful
+traversal or sorting is followed by a final context check. Counts come from
+traversal rather than `Length`. Sum, mean, and extrema use constant additional
+storage. Variance uses Welford's one-pass recurrence and divides by `N` or
+`N - 1`; standard deviation takes the corresponding square root. Sources need
+not support repeated traversal.
 
-Sum, mean, and extrema stream with constant additional storage. Variance uses
-Welford's one-pass recurrence with constant additional storage, divided by the
-numeric count `N` for population variance or `N - 1` for sample variance. It does
-not require a stable, repeatable source. Standard deviation is the square root
-of its corresponding variance.
+Median and percentile sort native numbers in private snapshots using runtime
+comparison. They never copy, sort, index, or mutate the source. Selected values
+retain their native type; even medians and interpolated values are floats.
 
-Median and percentile retain native numeric values in a private snapshot and
-delegate ordering to runtime comparison and sorting, with cancellation checks.
-They never call source copy, sort, indexed-access, or mutation methods. Odd
-median and percentile selections retain the selected value's type; even median
-averages only the two middle numbers and returns a `Float`.
+| Operation | Canonical empty list | Legacy empty list | Legacy nonempty list with no numbers |
+| --- | --- | --- | --- |
+| Sum | Integer `0` | Integer `0` | Float `0` |
+| Mean / average | `NaN` | Float `0` | Float `0` |
+| Min, max | `None` | `None` | `None` |
+| Median | `NaN` | `None` | `None` |
+| Variance, standard deviation, percentile | `NaN` | `NaN` | `NaN` |
 
-| Function | Empty list | Nonempty list with no numbers |
-| --- | --- | --- |
-| `sum` | Integer `0` | Float `0` |
-| `average` | Float `0` | Float `0` |
-| `min`, `max`, `median` | `None` | `None` |
-| Variance, standard deviation, percentile | `NaN` | `NaN` |
+Sample statistics need two numbers; population statistics return zero for one
+finite number. Non-finite inputs produce `NaN` for variance and standard
+deviation. Canonical lists containing non-numbers fail rather than becoming
+numeric-empty inputs.
 
-Sample variance and sample standard deviation also return `NaN` for one number.
-Population variance and standard deviation return zero for one finite number.
-Non-finite inputs yield `NaN` for variance and standard deviation. Argument and
-traversal errors take precedence over empty or insufficient-input results.
+`math::percentile(values, p)` accepts exactly two arguments. `p` must be a finite
+`Int` or `Float` in `0..100`, validated even for an empty list. Linear
+interpolation uses ascending position `(p / 100) * (N - 1)`, preserving the
+selected native value at exact positions. The legacy global keeps integer
+percentiles in `1..100`, two/three arguments, nearest rank by default, and the
+exact `"interpolation"` method string. Other strings retain nearest-rank fallback.
+Its numeric-empty snapshot returns `NaN` before percentile validation; a supplied
+method must still be a string.
 
-Percentile keeps its two/three-argument forms, integer percentiles in `1..100`,
-and nearest-rank default. Only the exact method string `interpolation` enables
-linear interpolation; other strings retain the rank fallback. Rank selects the
-one-based position `ceil(p * N / 100)`. Interpolation uses the zero-based position
-`(p / 100) * (N - 1)`, where `N` counts only numeric elements. An empty numeric
-snapshot returns `NaN` before validating the percentile argument, while a
-supplied method must still be a string. A namespace or argument-policy migration
-is a separate change.
+Range generation belongs to Arrays: `arrays::range(start, end[, step])` shares
+its implementation with the deprecated global and exported Go `math.Range`
+forwarder. The global remains registered by Math for Math-only embeddings.
+`math::range` is not registered. Global `rand` retains its existing behavior;
+its deprecation explicitly describes a planned `random::` namespace with no
+current replacement. There is no `math::rand`.
+
+The registry supports functions, not namespaced constants, so pi is exposed as
+`math::pi()` with a deprecated global `pi()`. This migration adds no constant
+registry machinery or Task 3 operations.
+
+Built-in `COLLECT AGGREGATE` reductions use VM-owned semantics, including in
+generic finalization, independently of public math registrations. Only
+unqualified `COUNT`, `SUM`, `MIN`, `MAX`, and `AVERAGE` identify those reductions.
+Namespaced and other custom selectors retain ordinary function dispatch, so
+explicit `math::` selectors remain strict. See [VM execution](runtime.md#vm-execution).
 
 ## Testing
 

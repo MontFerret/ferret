@@ -19,7 +19,7 @@ var (
 		{ID: "datetime", Title: "Date & Time", Description: "Canonical datetime:: functions and deprecated global migration adapters."},
 		{ID: "encoding", Title: "Encoding", Description: "Serialization and escaping functions in the encoding namespace."},
 		{ID: "io", Title: "I/O", Description: "Functions for working with files, networks, and other input/output operations."},
-		{ID: "math", Title: "Math", Description: "Mathematical and numeric global functions."},
+		{ID: "math", Title: "Math", Description: "Canonical math:: functions and deprecated global compatibility functions."},
 		{ID: "objects", Title: "Objects", Description: "Object functions with explicit mutation in the object::mut namespace."},
 		{ID: "path", Title: "Path", Description: "Functions for working with paths."},
 		{ID: "strings", Title: "Strings", Description: "Global functions for working with strings."},
@@ -30,7 +30,9 @@ var (
 
 	// categoryOverrides is intentionally keyed by canonical Ferret identity.
 	// Add only source-layout exceptions; the ordinary path derives from pkg/stdlib.
-	categoryOverrides = map[functionIdentity]string{}
+	categoryOverrides = map[functionIdentity]string{
+		{Name: "range"}: "arrays",
+	}
 )
 
 type functionIdentity struct {

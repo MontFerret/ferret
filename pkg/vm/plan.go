@@ -200,6 +200,11 @@ func buildExecPlan(program *bytecode.Program) (execPlan, error) {
 				Dst:  dst,
 				Slot: slot,
 			})
+		case bytecode.OpAggregateReduce:
+			kind := bytecode.AggregateKind(src2)
+			if kind < bytecode.AggregateCount || kind > bytecode.AggregateAverage {
+				errs.Add(diagnostics.NewInvariantError("invalid aggregate reduction kind", runtime.Errorf(runtime.ErrUnexpected, "aggregate kind %d at pc %d", kind, pc)), pc, dst)
+			}
 		case bytecode.OpAggregateUpdate, bytecode.OpAggregateGroupUpdate:
 			slot, err := aggregateSelectorSlotAt(aggregateSelectorSlots, pc)
 			if err != nil {

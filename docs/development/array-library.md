@@ -13,7 +13,7 @@ aliases, intended for removal in a later v2 minor release.
 | 1 | `first`, `last`, `unique`, `sorted` |
 | 1 or 2 | `flatten(array[, depth])` |
 | 2 | `at`, `append`, `contains`, `index_of`, `remove`, `remove_at`, `remove_any` |
-| 2 or 3 | `slice(array, start[, length])` |
+| 2 or 3 | `slice(array, start[, length])`, `range(start, end[, step])` |
 | At least 2 | `concat`, `union`, `intersection`, `difference`, `symmetric_difference` |
 
 `append` appends one value, including an array as one nested element. `concat`
@@ -30,6 +30,22 @@ argument. Negative starts or lengths and starts beyond the list return an empty
 array. Oversized lengths are capped using a subtraction comparison before
 addition, preventing integer overflow. The exported Go `Slice` now rejects
 undocumented extra arguments, matching its FQL overloads.
+
+## Range construction
+
+`arrays::range(start, end[, step])` constructs an independent array using
+inclusive numeric endpoints and a default step of positive one. Negative steps
+descend; a step pointing away from the endpoint produces an empty array.
+Arguments must be finite native numbers. Zero steps, non-advancing steps, and
+unrepresentable capacities fail; append errors propagate. Values are floats,
+preserving the legacy implementation. Range generation retains its existing
+context behavior: it passes the context to `Array.Append`, which does not poll
+cancellation. This namespace migration does not add range cancellation checks.
+
+The algorithm and canonical registration belong to Arrays. The deprecated global
+`range` remains registered by Math and delegates to Arrays, preserving Math-only
+embeddings. Arrays-only embeddings expose `arrays::range`; Full and Safe expose
+both. The old Go `math.Range` entry point forwards to `arrays.Range`.
 
 ## Explicit mutation
 

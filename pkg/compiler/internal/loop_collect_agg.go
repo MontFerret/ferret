@@ -397,7 +397,7 @@ func (c *CollectCompiler) compilePlanBackedGlobalAggregationSelectors(selectors 
 func (c *CollectCompiler) compileGenericGlobalAggregationSelectors(selectors []*core.AggregateSelector, aggregator bytecode.Operand, selectorRegs []bytecode.Operand) {
 	for i, selector := range selectors {
 		args := c.compileGlobalAggregationSelectorArgs(selector, aggregator)
-		result := c.exprs.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
+		result := c.compileAggregateReduction(selector, args)
 
 		varReg := c.declareLocalOrReport(selector.Context(), selector.Name().String(), core.TypeUnknown)
 		selectorRegs[i] = varReg
@@ -487,9 +487,30 @@ func (c *CollectCompiler) compileGroupedAggregationFuncCall(selector *core.Aggre
 		args = core.RegisterSequence{value}
 	}
 
-	resArg := c.exprs.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
+	resArg := c.compileAggregateReduction(selector, args)
 
 	c.ctx.Program.Emitter.EmitMove(valReg, resArg)
+}
+
+// Built-in clause reductions share the VM collectors' semantics independently
+// of public function registrations. Other selectors remain ordinary calls.
+func (c *CollectCompiler) compileAggregateReduction(selector *core.AggregateSelector, args core.RegisterSequence) bytecode.Operand {
+	kind, builtin := aggregateKind(selector.FuncName())
+	if !builtin || len(args) != 1 {
+		return c.exprs.CompileFunctionCallByNameWith(nil, selector.FuncName(), selector.ProtectedCall(), args)
+	}
+
+	policy := core.ErrorPolicyDefault
+	if selector.ProtectedCall() {
+		policy = core.ErrorPolicySuppress
+	}
+
+	return c.recovery.CompileWithErrorPolicy(policy, core.CatchJumpModeNone, func() bytecode.Operand {
+		dst := c.ctx.Function.Registers.Allocate()
+		c.ctx.Program.Emitter.EmitABC(bytecode.OpAggregateReduce, dst, args[0], bytecode.Operand(kind))
+
+		return dst
+	})
 }
 
 // loadGlobalSelectorKey creates a key for an aggregation argument by combining the selector name and argument index.
