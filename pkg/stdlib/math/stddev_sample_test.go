@@ -25,6 +25,6 @@ func TestStandardDeviationSample(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 2.073644135332772)
+		assertMathResult(t, out, runtime.Float(2.073644135332772))
 	})
 }

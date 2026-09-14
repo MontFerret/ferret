@@ -7,23 +7,23 @@ import (
 )
 
 func variance(ctx context.Context, input runtime.List, sample bool) (runtime.Float, error) {
-	m, count, err := mean(ctx, input)
-	if err != nil {
-		return runtime.NaN(), err
-	}
+	var mean, squaredDifferences float64
 
-	if count == 0 || (sample && count < 2) {
-		return runtime.NaN(), nil
-	}
-
-	var squaredDifferences float64
-
-	_, err = forEachNumber(ctx, input, func(value runtime.Value, _ runtime.Int) {
-		difference := toFloat(value) - float64(m)
-		squaredDifferences += difference * difference
+	// Welford's recurrence keeps the source single-pass and avoids subtracting
+	// large raw sums of squares when the variance is small relative to the mean.
+	counts, err := forEachNumber(ctx, input, func(value runtime.Value, index runtime.Int) {
+		number := toFloat(value)
+		difference := number - mean
+		mean += difference / float64(index+1)
+		squaredDifferences += difference * (number - mean)
 	})
 	if err != nil {
 		return runtime.NaN(), err
+	}
+
+	count := counts.numeric
+	if count == 0 || (sample && count < 2) {
+		return runtime.NaN(), nil
 	}
 
 	if sample {

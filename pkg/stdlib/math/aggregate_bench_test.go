@@ -20,8 +20,10 @@ func BenchmarkMathAggregates(b *testing.B) {
 		{name: "average", call: math.Average},
 		{name: "min", call: math.Min},
 		{name: "max", call: math.Max},
-		{name: "variance", call: math.PopulationVariance},
-		{name: "stddev", call: math.StandardDeviationSample},
+		{name: "variance_population", call: math.PopulationVariance},
+		{name: "variance_sample", call: math.SampleVariance},
+		{name: "stddev_population", call: math.StandardDeviationPopulation},
+		{name: "stddev_sample", call: math.StandardDeviationSample},
 		{name: "median", call: math.Median},
 		{name: "percentile", call: func(ctx context.Context, value runtime.Value) (runtime.Value, error) {
 			return math.Percentile(ctx, value, runtime.Int(50), runtime.String("interpolation"))

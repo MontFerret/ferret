@@ -2,7 +2,6 @@ package math
 
 import (
 	"context"
-	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -34,9 +33,9 @@ func sortNumbers(ctx context.Context, values []runtime.Value, ascending bool) er
 
 		return runtime.CompareValues(c, left, right)
 	})
-	if canceled := ctx.Err(); canceled != nil && !errors.Is(err, canceled) {
-		err = errors.Join(err, canceled)
+	if err != nil {
+		return err
 	}
 
-	return err
+	return ctx.Err()
 }

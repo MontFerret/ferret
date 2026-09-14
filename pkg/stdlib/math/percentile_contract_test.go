@@ -56,19 +56,24 @@ func TestPercentileArgumentCompatibility(t *testing.T) {
 			t.Fatalf("percentile %v (%T) accepted", percent, percent)
 		}
 
-		// The existing empty-list short-circuit deliberately precedes percentile validation.
-		got, err := math.Percentile(t.Context(), runtime.NewArray(0), percent)
-		if err != nil {
-			t.Fatal(err)
-		}
+		// Numeric-empty inputs short-circuit before percentile validation.
+		for _, values := range [][]runtime.Value{nil, {runtime.None, runtime.String("2")}} {
+			for _, method := range []runtime.String{"rank", "interpolation"} {
+				got, err := math.Percentile(t.Context(), runtime.NewArrayWith(values...), percent, method)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-		assertMathResult(t, got, runtime.NaN())
+				assertMathResult(t, got, runtime.NaN())
+			}
+		}
 	}
 
 	for _, args := range [][]runtime.Value{
 		nil,
 		{runtime.NewArray(0)},
 		{runtime.NewArray(0), runtime.Int(50), runtime.Int(1)},
+		{runtime.NewArrayWith(runtime.None), runtime.Int(50), runtime.Int(1)},
 		{runtime.NewArray(0), runtime.Int(50), runtime.String("rank"), runtime.Int(1)},
 	} {
 		if _, err := math.Percentile(t.Context(), args...); err == nil {

@@ -8,9 +8,9 @@ import (
 )
 
 // stddev_sample returns the square root of the sample variance.
-// @param numbers {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
+// @param numbers {Any[]} A list whose Int and Float elements are used; other elements are ignored. It is not mutated.
 // @return {Float} The sample standard deviation, or NaN for fewer than two numbers.
-// @throws {TypeError} An argument or list element has an invalid type.
+// @throws {TypeError} An argument has an invalid type.
 func StandardDeviationSample(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err

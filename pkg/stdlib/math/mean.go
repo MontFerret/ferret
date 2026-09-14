@@ -7,14 +7,14 @@ import (
 )
 
 func mean(ctx context.Context, input runtime.List) (runtime.Float, runtime.Int, error) {
-	sum, count, err := sumNumbers(ctx, input)
+	sum, counts, err := sumNumbers(ctx, input)
 	if err != nil {
 		return runtime.NaN(), 0, err
 	}
 
-	if count == 0 {
-		return runtime.NaN(), 0, nil
+	if counts.numeric == 0 {
+		return runtime.ZeroFloat, 0, nil
 	}
 
-	return runtime.Float(sum / float64(count)), count, nil
+	return runtime.Float(sum / float64(counts.numeric)), counts.numeric, nil
 }

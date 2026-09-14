@@ -6,10 +6,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// median returns the middle value of a numeric list, averaging the two middle values for even lengths.
-// @param array {Int[] | Float[]} A list containing only Int and Float values; it is not mutated.
-// @return {Int | Float} The selected middle value or their Float mean, or NaN for an empty list.
-// @throws {TypeError} An argument or list element has an invalid type.
+// median returns the middle numeric value, averaging the two middle numbers for even numeric counts.
+// @param array {Any[]} A list whose Int and Float elements are used; other elements are ignored. It is not mutated.
+// @return {Int | Float | None} The selected middle value or their Float mean, or None when no numbers remain.
+// @throws {TypeError} An argument has an invalid type.
 func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
@@ -21,7 +21,7 @@ func Median(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 	}
 
 	if len(values) == 0 {
-		return runtime.NaN(), nil
+		return runtime.None, nil
 	}
 
 	if err := sortNumbers(ctx, values, false); err != nil {

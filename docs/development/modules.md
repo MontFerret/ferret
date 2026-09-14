@@ -130,44 +130,52 @@ differences, calendar arithmetic, and migration changes are described in
 
 ## Math collection functions
 
-The global collection functions in `pkg/stdlib/math` accept only native `Int`
-and `Float` elements, including mixed numeric lists. Strings, `None`, booleans,
-and other values produce an indexed type error; they are never coerced or
-discarded. Non-finite floats remain numeric inputs. These function contracts do
-not change the VM's separate `COLLECT AGGREGATE` implementation.
+The global collection functions in `pkg/stdlib/math` use native `Int` and
+`Float` elements and ignore strings, `None`, booleans, and other non-numeric
+values without coercion. Non-finite floats remain numeric inputs. This filtering
+preserves the legacy global contract and does not change the VM's separate
+`COLLECT AGGREGATE` implementation.
 
 Shared traversal uses `runtime.List.ForEach`, checks cancellation, and propagates
-host errors without replacing them with successful partial results. Counts come
-from traversal rather than `Length`. Sum, mean, and extrema stream with constant
-additional storage. Variance makes two passes over a stable source: the shared
-mean followed by squared deviations, divided by `N` for population variance or
-`N - 1` for sample variance. Standard deviation is the square root of its
-corresponding variance.
+host errors without returning successful partial results. An operation's error
+is returned directly, even if cancellation occurs concurrently; only successful
+traversal or sorting is followed by a final context check. This error policy is
+local to math. Total element and numeric counts come from traversal rather than
+`Length`, so even a nonempty list containing no numbers is distinguishable from
+an empty list.
+
+Sum, mean, and extrema stream with constant additional storage. Variance uses
+Welford's one-pass recurrence with constant additional storage, divided by the
+numeric count `N` for population variance or `N - 1` for sample variance. It does
+not require a stable, repeatable source. Standard deviation is the square root
+of its corresponding variance.
 
 Median and percentile retain native numeric values in a private snapshot and
 delegate ordering to runtime comparison and sorting, with cancellation checks.
 They never call source copy, sort, indexed-access, or mutation methods. Odd
 median and percentile selections retain the selected value's type; even median
-averages only the two middle values and returns a `Float`.
+averages only the two middle numbers and returns a `Float`.
 
-| Empty input | Result |
-| --- | --- |
-| `sum` | Integer `0` |
-| `min`, `max` | `None` |
-| `average`, `median`, variance, standard deviation, percentile | `NaN` |
+| Function | Empty list | Nonempty list with no numbers |
+| --- | --- | --- |
+| `sum` | Integer `0` | Float `0` |
+| `average` | Float `0` | Float `0` |
+| `min`, `max`, `median` | `None` | `None` |
+| Variance, standard deviation, percentile | `NaN` | `NaN` |
 
 Sample variance and sample standard deviation also return `NaN` for one number.
 Population variance and standard deviation return zero for one finite number.
-Validation and traversal errors take precedence over empty or insufficient-input
-results.
+Non-finite inputs yield `NaN` for variance and standard deviation. Argument and
+traversal errors take precedence over empty or insufficient-input results.
 
 Percentile keeps its two/three-argument forms, integer percentiles in `1..100`,
 and nearest-rank default. Only the exact method string `interpolation` enables
 linear interpolation; other strings retain the rank fallback. Rank selects the
 one-based position `ceil(p * N / 100)`. Interpolation uses the zero-based position
-`(p / 100) * (N - 1)`. For compatibility, an empty list returns `NaN` before
-validating the percentile argument, while a supplied method must still be a
-string. A namespace or argument-policy migration is a separate change.
+`(p / 100) * (N - 1)`, where `N` counts only numeric elements. An empty numeric
+snapshot returns `NaN` before validating the percentile argument, while a
+supplied method must still be a string. A namespace or argument-policy migration
+is a separate change.
 
 ## Testing
 

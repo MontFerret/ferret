@@ -9,7 +9,7 @@ import (
 func extremum(ctx context.Context, source runtime.List, minimum bool) (runtime.Value, error) {
 	var result float64
 
-	count, err := forEachNumber(ctx, source, func(value runtime.Value, index runtime.Int) {
+	counts, err := forEachNumber(ctx, source, func(value runtime.Value, index runtime.Int) {
 		number := toFloat(value)
 		if index == 0 || (minimum && number < result) || (!minimum && number > result) {
 			result = number
@@ -19,7 +19,7 @@ func extremum(ctx context.Context, source runtime.List, minimum bool) (runtime.V
 		return runtime.None, err
 	}
 
-	if count == 0 {
+	if counts.numeric == 0 {
 		return runtime.None, nil
 	}
 

@@ -2,51 +2,60 @@ package math
 
 import (
 	"context"
-	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// forEachNumber counts successfully visited numbers without requiring list
-// length or indexed access. Validation never coerces or skips an element.
-func forEachNumber(ctx context.Context, source runtime.List, visit func(runtime.Value, runtime.Int)) (runtime.Int, error) {
+type numberCounts struct {
+	total   runtime.Int
+	numeric runtime.Int
+}
+
+// forEachNumber skips non-numeric elements without coercion for the legacy
+// globals. The callback receives numbers and their numeric ordinal. Both counts
+// come from traversal so callers never need source length or indexed access.
+func forEachNumber(ctx context.Context, source runtime.List, visit func(runtime.Value, runtime.Int)) (numberCounts, error) {
 	if err := ctx.Err(); err != nil {
-		return 0, err
+		return numberCounts{}, err
 	}
 
-	var count runtime.Int
+	var counts numberCounts
 
-	err := source.ForEach(ctx, func(c context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
+	err := source.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 		if err := c.Err(); err != nil {
 			return false, err
 		}
 
-		if err := runtime.AssertNumber(value); err != nil {
-			return false, runtime.ArgError(runtime.Errorf(err, "at index %d", index), 0)
+		counts.total++
+
+		if !runtime.IsNumber(value) {
+			return true, nil
 		}
 
-		visit(value, count)
+		visit(value, counts.numeric)
 
-		count++
+		counts.numeric++
 
 		return true, nil
 	})
-	if canceled := ctx.Err(); canceled != nil && !errors.Is(err, canceled) {
-		err = errors.Join(err, canceled)
+	if err != nil {
+		return counts, err
 	}
 
-	return count, err
+	// Preserve the causal traversal error; only successful traversal needs a
+	// final cancellation check, including hosts that return without a callback.
+	return counts, ctx.Err()
 }
 
-func sumNumbers(ctx context.Context, source runtime.List) (float64, runtime.Int, error) {
+func sumNumbers(ctx context.Context, source runtime.List) (float64, numberCounts, error) {
 	var sum float64
 
-	count, err := forEachNumber(ctx, source, func(value runtime.Value, _ runtime.Int) {
+	counts, err := forEachNumber(ctx, source, func(value runtime.Value, _ runtime.Int) {
 		sum += toFloat(value)
 	})
 	if err != nil {
-		return 0, 0, err
+		return 0, numberCounts{}, err
 	}
 
-	return sum, count, nil
+	return sum, counts, nil
 }

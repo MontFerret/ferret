@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	stdmath "math"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -49,39 +49,75 @@ func TestMathAggregates(t *testing.T) {
 	}
 }
 
-func TestMathAggregatesRejectInvalidValues(t *testing.T) {
-	invalid := []runtime.Value{runtime.String("2"), runtime.None, runtime.False, runtime.NewArray(0), runtime.NewObject(), runtime.Duration(1)}
+func TestMathAggregatesFilterValues(t *testing.T) {
+	skipped := []runtime.Value{runtime.String("2"), runtime.None, runtime.True, runtime.False, runtime.NewArray(0), runtime.NewObject(), runtime.Duration(1)}
 	for _, fn := range aggregateCases() {
-		for _, value := range invalid {
-			for index := 0; index < 3; index++ {
-				t.Run(fmt.Sprintf("%s/%T/%d", fn.name, value, index), func(t *testing.T) {
-					values := []runtime.Value{runtime.Int(1), runtime.Int(2), runtime.Int(3)}
-					values[index] = value
-					source := runtime.NewArrayWith(values...)
-					before := source.String()
-					_, err := fn.call(t.Context(), source)
-					if !errors.Is(err, runtime.ErrInvalidType) || !strings.Contains(err.Error(), fmt.Sprintf("at index %d", index)) {
-						t.Fatalf("error = %v, want indexed type error", err)
+		for _, value := range skipped {
+			for index := 0; index <= 4; index++ {
+				for _, host := range []bool{false, true} {
+					t.Run(fmt.Sprintf("%s/%T/%v/%d/host=%t", fn.name, value, value, index, host), func(t *testing.T) {
+						values := slices.Insert([]runtime.Value{runtime.Int(5), runtime.Int(2), runtime.Int(9), runtime.Int(2)}, index, value)
+						before := slices.Clone(values)
+						array := runtime.NewArrayWith(values...)
+						arrayBefore := array.String()
+						var source runtime.List = array
+						if host {
+							source = &aggregateList{values: values}
+						}
+
+						got, err := fn.call(t.Context(), source)
+						if err != nil {
+							t.Fatal(err)
+						}
+
+						assertMathResult(t, got, fn.want[0])
+						if !slices.Equal(values, before) || array.String() != arrayBefore {
+							t.Fatal("input changed")
+						}
+
+						if list, ok := source.(*aggregateList); ok && list.calls != 1 {
+							t.Fatalf("traversals = %d, want one", list.calls)
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
+func TestMathAggregatesWithoutNumbers(t *testing.T) {
+	for _, fn := range aggregateCases() {
+		for _, values := range [][]runtime.Value{nil, {runtime.None}, {runtime.String("2"), runtime.None, runtime.True}} {
+			for _, host := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/size=%d/host=%t", fn.name, len(values), host), func(t *testing.T) {
+					var source runtime.List = runtime.NewArrayWith(values...)
+					if host {
+						source = &aggregateList{values: values}
 					}
 
-					if source.String() != before {
-						t.Fatalf("invalid input changed: %s -> %s", before, source)
+					got, err := fn.call(t.Context(), source)
+					if err != nil {
+						t.Fatal(err)
 					}
+
+					want := fn.want[5]
+					if fn.name == "sum" && len(values) != 0 {
+						want = runtime.ZeroFloat
+					}
+
+					assertMathResult(t, got, want)
 				})
 			}
 		}
+	}
+}
 
-		t.Run(fn.name+"/non-list", func(t *testing.T) {
+func TestMathAggregatesRejectNonLists(t *testing.T) {
+	for _, fn := range aggregateCases() {
+		t.Run(fn.name, func(t *testing.T) {
 			_, err := fn.call(t.Context(), runtime.Int(1))
 			if !errors.Is(err, runtime.ErrInvalidType) {
 				t.Fatalf("error = %v, want type error", err)
-			}
-		})
-
-		t.Run(fn.name+"/invalid-singleton", func(t *testing.T) {
-			_, err := fn.call(t.Context(), runtime.NewArrayWith(runtime.None))
-			if !errors.Is(err, runtime.ErrInvalidType) {
-				t.Fatalf("error = %v, want type error before insufficient-input result", err)
 			}
 		})
 	}
@@ -130,10 +166,10 @@ func TestMedianMiddleElements(t *testing.T) {
 func aggregateCases() []aggregateCase {
 	return []aggregateCase{
 		{"sum", math.Sum, []runtime.Value{runtime.Float(18), runtime.Float(7.5), runtime.Float(0), runtime.Float(-9), runtime.Float(7), runtime.ZeroInt}},
-		{"average", math.Average, []runtime.Value{runtime.Float(4.5), runtime.Float(2.5), runtime.Float(0), runtime.Float(-3), runtime.Float(7), runtime.NaN()}},
+		{"average", math.Average, []runtime.Value{runtime.Float(4.5), runtime.Float(2.5), runtime.Float(0), runtime.Float(-3), runtime.Float(7), runtime.ZeroFloat}},
 		{"min", math.Min, []runtime.Value{runtime.Float(2), runtime.Float(1.5), runtime.Float(-3), runtime.Float(-5), runtime.Float(7), runtime.None}},
 		{"max", math.Max, []runtime.Value{runtime.Float(9), runtime.Float(3.5), runtime.Float(2), runtime.Float(-1), runtime.Float(7), runtime.None}},
-		{"median", math.Median, []runtime.Value{runtime.Float(3.5), runtime.Float(2.5), runtime.Float(1), runtime.Int(-3), runtime.Int(7), runtime.NaN()}},
+		{"median", math.Median, []runtime.Value{runtime.Float(3.5), runtime.Float(2.5), runtime.Float(1), runtime.Int(-3), runtime.Int(7), runtime.None}},
 		{"variance_population", math.PopulationVariance, []runtime.Value{runtime.Float(8.25), runtime.Float(2.0 / 3), runtime.Float(14.0 / 3), runtime.Float(8.0 / 3), runtime.Float(0), runtime.NaN()}},
 		{"variance_sample", math.SampleVariance, []runtime.Value{runtime.Float(11), runtime.Float(1), runtime.Float(7), runtime.Float(4), runtime.NaN(), runtime.NaN()}},
 		{"stddev_population", math.StandardDeviationPopulation, []runtime.Value{runtime.Float(stdmath.Sqrt(8.25)), runtime.Float(stdmath.Sqrt(2.0 / 3)), runtime.Float(stdmath.Sqrt(14.0 / 3)), runtime.Float(stdmath.Sqrt(8.0 / 3)), runtime.Float(0), runtime.NaN()}},

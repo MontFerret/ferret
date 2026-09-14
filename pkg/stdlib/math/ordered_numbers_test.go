@@ -24,3 +24,22 @@ func TestSortNumbersCancellation(t *testing.T) {
 		}
 	}
 }
+
+func TestSortNumbersOperationError(t *testing.T) {
+	for _, ascending := range []bool{false, true} {
+		for _, cancelDuringComparison := range []bool{false, true} {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			sentinel := errors.New("comparison failed")
+			value := &sortErrorValue{Value: runtime.ZeroInt, err: sentinel}
+			if cancelDuringComparison {
+				value.cancel = cancel
+			}
+
+			if err := sortNumbers(ctx, []runtime.Value{value, value}, ascending); err != sentinel {
+				t.Fatalf("sort error = %v, want original comparison error", err)
+			}
+		}
+	}
+}

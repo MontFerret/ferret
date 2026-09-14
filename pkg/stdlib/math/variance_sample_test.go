@@ -25,6 +25,6 @@ func TestSampleVariance(t *testing.T) {
 		)
 
 		So(err, ShouldBeNil)
-		So(out, ShouldEqual, 4.3)
+		assertMathResult(t, out, runtime.Float(4.3))
 	})
 }
