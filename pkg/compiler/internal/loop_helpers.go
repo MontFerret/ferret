@@ -12,8 +12,7 @@ import (
 func aggregateKind(name runtime.String) (bytecode.AggregateKind, bool) {
 	fn := strings.ToUpper(name.String())
 	if strings.Contains(fn, runtime.NamespaceSeparator) {
-		parts := strings.Split(fn, runtime.NamespaceSeparator)
-		fn = parts[len(parts)-1]
+		return 0, false
 	}
 
 	switch fn {

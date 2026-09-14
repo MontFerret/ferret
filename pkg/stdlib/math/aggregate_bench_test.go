@@ -67,3 +67,39 @@ func BenchmarkMathAggregates(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkCanonicalMathAggregates(b *testing.B) {
+	functions := canonicalAggregateCases(b)
+	for _, size := range []int{16, 1024} {
+		values := make([]runtime.Value, size)
+		for index := range values {
+			value := (index * 37) % size
+			values[index] = runtime.Int(value)
+			if index%2 != 0 {
+				values[index] = runtime.Float(value) + 0.5
+			}
+		}
+		array := runtime.NewArrayWith(values...)
+		for _, host := range []bool{false, true} {
+			var source runtime.List = array
+			if host {
+				source = &struct{ runtime.List }{array}
+			}
+			for _, fn := range functions {
+				b.Run(fmt.Sprintf("%s/%d/host=%t", fn.name, size, host), func(b *testing.B) {
+					ctx := context.Background()
+					b.ReportAllocs()
+					b.ResetTimer()
+					for b.Loop() {
+						result, err := fn.call(ctx, source)
+						if err != nil {
+							b.Fatal(err)
+						}
+
+						aggregateBenchmarkResult = result
+					}
+				})
+			}
+		}
+	}
+}

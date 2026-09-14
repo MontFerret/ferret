@@ -13,6 +13,7 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("unique", Unique).
 		Add("sorted", Sorted)
 	canonical.Function().A2().
+		Add("range", range2).
 		Add("at", At).
 		Add("append", Append).
 		Add("flatten", flatten2).
@@ -22,7 +23,9 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("remove", Remove).
 		Add("remove_at", RemoveAt).
 		Add("remove_any", RemoveAny)
-	canonical.Function().A3().Add("slice", slice3)
+	canonical.Function().A3().
+		Add("range", range3).
+		Add("slice", slice3)
 	canonical.Function().Var().
 		Add("concat", Concat).
 		Add("union", Union).

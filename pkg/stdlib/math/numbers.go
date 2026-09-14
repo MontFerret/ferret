@@ -2,26 +2,36 @@ package math
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type numberCounts struct {
-	total   runtime.Int
-	numeric runtime.Int
-}
+type (
+	numberPolicy uint8
 
-// forEachNumber skips non-numeric elements without coercion for the legacy
-// globals. The callback receives numbers and their numeric ordinal. Both counts
+	numberCounts struct {
+		total   runtime.Int
+		numeric runtime.Int
+	}
+)
+
+const (
+	filterNonNumbers numberPolicy = iota
+	strictNumbers
+)
+
+// forEachNumber either rejects or skips non-numeric elements without coercion.
+// The callback receives numbers and their numeric ordinal. Both counts
 // come from traversal so callers never need source length or indexed access.
-func forEachNumber(ctx context.Context, source runtime.List, visit func(runtime.Value, runtime.Int)) (numberCounts, error) {
+func forEachNumber(ctx context.Context, source runtime.List, policy numberPolicy, visit func(runtime.Value, runtime.Int)) (numberCounts, error) {
 	if err := ctx.Err(); err != nil {
 		return numberCounts{}, err
 	}
 
 	var counts numberCounts
 
-	err := source.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+	err := source.ForEach(ctx, func(c context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 		if err := c.Err(); err != nil {
 			return false, err
 		}
@@ -29,6 +39,10 @@ func forEachNumber(ctx context.Context, source runtime.List, visit func(runtime.
 		counts.total++
 
 		if !runtime.IsNumber(value) {
+			if policy == strictNumbers {
+				return false, numberElementError(value, index)
+			}
+
 			return true, nil
 		}
 
@@ -47,10 +61,10 @@ func forEachNumber(ctx context.Context, source runtime.List, visit func(runtime.
 	return counts, ctx.Err()
 }
 
-func sumNumbers(ctx context.Context, source runtime.List) (float64, numberCounts, error) {
+func sumNumbers(ctx context.Context, source runtime.List, policy numberPolicy) (float64, numberCounts, error) {
 	var sum float64
 
-	counts, err := forEachNumber(ctx, source, func(value runtime.Value, _ runtime.Int) {
+	counts, err := forEachNumber(ctx, source, policy, func(value runtime.Value, _ runtime.Int) {
 		sum += toFloat(value)
 	})
 	if err != nil {
@@ -58,4 +72,8 @@ func sumNumbers(ctx context.Context, source runtime.List) (float64, numberCounts
 	}
 
 	return sum, counts, nil
+}
+
+func numberElementError(value runtime.Value, index runtime.Int) error {
+	return runtime.ArgError(fmt.Errorf("element at index %d: %w", index, runtime.AssertNumber(value)), 0)
 }

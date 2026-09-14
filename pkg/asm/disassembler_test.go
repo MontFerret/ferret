@@ -714,3 +714,18 @@ func TestDisassemble_LiteralSpread(t *testing.T) {
 		t.Fatalf("expected object spread operands in output:\n%s", out)
 	}
 }
+
+func TestDisassemble_AggregateReduce(t *testing.T) {
+	program := &bytecode.Program{ISAVersion: bytecode.Version, Registers: 3, Bytecode: []bytecode.Instruction{
+		bytecode.NewInstruction(bytecode.OpAggregateReduce, 1, 2, bytecode.Operand(bytecode.AggregateAverage)),
+		bytecode.NewInstruction(bytecode.OpReturn, 1),
+	}}
+	out, err := Disassemble(program)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(out, "0: AGGREDUCE R1 R2 4") {
+		t.Fatalf("invalid reduction operands:\n%s", out)
+	}
+}

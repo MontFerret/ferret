@@ -93,6 +93,16 @@ The VM observes cancellation at its own safepoints. Context-aware host
 operations receive the execution context and are responsible for observing
 cancellation while they retain control.
 
+Generic `COLLECT AGGREGATE` finalization emits `OpAggregateReduce(dst, list,
+kind)` for built-in one-argument reductions. Its immediate `AggregateKind`
+selects the same state update/finalization logic as fused collectors. The
+instruction borrows its collected list, checks cancellation during traversal,
+and preserves operation errors. Invalid internal inputs remain invariant
+violations; ordinary read errors use the existing recovery machinery. Protected
+selectors retain catch regions and `None` fallback. Empty-query guards and
+collector selection stay in the compiler. Public math registrations are not
+required for these reductions; namespaced selectors remain ordinary calls.
+
 ## Resource ownership
 
 Runtime values may own closable resources. `runtime.Resource` adds a stable live

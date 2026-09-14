@@ -13,17 +13,23 @@ const (
 	GradToDeg = math.Pi / 200
 )
 
+// RegisterLib registers canonical math functions and deprecated global compatibility functions.
+// @namespace math
 func RegisterLib(ns runtime.Namespace) {
+	registerCanonical(ns.Namespace("math"))
+	registerLegacy(ns)
+}
+
+func registerCanonical(ns runtime.Namespace) {
 	ns.Function().A0().
-		Add("pi", Pi).
-		Add("rand", rand0)
+		Add("pi", Pi)
 
 	ns.Function().A1().
 		Add("abs", Abs).
 		Add("acos", Acos).
 		Add("asin", Asin).
 		Add("atan", Atan).
-		Add("average", Average).
+		Add("mean", canonicalMean).
 		Add("ceil", Ceil).
 		Add("cos", Cos).
 		Add("degrees", Degrees).
@@ -33,40 +39,22 @@ func RegisterLib(ns runtime.Namespace) {
 		Add("log", Log).
 		Add("log2", Log2).
 		Add("log10", Log10).
-		Add("max", Max).
-		Add("median", Median).
-		Add("min", Min).
+		Add("max", canonicalMax).
+		Add("median", canonicalMedian).
+		Add("min", canonicalMin).
 		Add("radians", Radians).
-		Add("rand", rand1).
 		Add("round", Round).
 		Add("sin", Sin).
 		Add("sqrt", Sqrt).
-		Add("stddev_population", StandardDeviationPopulation).
-		Add("stddev_sample", StandardDeviationSample).
-		Add("sum", Sum).
+		Add("stddev", canonicalStddev).
+		Add("stddev_sample", canonicalStddevSample).
+		Add("sum", canonicalSum).
 		Add("tan", Tan).
-		Add("variance_population", PopulationVariance).
-		Add("variance_sample", SampleVariance)
+		Add("variance", canonicalVariance).
+		Add("variance_sample", canonicalVarianceSample)
 
 	ns.Function().A2().
 		Add("atan2", Atan2).
-		Add("percentile", percentile2).
-		Add("pow", Pow).
-		Add("rand", rand2).
-		Add("range", range2)
-
-	ns.Function().A3().
-		Add("percentile", percentile3).
-		Add("range", range3)
-}
-
-func toFloat(arg runtime.Value) float64 {
-	switch v := arg.(type) {
-	case runtime.Float:
-		return float64(v)
-	case runtime.Int:
-		return float64(v)
-	default:
-		return 0
-	}
+		Add("percentile", canonicalPercentile).
+		Add("pow", Pow)
 }

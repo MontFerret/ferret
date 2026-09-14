@@ -309,7 +309,7 @@ func operandIsRegister(op bytecode.Opcode, idx int) bool {
 		return idx == 0 || idx == 1
 	case bytecode.OpMatchLoadPropertyConst:
 		return idx == 0 || idx == 1
-	case bytecode.OpAggregateUpdate:
+	case bytecode.OpAggregateUpdate, bytecode.OpAggregateReduce:
 		return idx == 0 || idx == 1
 	case bytecode.OpAggregateGroupUpdate:
 		return idx == 0 || idx == 1 || idx == 2

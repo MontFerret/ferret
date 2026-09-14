@@ -594,6 +594,18 @@ func validateInstructions(program *Program) error {
 			if err := validateConstantOperand(src2, constantsLen, pc, "src2"); err != nil {
 				return err
 			}
+		case OpAggregateReduce:
+			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
+				return err
+			}
+
+			if err := validateRegisterOperand(src1, registers, pc, "src1"); err != nil {
+				return err
+			}
+
+			if kind := AggregateKind(src2); kind < AggregateCount || kind > AggregateAverage {
+				return fmt.Errorf("%w: pc %d has invalid aggregate kind %d", ErrInvalidInstruction, pc, kind)
+			}
 		case OpCounterInc:
 			if err := validateRegisterOperand(dst, registers, pc, "dst"); err != nil {
 				return err

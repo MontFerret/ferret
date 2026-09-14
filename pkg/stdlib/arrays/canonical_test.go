@@ -20,8 +20,8 @@ func TestCanonicalArrayRegistrations(t *testing.T) {
 		want []string
 	}{
 		{functions.A1().Names(), []string{"first", "flatten", "last", "sorted", "unique"}},
-		{functions.A2().Names(), []string{"append", "at", "contains", "flatten", "index_of", "remove", "remove_any", "remove_at", "slice"}},
-		{functions.A3().Names(), []string{"slice"}},
+		{functions.A2().Names(), []string{"append", "at", "contains", "flatten", "index_of", "range", "remove", "remove_any", "remove_at", "slice"}},
+		{functions.A3().Names(), []string{"range", "slice"}},
 		{functions.Var().Names(), []string{"concat", "difference", "intersection", "symmetric_difference", "union"}},
 	} {
 		var names []string

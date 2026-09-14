@@ -30,7 +30,7 @@ func TestMathAggregates(t *testing.T) {
 		{"singleton", []runtime.Value{runtime.Int(7)}},
 		{"empty", nil},
 	}
-	for _, fn := range aggregateCases() {
+	for _, fn := range append(aggregateCases(), canonicalAggregateCases(t)...) {
 		for idx, input := range inputs {
 			t.Run(fn.name+"/"+input.name, func(t *testing.T) {
 				source := runtime.NewArrayWith(input.values...)
@@ -113,7 +113,7 @@ func TestMathAggregatesWithoutNumbers(t *testing.T) {
 }
 
 func TestMathAggregatesRejectNonLists(t *testing.T) {
-	for _, fn := range aggregateCases() {
+	for _, fn := range append(aggregateCases(), canonicalAggregateCases(t)...) {
 		t.Run(fn.name, func(t *testing.T) {
 			_, err := fn.call(t.Context(), runtime.Int(1))
 			if !errors.Is(err, runtime.ErrInvalidType) {
@@ -124,7 +124,7 @@ func TestMathAggregatesRejectNonLists(t *testing.T) {
 }
 
 func TestMathAggregatesAcceptNonFiniteNumbers(t *testing.T) {
-	for _, fn := range aggregateCases() {
+	for _, fn := range append(aggregateCases(), canonicalAggregateCases(t)...) {
 		for _, value := range []runtime.Float{runtime.NaN(), runtime.Float(stdmath.Inf(1)), runtime.Float(stdmath.Inf(-1))} {
 			t.Run(fn.name+"/"+value.String(), func(t *testing.T) {
 				_, err := fn.call(t.Context(), runtime.NewArrayWith(value, runtime.Int(1)))

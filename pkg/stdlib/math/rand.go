@@ -10,6 +10,7 @@ import (
 // @param max {Int | Float} Upper limit.
 // @param min {Int | Float} Lower limit.
 // @return {Float} A number greater than 0 and less than 1.
+// @deprecated A dedicated random:: namespace is planned; no replacement is available yet.
 func Rand(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 0, 2); err != nil {
 		return runtime.None, err
@@ -27,6 +28,7 @@ func Rand(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 
 // rand return a pseudo-random number between 0 and 1.
 // @return {Float} A number greater than 0 and less than 1.
+// @deprecated A dedicated random:: namespace is planned; no replacement is available yet.
 func rand0(context.Context) (runtime.Value, error) {
 	return runtime.NewFloat(runtime.RandomDefault()), nil
 }
@@ -34,6 +36,7 @@ func rand0(context.Context) (runtime.Value, error) {
 // rand return a pseudo-random number between 0 and 1.
 // @param max {Int | Float} Upper limit.
 // @return {Float} A number greater than 0 and less than 1.
+// @deprecated A dedicated random:: namespace is planned; no replacement is available yet.
 func rand1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	max, err := runtime.ToFloat(ctx, arg1)
 	if err != nil {
@@ -49,6 +52,7 @@ func rand1(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 // @param max {Int | Float} Upper limit.
 // @param min {Int | Float} Lower limit.
 // @return {Float} A number greater than 0 and less than 1.
+// @deprecated A dedicated random:: namespace is planned; no replacement is available yet.
 func rand2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 	max, err := runtime.ToFloat(ctx, arg1)
 

@@ -205,10 +205,15 @@ const (
 	// Literal Construction Operations
 	OpArraySpread  // Appends a built-in Array to an array under construction
 	OpObjectSpread // Copies an ObjectLike value into an object under construction
+
+	// Clause Reduction Operations
+	OpAggregateReduce // Reduces a collected list using an immediate AggregateKind
 )
 
 func (op Opcode) String() string {
 	switch op {
+	case OpAggregateReduce:
+		return "AGGREDUCE"
 	// Control Flow
 	case OpReturn:
 		return "RET"

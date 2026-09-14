@@ -86,8 +86,8 @@ two-space-indented JSON with one trailing newline. `api.json` remains the
 canonical callable API. `catalog.json` contains presentation categories for
 global and namespaced functions. Each catalog member identifies a function by
 its namespace and name; the empty namespace identifies a global function.
-Categories such as `math`, `io`, and `testing` are presentation concepts, not
-callable Ferret namespaces. The generator contains no deployment domain.
+Catalog categories are presentation concepts distinct from callable Ferret
+namespaces, even when their names coincide, as with `math`. The generator contains no deployment domain.
 
 ## Release publication
 
