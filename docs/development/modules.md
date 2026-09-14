@@ -128,6 +128,55 @@ global migration adapters. Local-calendar precision equality, checked elapsed
 differences, calendar arithmetic, and migration changes are described in
 [DateTime library contracts](datetime-library.md).
 
+## Math collection functions
+
+The global collection functions in `pkg/stdlib/math` use native `Int` and
+`Float` elements and ignore strings, `None`, booleans, and other non-numeric
+values without coercion. Non-finite floats remain numeric inputs. This filtering
+preserves the legacy global contract and does not change the VM's separate
+`COLLECT AGGREGATE` implementation.
+
+Shared traversal uses `runtime.List.ForEach`, checks cancellation, and propagates
+host errors without returning successful partial results. An operation's error
+is returned directly, even if cancellation occurs concurrently; only successful
+traversal or sorting is followed by a final context check. This error policy is
+local to math. Total element and numeric counts come from traversal rather than
+`Length`, so even a nonempty list containing no numbers is distinguishable from
+an empty list.
+
+Sum, mean, and extrema stream with constant additional storage. Variance uses
+Welford's one-pass recurrence with constant additional storage, divided by the
+numeric count `N` for population variance or `N - 1` for sample variance. It does
+not require a stable, repeatable source. Standard deviation is the square root
+of its corresponding variance.
+
+Median and percentile retain native numeric values in a private snapshot and
+delegate ordering to runtime comparison and sorting, with cancellation checks.
+They never call source copy, sort, indexed-access, or mutation methods. Odd
+median and percentile selections retain the selected value's type; even median
+averages only the two middle numbers and returns a `Float`.
+
+| Function | Empty list | Nonempty list with no numbers |
+| --- | --- | --- |
+| `sum` | Integer `0` | Float `0` |
+| `average` | Float `0` | Float `0` |
+| `min`, `max`, `median` | `None` | `None` |
+| Variance, standard deviation, percentile | `NaN` | `NaN` |
+
+Sample variance and sample standard deviation also return `NaN` for one number.
+Population variance and standard deviation return zero for one finite number.
+Non-finite inputs yield `NaN` for variance and standard deviation. Argument and
+traversal errors take precedence over empty or insufficient-input results.
+
+Percentile keeps its two/three-argument forms, integer percentiles in `1..100`,
+and nearest-rank default. Only the exact method string `interpolation` enables
+linear interpolation; other strings retain the rank fallback. Rank selects the
+one-based position `ceil(p * N / 100)`. Interpolation uses the zero-based position
+`(p / 100) * (N - 1)`, where `N` counts only numeric elements. An empty numeric
+snapshot returns `NaN` before validating the percentile argument, while a
+supplied method must still be a string. A namespace or argument-policy migration
+is a separate change.
+
 ## Testing
 
 Use package tests for module registration and hook ordering. Exercise SDK

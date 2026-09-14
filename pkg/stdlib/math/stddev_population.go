@@ -7,30 +7,19 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-// stddev_population returns the population standard deviation of the values in a given array.
-// @param numbers {Int[] | Float[]} arrayList of numbers.
-// @return {Float} The population standard deviation.
+// stddev_population returns the square root of the population variance.
+// @param numbers {Any[]} A list whose Int and Float elements are used; other elements are ignored. It is not mutated.
+// @return {Float} The population standard deviation, or NaN when no numbers remain.
+// @throws {TypeError} An argument has an invalid type.
 func StandardDeviationPopulation(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgType(arg, 0, runtime.TypeList); err != nil {
+	if err := runtime.ValidateArgValue(arg, 0, runtime.AssertList); err != nil {
 		return runtime.None, err
 	}
 
-	arr := arg.(runtime.List)
-	size, err := arr.Length(ctx)
-
+	value, err := variance(ctx, arg.(runtime.List), false)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	if size == 0 {
-		return runtime.NewFloat(math.NaN()), nil
-	}
-
-	vp, err := variance(ctx, arr, runtime.NewInt(0))
-
-	if err != nil {
-		return runtime.None, err
-	}
-
-	return runtime.NewFloat(math.Pow(float64(vp), 0.5)), nil
+	return runtime.Float(math.Sqrt(float64(value))), nil
 }

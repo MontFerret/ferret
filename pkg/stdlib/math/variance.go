@@ -6,45 +6,29 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func variance(ctx context.Context, input runtime.List, sample runtime.Int) (runtime.Float, error) {
-	size, err := input.Length(ctx)
+func variance(ctx context.Context, input runtime.List, sample bool) (runtime.Float, error) {
+	var mean, squaredDifferences float64
 
+	// Welford's recurrence keeps the source single-pass and avoids subtracting
+	// large raw sums of squares when the variance is small relative to the mean.
+	counts, err := forEachNumber(ctx, input, func(value runtime.Value, index runtime.Int) {
+		number := toFloat(value)
+		difference := number - mean
+		mean += difference / float64(index+1)
+		squaredDifferences += difference * (number - mean)
+	})
 	if err != nil {
 		return runtime.NaN(), err
 	}
 
-	if size == 0 {
+	count := counts.numeric
+	if count == 0 || (sample && count < 2) {
 		return runtime.NaN(), nil
 	}
 
-	m, err := mean(ctx, input)
-
-	if err != nil {
-		return runtime.NaN(), err
+	if sample {
+		count--
 	}
 
-	var variance runtime.Float
-
-	err = input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		if err = runtime.AssertNumber(value); err != nil {
-			return false, err
-		}
-
-		n := runtime.Float(toFloat(value))
-
-		variance += (n - m) * (n - m)
-
-		return true, nil
-	})
-
-	if err != nil {
-		return runtime.NaN(), err
-	}
-
-	// When getting the mean of the squared differences
-	// "sample" will allow us to know if it's a sample
-	// or population and whether to subtract by one or not
-	l := runtime.Float(size - (1 * sample))
-
-	return variance / l, nil
+	return runtime.Float(squaredDifferences / float64(count)), nil
 }

@@ -6,34 +6,15 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func mean(ctx context.Context, input runtime.List) (runtime.Float, error) {
-	size, err := input.Length(ctx)
-
+func mean(ctx context.Context, input runtime.List) (runtime.Float, runtime.Int, error) {
+	sum, counts, err := sumNumbers(ctx, input)
 	if err != nil {
-		return 0, err
+		return runtime.NaN(), 0, err
 	}
 
-	if size == 0 {
-		return runtime.NaN(), nil
+	if counts.numeric == 0 {
+		return runtime.ZeroFloat, 0, nil
 	}
 
-	var sum float64
-
-	err = input.ForEach(ctx, func(c context.Context, value runtime.Value, idx runtime.Int) (runtime.Boolean, error) {
-		err = runtime.AssertNumber(value)
-
-		if err != nil {
-			return false, nil
-		}
-
-		sum += toFloat(value)
-
-		return true, nil
-	})
-
-	if err != nil {
-		return 0, err
-	}
-
-	return runtime.NewFloat(sum / float64(size)), nil
+	return runtime.Float(sum / float64(counts.numeric)), counts.numeric, nil
 }
