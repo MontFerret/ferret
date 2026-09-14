@@ -10,29 +10,16 @@ import (
 )
 
 func TestMathSurface(t *testing.T) {
-	canonical := map[string][]int{"pi": {0}, "atan2": {2}, "pow": {2}, "percentile": {2}}
-	for _, name := range strings.Fields("abs acos asin atan ceil cos degrees exp exp2 floor log log2 log10 max mean median min radians round sin sqrt stddev stddev_sample sum tan variance variance_sample") {
+	canonical := map[string][]int{"e": {0}, "pi": {0}, "atan2": {2}, "hypot": {2}, "pow": {2}, "percentile": {2}, "clamp": {3}}
+	for _, name := range strings.Fields("abs acos asin atan cbrt ceil cos degrees exp exp2 expm1 floor log log1p log2 log10 max mean median min radians round sign sin sqrt stddev stddev_sample sum tan trunc variance variance_sample") {
 		canonical[name] = []int{1}
 	}
 
-	legacy := map[string][]int{}
-	for name, arities := range canonical {
-		switch name {
-		case "mean":
-			name = "average"
-		case "variance":
-			name = "variance_population"
-		case "stddev":
-			name = "stddev_population"
-		case "percentile":
-			arities = []int{2, 3}
-		}
-
-		legacy[name] = arities
+	legacy := map[string][]int{"pi": {0}, "atan2": {2}, "pow": {2}, "percentile": {2, 3}, "rand": {0, 1, 2}, "range": {2, 3}}
+	for _, name := range strings.Fields("abs acos asin atan average ceil cos degrees exp exp2 floor log log2 log10 max median min radians round sin sqrt stddev_population stddev_sample sum tan variance_population variance_sample") {
+		legacy[name] = []int{1}
 	}
 
-	legacy["rand"] = []int{0, 1, 2}
-	legacy["range"] = []int{2, 3}
 	want := []string{}
 	for name := range canonical {
 		want = append(want, "math::"+name)
@@ -83,9 +70,11 @@ func TestMathSurface(t *testing.T) {
 			}
 		}
 
-		for _, name := range strings.Fields("math::average math::variance_population math::stddev_population math::range math::rand math::clamp math::sign math::trunc math::cbrt math::hypot math::log1p math::expm1 math::e random::float") {
-			if functions.Has(name) {
-				t.Fatalf("unexpected function %s", name)
+		for _, name := range strings.Fields("math::average math::variance_population math::stddev_population math::range math::rand clamp sign trunc cbrt hypot log1p expm1 e random::float") {
+			for _, spelling := range []string{name, strings.ToUpper(name)} {
+				if functions.Has(spelling) {
+					t.Fatalf("unexpected function %s", spelling)
+				}
 			}
 		}
 	}

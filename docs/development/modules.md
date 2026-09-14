@@ -187,8 +187,27 @@ its deprecation explicitly describes a planned `random::` namespace with no
 current replacement. There is no `math::rand`.
 
 The registry supports functions, not namespaced constants, so pi is exposed as
-`math::pi()` with a deprecated global `pi()`. This migration adds no constant
-registry machinery or Task 3 operations.
+`math::pi()` with a deprecated global `pi()`. Euler's number follows the same
+model as `math::e()`, without a global alias or constant registry machinery.
+
+The canonical-only scalar additions `clamp`, `sign`, `trunc`, `cbrt`, `hypot`,
+`log1p`, and `expm1` accept native `Int` and `Float` arguments without coercion.
+They use the existing argument validators and report the failing argument's
+position. `clamp(value, min, max)` rejects NaN bounds and requires `min <= max`,
+using runtime comparison before float conversion to preserve exact bound
+ordering. Infinite bounds are allowed; its Float result follows Go's
+`math.Min(math.Max(value, min), max)` behavior, including NaN, infinity, and
+signed-zero interactions. `sign` returns Int -1, 0, or 1, treats both signed
+zeros as zero, accepts infinities, and rejects NaN. Invalid bounds and a NaN
+sign raise argument errors.
+
+`trunc` returns Int inputs unchanged and uses Go's `math.Trunc` for Float
+inputs, preserving NaN, infinities, and signed zero. `cbrt` and `hypot` use Go's
+implementations, including real cube roots of negative values and distance
+calculation that avoids unnecessary overflow and underflow. `log1p` computes
+`ln(1+x)` and `expm1` computes `exp(x)-1` with improved numerical accuracy near
+zero. These four operations return Float and retain Go's domain and non-finite
+behavior. None introduces a deprecated global function.
 
 Built-in `COLLECT AGGREGATE` reductions use VM-owned semantics, including in
 generic finalization, independently of public math registrations. Only
