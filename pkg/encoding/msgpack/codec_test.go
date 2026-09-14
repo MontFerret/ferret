@@ -253,6 +253,11 @@ func TestMsgpackCodecEncode(t *testing.T) {
 	})
 
 	t.Run("range", func(t *testing.T) {
+		// The decoder bounds decoded integers by the native int range, so the
+		// singleton boundaries follow the runtime Int range of the platform.
+		maxRuntimeInt := int64(^uint(0) >> 1)
+		minRuntimeInt := -maxRuntimeInt - 1
+
 		tests := []struct {
 			name  string
 			want  []int64
@@ -264,8 +269,8 @@ func TestMsgpackCodecEncode(t *testing.T) {
 			{name: "negative ascending", start: -3, end: -1, want: []int64{-3, -2, -1}},
 			{name: "negative descending", start: -1, end: -3, want: []int64{-1, -2, -3}},
 			{name: "cross zero", start: -1, end: 1, want: []int64{-1, 0, 1}},
-			{name: "minimum singleton", start: math.MinInt64, end: math.MinInt64, want: []int64{math.MinInt64}},
-			{name: "maximum singleton", start: math.MaxInt64, end: math.MaxInt64, want: []int64{math.MaxInt64}},
+			{name: "minimum singleton", start: runtime.Int(minRuntimeInt), end: runtime.Int(minRuntimeInt), want: []int64{minRuntimeInt}},
+			{name: "maximum singleton", start: runtime.Int(maxRuntimeInt), end: runtime.Int(maxRuntimeInt), want: []int64{maxRuntimeInt}},
 		}
 
 		for _, test := range tests {
