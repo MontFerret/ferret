@@ -193,13 +193,15 @@ model as `math::e()`, without a global alias or constant registry machinery.
 The canonical-only scalar additions `clamp`, `sign`, `trunc`, `cbrt`, `hypot`,
 `log1p`, and `expm1` accept native `Int` and `Float` arguments without coercion.
 They use the existing argument validators and report the failing argument's
-position. `clamp(value, min, max)` rejects NaN bounds and requires `min <= max`,
-using runtime comparison before float conversion to preserve exact bound
-ordering. Infinite bounds are allowed; its Float result follows Go's
-`math.Min(math.Max(value, min), max)` behavior, including NaN, infinity, and
-signed-zero interactions. `sign` returns Int -1, 0, or 1, treats both signed
-zeros as zero, accepts infinities, and rejects NaN. Invalid bounds and a NaN
-sign raise argument errors.
+position. `clamp(value, min, max)` rejects NaN bounds and requires `min <= max`.
+It uses runtime comparison to select the original `min` when the value is below
+it, the original `max` when above it, or the original `value` otherwise. The
+result keeps the selected Int or Float type and exact representation without
+numeric conversion. Equality preserves `value`, including signed zero. Infinite
+bounds are allowed; a NaN input value is returned unchanged after bounds are
+validated, even for equal infinite bounds. `sign` returns Int -1, 0, or 1,
+treats both signed zeros as zero, accepts infinities, and rejects NaN. Invalid
+bounds and a NaN sign raise argument errors.
 
 `trunc` returns Int inputs unchanged and uses Go's `math.Trunc` for Float
 inputs, preserving NaN, infinities, and signed zero. `cbrt` and `hypot` use Go's

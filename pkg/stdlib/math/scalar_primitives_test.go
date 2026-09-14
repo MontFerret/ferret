@@ -17,34 +17,54 @@ func TestClamp(t *testing.T) {
 	negativeZero := runtime.Float(stdmath.Copysign(0, -1))
 	positiveInf := runtime.Float(stdmath.Inf(1))
 	negativeInf := runtime.Float(stdmath.Inf(-1))
+	nan := runtime.Float(stdmath.Float64frombits(0x7ff8000000001234))
+	negativeNaN := runtime.Float(stdmath.Float64frombits(0xfff8000000004321))
 	for _, test := range []struct {
-		value runtime.Value
-		min   runtime.Value
-		max   runtime.Value
-		name  string
-		want  runtime.Float
+		value, min, max, want runtime.Value
+		name                  string
 	}{
-		{name: "inside", value: runtime.Int(5), min: runtime.Int(0), max: runtime.Int(10), want: 5},
-		{name: "below", value: runtime.Int(-1), min: runtime.Int(0), max: runtime.Int(10), want: 0},
-		{name: "above", value: runtime.Int(20), min: runtime.Int(0), max: runtime.Int(10), want: 10},
-		{name: "at minimum", value: runtime.Int(0), min: runtime.Int(0), max: runtime.Int(10), want: 0},
-		{name: "at maximum", value: runtime.Int(10), min: runtime.Int(0), max: runtime.Int(10), want: 10},
-		{name: "equal bounds", value: runtime.Int(20), min: runtime.Int(3), max: runtime.Int(3), want: 3},
-		{name: "float", value: runtime.Float(0.25), min: runtime.Float(0.1), max: runtime.Float(0.5), want: 0.25},
-		{name: "mixed below", value: runtime.Int(-1), min: runtime.Float(0.5), max: runtime.Int(10), want: 0.5},
-		{name: "mixed above", value: runtime.Float(20.5), min: runtime.Int(0), max: runtime.Float(10.5), want: 10.5},
-		{name: "large integer conversion", value: runtime.Int(9007199254740993), min: runtime.Int(0), max: runtime.Int(stdmath.MaxInt64), want: 9007199254740992},
-		{name: "infinite bounds", value: runtime.Int(5), min: negativeInf, max: positiveInf, want: 5},
-		{name: "positive infinity", value: positiveInf, min: runtime.Int(0), max: runtime.Int(10), want: 10},
-		{name: "negative infinity", value: negativeInf, min: runtime.Int(0), max: runtime.Int(10), want: 0},
+		{name: "inside", value: runtime.Int(5), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(5)},
+		{name: "below", value: runtime.Int(-1), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(0)},
+		{name: "above", value: runtime.Int(20), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(10)},
+		{name: "at minimum", value: runtime.Int(0), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(0)},
+		{name: "at maximum", value: runtime.Int(10), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(10)},
+		{name: "equal bounds", value: runtime.Int(20), min: runtime.Int(3), max: runtime.Int(3), want: runtime.Int(3)},
+		{name: "float inside", value: runtime.Float(0.25), min: runtime.Float(0.1), max: runtime.Float(0.5), want: runtime.Float(0.25)},
+		{name: "float below", value: runtime.Float(0.05), min: runtime.Float(0.1), max: runtime.Float(0.5), want: runtime.Float(0.1)},
+		{name: "float above", value: runtime.Float(0.75), min: runtime.Float(0.1), max: runtime.Float(0.5), want: runtime.Float(0.5)},
+		{name: "mixed Int value", value: runtime.Int(5), min: runtime.Float(0.5), max: runtime.Float(10.5), want: runtime.Int(5)},
+		{name: "mixed Float value", value: runtime.Float(5.5), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Float(5.5)},
+		{name: "mixed Int minimum", value: runtime.Float(-0.5), min: runtime.Int(0), max: runtime.Float(10.5), want: runtime.Int(0)},
+		{name: "mixed Float minimum", value: runtime.Int(-1), min: runtime.Float(0.5), max: runtime.Int(10), want: runtime.Float(0.5)},
+		{name: "mixed Int maximum", value: runtime.Float(20.5), min: runtime.Float(0.5), max: runtime.Int(10), want: runtime.Int(10)},
+		{name: "mixed Float maximum", value: runtime.Int(20), min: runtime.Int(0), max: runtime.Float(10.5), want: runtime.Float(10.5)},
+		{name: "Int equal to Float minimum", value: runtime.Int(1), min: runtime.Float(1), max: runtime.Float(10), want: runtime.Int(1)},
+		{name: "Float equal to Int maximum", value: runtime.Float(10), min: runtime.Int(0), max: runtime.Int(10), want: runtime.Float(10)},
+		{name: "below equal mixed bounds", value: runtime.Int(2), min: runtime.Int(3), max: runtime.Float(3), want: runtime.Int(3)},
+		{name: "above equal mixed bounds", value: runtime.Int(4), min: runtime.Int(3), max: runtime.Float(3), want: runtime.Float(3)},
+		{name: "Int equal to mixed bounds", value: runtime.Int(3), min: runtime.Float(3), max: runtime.Int(3), want: runtime.Int(3)},
+		{name: "Float equal to mixed bounds", value: runtime.Float(3), min: runtime.Int(3), max: runtime.Float(3), want: runtime.Float(3)},
+		{name: "large Int value", value: runtime.Int(9007199254740993), min: runtime.Int(0), max: runtime.Int(stdmath.MaxInt64), want: runtime.Int(9007199254740993)},
+		{name: "large Int minimum", value: runtime.Float(9007199254740992), min: runtime.Int(9007199254740993), max: runtime.Int(stdmath.MaxInt64), want: runtime.Int(9007199254740993)},
+		{name: "large Int maximum", value: runtime.Float(9007199254740994), min: runtime.Int(0), max: runtime.Int(9007199254740993), want: runtime.Int(9007199254740993)},
+		{name: "large Float maximum", value: runtime.Int(9007199254740993), min: runtime.Int(0), max: runtime.Float(9007199254740992), want: runtime.Float(9007199254740992)},
+		{name: "Int64 maximum", value: positiveInf, min: runtime.Int(0), max: runtime.Int(stdmath.MaxInt64), want: runtime.Int(stdmath.MaxInt64)},
+		{name: "Int64 minimum", value: negativeInf, min: runtime.Int(stdmath.MinInt64), max: runtime.Int(0), want: runtime.Int(stdmath.MinInt64)},
+		{name: "infinite bounds", value: runtime.Int(5), min: negativeInf, max: positiveInf, want: runtime.Int(5)},
+		{name: "positive infinity", value: positiveInf, min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(10)},
+		{name: "negative infinity", value: negativeInf, min: runtime.Int(0), max: runtime.Int(10), want: runtime.Int(0)},
 		{name: "equal positive infinities", value: runtime.Int(5), min: positiveInf, max: positiveInf, want: positiveInf},
 		{name: "equal negative infinities", value: runtime.Int(5), min: negativeInf, max: negativeInf, want: negativeInf},
-		{name: "NaN value", value: runtime.NaN(), min: runtime.Int(0), max: runtime.Int(10), want: runtime.NaN()},
-		{name: "NaN and positive infinity", value: runtime.NaN(), min: positiveInf, max: positiveInf, want: positiveInf},
-		{name: "NaN and negative infinity", value: runtime.NaN(), min: negativeInf, max: negativeInf, want: negativeInf},
+		{name: "NaN value", value: nan, min: runtime.Int(0), max: runtime.Int(10), want: nan},
+		{name: "negative NaN value", value: negativeNaN, min: runtime.Int(0), max: runtime.Int(10), want: negativeNaN},
+		{name: "NaN and positive infinity", value: nan, min: positiveInf, max: positiveInf, want: nan},
+		{name: "NaN and negative infinity", value: nan, min: negativeInf, max: negativeInf, want: nan},
 		{name: "negative zero", value: negativeZero, min: runtime.Int(-1), max: runtime.Int(1), want: negativeZero},
-		{name: "positive zero minimum", value: negativeZero, min: runtime.Float(0), max: runtime.Int(1), want: 0},
-		{name: "negative zero maximum", value: runtime.Float(0), min: runtime.Int(-1), max: negativeZero, want: negativeZero},
+		{name: "positive zero minimum", value: negativeZero, min: runtime.Float(0), max: runtime.Int(1), want: negativeZero},
+		{name: "negative zero maximum", value: runtime.Float(0), min: runtime.Int(-1), max: negativeZero, want: runtime.Float(0)},
+		{name: "selected negative zero minimum", value: runtime.Int(-1), min: negativeZero, max: runtime.Int(1), want: negativeZero},
+		{name: "selected negative zero maximum", value: runtime.Int(1), min: runtime.Int(-1), max: negativeZero, want: negativeZero},
+		{name: "equal signed zero bounds", value: negativeZero, min: runtime.Float(0), max: negativeZero, want: negativeZero},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := math.Clamp(t.Context(), test.value, test.min, test.max)
@@ -52,7 +72,14 @@ func TestClamp(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			assertScalarMathResult(t, got, test.want)
+			if expected, ok := test.want.(runtime.Float); ok {
+				actual, ok := got.(runtime.Float)
+				if !ok || stdmath.Float64bits(float64(actual)) != stdmath.Float64bits(float64(expected)) {
+					t.Fatalf("result = %v (%T), want Float %v with identical bits", got, got, expected)
+				}
+			} else if got != test.want {
+				t.Fatalf("result = %v (%T), want %v (%T)", got, got, test.want, test.want)
+			}
 		})
 	}
 }
@@ -75,8 +102,10 @@ func TestClampInvalidBounds(t *testing.T) {
 		{name: "NaN bounds", min: runtime.NaN(), max: runtime.NaN(), position: 2},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := math.Clamp(t.Context(), runtime.Int(5), test.min, test.max)
-			assertScalarMathError(t, got, err, runtime.ErrInvalidArgument, test.position)
+			for _, value := range []runtime.Value{runtime.Int(5), runtime.NaN()} {
+				got, err := math.Clamp(t.Context(), value, test.min, test.max)
+				assertScalarMathError(t, got, err, runtime.ErrInvalidArgument, test.position)
+			}
 		})
 	}
 }

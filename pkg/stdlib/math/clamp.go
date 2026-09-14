@@ -11,7 +11,7 @@ import (
 // @param value {Int | Float} Input number.
 // @param min {Int | Float} Lower bound; must not be NaN or greater than max.
 // @param max {Int | Float} Upper bound; must not be NaN. Infinite bounds are allowed.
-// @return {Float} The clamped number, using Go math.Min(math.Max(value, min), max) floating-point semantics.
+// @return {Int | Float} The original min if value is below it, max if above it, or value otherwise. Equality and NaN preserve value unchanged.
 // @throws {TypeError} An argument is not numeric.
 // @throws {InvalidArgument} A bound is NaN or min is greater than max.
 func Clamp(ctx context.Context, value, min, max runtime.Value) (runtime.Value, error) {
@@ -35,7 +35,6 @@ func Clamp(ctx context.Context, value, min, max runtime.Value) (runtime.Value, e
 		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "maximum must not be NaN"), 2)
 	}
 
-	// Check the original bounds before float conversion can lose integer precision.
 	order, err := runtime.CompareValues(ctx, min, max)
 	if err != nil {
 		return runtime.None, err
@@ -45,5 +44,29 @@ func Clamp(ctx context.Context, value, min, max runtime.Value) (runtime.Value, e
 		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "minimum must not exceed maximum"), 1)
 	}
 
-	return runtime.NewFloat(math.Min(math.Max(toFloat(value), toFloat(min)), toFloat(max))), nil
+	// Runtime ordering sorts NaN last, but clamp preserves an unordered input
+	// after validating the bounds.
+	if number, ok := value.(runtime.Float); ok && math.IsNaN(float64(number)) {
+		return value, nil
+	}
+
+	order, err = runtime.CompareValues(ctx, value, min)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if order == runtime.Less {
+		return min, nil
+	}
+
+	order, err = runtime.CompareValues(ctx, value, max)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	if order == runtime.Greater {
+		return max, nil
+	}
+
+	return value, nil
 }

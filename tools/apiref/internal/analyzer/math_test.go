@@ -112,9 +112,9 @@ func assertMathMetadata(t *testing.T, reference *api.Reference, catalog *apicata
 
 		result := got[0].Return.Type
 		switch name {
-		case "trunc":
+		case "clamp", "trunc":
 			if result.Kind != api.TypeKindUnion || len(result.Types) != 2 || result.Types[0].Name != "Int" || result.Types[1].Name != "Float" {
-				t.Fatalf("math::trunc return type = %+v", result)
+				t.Fatalf("math::%s return type = %+v", name, result)
 			}
 		case "sign":
 			if result.Name != "Int" {
