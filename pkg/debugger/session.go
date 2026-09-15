@@ -19,8 +19,8 @@ import (
 )
 
 // Session controls one retained-state source-level debug execution.
-// Command calls are serialized. Pause is safe to call concurrently with a
-// running command.
+// Execution and inspection commands are serialized. Breakpoint mutation,
+// breakpoint listing, Pause, and Close are safe during a running command.
 type Session struct {
 	values           vm.DebugValueAccess
 	services         SessionServices
@@ -30,14 +30,17 @@ type Session struct {
 	execution        vm.DebugExecution
 	valueRefs        map[ValueReference]runtime.Value
 	runCancel        context.CancelCauseFunc
-	breakpoints      map[BreakpointID]Breakpoint
-	boundPointIDs    map[BreakpointID]bytecode.DebugPointID
+	breakpointCheck  vm.DebugBreakpointPredicate
+	breakpointWrite  chan struct{}
+	breakpointDone   chan struct{}
+	breakpointState  string         // lifecycleMu; empty until native terminal commitment
+	hitBreakpointIDs []BreakpointID // commandMu; captured by the execution callback
+	breakpointData   atomic.Pointer[breakpointSnapshot]
 	activeCancel     context.CancelCauseFunc
 	params           []string
 	pointIndex       debugpoint.Index
 	source           source.Source
 	format           FormatOptions
-	nextBreakpointID BreakpointID
 	nextValueRef     ValueReference
 	activeCancelID   uint64
 	closeOnce        sync.Once
@@ -77,20 +80,23 @@ func NewSession(config Config) (*Session, error) {
 		return nil, runtime.Errorf(runtime.ErrInvalidArgument, "invalid debug points: %s", err)
 	}
 
-	return &Session{
-		execution:        config.Execution,
-		values:           config.Values,
-		services:         config.Services,
-		source:           config.Source,
-		pointIndex:       pointIndex,
-		params:           append([]string(nil), config.Params...),
-		format:           format,
-		breakpoints:      make(map[BreakpointID]Breakpoint),
-		boundPointIDs:    make(map[BreakpointID]bytecode.DebugPointID),
-		nextBreakpointID: 1,
-		valueRefs:        make(map[ValueReference]runtime.Value),
-		nextValueRef:     1,
-	}, nil
+	session := &Session{
+		execution:       config.Execution,
+		values:          config.Values,
+		services:        config.Services,
+		source:          config.Source,
+		pointIndex:      pointIndex,
+		params:          append([]string(nil), config.Params...),
+		format:          format,
+		breakpointWrite: make(chan struct{}, 1),
+		breakpointDone:  make(chan struct{}),
+		valueRefs:       make(map[ValueReference]runtime.Value),
+		nextValueRef:    1,
+	}
+	session.breakpointData.Store(&breakpointSnapshot{nextID: 1})
+	session.breakpointCheck = session.hasBreakpoint
+
+	return session, nil
 }
 
 // Start begins execution and stops at the first executable source location.
@@ -150,6 +156,8 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 
 	event, err := s.execution.Start(s.services.ExtendContext(executionCtx))
 	if err != nil {
+		s.recordExecutionTerminal()
+
 		return nil, err
 	}
 
@@ -245,103 +253,6 @@ func (s *Session) Pause() error {
 	s.execution.RequestPause()
 
 	return nil
-}
-
-// SetBreakpoint adds a location breakpoint using next-executable-in-source binding.
-func (s *Session) SetBreakpoint(location source.Location) (Breakpoint, error) {
-	return s.SetBreakpointAt(
-		location,
-		BreakpointOptions{BindingMode: BreakpointBindNextExecutableInSource},
-	)
-}
-
-// SetBreakpointAt adds a breakpoint at an explicit source location.
-func (s *Session) SetBreakpointAt(location source.Location, opts BreakpointOptions) (Breakpoint, error) {
-	if err := s.lockCommand(); err != nil {
-		return Breakpoint{}, err
-	}
-	defer s.commandMu.Unlock()
-
-	if err := s.ensureOpen(); err != nil {
-		return Breakpoint{}, err
-	}
-
-	if location.Line <= 0 {
-		return Breakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint line must be positive")
-	}
-
-	if location.Column < 0 {
-		return Breakpoint{}, runtime.Error(runtime.ErrInvalidArgument, "breakpoint column must not be negative")
-	}
-
-	if opts.BindingMode < BreakpointBindNextExecutableInSource || opts.BindingMode > BreakpointBindNextExecutableInFunction {
-		return Breakpoint{}, runtime.Errorf(runtime.ErrInvalidArgument, "unknown breakpoint binding mode %d", opts.BindingMode)
-	}
-
-	if location.SourceName == "" {
-		location.SourceName = s.source.Name()
-	}
-
-	breakpoint := Breakpoint{
-		ID:                s.nextBreakpointID,
-		RequestedLocation: location,
-		BindingMode:       opts.BindingMode,
-	}
-	s.nextBreakpointID++
-
-	if location.SourceName == s.source.Name() {
-		if point := s.breakpointPoint(location, opts.BindingMode); point != nil {
-			breakpoint.Bound = true
-			breakpoint.PointID = apidebugger.PointID(point.ID)
-			breakpoint.FunctionID = apidebugger.FunctionID(point.FunctionID)
-			breakpoint.Location = s.source.RangeAt(point.Span)
-			s.boundPointIDs[breakpoint.ID] = point.ID
-		}
-	}
-
-	s.breakpoints[breakpoint.ID] = breakpoint
-
-	return breakpoint, nil
-}
-
-// DeleteBreakpoint removes a breakpoint by ID.
-func (s *Session) DeleteBreakpoint(id BreakpointID) error {
-	if err := s.lockCommand(); err != nil {
-		return err
-	}
-	defer s.commandMu.Unlock()
-
-	if err := s.ensureOpen(); err != nil {
-		return err
-	}
-
-	if _, exists := s.breakpoints[id]; !exists {
-		return runtime.Errorf(runtime.ErrNotFound, "breakpoint %d", id)
-	}
-
-	delete(s.breakpoints, id)
-	delete(s.boundPointIDs, id)
-
-	return nil
-}
-
-// Breakpoints returns a stable ID-ordered snapshot.
-func (s *Session) Breakpoints() []Breakpoint {
-	if s == nil {
-		return nil
-	}
-
-	s.commandMu.Lock()
-	defer s.commandMu.Unlock()
-
-	out := make([]Breakpoint, 0, len(s.breakpoints))
-	for _, breakpoint := range s.breakpoints {
-		out = append(out, breakpoint)
-	}
-
-	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
-
-	return out
 }
 
 // Frames returns the current frame followed by callers.
@@ -558,136 +469,28 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 
 	s.resetValueReferences()
 
-	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, s.breakpointPCs())
+	s.hitBreakpointIDs = nil
+	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, s.breakpointCheck)
 	if err != nil {
+		s.recordExecutionTerminal()
+
 		return nil, err
 	}
 
 	return s.convertEvent(event)
 }
 
-func (s *Session) breakpointPCs() map[int]struct{} {
-	out := make(map[int]struct{}, len(s.boundPointIDs))
-
-	for _, pointID := range s.boundPointIDs {
-		if point := s.pointIndex.PointByID(pointID); point != nil {
-			out[point.PC] = struct{}{}
-		}
-	}
-
-	return out
-}
-
-func (s *Session) breakpointPoint(location source.Location, mode BreakpointBindingMode) *bytecode.DebugPoint {
-	exact := s.exactBreakpointPoint(location)
-	if exact != nil || mode == BreakpointBindExact {
-		return exact
-	}
-
-	if mode == BreakpointBindNextExecutableInFunction {
-		return s.nextBreakpointPointInFunction(location)
-	}
-
-	return s.nextBreakpointPoint(location)
-}
-
-func (s *Session) exactBreakpointPoint(location source.Location) *bytecode.DebugPoint {
-	var best *bytecode.DebugPoint
-	points := s.pointIndex.Points()
-
-	for i := range points {
-		point := &points[i]
-		pos := s.source.PositionAt(point.Span)
-
-		if pos.Line != location.Line || (location.Column > 0 && pos.Column != location.Column) {
-			continue
-		}
-
-		if best == nil || s.debugPointLess(point, best) {
-			best = point
-		}
-	}
-
-	return best
-}
-
-func (s *Session) nextBreakpointPoint(location source.Location) *bytecode.DebugPoint {
-	var best *bytecode.DebugPoint
-	points := s.pointIndex.Points()
-
-	for i := range points {
-		point := &points[i]
-		pos := s.source.PositionAt(point.Span)
-
-		if sourcePositionBefore(pos, location.Position) {
-			continue
-		}
-
-		if best == nil || s.debugPointLess(point, best) {
-			best = point
-		}
-	}
-
-	return best
-}
-
-func (s *Session) nextBreakpointPointInFunction(location source.Location) *bytecode.DebugPoint {
-	var previous, next *bytecode.DebugPoint
-	previousAmbiguous := false
-	nextAmbiguous := false
-	points := s.pointIndex.Points()
-
-	for i := range points {
-		point := &points[i]
-		pos := s.source.PositionAt(point.Span)
-
-		if sourcePositionBefore(pos, location.Position) {
-			switch {
-			case previous == nil || sourcePointPositionBefore(s.source, previous, point):
-				previous = point
-				previousAmbiguous = false
-			case sameSourcePosition(s.source, previous, point) && previous.FunctionID != point.FunctionID:
-				previousAmbiguous = true
-			}
-
-			continue
-		}
-
-		switch {
-		case next == nil || sourcePointPositionBefore(s.source, point, next):
-			next = point
-			nextAmbiguous = false
-		case sameSourcePosition(s.source, next, point) && next.FunctionID != point.FunctionID:
-			nextAmbiguous = true
-		}
-	}
-
-	if previous == nil || next == nil || previousAmbiguous || nextAmbiguous || previous.FunctionID != next.FunctionID {
-		return nil
-	}
-
-	return next
-}
-
-func (s *Session) debugPointLess(left, right *bytecode.DebugPoint) bool {
-	leftPos := s.source.PositionAt(left.Span)
-	rightPos := s.source.PositionAt(right.Span)
-
-	if leftPos.Line != rightPos.Line || leftPos.Column != rightPos.Column {
-		return sourcePositionBefore(leftPos, rightPos)
-	}
-
-	if left.PC != right.PC {
-		return left.PC < right.PC
-	}
-
-	return left.ID < right.ID
-}
-
 func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 	if event == nil {
 		return nil, runtime.Error(runtime.ErrUnexpected, "debug execution returned no event")
 	}
+
+	if event.Reason == vm.DebugStopCompleted {
+		s.finishBreakpoints("completed")
+	} else if event.Reason == vm.DebugStopTerminated {
+		s.finishBreakpoints("terminated")
+	}
+
 	out := &Event{Depth: event.Depth, Error: event.Error}
 
 	if event.Point != nil {
@@ -727,17 +530,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 		out.Reason = ReasonEntry
 	case vm.DebugStopBreakpoint:
 		out.Reason = ReasonBreakpoint
-		if event.Point != nil {
-			for id, pointID := range s.boundPointIDs {
-				if pointID == event.Point.ID {
-					out.HitBreakpointIDs = append(out.HitBreakpointIDs, id)
-				}
-			}
-
-			sort.Slice(out.HitBreakpointIDs, func(i, j int) bool {
-				return out.HitBreakpointIDs[i] < out.HitBreakpointIDs[j]
-			})
-		}
+		out.HitBreakpointIDs = append([]BreakpointID(nil), s.hitBreakpointIDs...)
 	case vm.DebugStopStep:
 		out.Reason = ReasonStep
 	case vm.DebugStopPause:
@@ -936,12 +729,16 @@ func (s *Session) Close() error {
 		return nil
 	}
 
+	s.lifecycleMu.Lock()
 	s.closed.Store(true)
+	s.finishBreakpointsLocked("closed")
+	s.lifecycleMu.Unlock()
 	s.requestTermination()
 
 	s.commandMu.Lock()
 	defer s.commandMu.Unlock()
 	s.resetValueReferences()
+	s.hitBreakpointIDs = nil
 
 	s.closeOnce.Do(func() {
 		if s.started.Load() {

@@ -52,8 +52,9 @@ caller after the current frame exits; at main it runs to completion.
 
 Breakpoints and pause requests take precedence over stepping, including inside
 deeper calls. All three stepping operations report the shared `ReasonStep` stop
-reason when their stepping condition is reached. Commands are serialized.
-`Pause` can safely request a stop while a command is running.
+reason when their stepping condition is reached. Execution and inspection
+commands are serialized. `Pause`, breakpoint mutation, and breakpoint listing
+can proceed while a command is running.
 
 Resume calls use the retained execution context unless a caller supplies an
 additional context, in which case both lifetimes are observed. Starting or
@@ -63,6 +64,45 @@ Breakpoints retain both the requested location and the compiler-emitted point to
 which they bind. Binding modes distinguish exact resolution from the supported
 next-executable policies. Do not synthesize executable locations outside the
 program's debug metadata.
+
+### Live breakpoint replacement
+
+`ReplaceBreakpoints(ctx, sourceName, requests)` replaces one source's complete
+requested set before execution, while paused, or while running. Empty requests
+clear that source. Empty source names select the launched source; other source
+names retain unbound records without affecting launched-source breakpoints.
+Invalid positions or binding modes fail the operation. Unresolved valid
+locations return ordinary unbound results in request order.
+
+The debugger owns an immutable snapshot of requested/resolved records and a
+PC-to-hit-IDs index. A cancellable writer gate serializes mutations independently
+of `commandMu`. Resolution and construction precede atomic pointer publication;
+no partially replaced set is visible. A brief `lifecycleMu` critical section
+orders publication with native completion, termination, and closure. Publication
+first succeeds; terminal commitment first rejects replacement. Cancellation
+observed before publication aborts; cancellation afterward does not undo success.
+The gate observes termination, and Pause/Close never acquire it. Lock ordering is
+command lock or writer gate, then lifecycle lock, never the reverse.
+
+VM resume receives a synchronous breakpoint predicate instead of a fixed PC
+map. At existing debug source points, the predicate loads the current snapshot
+and captures matching IDs when deciding a hit. Event conversion copies those
+IDs, so removing a breakpoint cannot invalidate an already-decided stop or cause
+automatic resume. Added breakpoints affect subsequent checks, never instructions
+already passed. Normal VM dispatch retains its existing debugger bypass and
+performs no breakpoint publication work when debugging is disabled.
+
+Identity matching uses source name, requested position, and binding mode.
+Unchanged requests retain IDs; duplicates match existing IDs in ascending order.
+Removed IDs are never reused. Incremental add/delete methods use the same
+publication mechanism and preserve their existing admission and validation
+contracts. `Breakpoints()` returns a detached, ID-ordered snapshot even after
+closure. Inspection reference lifetimes remain tied to execution commands.
+
+Previously, mutation/listing shared the command mutex held throughout resume,
+the VM referenced a PC map built at resume, and hit IDs were reconstructed from
+the latest mutable maps. These dependencies are replaced together; merely
+unlocking commands would not safely publish live changes or preserve hit IDs.
 
 ## Values and expression evaluation
 

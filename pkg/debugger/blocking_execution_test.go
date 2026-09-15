@@ -43,7 +43,7 @@ func (b *blockingExecution) Start(context.Context) (*vm.DebugExecutionEvent, err
 	return &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &b.point}, nil
 }
 
-func (b *blockingExecution) Resume(ctx context.Context, _ vm.DebugResumeMode, _ map[int]struct{}) (*vm.DebugExecutionEvent, error) {
+func (b *blockingExecution) Resume(ctx context.Context, _ vm.DebugResumeMode, _ vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
 	b.mu.Lock()
 	b.status = vm.DebugExecutionRunning
 	b.resumeCalls++

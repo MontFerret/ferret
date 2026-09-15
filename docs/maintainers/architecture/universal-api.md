@@ -101,6 +101,15 @@ independently of the error. Output belongs to the caller and survives cleanup.
 Debugger commands return Native
 snapshots with diagnostic projection applied to command and event errors.
 
+`debugger.Session.ReplaceBreakpoints(ctx, sourceName, requests)` delegates
+directly to Native atomic source-wide replacement. It is valid before execution,
+while paused, and while running. Each `BreakpointRequest` contains a `Position`
+and `BreakpointOptions`; returned `Breakpoint` values follow request order.
+Unbound results are normal verification outcomes. Operation failure before
+publication preserves the previous set. An already-decided hit retains its IDs
+after removal. The adapter adds no queue, pause/resume behavior, or breakpoint
+state, and cancellation of a replacement does not cancel the debuggee.
+
 Diagnostic projection preserves kind, message, hint, note, each diagnostic's source,
 annotation order, and byte spans. Error-tree traversal preserves branch order and
 distinct diagnostics while projecting repeated Native diagnostic pointers once.
@@ -142,6 +151,14 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
+Live replacement requires a new API release: alpha.16 has only incremental
+breakpoint methods. The coordinated API change adds required `ReplaceBreakpoints`
+and `BreakpointRequest`. Validate both repositories together with a temporary
+workspace until that API release exists, then update the root and API-reference
+tool pins together and validate each module independently with `GOWORK=off`.
+Do not commit local replacements or enable downstream live DAP support against
+the old published contract. See the [release follow-up](../release/live-breakpoints.md).
+
 The root module and API-reference tool pin `api v1.0.0-alpha.16`. This published
 contract permits borrowed runtime no-op close, Native parent-close behavior,
 deferred option validation at the point of use (including output encoding), and
@@ -161,5 +178,5 @@ Contract and delegation tests live in `uapi`, including external-package
 embedding examples for both constructors. Native/Universal benchmarks cover
 construction and close, compilation, ordinary/debug session creation, reusable
 execution, and convenience Run. Run focused tests before the repository gates in
-[Development workflow](../engineering/workflow.md). Native APIs
-and FQL semantics are unchanged.
+[Development workflow](../engineering/workflow.md). The adapter preserves Native
+execution semantics and FQL behavior.
