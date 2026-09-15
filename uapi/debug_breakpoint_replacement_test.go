@@ -91,13 +91,17 @@ func TestPortableBreakpointReplacementReachesRunningNativeSession(t *testing.T) 
 			for _, update := range tc.updates {
 				results = replace(update)
 			}
-			before := session.Breakpoints()
+			before, err := session.Breakpoints(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			canceled, stop := context.WithCancel(ctx)
 			stop()
 			if _, err := session.ReplaceBreakpoints(canceled, "live.fql", nil); !errors.Is(err, context.Canceled) {
 				t.Fatalf("adapter lost context cancellation: %v", err)
 			}
-			if !reflect.DeepEqual(before, session.Breakpoints()) {
+			if after, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(before, after) {
 				t.Fatal("cancellation changed active state")
 			}
 			close(release)

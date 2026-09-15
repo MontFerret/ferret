@@ -45,14 +45,17 @@ func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
 
 	t.Cleanup(func() { _ = compiled.Close() })
 
-	if got := compiled.Params(); len(got) != 1 || got[0] != "value" {
+	if got, err := compiled.Params(); err != nil || len(got) != 1 || got[0] != "value" {
 		t.Fatalf("Params = %v, want [value]", got)
 	}
 
-	parameters := compiled.Params()
+	parameters, err := compiled.Params()
+	if err != nil {
+		t.Fatal(err)
+	}
 	parameters[0] = "changed"
 
-	if got := compiled.Params(); len(got) != 1 || got[0] != "value" {
+	if got, err := compiled.Params(); err != nil || len(got) != 1 || got[0] != "value" {
 		t.Fatalf("Params after caller mutation = %v, want [value]", got)
 	}
 
@@ -235,6 +238,28 @@ func newTestEngine(t testing.TB, options ...engine.Option) *engine.Engine {
 	})
 
 	return native
+}
+
+func TestPortableParamsRemainDetachedAfterClose(t *testing.T) {
+	portable := newTestRuntime(t)
+	plan, err := portable.Compile(t.Context(), api.NewAnonymousSource("RETURN @value"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := plan.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	params, err := plan.Params()
+	if err != nil || len(params) != 1 || params[0] != "value" {
+		t.Fatalf("Params after close = %v, %v", params, err)
+	}
+
+	params[0] = "changed"
+	if again, err := plan.Params(); err != nil || len(again) != 1 || again[0] != "value" {
+		t.Fatalf("Params snapshot was aliased: %v, %v", again, err)
+	}
 }
 
 func newTestRuntime(t testing.TB, options ...engine.Option) api.Runtime {

@@ -77,13 +77,13 @@ func TestDebuggerRejectsUnknownBreakpointModes(t *testing.T) {
 	t.Cleanup(func() { _ = session.Close() })
 
 	for _, mode := range []apidebugger.BreakpointBindingMode{-1, 99} {
-		_, err := session.SetBreakpointAt(apisource.Location{Position: apisource.Position{Line: 1, Column: 1}}, apidebugger.BreakpointOptions{BindingMode: mode})
+		_, err := session.SetBreakpointAt(context.Background(), apisource.Location{Position: apisource.Position{Line: 1, Column: 1}}, apidebugger.BreakpointOptions{BindingMode: mode})
 		if err == nil {
 			t.Fatalf("mode %d was silently accepted", mode)
 		}
 	}
 
-	if values := session.Breakpoints(); len(values) != 0 {
+	if values, err := session.Breakpoints(context.Background()); err != nil || len(values) != 0 {
 		t.Fatalf("invalid options installed breakpoints: %+v", values)
 	}
 }

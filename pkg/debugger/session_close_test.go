@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -84,6 +85,86 @@ func TestSessionCloseLifecycleStates(t *testing.T) {
 			}
 			if _, err := session.StepIn(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
 				t.Fatalf("expected command rejection after close, got %v", err)
+			}
+		})
+	}
+}
+
+func TestSessionNilAndClosedReceivers(t *testing.T) {
+	for _, tc := range []struct {
+		session *Session
+		name    string
+	}{
+		{name: "nil"},
+		{name: "closed_zero_value", session: &Session{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			session := tc.session
+			for range 2 {
+				if err := session.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			listed, err := session.Breakpoints(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(listed) != 0 || (listed == nil) != (session == nil) {
+				t.Fatalf("unexpected empty listing: %#v", listed)
+			}
+
+			commands := []struct {
+				call func(context.Context) (*Event, error)
+				name string
+			}{
+				{name: "start", call: session.Start},
+				{name: "continue", call: session.Continue},
+				{name: "step_in", call: session.StepIn},
+				{name: "step_over", call: session.StepOver},
+				{name: "step_out", call: session.StepOut},
+			}
+			for _, command := range commands {
+				if _, err := command.call(t.Context()); !errors.Is(err, &StateError{}) {
+					t.Fatalf("%s: expected closed error, got %v", command.name, err)
+				}
+
+				if _, err := command.call(nil); !errors.Is(err, runtime.ErrInvalidArgument) {
+					t.Fatalf("%s: context validation lost priority: %v", command.name, err)
+				}
+			}
+
+			if err := session.Pause(context.Background()); !errors.Is(err, &StateError{}) {
+				t.Fatalf("pause: %v", err)
+			}
+
+			if _, err := session.Frames(context.Background()); !errors.Is(err, &StateError{}) {
+				t.Fatalf("frames: %v", err)
+			}
+
+			if _, err := session.FrameLocals(context.Background(), 0); !errors.Is(err, &StateError{}) {
+				t.Fatalf("locals: %v", err)
+			}
+
+			if _, err := session.Variables(context.Background(), 1); !errors.Is(err, &StateError{}) {
+				t.Fatalf("variables: %v", err)
+			}
+
+			if _, err := session.Evaluate(t.Context(), "1"); !errors.Is(err, &StateError{}) {
+				t.Fatalf("evaluate: %v", err)
+			}
+
+			if _, err := session.ReplaceBreakpoints(t.Context(), "", nil); !errors.Is(err, &StateError{}) {
+				t.Fatalf("replace breakpoints: %v", err)
+			}
+
+			if _, err := session.SetBreakpoint(context.Background(), source.Location{}); !errors.Is(err, &StateError{}) {
+				t.Fatalf("add breakpoint: %v", err)
+			}
+
+			if err := session.DeleteBreakpoint(context.Background(), 1); !errors.Is(err, &StateError{}) {
+				t.Fatalf("delete breakpoint: %v", err)
 			}
 		})
 	}

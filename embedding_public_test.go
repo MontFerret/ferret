@@ -220,7 +220,7 @@ func TestPublicDebugSession(t *testing.T) {
 		}
 	})
 
-	breakpoint, err := session.SetBreakpoint(ferret.DebugSourceLocation{
+	breakpoint, err := session.SetBreakpoint(context.Background(), ferret.DebugSourceLocation{
 		SourceName: "public-debug.fql",
 		Position:   ferret.Position{Line: 2},
 	})

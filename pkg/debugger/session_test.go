@@ -36,7 +36,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 		t.Fatal(err)
 	}
 
-	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "debug.fql", Position: source.Position{Line: 1}})
+	breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "debug.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 		t.Fatalf("expected bound breakpoint: %#v", breakpoint)
 	}
 
-	if got := session.Breakpoints(); len(got) != 1 || int(got[0].PointID) != int(point.ID) || int(got[0].FunctionID) != int(point.FunctionID) {
+	if got, err := session.Breakpoints(context.Background()); err != nil || len(got) != 1 || int(got[0].PointID) != int(point.ID) || int(got[0].FunctionID) != int(point.FunctionID) {
 		t.Fatalf("breakpoint snapshot lost bound identity: %#v", got)
 	}
 	if _, err := session.Start(context.Background()); err != nil {
@@ -68,7 +68,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if value.Display != "2" || values.typeCalls == 0 || values.debugInfoCalls == 0 {
 		t.Fatalf("unexpected evaluated value: %#v", value)
 	}
-	if _, err := session.FrameLocals(1); !errors.Is(err, runtime.ErrInvalidOperation) {
+	if _, err := session.FrameLocals(context.Background(), 1); !errors.Is(err, runtime.ErrInvalidOperation) {
 		t.Fatalf("expected legacy execution to reject caller inspection, got %v", err)
 	}
 	value, err = session.EvaluateFrame(context.Background(), 0, "x + 2")
@@ -167,7 +167,7 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
+	breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +176,7 @@ func TestSessionBreakpointBindingUsesSourceOrderAndStableTieBreaks(t *testing.T)
 		t.Fatalf("unexpected source-ordered breakpoint: %#v", breakpoint)
 	}
 
-	unbound, err := session.SetBreakpoint(source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
+	unbound, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatalf("expected expandable local, got %#v", locals)
 	}
 
-	children, err := session.Variables(locals[0].Value.Reference)
+	children, err := session.Variables(context.Background(), locals[0].Value.Reference)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -235,7 +235,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatalf("unexpected object children: %#v", children)
 	}
 
-	items, err := session.Variables(children[0].Value.Reference)
+	items, err := session.Variables(context.Background(), children[0].Value.Reference)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +243,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatalf("unexpected array children: %#v", items)
 	}
 
-	nested, err := session.Variables(items[1].Value.Reference)
+	nested, err := session.Variables(context.Background(), items[1].Value.Reference)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +280,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		t.Fatal(err)
 	}
 
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +288,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		t.Fatalf("expected bounded summary without reference, got %#v", locals)
 	}
 
-	if _, err := session.Variables(0); !errors.Is(err, runtime.ErrInvalidArgument) {
+	if _, err := session.Variables(context.Background(), 0); !errors.Is(err, runtime.ErrInvalidArgument) {
 		t.Fatalf("expected invalid reference error, got %v", err)
 	}
 }
@@ -321,7 +321,7 @@ func TestSessionVariablesInvalidateReferencesAfterResume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +334,7 @@ func TestSessionVariablesInvalidateReferencesAfterResume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := session.Variables(reference); !errors.Is(err, runtime.ErrNotFound) {
+	if _, err := session.Variables(context.Background(), reference); !errors.Is(err, runtime.ErrNotFound) {
 		t.Fatalf("expected stale reference to be rejected, got %v", err)
 	}
 }
@@ -362,7 +362,7 @@ func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
 	}
 	defer session.Close()
 
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -374,7 +374,7 @@ func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := session.Variables(reference); !errors.Is(err, runtime.ErrNotFound) {
+	if _, err := session.Variables(context.Background(), reference); !errors.Is(err, runtime.ErrNotFound) {
 		t.Fatalf("expected pre-start reference to be rejected, got %v", err)
 	}
 }
@@ -414,12 +414,94 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(locals) != 1 || locals[0].Value.Reference.Valid() {
 		t.Fatalf("expected unknown collection kind to remain non-expandable, got %#v", locals)
+	}
+}
+
+func TestSessionAbortedStartPreservesReferencesUntilRetry(t *testing.T) {
+	for _, invalid := range []string{"nil_context", "canceled_context"} {
+		t.Run(invalid, func(t *testing.T) {
+			execution := &fakeExecution{
+				startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry},
+				locals:     []vm.DebugLocal{{Name: "value", Value: runtime.NewArrayWith(runtime.NewInt(1))}},
+				status:     vm.DebugExecutionNew,
+			}
+			beforeCalls := 0
+			services := &fakeSessionServices{beforeRun: func(ctx context.Context) (context.Context, error) {
+				beforeCalls++
+				if beforeCalls != 1 {
+					return ctx, nil
+				}
+
+				if invalid == "nil_context" {
+					return nil, nil
+				}
+
+				canceled, cancel := context.WithCancel(ctx)
+				cancel()
+
+				return canceled, nil
+			}}
+			session, err := NewSession(Config{
+				Execution: execution,
+				Values:    vm.NewDebugValueAccess(),
+				Services:  services,
+				Source:    source.NewAnonymous("RETURN 1"),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+
+			locals, err := session.Locals(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			reference := locals[0].Value.Reference
+			expectedErr := runtime.ErrInvalidArgument
+			if invalid == "canceled_context" {
+				expectedErr = context.Canceled
+			}
+
+			if event, err := session.Start(t.Context()); event != nil || !errors.Is(err, expectedErr) {
+				t.Fatalf("aborted start: event=%+v err=%v", event, err)
+			}
+
+			if execution.Status() != vm.DebugExecutionNew || services.afterCalls != 1 || !errors.Is(services.afterRunErr, expectedErr) {
+				t.Fatalf("aborted attempt: status=%v hooks=%d err=%v", execution.Status(), services.afterCalls, services.afterRunErr)
+			}
+
+			if _, err := session.Variables(context.Background(), reference); err != nil {
+				t.Fatalf("aborted start invalidated reference: %v", err)
+			}
+
+			if event, err := session.Start(t.Context()); err != nil || event.Reason != ReasonEntry {
+				t.Fatalf("retry: event=%+v err=%v", event, err)
+			}
+
+			if _, err := session.Variables(context.Background(), reference); !errors.Is(err, runtime.ErrNotFound) {
+				t.Fatalf("successful start retained stale reference: %v", err)
+			}
+
+			if services.afterCalls != 1 {
+				t.Fatalf("retry settled hooks too early: %d", services.afterCalls)
+			}
+
+			for range 2 {
+				if err := session.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if beforeCalls != 2 || services.afterCalls != 2 || !errors.Is(services.afterRunErr, context.Canceled) {
+				t.Fatalf("retry hook pairing: before=%d after=%d err=%v", beforeCalls, services.afterCalls, services.afterRunErr)
+			}
+		})
 	}
 }
 

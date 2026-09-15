@@ -15,8 +15,8 @@ type plan struct {
 
 var _ api.Plan = (*plan)(nil)
 
-func (p *plan) Params() []string {
-	return p.native.Params()
+func (p *plan) Params() ([]string, error) {
+	return p.native.Params(), nil
 }
 
 func (p *plan) NewSession(ctx context.Context, setters ...api.SessionOption) (api.Session, error) {

@@ -91,7 +91,7 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			breakpoint, err := session.SetBreakpointAt(tc.location, tc.options)
+			breakpoint, err := session.SetBreakpointAt(context.Background(), tc.location, tc.options)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -124,7 +124,7 @@ func TestSessionSetBreakpointAtSupportsExplicitBindingPolicies(t *testing.T) {
 		})
 	}
 
-	legacy, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 2}})
+	legacy, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestSessionSetBreakpointAtValidatesLocationAndMode(t *testing.T) {
 		{name: "mode", location: source.Location{Position: source.Position{Line: 1}}, options: BreakpointOptions{BindingMode: BreakpointBindingMode(99)}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := session.SetBreakpointAt(tc.location, tc.options); !errors.Is(err, runtime.ErrInvalidArgument) {
+			if _, err := session.SetBreakpointAt(context.Background(), tc.location, tc.options); !errors.Is(err, runtime.ErrInvalidArgument) {
 				t.Fatalf("expected invalid argument, got %v", err)
 			}
 		})
@@ -168,11 +168,11 @@ func TestSessionBreakpointEventIncludesAllMatchingBreakpointIDs(t *testing.T) {
 	session := newBreakpointSession(t, src, []bytecode.DebugPoint{point}, execution)
 	defer session.Close()
 
-	first, err := session.SetBreakpointAt(source.Location{Position: source.Position{Line: 1}}, BreakpointOptions{BindingMode: BreakpointBindExact})
+	first, err := session.SetBreakpointAt(context.Background(), source.Location{Position: source.Position{Line: 1}}, BreakpointOptions{BindingMode: BreakpointBindExact})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := session.SetBreakpointAt(source.Location{Position: source.Position{Line: 1}}, BreakpointOptions{BindingMode: BreakpointBindExact})
+	second, err := session.SetBreakpointAt(context.Background(), source.Location{Position: source.Position{Line: 1}}, BreakpointOptions{BindingMode: BreakpointBindExact})
 	if err != nil {
 		t.Fatal(err)
 	}

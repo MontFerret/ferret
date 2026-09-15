@@ -100,6 +100,14 @@ cleanup errors. A zero-valued `Output` is not an absence sentinel. Inspect outpu
 independently of the error. Output belongs to the caller and survives cleanup.
 Debugger commands return Native
 snapshots with diagnostic projection applied to command and event errors.
+Pause, breakpoint operations, and inspection receive the original caller context,
+just like execution and evaluation. Native owns cancellation checks and command
+admission; the adapter introduces no derived context or synchronization.
+
+Portable `Plan.Params() ([]string, error)` returns the Native detached parameter
+snapshot with a nil error, including after plan closure. Native
+`Plan.Params() []string` remains unchanged. Portable `Breakpoints(ctx)` projects
+Native listing errors and preserves valid-context listing after debug Close.
 
 `debugger.Session.ReplaceBreakpoints(ctx, sourceName, requests)` delegates
 directly to Native atomic source-wide replacement. It is valid before execution,
@@ -151,8 +159,9 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
-Universal API `v1.0.0-alpha.17` includes the required
-`debugger.Session.ReplaceBreakpoints` method and `BreakpointRequest` type.
+Universal API `v1.0.0-alpha.19` includes context parameters for debugger
+operations and error returns from `Plan.Params` and `Session.Breakpoints`, along
+with `debugger.Session.ReplaceBreakpoints` and `BreakpointRequest`.
 The root module and API-reference tool both pin this published version. The API
 prerequisite is complete; downstream live DAP support still requires the separate
 ferretd integration and release described in the

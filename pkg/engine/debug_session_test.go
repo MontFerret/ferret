@@ -33,7 +33,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "debug.fql", Position: source.Position{Line: 2}})
+	breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "debug.fql", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if event.Reason != debugger.ReasonEntry || event.Location.Line != 1 {
 		t.Fatalf("unexpected entry event: %#v", event)
 	}
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 		len(event.HitBreakpointIDs) != 1 || event.HitBreakpointIDs[0] != breakpoint.ID {
 		t.Fatalf("unexpected breakpoint event: %#v", event)
 	}
-	locals, err = session.Locals()
+	locals, err = session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestDebugSessionBreakpointBindsOnePointPerLine(t *testing.T) {
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "same-line.fql", Position: source.Position{Line: 1}})
+	breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "same-line.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,25 +161,25 @@ func TestDebugSessionBreakpointLifecyclePreservesIDs(t *testing.T) {
 	}
 	defer session.Close()
 
-	first, err := session.SetBreakpoint(source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
+	first, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "other.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if first.Bound {
 		t.Fatalf("expected unbound breakpoint: %#v", first)
 	}
-	if err := session.DeleteBreakpoint(first.ID); err != nil {
+	if err := session.DeleteBreakpoint(context.Background(), first.ID); err != nil {
 		t.Fatal(err)
 	}
 
-	second, err := session.SetBreakpoint(source.Location{SourceName: "breakpoints.fql", Position: source.Position{Line: 1}})
+	second, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "breakpoints.fql", Position: source.Position{Line: 1}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !second.Bound || second.ID <= first.ID {
 		t.Fatalf("unexpected replacement breakpoint: %#v after %#v", second, first)
 	}
-	if got := session.Breakpoints(); len(got) != 1 || got[0].ID != second.ID {
+	if got, err := session.Breakpoints(context.Background()); err != nil || len(got) != 1 || got[0].ID != second.ID {
 		t.Fatalf("unexpected breakpoint snapshot: %#v", got)
 	}
 }
@@ -209,7 +209,7 @@ func TestDebugSessionLocalsIncludeDeclaredBindParameters(t *testing.T) {
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if err := session.Pause(); err != nil {
+	if err := session.Pause(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	event, err := session.Continue(context.Background())
@@ -279,7 +279,7 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 	if event.Reason != debugger.ReasonPause || event.Location.Line != 2 {
 		t.Fatalf("unexpected pause event: %#v", event)
 	}
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,7 +327,7 @@ func TestDebugSessionRuntimeErrorPreservesLocals(t *testing.T) {
 	if !strings.Contains(formatted, "error.fql:2") || !strings.Contains(formatted, "RETURN x / 0") {
 		t.Fatalf("expected formatted source diagnostic, got:\n%s", formatted)
 	}
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,7 +499,7 @@ RETURN x`
 			t.Fatalf("%s: unexpected stop: %#v", command.name, event)
 		}
 
-		frames, err := session.Frames()
+		frames, err := session.Frames(context.Background())
 		if err != nil {
 			t.Fatalf("%s: %v", command.name, err)
 		}
@@ -562,7 +562,7 @@ RETURN x`
 		t.Fatalf("expected StepOver to skip UDF, got %#v", event)
 	}
 
-	frames, err := session.Frames()
+	frames, err := session.Frames(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

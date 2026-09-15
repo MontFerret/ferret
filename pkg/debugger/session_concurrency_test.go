@@ -32,7 +32,7 @@ func TestSessionSerializesConcurrentCommands(t *testing.T) {
 	}()
 	breakpointDone := make(chan error, 1)
 	go func() {
-		_, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
+		_, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "", Position: source.Position{Line: 1}})
 		breakpointDone <- err
 	}()
 
@@ -66,7 +66,7 @@ func TestSessionPauseDoesNotWaitForRunningCommand(t *testing.T) {
 
 	pauseDone := make(chan error, 1)
 	go func() {
-		pauseDone <- session.Pause()
+		pauseDone <- session.Pause(context.Background())
 	}()
 
 	waitForError(t, pauseDone, "pause")
@@ -75,52 +75,68 @@ func TestSessionPauseDoesNotWaitForRunningCommand(t *testing.T) {
 }
 
 func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *testing.T) {
-	session, execution := newBlockingSession(t)
-
-	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := session.Start(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-
-	continueDone := make(chan *Event, 1)
-	go func() {
-		event, continueErr := session.Continue(context.Background())
-		if continueErr != nil {
-			t.Errorf("continue failed: %v", continueErr)
+	for _, additionalContext := range []bool{false, true} {
+		name := "retained_context"
+		if additionalContext {
+			name = "additional_context"
 		}
-		continueDone <- event
-	}()
-	waitForSignal(t, execution.resumeStarted, "resume")
 
-	closeDone := make(chan error, 1)
-	go func() {
-		closeDone <- session.Close()
-	}()
-	waitForSignal(t, execution.pauseCalled, "close pause request")
-	waitForSignal(t, execution.resumeCanceled, "resume context cancellation")
-	event := <-continueDone
-	if event == nil || event.Reason != ReasonTerminated || !errors.Is(event.Error, context.Canceled) {
-		t.Fatalf("expected close-triggered termination event, got %#v", event)
-	}
-	waitForError(t, closeDone, "close")
+		t.Run(name, func(t *testing.T) {
+			commandCtx := context.Background()
+			if additionalContext {
+				var cancel context.CancelFunc
+				commandCtx, cancel = context.WithCancel(commandCtx)
+				defer cancel()
+			}
 
-	if _, _, calls := execution.stats(); calls != 1 {
-		t.Fatalf("unexpected execution close count: %d", calls)
-	}
-	if got := session.Breakpoints(); len(got) != 1 || got[0].ID != breakpoint.ID {
-		t.Fatalf("unexpected post-close breakpoint snapshot: %#v", got)
-	}
-	if _, err := session.Continue(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
-		t.Fatalf("expected closed-state error, got %v", err)
-	}
-	if err := session.Pause(); err == nil || !errors.Is(err, &StateError{}) {
-		t.Fatalf("expected closed-state pause error, got %v", err)
-	}
-	if err := session.Close(); err != nil {
-		t.Fatal(err)
+			session, execution := newBlockingSession(t)
+
+			breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "", Position: source.Position{Line: 1}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := session.Start(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+
+			continueDone := make(chan *Event, 1)
+			go func() {
+				event, continueErr := session.Continue(commandCtx)
+				if continueErr != nil {
+					t.Errorf("continue failed: %v", continueErr)
+				}
+				continueDone <- event
+			}()
+			waitForSignal(t, execution.resumeStarted, "resume")
+
+			closeDone := make(chan error, 1)
+			go func() {
+				closeDone <- session.Close()
+			}()
+			waitForSignal(t, execution.pauseCalled, "close pause request")
+			waitForSignal(t, execution.resumeCanceled, "resume context cancellation")
+			event := <-continueDone
+			if event == nil || event.Reason != ReasonTerminated || !errors.Is(event.Error, context.Canceled) {
+				t.Fatalf("expected close-triggered termination event, got %#v", event)
+			}
+			waitForError(t, closeDone, "close")
+
+			if _, _, calls := execution.stats(); calls != 1 {
+				t.Fatalf("unexpected execution close count: %d", calls)
+			}
+			if got, err := session.Breakpoints(context.Background()); err != nil || len(got) != 1 || got[0].ID != breakpoint.ID {
+				t.Fatalf("unexpected post-close breakpoint snapshot: %#v", got)
+			}
+			if _, err := session.Continue(commandCtx); err == nil || !errors.Is(err, &StateError{}) {
+				t.Fatalf("expected closed-state error, got %v", err)
+			}
+			if err := session.Pause(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
+				t.Fatalf("expected closed-state pause error, got %v", err)
+			}
+			if err := session.Close(); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 
@@ -161,7 +177,7 @@ func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 
 	localsDone := make(chan error, 1)
 	go func() {
-		_, err := session.FrameLocals(0)
+		_, err := session.FrameLocals(context.Background(), 0)
 		localsDone <- err
 	}()
 	waitForSignal(t, inspectStarted, "value inspection")
@@ -170,15 +186,15 @@ func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 	go func() {
 		closeDone <- session.Close()
 	}()
-	for !session.closed.Load() {
+	for !session.lifecycle.closed.Load() {
 		time.Sleep(time.Millisecond)
 	}
 
 	close(inspectRelease)
 	waitForError(t, localsDone, "locals")
 	waitForError(t, closeDone, "close")
-	if len(session.valueRefs) != 0 {
-		t.Fatalf("close retained references created by active inspection: %#v", session.valueRefs)
+	if len(session.inspector.valueRefs) != 0 {
+		t.Fatalf("close retained references created by active inspection: %#v", session.inspector.valueRefs)
 	}
 }
 
