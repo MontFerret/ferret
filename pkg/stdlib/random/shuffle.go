@@ -25,10 +25,6 @@ func Shuffle(ctx context.Context, values runtime.Value) (_ runtime.Value, err er
 		return runtime.None, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	destination, err := list.New(ctx)
 	if err != nil {
 		return runtime.None, err
@@ -46,30 +42,14 @@ func Shuffle(ctx context.Context, values runtime.Value) (_ runtime.Value, err er
 		}
 	}()
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	err = list.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		if err := c.Err(); err != nil {
-			return false, err
-		}
-
 		if err := destination.Append(c, value); err != nil {
-			return false, err
-		}
-
-		if err := c.Err(); err != nil {
 			return false, err
 		}
 
 		return true, nil
 	})
 	if err != nil {
-		return runtime.None, err
-	}
-
-	if err := ctx.Err(); err != nil {
 		return runtime.None, err
 	}
 
@@ -84,18 +64,10 @@ func Shuffle(ctx context.Context, values runtime.Value) (_ runtime.Value, err er
 
 	// Fisher-Yates operates only on the destination, after traversal cleanup.
 	for i := size - 1; i > 0; i-- {
-		if err := ctx.Err(); err != nil {
-			return runtime.None, err
-		}
-
 		j := runtime.Int(src.Int64(0, int64(i)))
 		if err := destination.Swap(ctx, i, j); err != nil {
 			return runtime.None, err
 		}
-	}
-
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
 	}
 
 	return destination, nil

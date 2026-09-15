@@ -98,18 +98,23 @@ func TestCanonicalMathHostLists(t *testing.T) {
 
 					return nil
 				}}
-				_, err = fn.call(ctx, canceled)
+				got, err = fn.call(ctx, canceled)
 				cancel()
-				if !errors.Is(err, context.Canceled) {
-					t.Fatalf("error = %v, want cancellation", err)
+				if err != nil {
+					t.Fatal(err)
 				}
+
+				assertMathResult(t, got, fn.want[0])
 			}
 
 			ctx, cancel := context.WithCancel(t.Context())
 			cancel()
-			if _, err := fn.call(ctx, &aggregateList{}); !errors.Is(err, context.Canceled) {
+			got, err = fn.call(ctx, &aggregateList{})
+			if err != nil {
 				t.Fatalf("empty canceled list: %v", err)
 			}
+
+			assertMathResult(t, got, fn.want[5])
 		})
 	}
 }

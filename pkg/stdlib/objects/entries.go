@@ -18,16 +18,8 @@ func Entries(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	result := runtime.NewArray(0)
 	err = src.ForEach(ctx, func(ctx context.Context, value, key runtime.Value) (runtime.Boolean, error) {
-		if err := ctx.Err(); err != nil {
-			return false, err
-		}
-
 		stringKey, err := runtime.CastString(key)
 		if err != nil {
 			return false, fmt.Errorf("key: %w", err)

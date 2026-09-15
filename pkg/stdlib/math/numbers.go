@@ -25,17 +25,9 @@ const (
 // The callback receives numbers and their numeric ordinal. Both counts
 // come from traversal so callers never need source length or indexed access.
 func forEachNumber(ctx context.Context, source runtime.List, policy numberPolicy, visit func(runtime.Value, runtime.Int)) (numberCounts, error) {
-	if err := ctx.Err(); err != nil {
-		return numberCounts{}, err
-	}
-
 	var counts numberCounts
 
-	err := source.ForEach(ctx, func(c context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
-		if err := c.Err(); err != nil {
-			return false, err
-		}
-
+	err := source.ForEach(ctx, func(_ context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 		counts.total++
 
 		if !runtime.IsNumber(value) {
@@ -52,13 +44,8 @@ func forEachNumber(ctx context.Context, source runtime.List, policy numberPolicy
 
 		return true, nil
 	})
-	if err != nil {
-		return counts, err
-	}
 
-	// Preserve the causal traversal error; only successful traversal needs a
-	// final cancellation check, including hosts that return without a callback.
-	return counts, ctx.Err()
+	return counts, err
 }
 
 func sumNumbers(ctx context.Context, source runtime.List, policy numberPolicy) (float64, numberCounts, error) {

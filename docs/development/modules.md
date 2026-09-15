@@ -96,6 +96,14 @@ boundary, preserve argument context in errors, and delegate shared semantics to
 runtime helpers. Reusable module contracts do not belong in stdlib, and
 stdlib-specific behavior does not belong in `pkg/module`.
 
+Standard-library functions propagate context and follow the canonical
+[cancellation rule](../../AGENTS.md#context-cancellation-in-the-standard-library).
+The VM observes ordinary execution cancellation at its safepoints after control
+returns; synchronous stdlib work may complete with a canceled context. Downstream
+blocking capabilities own cancellation through the propagated context. WAIT owns
+its timer/select handling. Contextless filesystem and entropy reads cannot be
+interrupted by context; crypto token sampling does not poll between reads.
+
 The Collections group registers global `count`, `count_distinct`, `includes`,
 and `reverse`. Their minimum input capabilities, cancellation boundaries, and
 ownership contracts are described in [Collection library contracts](collection-library.md).
@@ -144,18 +152,19 @@ mixed lists and non-finite floats. Other elements fail with the argument positio
 and zero-based element index; there is no coercion. Deprecated globals retain
 numeric filtering. Both policies share traversal and calculation helpers.
 
-Shared traversal uses `runtime.List.ForEach`, checks cancellation, and propagates
-host errors without returning successful partial results. An operation's error
-is returned directly even if cancellation occurs concurrently; only successful
-traversal or sorting is followed by a final context check. Counts come from
+Shared traversal uses `runtime.List.ForEach`, propagates context, and returns
+host errors without successful partial results. An operation's error is returned
+directly even if cancellation occurs concurrently; successful traversal and
+sorting do not inspect cancellation before returning. Counts come from
 traversal rather than `Length`. Sum, mean, and extrema use constant additional
 storage. Variance uses Welford's one-pass recurrence and divides by `N` or
 `N - 1`; standard deviation takes the corresponding square root. Sources need
 not support repeated traversal.
 
 Median and percentile sort native numbers in private snapshots using runtime
-comparison. They never copy, sort, index, or mutate the source. Selected values
-retain their native type; even medians and interpolated values are floats.
+comparison with the caller's context. They never copy, sort, index, or
+mutate the source. Selected values retain their native type; even medians and
+interpolated values are floats.
 
 | Operation | Canonical empty list | Legacy empty list | Legacy nonempty list with no numbers |
 | --- | --- | --- | --- |
@@ -257,13 +266,14 @@ not force a storage-backed List into an in-memory Array.
 Both operations borrow the source and yielded values, preserving value identity
 and leaving source contents unchanged. Traversal owns its iterator cleanup.
 Factories own failed construction; after successful construction, shuffle owns
-the destination until success. Any subsequent error or cancellation closes a
-closable destination exactly once and joins its cleanup error with the primary
+the destination until success. Any subsequent operation error, including host
+cancellation, closes a closable destination exactly once and joins its cleanup error with the primary
 failure, retaining source traversal and iterator cleanup causes. Successful
 destinations remain open for normal caller/VM ownership. Borrowed sources and
-elements are never explicitly closed. Cancellation is checked before host
-dispatch, during traversal/shuffling, after successful host operations, and
-before success; actual host errors are preserved even alongside cancellation.
+elements are never explicitly closed. Context reaches each host operation;
+stdlib traversal and shuffling do not poll it. Host errors, including cancellation,
+are preserved. Successful work and random draws complete even if the context is
+canceled while a host operation returns successfully.
 
 Both algorithms use the existing unbiased `rnd.Source.Int64` primitive. Choice
 draws for visits 2 through n; shuffle draws only after successful materialization,

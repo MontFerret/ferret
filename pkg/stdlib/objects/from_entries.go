@@ -16,17 +16,9 @@ func FromEntries(ctx context.Context, arg runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	result := runtime.NewObject()
 	index := 0
 	err := runtime.ForEach(ctx, arg.(runtime.Iterable), func(ctx context.Context, entry, _ runtime.Value) (runtime.Boolean, error) {
-		if err := ctx.Err(); err != nil {
-			return false, err
-		}
-
 		key, value, err := readEntry(ctx, entry)
 		if err != nil {
 			return false, fmt.Errorf("entry %d: %w", index, err)

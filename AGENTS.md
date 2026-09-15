@@ -125,6 +125,18 @@ Treat the top-level package, `pkg/engine`, `uapi`, `pkg/module`,
 The top-level embedding surface centers on `Engine`, `Plan`, `Session`,
 `DebugSession`, and `Output`. Reusable module contracts live in `pkg/module`.
 
+## Context cancellation in the standard library
+
+The VM owns normal execution cancellation. Standard-library functions must not
+poll `ctx.Err()` or `ctx.Done()` for ordinary synchronous computation, including
+collection traversal and CPU loops. Do not add entry, exit, per-item, phase, or
+periodic cancellation checks, or bookkeeping solely to support them.
+
+Propagate context to downstream context-aware APIs. Observe cancellation directly
+only when stdlib itself owns blocking, waiting, polling, retry, timer, or similar
+work that must be interrupted locally. CPU-bound cancellation is an exception
+requiring a demonstrated cancellation-latency problem and benchmark evidence.
+
 ## Generated files and language changes
 
 Never hand-edit generated parser artifacts under `pkg/parser/fql` or the

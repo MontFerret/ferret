@@ -17,17 +17,9 @@ func Join(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) 
 		return runtime.None, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	var out strings.Builder
 	first := true
-	err = values.ForEach(ctx, func(c context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
-		if err := c.Err(); err != nil {
-			return false, err
-		}
-
+	err = values.ForEach(ctx, func(_ context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 		text, ok := value.(runtime.String)
 		if !ok {
 			return false, runtime.ArgError(runtime.Errorf(runtime.ErrInvalidArgument, "element %d must be a String", index), 0)
@@ -37,16 +29,12 @@ func Join(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) 
 			out.WriteString(string(separator))
 		}
 
-		first = false
 		out.WriteString(string(text))
+		first = false
 
 		return true, nil
 	})
 	if err != nil {
-		return runtime.None, err
-	}
-
-	if err := ctx.Err(); err != nil {
 		return runtime.None, err
 	}
 

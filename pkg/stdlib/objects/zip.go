@@ -18,10 +18,6 @@ func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	keysSize, err := keys.Length(ctx)
 	if err != nil {
 		return runtime.None, runtime.ArgError(err, 0)
@@ -47,10 +43,6 @@ func Zip(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error) {
 
 	result := runtime.NewObject()
 	for index := runtime.ZeroInt; index < keysSize; index++ {
-		if err := ctx.Err(); err != nil {
-			return runtime.None, err
-		}
-
 		keyValue, err := keys.At(ctx, index)
 		if err != nil {
 			return runtime.None, runtime.ArgError(fmt.Errorf("item %d: %w", index, err), 0)

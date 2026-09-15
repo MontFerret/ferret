@@ -8,20 +8,47 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func TestSortNumbersCancellation(t *testing.T) {
+func TestSortNumbersCompletesWithCanceledContext(t *testing.T) {
 	for _, ascending := range []bool{false, true} {
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
 
-		polling := &sortCancelContext{Context: ctx, cancel: cancel, remaining: 3}
-		values := []runtime.Value{runtime.Int(4), runtime.Int(1), runtime.Int(3), runtime.Int(2)}
-		if err := sortNumbers(polling, values, ascending); !errors.Is(err, context.Canceled) {
-			t.Fatalf("sort error = %v, want cancellation", err)
+		cancel()
+		values := make([]runtime.Value, 4096)
+		for index := range values {
+			values[index] = runtime.Int((index * 37) % len(values))
+		}
+		if err := sortNumbers(ctx, values, ascending); err != nil {
+			t.Fatal(err)
 		}
 
-		if err := sortNumbers(ctx, nil, ascending); !errors.Is(err, context.Canceled) {
-			t.Fatalf("empty sort error = %v, want cancellation", err)
+		for index, value := range values {
+			want := index
+			if !ascending {
+				want = len(values) - 1 - index
+			}
+
+			if value != runtime.Int(want) {
+				t.Fatalf("position %d = %v, want %d", index, value, want)
+			}
 		}
+
+		if err := sortNumbers(ctx, nil, ascending); err != nil {
+			t.Fatalf("empty sort error = %v", err)
+		}
+	}
+}
+
+func TestSortNumbersCompletesAfterComparisonCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	value := &sortErrorValue{Value: runtime.ZeroInt, cancel: cancel}
+	if err := sortNumbers(ctx, []runtime.Value{value, value}, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if ctx.Err() != context.Canceled {
+		t.Fatal("comparison did not cancel the context")
 	}
 }
 

@@ -26,14 +26,10 @@ func RandomToken(ctx context.Context, arg runtime.Value) (runtime.Value, error) 
 	return randomToken(ctx, rand.Reader, int(length))
 }
 
-func randomToken(ctx context.Context, reader io.Reader, length int) (runtime.Value, error) {
+func randomToken(_ context.Context, reader io.Reader, length int) (runtime.Value, error) {
 	out := make([]byte, length)
 	var buffer [256]byte
 	for written := 0; written < length; {
-		if err := ctx.Err(); err != nil {
-			return runtime.None, err
-		}
-
 		batch := buffer[:min(len(buffer), length-written)]
 		if _, err := io.ReadFull(reader, batch); err != nil {
 			return runtime.None, err
@@ -48,10 +44,6 @@ func randomToken(ctx context.Context, reader io.Reader, length int) (runtime.Val
 			out[written] = tokenAlphabet[int(value)%len(tokenAlphabet)]
 			written++
 		}
-	}
-
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
 	}
 
 	return runtime.String(out), nil

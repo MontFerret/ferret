@@ -8,10 +8,6 @@ import (
 )
 
 func copyListValues(ctx context.Context, values runtime.List) (runtime.Value, error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	length, err := values.Length(ctx)
 	if err != nil {
 		return runtime.None, err
@@ -23,10 +19,6 @@ func copyListValues(ctx context.Context, values runtime.List) (runtime.Value, er
 
 	result := runtime.NewArray64(length)
 	err = values.ForEach(ctx, func(ctx context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
-		if err := ctx.Err(); err != nil {
-			return false, err
-		}
-
 		copied, err := runtime.CloneOrCopy(ctx, value)
 		if err != nil {
 			return false, fmt.Errorf("item %d: %w", index, err)

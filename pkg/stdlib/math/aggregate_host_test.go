@@ -69,7 +69,7 @@ func TestMathAggregatesHostLists(t *testing.T) {
 
 func TestMathAggregatesIterationErrors(t *testing.T) {
 	for _, fn := range aggregateCases() {
-		for errorIndex, sentinel := range []error{errors.New("host read failed"), fmt.Errorf("host decode: %w", runtime.ErrInvalidType)} {
+		for errorIndex, sentinel := range []error{errors.New("host read failed"), context.Canceled, context.DeadlineExceeded, fmt.Errorf("host decode: %w", runtime.ErrInvalidType)} {
 			for _, values := range [][]runtime.Value{nil, {runtime.None, runtime.Int(3), runtime.String("2"), runtime.Int(1), runtime.Int(2)}} {
 				for after := 0; after <= len(values); after++ {
 					t.Run(fmt.Sprintf("%s/error-%d/size-%d/after-%d", fn.name, errorIndex, len(values), after), func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestMathAggregatesIterationErrors(t *testing.T) {
 	}
 }
 
-func TestMathAggregatesCancellation(t *testing.T) {
+func TestMathAggregatesCompleteWithCanceledContext(t *testing.T) {
 	for _, fn := range aggregateCases() {
 		for _, empty := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/pre-canceled/empty=%t", fn.name, empty), func(t *testing.T) {
@@ -105,10 +105,17 @@ func TestMathAggregatesCancellation(t *testing.T) {
 					source = runtime.NewArrayWith(runtime.Int(1))
 				}
 
-				_, err := fn.call(ctx, source)
-				if !errors.Is(err, context.Canceled) {
-					t.Fatalf("error = %v, want cancellation", err)
+				got, err := fn.call(ctx, source)
+				if err != nil {
+					t.Fatal(err)
 				}
+
+				want, err := fn.call(t.Context(), source)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				assertMathResult(t, got, want)
 			})
 		}
 
@@ -133,10 +140,17 @@ func TestMathAggregatesCancellation(t *testing.T) {
 							return nil
 						},
 					}
-					_, err := fn.call(ctx, source)
-					if !errors.Is(err, context.Canceled) {
-						t.Fatalf("error = %v, want cancellation", err)
+					got, err := fn.call(ctx, source)
+					if err != nil {
+						t.Fatal(err)
 					}
+
+					want, err := fn.call(t.Context(), runtime.NewArrayWith(values...))
+					if err != nil {
+						t.Fatal(err)
+					}
+
+					assertMathResult(t, got, want)
 				})
 			}
 		}

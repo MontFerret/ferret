@@ -144,45 +144,39 @@ func TestShuffleCancellationAfterHostOperations(t *testing.T) {
 				}
 
 				got, err := Shuffle(ctx, source)
-				if got != runtime.None || !errors.Is(err, context.Canceled) || errors.Is(err, cleanup) != (closeErr != nil && test.op != "") {
-					t.Fatalf("cancellation lost: result %T, error %v", got, err)
-				}
 
 				if test.op == "" {
-					if source.created != nil || source.operations["New"] != 0 {
-						t.Fatal("pre-canceled shuffle called the factory")
+					if got != runtime.None || !errors.Is(err, context.Canceled) || source.created != nil {
+						t.Fatal("factory cancellation was not propagated")
 					}
-				} else if source.created == nil || source.created.closes != 1 || source.rollbacks != 0 {
-					t.Fatal("cancellation did not close the successfully constructed destination exactly once")
+				} else {
+					if err != nil || got != source.created || source.created.closes != 0 || source.rollbacks != 0 {
+						t.Fatalf("successful operation became failure: result %T, error %v", got, err)
+					}
+
+					if source.calls != 1 || source.cursorCloses != 1 || source.created.operations["Append"] != test.size || source.created.operations["Length"] != 1 {
+						t.Fatal("shuffle did not finish materialization and iteration cleanup")
+					}
+
+					for i := test.size - 1; i > 0; i-- {
+						control.Int64(0, int64(i))
+					}
 				}
 
 				if source.closes != 0 {
-					t.Fatal("cancellation closed the source")
+					t.Fatal("shuffle closed the source")
 				}
 
 				for _, value := range source.values {
 					if borrowed, ok := value.(*borrowedValue); ok && borrowed.closes != 0 {
-						t.Fatal("cancellation closed a borrowed value")
-					}
-				}
-
-				if test.op == "New" && source.calls != 0 {
-					t.Fatal("traversal started after factory cancellation")
-				}
-
-				if test.op == "Append" && (source.created.operations["Append"] != test.at || source.created.operations["Length"] != 0) {
-					t.Fatal("materialization continued after append cancellation")
-				}
-
-				if test.op == "Swap" {
-					for i := 0; i < test.at; i++ {
-						control.Int64(0, int64(test.size-1-i))
+						t.Fatal("shuffle closed a borrowed value")
 					}
 				}
 
 				if rng.Float64() != control.Float64() {
-					t.Fatal("cancellation consumed an unexpected number of draws")
+					t.Fatal("shuffle consumed an unexpected number of draws")
 				}
+
 			})
 		}
 	}

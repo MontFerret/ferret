@@ -29,18 +29,10 @@ func Choice(ctx context.Context, values runtime.Value) (runtime.Value, error) {
 // Reservoir sampling counts visits rather than callback indices. The first
 // value needs no draw; each subsequent value replaces it with probability 1/n.
 func choose(ctx context.Context, values runtime.List, draw func(int64, int64) int64) (runtime.Value, error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	var selected runtime.Value = runtime.None
 	var count int64
 
-	err := values.ForEach(ctx, func(c context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
-		if err := c.Err(); err != nil {
-			return false, err
-		}
-
+	err := values.ForEach(ctx, func(_ context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 		if count == math.MaxInt64 {
 			return false, runtime.Error(runtime.ErrInvalidOperation, "list exceeds supported element count")
 		}
@@ -54,12 +46,6 @@ func choose(ctx context.Context, values runtime.List, draw func(int64, int64) in
 		return true, nil
 	})
 	if err != nil {
-		return runtime.None, err
-	}
-
-	// Only successful traversal gets a final cancellation check; retain host
-	// and iterator cleanup errors even when cancellation happens alongside them.
-	if err := ctx.Err(); err != nil {
 		return runtime.None, err
 	}
 

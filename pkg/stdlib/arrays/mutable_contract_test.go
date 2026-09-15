@@ -151,7 +151,7 @@ func TestMutableArrayIndexValidation(t *testing.T) {
 	}
 }
 
-func TestMutableArrayTargetAndCancellationValidation(t *testing.T) {
+func TestMutableArrayTargetValidation(t *testing.T) {
 	var typedNil *mutableHostList
 	for _, name := range mutableOperationNames() {
 		for _, target := range []runtime.Value{nil, typedNil, (*runtime.Array)(nil), runtime.None, runtime.Int(1), runtime.NewObject(), runtime.NewRange(1, 3), &readableArray{Value: runtime.None}} {
@@ -160,14 +160,6 @@ func TestMutableArrayTargetAndCancellationValidation(t *testing.T) {
 			if got != runtime.None || !errors.Is(err, runtime.ErrInvalidType) || !attributed || pos != 0 {
 				t.Fatalf("%s target=%T: result=%v err=%v", name, target, got, err)
 			}
-		}
-
-		ctx, cancel := context.WithCancel(t.Context())
-		cancel()
-		target := newMutableHostList(runtime.NewArrayWith(runtime.Int(0), runtime.Int(1)))
-		got, err := callLegacy("arrays::mut::"+name, ctx, mutableOperationArgs(name, target)...)
-		if got != runtime.None || !errors.Is(err, context.Canceled) || len(target.calls) != 0 {
-			t.Fatalf("%s canceled: result=%v calls=%v err=%v", name, got, target.calls, err)
 		}
 	}
 }
@@ -253,7 +245,7 @@ func TestMutableArrayPartialRemovalFailure(t *testing.T) {
 	}
 }
 
-func TestMutableArrayRemovalCancellation(t *testing.T) {
+func TestMutableArrayRemovalCompletesAfterCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	target := newMutableHostList(runtime.NewArrayWith(runtime.Int(0), runtime.Int(1), runtime.Int(0)))
@@ -263,7 +255,7 @@ func TestMutableArrayRemovalCancellation(t *testing.T) {
 		}
 	}
 	got, err := arrays.RemoveMutable(ctx, target, runtime.Int(0))
-	if got != runtime.None || !errors.Is(err, context.Canceled) || target.calls["RemoveAt"] != 0 {
+	if got != target || err != nil || target.calls["RemoveAt"] != 2 {
 		t.Fatalf("result=%v calls=%v err=%v", got, target.calls, err)
 	}
 }

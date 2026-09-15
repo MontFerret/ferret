@@ -126,7 +126,7 @@ func TestImmutableMergeDestinationOwnership(t *testing.T) {
 							t.Fatal("population continued after construction canceled")
 						}
 
-						if stage == "success" {
+						if stage == "success" || stage == "set-cancel" || stage == "traversal-cancel" {
 							if err != nil || result != dst || dst.closes != 0 {
 								t.Fatalf("successful ownership transfer: %v, %v, closes=%d", result, err, dst.closes)
 							}
@@ -142,7 +142,7 @@ func TestImmutableMergeDestinationOwnership(t *testing.T) {
 						}
 
 						wantPrimary := !strings.HasSuffix(stage, "-cancel") || stage == "failure-cancel"
-						wantCancel := strings.HasSuffix(stage, "-cancel")
+						wantCancel := stage == "new-cancel"
 						if result != runtime.None || err == nil || dst.closes != 1 || errors.Is(err, primary) != wantPrimary || errors.Is(err, context.Canceled) != wantCancel || errors.Is(err, cleanup) != cleanupFails {
 							t.Fatalf("failure ownership: %v, %v, closes=%d", result, err, dst.closes)
 						}

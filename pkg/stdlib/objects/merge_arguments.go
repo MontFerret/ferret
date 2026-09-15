@@ -8,18 +8,10 @@ import (
 )
 
 func normalizeMergeArgs(ctx context.Context, args []runtime.Value, offset int) ([]runtime.Map, bool, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, false, err
-	}
-
 	if len(args) == 1 {
 		if list, ok := args[0].(runtime.List); ok {
 			var sources []runtime.Map
-			err := list.ForEach(ctx, func(ctx context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
-				if err := ctx.Err(); err != nil {
-					return false, err
-				}
-
+			err := list.ForEach(ctx, func(_ context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 				source, ok := value.(runtime.Map)
 				if !ok {
 					return false, fmt.Errorf("item %d: %w", index, runtime.TypeErrorOf(value, runtime.TypeMap))

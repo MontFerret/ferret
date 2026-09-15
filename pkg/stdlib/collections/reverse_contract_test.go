@@ -117,7 +117,7 @@ func TestReverseFailureOwnership(t *testing.T) {
 				value := &scanValue{}
 				source := &configuredList{Array: runtime.NewArrayWith(value), backend: &listBackend{}, expected: ctx, calls: make(map[string]int), failures: make(map[string]error)}
 				want := primary
-				constructed := stage == "At" || stage == "Append" || stage == "cancel-New" || stage == "cancel-At" || stage == "cancel-Append"
+				constructed := stage == "At" || stage == "Append" || stage == "cancel-At" || stage == "cancel-Append"
 				if closeFails {
 					source.closeErr, source.newCleanupErr = cleanup, cleanup
 				}
@@ -127,6 +127,7 @@ func TestReverseFailureOwnership(t *testing.T) {
 					want = context.Canceled
 				} else if len(stage) > 7 && stage[:7] == "cancel-" {
 					want = context.Canceled
+					source.failures[stage[7:]] = context.Canceled
 					source.after = func(name string) {
 						if name == stage[7:] {
 							cancel()
@@ -141,7 +142,7 @@ func TestReverseFailureOwnership(t *testing.T) {
 					t.Fatalf("got %v, %v; want %v", out, err, want)
 				}
 
-				if closeFails && (constructed || stage == "New") && !errors.Is(err, cleanup) {
+				if closeFails && (constructed || stage == "New" || stage == "cancel-New") && !errors.Is(err, cleanup) {
 					t.Fatalf("cleanup error lost: %v", err)
 				}
 
@@ -161,8 +162,8 @@ func TestReverseFailureOwnership(t *testing.T) {
 					t.Fatal("factory did not own failed construction")
 				}
 
-				if stage == "pre-cancel" && len(source.calls) != 0 {
-					t.Fatal("pre-canceled call performed host work")
+				if stage == "pre-cancel" && source.calls["Length"] != 1 {
+					t.Fatal("pre-canceled call did not delegate length before factory rejection")
 				}
 
 				if stage == "cancel-Length" && source.calls["New"] != 0 {
@@ -171,10 +172,6 @@ func TestReverseFailureOwnership(t *testing.T) {
 
 				if stage == "cancel-New" && source.calls["At"] != 0 {
 					t.Fatal("read after cancellation")
-				}
-
-				if stage == "cancel-At" && source.created.calls["Append"] != 0 {
-					t.Fatal("appended after cancellation")
 				}
 			})
 		}
