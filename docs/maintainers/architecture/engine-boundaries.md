@@ -15,7 +15,7 @@ and 45 functions. Each represents native engine configuration, behavior, or
 semantic vocabulary. Task 5 removes 35 aliases, 21 constants, and seven forwarding
 functions; the earlier diagnostics cleanup already removed `engine.FormatError`.
 The root retains all 119 exports. Independent root and native inventories in
-[`api_contract_test.go`](../../api_contract_test.go) prevent relay reintroduction
+[`api_contract_test.go`](../../../api_contract_test.go) prevent relay reintroduction
 and accidental façade growth. Future native exports must not automatically
 expand the root API.
 

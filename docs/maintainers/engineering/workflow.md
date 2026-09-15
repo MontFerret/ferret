@@ -69,8 +69,12 @@ token, and interpreter artifacts under `pkg/parser/fql`.
 
 Run `make generate` only after changing grammar or generator inputs. Review both
 the generated artifacts and any formatting changes produced by the target.
-Generated Go files and token artifacts should never receive independent manual
-fixes.
+Never hand-edit generated parser artifacts or the token vocabulary; change the
+authoritative grammar or generator inputs instead.
+
+Syntax changes normally require coordinated grammar, generated parser,
+diagnostic/parser integration, compiler lowering, formatter, and integration
+coverage. Review all generated changes and commit them with their source change.
 
 ## Test layout
 
@@ -99,9 +103,8 @@ Additional suites are grouped under:
 * `test/spec`: shared test helpers and specification fixtures;
 * `test/benchmarks`: cross-layer integration benchmarks.
 
-Start with the package or focused integration suite that proves the change.
-Broaden to the corresponding Make target when the impact crosses packages or
-matches CI coverage. Race-enabled Make targets require CGO for the race detector.
+Use the [testing and validation policy](testing.md) to choose coverage and checks.
+Race-enabled Make targets require CGO for the race detector.
 
 `go test ./...` is a useful broad, non-race check for the root Go module. It does
 not cover the independent tool modules or reproduce the full race and security
@@ -123,8 +126,9 @@ make bench-unit BENCH_FILTER='Comparison' BENCH_COUNT=5
 make bench-integration BENCH_FILTER='Compiler' BENCH_COUNT=5 BENCH_TIMEOUT=15m
 ```
 
-Use identical commands and environment for before/after comparisons. The
-benchmark workflow records main baselines on `gh-pages`, runs unit comparisons
+Baseline and comparison requirements live in the
+[benchmark policy](testing.md#significant-changes-and-benchmarks). The benchmark
+workflow records main baselines on `gh-pages`, runs unit comparisons
 for pull requests, and gates integration comparisons behind its configured
 label or manual inputs. The workflow file owns the current labels, thresholds,
 and artifact names.
@@ -139,8 +143,11 @@ generated artifacts, or command behavior.
 
 ## Related guides
 
-* [Architecture](architecture.md)
-* [Runtime and lifecycle](runtime.md)
-* [Debugger architecture](debugger.md)
-* [Modules, SDK, and standard library](modules.md)
-* [Release automation](release.md)
+* [Engineering principles](principles.md)
+* [Go code style](code-style.md)
+* [Testing and performance](testing.md)
+* [Architecture](../architecture/overview.md)
+* [Runtime and lifecycle](../architecture/runtime.md)
+* [Debugger architecture](../architecture/debugger.md)
+* [Modules, SDK, and standard library](../architecture/modules.md)
+* [Release automation](../release/process.md)

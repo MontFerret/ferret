@@ -97,7 +97,7 @@ runtime helpers. Reusable module contracts do not belong in stdlib, and
 stdlib-specific behavior does not belong in `pkg/module`.
 
 Standard-library functions propagate context and follow the canonical
-[cancellation rule](../../AGENTS.md#context-cancellation-in-the-standard-library).
+[cancellation rule](../stdlib/README.md#context-cancellation).
 The VM observes ordinary execution cancellation at its safepoints after control
 returns; synchronous stdlib work may complete with a canceled context. Downstream
 blocking capabilities own cancellation through the propagated context. WAIT owns
@@ -106,35 +106,35 @@ interrupted by context; crypto token sampling does not poll between reads.
 
 The Collections group registers global `count`, `count_distinct`, `includes`,
 and `reverse`. Their minimum input capabilities, cancellation boundaries, and
-ownership contracts are described in [Collection library contracts](collection-library.md).
+ownership contracts are described in [Collection library contracts](../stdlib/collections.md).
 
 The function definitions registered by `stdlib.Full()` are also the source for
 the published Ferret Core API artifacts. Structured documentation requirements
 and generation checks are described in the
-[Core API artifact maintainer guide](../maintainers/core-api-reference.md).
+[Core API artifact maintainer guide](../reference/core-api.md).
 
 String operations stay global, while the independent Encoding and Crypto groups
 register namespaced serialization and cryptographic operations. Their strict
 argument, Unicode, formatting, and migration contracts, together with the full
 `path::` namespace registered by the Path group, are described in
-[String, encoding, and crypto contracts](string-library.md).
+[String, encoding, and crypto contracts](../stdlib/strings.md).
 
 The Arrays group registers immutable functions under `arrays::`, explicit
 mutation under `arrays::mut::`, and frozen global migration aliases.
 Vocabulary, mutation results, set ordering, copy ownership, and
-legacy signatures are described in [Array library contracts](array-library.md).
+legacy signatures are described in [Array library contracts](../stdlib/arrays.md).
 
 The Objects group registers immutable functions under `object::`, explicit
 mutation under `object::mut::`, and seven temporary deprecated global aliases.
 The globals delegate to canonical implementations and advertise replacements
 through structured API metadata, without compiler or runtime warnings. Shared map
 transformations, copy ownership, iterable entry construction, and migration
-behavior are described in [Object library contracts](object-library.md).
+behavior are described in [Object library contracts](../stdlib/objects.md).
 
 The DateTime group registers canonical `datetime::` functions and deprecated
 global migration adapters. Local-calendar precision equality, checked elapsed
 differences, calendar arithmetic, and migration changes are described in
-[DateTime library contracts](datetime-library.md).
+[DateTime library contracts](../stdlib/datetime.md).
 
 ## Math functions and compatibility
 
@@ -318,11 +318,11 @@ cancellation, ownership, conversion failures, and debugger inspection.
 
 Changes to stdlib registrations or structured API documentation may require the
 focused generator tests documented in the maintainer guide and consideration of
-the release flow in [Release automation](release.md).
+the release flow in [Release automation](../release/process.md).
 
 ## Related guides
 
-* [Architecture](architecture.md)
+* [Architecture](overview.md)
 * [Runtime and lifecycle](runtime.md)
-* [Development workflow](workflow.md)
-* [Release automation](release.md)
+* [Development workflow](../engineering/workflow.md)
+* [Release automation](../release/process.md)

@@ -91,13 +91,17 @@ make test
 ### Coding Guidelines
 
 - For repository architecture and subsystem-specific workflows, start with the
-  [development documentation](docs/development/architecture.md).
-- Follow standard Go conventions and formatting (`gofmt`)
-- Write clear, self-documenting code
-- Add comments for complex logic
-- Keep functions focused and small
-- Write unit tests for new functionality
-- Update documentation when changing behavior
+  [maintainer documentation](docs/maintainers/README.md).
+- Follow the shared engineering guidance:
+
+  - [Engineering principles](docs/maintainers/engineering/principles.md) for
+    ownership, compatibility, and documentation policy.
+  - [Go code style](docs/maintainers/engineering/code-style.md) for code
+    organization, comments, and formatting conventions.
+  - [Testing and performance](docs/maintainers/engineering/testing.md) for
+    coverage, validation, and benchmark requirements.
+  - [Development workflow](docs/maintainers/engineering/workflow.md) for
+    commands, tools, generation, and test locations.
 
 ## Community
 

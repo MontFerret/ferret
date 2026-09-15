@@ -88,7 +88,7 @@ adapter is the separate `github.com/MontFerret/ferret/v2/uapi` package.
 and owns a Native engine; runtime Close closes it. `uapi.Wrap(native)` borrows
 an existing engine; its Close is a no-op that leaves both usable. Settle work and
 close sessions and plans before their owning runtime or borrowed engine. See the
-[Universal adapter guide](docs/development/universal.md) for the supported options
+[Universal adapter guide](docs/maintainers/architecture/universal-api.md) for the supported options
 and lifecycle contract.
 
 ### New projects
@@ -166,7 +166,8 @@ Alpha releases are intended for early adopters, experimentation, and feedback. S
 
 ## Maintainers
 
-- [Versioned Ferret Core API Reference](docs/maintainers/core-api-reference.md)
+- [Maintainer documentation](docs/maintainers/README.md)
+- [Versioned Ferret Core API Reference](docs/maintainers/reference/core-api.md)
 
 ## Support Ferret
 

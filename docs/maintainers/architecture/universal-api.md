@@ -161,5 +161,5 @@ Contract and delegation tests live in `uapi`, including external-package
 embedding examples for both constructors. Native/Universal benchmarks cover
 construction and close, compilation, ordinary/debug session creation, reusable
 execution, and convenience Run. Run focused tests before the repository gates in
-[Development workflow](workflow.md). Native APIs
+[Development workflow](../engineering/workflow.md). Native APIs
 and FQL semantics are unchanged.
