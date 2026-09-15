@@ -86,37 +86,124 @@ func TestSourcesDoNotShareState(t *testing.T) {
 	}
 }
 
-func TestDefaultEntropyConstruction(t *testing.T) {
+func TestDefaultEntropyDeferred(t *testing.T) {
 	calls := uint64(0)
-	fill := func(seed []byte) {
+	entropy := func() [16]byte {
 		calls++
-		if len(seed) != 16 {
-			t.Fatalf("entropy request = %d bytes", len(seed))
-		}
-
+		var seed [16]byte
 		binary.LittleEndian.PutUint64(seed[:8], calls)
 		binary.LittleEndian.PutUint64(seed[8:], calls+10)
+
+		return seed
 	}
-	first, second := newSource(fill), newSource(fill)
-	if calls != 2 || first == second {
-		t.Fatal("construction must obtain independent entropy once per source")
+	first, second := newSource(entropy), newSource(entropy)
+	if calls != 0 || first == second {
+		t.Fatal("construction must allocate independent sources without reading entropy")
 	}
 
-	for index, src := range []*Source{first, second} {
-		control := rand.New(rand.NewPCG(uint64(index+1), uint64(index+11)))
-		for range 64 {
+	ctx := WithContext(t.Context(), first)
+	for range 10 {
+		if got, ok := FromContext(ctx); !ok || got != first {
+			t.Fatal("context did not retain the pending source")
+		}
+
+		if got := first.Int64(5, 5); got != 5 {
+			t.Fatalf("equal bounds returned %d", got)
+		}
+	}
+
+	if calls != 0 {
+		t.Fatal("transport, lookup, or equal bounds read entropy")
+	}
+
+	sources := []*Source{first, second}
+	controls := []*rand.Rand{rand.New(rand.NewPCG(1, 11)), rand.New(rand.NewPCG(2, 12))}
+	for range 64 {
+		for index, src := range sources {
+			control := controls[index]
 			if src.Float64() != control.Float64() {
-				t.Fatal("construction lost entropy or reseeded during draws")
+				t.Fatal("initialization lost entropy, reseeded, or shared mutable state")
+			}
+
+			if src.entropy != nil {
+				t.Fatal("initialized source retained its entropy callback")
 			}
 		}
 	}
 
 	if calls != 2 {
-		t.Fatal("draws requested additional entropy")
+		t.Fatal("each source must obtain entropy exactly once")
 	}
 
 	if first, second := New(), New(); first == nil || second == nil || first == second {
 		t.Fatal("default constructors did not allocate independent sources")
+	}
+}
+
+func TestDefaultSourceFirstDraw(t *testing.T) {
+	for _, test := range []struct {
+		draw func(*Source) any
+		want func(*rand.Rand) any
+		name string
+	}{
+		{name: "float", draw: func(src *Source) any { return src.Float64() }, want: func(control *rand.Rand) any { return control.Float64() }},
+		{name: "int", draw: func(src *Source) any { return src.Int64(-3, 7) }, want: func(control *rand.Rand) any { return int64(control.Uint64N(11)) - 3 }},
+		{name: "int full", draw: func(src *Source) any { return src.Int64(math.MinInt64, math.MaxInt64) }, want: func(control *rand.Rand) any { return int64(control.Uint64() + uint64(1)<<63) }},
+		{name: "bool", draw: func(src *Source) any { return src.Bool() }, want: func(control *rand.Rand) any { return control.Uint64()&1 != 0 }},
+		{name: "legacy", draw: func(src *Source) any { return src.LegacyFloat64(8.5, -2.5) }, want: func(control *rand.Rand) any { return math.Floor(control.Float64()*12) - 2.5 }},
+		{name: "legacy equal", draw: func(src *Source) any { return src.LegacyFloat64(5, 5) }, want: func(control *rand.Rand) any { return math.Floor(control.Float64()) + 5 }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			calls := 0
+			src := newSource(func() [16]byte {
+				calls++
+
+				return [16]byte{42}
+			})
+			control := rand.New(rand.NewPCG(42, 0))
+			for range 32 {
+				if got, want := test.draw(src), test.want(control); got != want {
+					t.Fatalf("draw = %v, want %v", got, want)
+				}
+
+				if calls != 1 {
+					t.Fatalf("entropy reads = %d, want one", calls)
+				}
+			}
+
+			if src.Float64() != control.Float64() {
+				t.Fatal("initialization changed sequence consumption")
+			}
+		})
+	}
+}
+
+func TestSourceFirstDrawAllocations(t *testing.T) {
+	for name, draw := range map[string]func(*Source){
+		"float":    func(src *Source) { src.Float64() },
+		"int":      func(src *Source) { src.Int64(-3, 7) },
+		"int full": func(src *Source) { src.Int64(math.MinInt64, math.MaxInt64) },
+		"bool":     func(src *Source) { src.Bool() },
+		"legacy":   func(src *Source) { src.LegacyFloat64(8.5, -2.5) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			// AllocsPerRun performs one warmup call. Supply a fresh, already-owned
+			// source for every call so the measured draws all require entropy.
+			const runs = 100
+			sources := make([]*Source, runs+1)
+			for index := range sources {
+				sources[index] = New()
+			}
+
+			next := 0
+			allocations := testing.AllocsPerRun(runs, func() {
+				draw(sources[next])
+				next++
+			})
+			if allocations != 0 {
+				t.Fatalf("first draw allocated %v times", allocations)
+			}
+		})
 	}
 }
 

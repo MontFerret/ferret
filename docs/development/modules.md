@@ -238,6 +238,10 @@ int64 domain through unsigned width arithmetic and unbiased bounded sampling.
 Equal bounds return the Int without drawing. Boolean draws consume the same
 source. Argument validation does not consume randomness.
 
+Default sources acquire entropy on their first actual draw. Queries that never
+draw, including calls with invalid arguments or equal canonical bounds, do not
+initialize the source. Explicitly seeded sources are ready at construction.
+
 `pkg/rnd` owns the non-cryptographic generator mechanics; the Session owns its
 source and context only transports it. The VM's `OpRand` for WAITFOR jitter uses
 the same source. Direct stdlib and VM integrations must provide one explicitly

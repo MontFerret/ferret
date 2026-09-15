@@ -315,10 +315,12 @@ debugger resumes advance the existing sequence instead of reseeding it.
 
 `ferret.WithSessionRandomSeed(seed int64)` selects a deterministic sequence for
 an ordinary or debug Session. Zero and negative seeds are supported; the last
-option wins and reusing an option creates independent sources. Unseeded
-construction reads operating-system entropy once per source. The generator is
-Go's math/rand/v2 PCG; explicit seeds initialize its two words as `uint64(seed)`
-and zero. No host RNG injection or query-level seed mutation is exposed.
+option wins and reusing an option creates independent sources. An unseeded source
+reads operating-system entropy once, on its first actual draw. Construction,
+context lookup, invalid arguments, and equal canonical bounds do not initialize
+it. Each source embeds Go's math/rand/v2 PCG; explicit seeds initialize its two
+words as `uint64(seed)` and zero without reading entropy. No host RNG injection
+or query-level seed mutation is exposed.
 
 Reproducibility is guaranteed within a Ferret version for the same inputs and
 executed control flow. Canonical random functions, deprecated global `rand`,
