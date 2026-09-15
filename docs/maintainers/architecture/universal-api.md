@@ -151,17 +151,15 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
-Live replacement requires a new API release: alpha.16 has only incremental
-breakpoint methods. The coordinated API change adds required `ReplaceBreakpoints`
-and `BreakpointRequest`. Validate both repositories together with a temporary
-workspace until that API release exists, then update the root and API-reference
-tool pins together and validate each module independently with `GOWORK=off`.
-Do not commit local replacements or enable downstream live DAP support against
-the old published contract. See the [release follow-up](../release/live-breakpoints.md).
+Universal API `v1.0.0-alpha.17` includes the required
+`debugger.Session.ReplaceBreakpoints` method and `BreakpointRequest` type.
+The root module and API-reference tool both pin this published version. The API
+prerequisite is complete; downstream live DAP support still requires the separate
+ferretd integration and release described in the
+[release follow-up](../release/live-breakpoints.md).
 
-The root module and API-reference tool pin `api v1.0.0-alpha.16`. This published
-contract permits borrowed runtime no-op close, Native parent-close behavior,
-deferred option validation at the point of use (including output encoding), and
+This published contract permits borrowed runtime no-op close, Native parent-close
+behavior, deferred option validation at the point of use (including output encoding), and
 portable translation before operation-context checks. `Runtime.Run` and
 `Session.Run` return `(*Output, error)` so output presence survives adaptation.
 

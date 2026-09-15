@@ -7,23 +7,20 @@ unrelated work in that repository.
 
 ## Upstream dependency alignment
 
-The API contract change is required: `api v1.0.0-alpha.16` does not declare
-`debugger.Session.ReplaceBreakpoints` or `BreakpointRequest`.
+The Universal API prerequisite is complete: released `api v1.0.0-alpha.17`
+declares `debugger.Session.ReplaceBreakpoints` and `BreakpointRequest`.
+Ferret's root and `tools/apiref` modules both pin this published version.
 
-1. Validate the coordinated API and Ferret changes together using a temporary
-   Go workspace containing both repositories and Ferret's two tool modules.
-2. Release the API contract, then update Ferret's root and `tools/apiref` module
-   files to that published version. Do not invent a release version or commit a
-   local dependency override.
-3. Validate the root and tool modules independently with `GOWORK=off`, rerun
-   affected tests, and release Ferret.
-4. Only then begin the separate clean ferretd change below.
+The remaining release sequence is:
 
-Until step 2, the staged Ferret change requires the coordinated API checkout;
-the retained published module pins cannot compile the new portable type alias.
+1. Validate the root and tool modules independently with `GOWORK=off` against
+   published dependencies, rerun affected tests, and release Ferret.
+2. Complete the separate ferretd integration below against the supporting
+   API/Ferret releases, validate it, and release the daemon.
+3. Update Editorium's daemon pin in its later integration task.
 
 The low-level `vm.DebugExecution.Resume` integration now accepts a synchronous
-`func(int) bool` breakpoint predicate instead of a fixed PC map. Native adapters
+`vm.DebugBreakpointPredicate` instead of a fixed PC map. Native adapters
 and test implementations must update that parameter. Existing source-level
 single-breakpoint methods remain available.
 
