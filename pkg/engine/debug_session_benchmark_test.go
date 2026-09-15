@@ -51,6 +51,67 @@ RETURN FOR i IN 1..100
 	}
 }
 
+func BenchmarkDebugSessionBreakpointChecks(b *testing.B) {
+	engine, err := New()
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(context.Background(), source.New("checks.fql", `FUNC unused() {
+  RETURN 0
+}
+RETURN FOR i IN 1..100
+  RETURN i`))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer plan.Close()
+
+	for _, tc := range []struct {
+		name string
+		line int
+	}{
+		{name: "Empty"},
+		{name: "Populated", line: 2},
+		{name: "FrequentHits", line: 5},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+
+			for b.Loop() {
+				session, err := plan.NewDebugSession(context.Background())
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				if tc.line != 0 {
+					breakpoint, err := session.SetBreakpoint(source.Location{Position: source.Position{Line: tc.line}})
+					if err != nil || !breakpoint.Bound {
+						b.Fatalf("set breakpoint: %#v, %v", breakpoint, err)
+					}
+				}
+
+				event, err := session.Start(context.Background())
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				for event.Reason != debugger.ReasonCompleted {
+					event, err = session.Continue(context.Background())
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+
+				if err := session.Close(); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
 func BenchmarkDebugSessionPausedCallerFrameInspection(b *testing.B) {
 	engine, err := New()
 	if err != nil {

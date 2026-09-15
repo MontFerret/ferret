@@ -303,6 +303,7 @@ func publicExports() []publicExport {
 		{name: "DebugBreakpoint", kind: token.TYPE, target: "pkg/debugger.Breakpoint", root: reflect.TypeFor[ferret.DebugBreakpoint](), owner: reflect.TypeFor[debugger.Breakpoint]()},
 		{name: "DebugBreakpointBindingMode", kind: token.TYPE, target: "pkg/debugger.BreakpointBindingMode", root: reflect.TypeFor[ferret.DebugBreakpointBindingMode](), owner: reflect.TypeFor[debugger.BreakpointBindingMode]()},
 		{name: "DebugBreakpointID", kind: token.TYPE, target: "pkg/debugger.BreakpointID", root: reflect.TypeFor[ferret.DebugBreakpointID](), owner: reflect.TypeFor[debugger.BreakpointID]()},
+		{name: "DebugBreakpointRequest", kind: token.TYPE, target: "pkg/debugger.BreakpointRequest", root: reflect.TypeFor[ferret.DebugBreakpointRequest](), owner: reflect.TypeFor[debugger.BreakpointRequest]()},
 		{name: "DebugBreakpointOptions", kind: token.TYPE, target: "pkg/debugger.BreakpointOptions", root: reflect.TypeFor[ferret.DebugBreakpointOptions](), owner: reflect.TypeFor[debugger.BreakpointOptions]()},
 		{name: "DebugEvent", kind: token.TYPE, target: "pkg/debugger.Event", root: reflect.TypeFor[ferret.DebugEvent](), owner: reflect.TypeFor[debugger.Event]()},
 		{name: "DebugFormatOptions", kind: token.TYPE, target: "pkg/debugger.FormatOptions", root: reflect.TypeFor[ferret.DebugFormatOptions](), owner: reflect.TypeFor[debugger.FormatOptions]()},

@@ -57,11 +57,9 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if _, err := session.Continue(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if len(execution.resumeBreakpoints) != 1 {
-		t.Fatalf("expected one exact breakpoint PC, got %#v", execution.resumeBreakpoints)
-	}
-	if _, exists := execution.resumeBreakpoints[point.PC]; !exists {
-		t.Fatalf("expected point id %d to resolve to pc %d, got %#v", point.ID, point.PC, execution.resumeBreakpoints)
+	if execution.resumeBreakpoints == nil || !execution.resumeBreakpoints(point.PC) ||
+		execution.resumeBreakpoints(point.PC+1) {
+		t.Fatalf("expected a predicate matching exactly PC %d", point.PC)
 	}
 	value, err := session.Evaluate(context.Background(), "x + 1")
 	if err != nil {

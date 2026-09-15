@@ -48,6 +48,12 @@ func (s *debugSession) Pause() error {
 	return wrapDiagnosticError(s.native.Pause())
 }
 
+func (s *debugSession) ReplaceBreakpoints(ctx context.Context, sourceName string, requests []apidebugger.BreakpointRequest) ([]apidebugger.Breakpoint, error) {
+	values, err := s.native.ReplaceBreakpoints(ctx, sourceName, requests)
+
+	return values, wrapDiagnosticError(err)
+}
+
 func (s *debugSession) SetBreakpoint(location apisource.Location) (apidebugger.Breakpoint, error) {
 	value, err := s.native.SetBreakpoint(location)
 

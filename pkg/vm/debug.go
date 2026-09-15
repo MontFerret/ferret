@@ -20,6 +20,12 @@ type (
 	// DebugExecutionStatus reports the incremental execution lifecycle state.
 	DebugExecutionStatus uint8
 
+	// DebugBreakpointPredicate reports whether execution should stop at pc.
+	// The VM invokes it synchronously at source points. It must be inexpensive
+	// and must not inspect or re-enter execution. Returning true commits a
+	// breakpoint stop. A nil predicate disables breakpoint checks.
+	DebugBreakpointPredicate func(pc int) bool
+
 	// DebugExecutionEvent reports one incremental VM stop or terminal event.
 	DebugExecutionEvent struct {
 		Point  *bytecode.DebugPoint
@@ -48,7 +54,8 @@ type (
 	// call concurrently with execution.
 	DebugExecution interface {
 		Start(context.Context) (*DebugExecutionEvent, error)
-		Resume(context.Context, DebugResumeMode, map[int]struct{}) (*DebugExecutionEvent, error)
+		// Resume continues execution according to the mode and breakpoint predicate.
+		Resume(context.Context, DebugResumeMode, DebugBreakpointPredicate) (*DebugExecutionEvent, error)
 		RequestPause()
 		Status() DebugExecutionStatus
 		Locals() ([]DebugLocal, error)
@@ -178,9 +185,8 @@ func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error
 	return d.runLocked(ctx)
 }
 
-// Resume continues a paused execution according to mode and the active
-// breakpoint PCs.
-func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints map[int]struct{}) (*DebugExecutionEvent, error) {
+// Resume continues a paused execution according to mode and the breakpoint predicate.
+func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints DebugBreakpointPredicate) (*DebugExecutionEvent, error) {
 	if err := validateOperationContext(ctx); err != nil {
 		return nil, err
 	}

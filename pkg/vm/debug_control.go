@@ -8,7 +8,7 @@ import (
 
 type debugControl struct {
 	owner       *debugExecution
-	breakpoints map[int]struct{}
+	breakpoints DebugBreakpointPredicate
 	startDepth  int
 	skipPC      int
 	skipDepth   int
@@ -59,7 +59,7 @@ func (c *debugControl) shouldStop(pc, depth int) bool {
 		return true
 	}
 
-	if _, ok := c.breakpoints[pc]; ok {
+	if c.breakpoints != nil && c.breakpoints(pc) {
 		c.reason = DebugStopBreakpoint
 
 		return true

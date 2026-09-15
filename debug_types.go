@@ -30,6 +30,9 @@ type (
 	// DebugBreakpointID identifies a breakpoint within its debug session.
 	DebugBreakpointID = debugger.BreakpointID
 
+	// DebugBreakpointRequest specifies one position and binding policy in a source replacement.
+	DebugBreakpointRequest = debugger.BreakpointRequest
+
 	// DebugBreakpointOptions configures how a requested source location binds.
 	DebugBreakpointOptions = debugger.BreakpointOptions
 

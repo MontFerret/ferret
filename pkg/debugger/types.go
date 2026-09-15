@@ -28,6 +28,8 @@ type (
 	Frame = apidebugger.Frame
 	// Breakpoint describes requested and resolved source locations.
 	Breakpoint = apidebugger.Breakpoint
+	// BreakpointRequest specifies one position and its binding policy in a source replacement.
+	BreakpointRequest = apidebugger.BreakpointRequest
 	// BreakpointOptions configures source-location binding.
 	BreakpointOptions = apidebugger.BreakpointOptions
 	// Event reports a debugger stop, completion, or termination.

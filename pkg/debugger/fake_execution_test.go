@@ -11,7 +11,7 @@ type fakeExecution struct {
 	closeErr          error
 	startEvent        *vm.DebugExecutionEvent
 	resumeEvent       *vm.DebugExecutionEvent
-	resumeBreakpoints map[int]struct{}
+	resumeBreakpoints vm.DebugBreakpointPredicate
 	params            runtime.Params
 	locals            []vm.DebugLocal
 	frames            []vm.DebugFrame
@@ -24,9 +24,12 @@ func (f *fakeExecution) Start(context.Context) (*vm.DebugExecutionEvent, error) 
 	return f.startEvent, nil
 }
 
-func (f *fakeExecution) Resume(_ context.Context, _ vm.DebugResumeMode, breakpoints map[int]struct{}) (*vm.DebugExecutionEvent, error) {
+func (f *fakeExecution) Resume(_ context.Context, _ vm.DebugResumeMode, breakpoints vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
 	f.resumeBreakpoints = breakpoints
 	f.status = vm.DebugExecutionPaused
+	if f.resumeEvent != nil && f.resumeEvent.Reason == vm.DebugStopBreakpoint && f.resumeEvent.Point != nil && breakpoints != nil {
+		breakpoints(f.resumeEvent.Point.PC)
+	}
 	return f.resumeEvent, nil
 }
 
