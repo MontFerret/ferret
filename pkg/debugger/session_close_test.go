@@ -106,7 +106,11 @@ func TestSessionNilAndClosedReceivers(t *testing.T) {
 				}
 			}
 
-			listed := session.Breakpoints()
+			listed, err := session.Breakpoints(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			if len(listed) != 0 || (listed == nil) != (session == nil) {
 				t.Fatalf("unexpected empty listing: %#v", listed)
 			}
@@ -131,19 +135,19 @@ func TestSessionNilAndClosedReceivers(t *testing.T) {
 				}
 			}
 
-			if err := session.Pause(); !errors.Is(err, &StateError{}) {
+			if err := session.Pause(context.Background()); !errors.Is(err, &StateError{}) {
 				t.Fatalf("pause: %v", err)
 			}
 
-			if _, err := session.Frames(); !errors.Is(err, &StateError{}) {
+			if _, err := session.Frames(context.Background()); !errors.Is(err, &StateError{}) {
 				t.Fatalf("frames: %v", err)
 			}
 
-			if _, err := session.FrameLocals(0); !errors.Is(err, &StateError{}) {
+			if _, err := session.FrameLocals(context.Background(), 0); !errors.Is(err, &StateError{}) {
 				t.Fatalf("locals: %v", err)
 			}
 
-			if _, err := session.Variables(1); !errors.Is(err, &StateError{}) {
+			if _, err := session.Variables(context.Background(), 1); !errors.Is(err, &StateError{}) {
 				t.Fatalf("variables: %v", err)
 			}
 
@@ -155,11 +159,11 @@ func TestSessionNilAndClosedReceivers(t *testing.T) {
 				t.Fatalf("replace breakpoints: %v", err)
 			}
 
-			if _, err := session.SetBreakpoint(source.Location{}); !errors.Is(err, &StateError{}) {
+			if _, err := session.SetBreakpoint(context.Background(), source.Location{}); !errors.Is(err, &StateError{}) {
 				t.Fatalf("add breakpoint: %v", err)
 			}
 
-			if err := session.DeleteBreakpoint(1); !errors.Is(err, &StateError{}) {
+			if err := session.DeleteBreakpoint(context.Background(), 1); !errors.Is(err, &StateError{}) {
 				t.Fatalf("delete breakpoint: %v", err)
 			}
 		})

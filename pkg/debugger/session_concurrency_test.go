@@ -32,7 +32,7 @@ func TestSessionSerializesConcurrentCommands(t *testing.T) {
 	}()
 	breakpointDone := make(chan error, 1)
 	go func() {
-		_, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
+		_, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "", Position: source.Position{Line: 1}})
 		breakpointDone <- err
 	}()
 
@@ -66,7 +66,7 @@ func TestSessionPauseDoesNotWaitForRunningCommand(t *testing.T) {
 
 	pauseDone := make(chan error, 1)
 	go func() {
-		pauseDone <- session.Pause()
+		pauseDone <- session.Pause(context.Background())
 	}()
 
 	waitForError(t, pauseDone, "pause")
@@ -91,7 +91,7 @@ func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *te
 
 			session, execution := newBlockingSession(t)
 
-			breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "", Position: source.Position{Line: 1}})
+			breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "", Position: source.Position{Line: 1}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -124,13 +124,13 @@ func TestSessionCloseInterruptsActiveCommandAndPreservesBreakpointSnapshot(t *te
 			if _, _, calls := execution.stats(); calls != 1 {
 				t.Fatalf("unexpected execution close count: %d", calls)
 			}
-			if got := session.Breakpoints(); len(got) != 1 || got[0].ID != breakpoint.ID {
+			if got, err := session.Breakpoints(context.Background()); err != nil || len(got) != 1 || got[0].ID != breakpoint.ID {
 				t.Fatalf("unexpected post-close breakpoint snapshot: %#v", got)
 			}
 			if _, err := session.Continue(commandCtx); err == nil || !errors.Is(err, &StateError{}) {
 				t.Fatalf("expected closed-state error, got %v", err)
 			}
-			if err := session.Pause(); err == nil || !errors.Is(err, &StateError{}) {
+			if err := session.Pause(context.Background()); err == nil || !errors.Is(err, &StateError{}) {
 				t.Fatalf("expected closed-state pause error, got %v", err)
 			}
 			if err := session.Close(); err != nil {
@@ -177,7 +177,7 @@ func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 
 	localsDone := make(chan error, 1)
 	go func() {
-		_, err := session.FrameLocals(0)
+		_, err := session.FrameLocals(context.Background(), 0)
 		localsDone <- err
 	}()
 	waitForSignal(t, inspectStarted, "value inspection")

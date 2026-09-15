@@ -12,6 +12,8 @@ import (
 // Session controls one retained-state source-level debug execution.
 // Execution and inspection commands are serialized. Breakpoint mutation,
 // breakpoint listing, Pause, and Close are safe during a running command.
+// Context arguments must be non-nil. Inspection checks cancellation before and
+// after command admission; cancellation does not interrupt a command-lock wait.
 type Session struct {
 	breakpoints breakpointSet
 	inspector   inspector
@@ -109,7 +111,11 @@ func (s *Session) StepOut(ctx context.Context) (*Event, error) {
 }
 
 // Pause requests a stop at the next logical source location.
-func (s *Session) Pause() error {
+func (s *Session) Pause(ctx context.Context) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
+
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
@@ -145,46 +151,66 @@ func (s *Session) ReplaceBreakpoints(ctx context.Context, sourceName string, req
 
 // SetBreakpoint adds a location breakpoint using next-executable-in-source binding.
 // It is safe while execution is running.
-func (s *Session) SetBreakpoint(location source.Location) (Breakpoint, error) {
-	return s.SetBreakpointAt(location, BreakpointOptions{BindingMode: BreakpointBindNextExecutableInSource})
+func (s *Session) SetBreakpoint(ctx context.Context, location source.Location) (Breakpoint, error) {
+	return s.SetBreakpointAt(ctx, location, BreakpointOptions{BindingMode: BreakpointBindNextExecutableInSource})
 }
 
 // SetBreakpointAt adds a breakpoint at an explicit source location, including
 // while execution is running. Each addition receives a distinct identity.
-func (s *Session) SetBreakpointAt(location source.Location, opts BreakpointOptions) (Breakpoint, error) {
+func (s *Session) SetBreakpointAt(ctx context.Context, location source.Location, opts BreakpointOptions) (Breakpoint, error) {
+	if err := checkContext(ctx); err != nil {
+		return Breakpoint{}, err
+	}
+
 	if err := s.ensureOpen(); err != nil {
 		return Breakpoint{}, err
 	}
 
-	return s.breakpoints.add(location, opts)
+	return s.breakpoints.add(ctx, location, opts)
 }
 
 // DeleteBreakpoint removes a breakpoint by ID, including while execution is
 // running. A previously decided hit remains a valid stop.
-func (s *Session) DeleteBreakpoint(id BreakpointID) error {
+func (s *Session) DeleteBreakpoint(ctx context.Context, id BreakpointID) error {
+	if err := checkContext(ctx); err != nil {
+		return err
+	}
+
 	if err := s.ensureOpen(); err != nil {
 		return err
 	}
 
-	return s.breakpoints.delete(id)
+	return s.breakpoints.delete(ctx, id)
 }
 
 // Breakpoints returns a detached, ID-ordered snapshot, including while running
 // or after Close. Listing never waits for execution or an in-progress replacement.
-func (s *Session) Breakpoints() []Breakpoint {
-	if s == nil {
-		return nil
+func (s *Session) Breakpoints(ctx context.Context) ([]Breakpoint, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
 	}
 
-	return s.breakpoints.list()
+	if s == nil {
+		return nil, nil
+	}
+
+	return s.breakpoints.list(), nil
 }
 
 // Frames returns the current frame followed by callers.
-func (s *Session) Frames() ([]Frame, error) {
+func (s *Session) Frames(ctx context.Context) ([]Frame, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
+
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
 	defer s.lifecycle.unlockCommand()
+
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
@@ -194,17 +220,25 @@ func (s *Session) Frames() ([]Frame, error) {
 }
 
 // Locals returns the visible top-frame locals followed by bound parameters.
-func (s *Session) Locals() ([]Variable, error) {
-	return s.FrameLocals(0)
+func (s *Session) Locals(ctx context.Context) ([]Variable, error) {
+	return s.FrameLocals(ctx, 0)
 }
 
 // FrameLocals returns the visible locals and bound parameters for one paused
 // frame. Frame indexes follow Frames: zero is the current frame.
-func (s *Session) FrameLocals(frame int) ([]Variable, error) {
+func (s *Session) FrameLocals(ctx context.Context, frame int) ([]Variable, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
+
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
 	defer s.lifecycle.unlockCommand()
+
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 
 	if err := s.ensureOpen(); err != nil {
 		return nil, err
@@ -215,11 +249,19 @@ func (s *Session) FrameLocals(frame int) ([]Variable, error) {
 
 // Variables returns the child variables for one expandable debugger value from
 // the current paused state.
-func (s *Session) Variables(reference ValueReference) ([]Variable, error) {
+func (s *Session) Variables(ctx context.Context, reference ValueReference) ([]Variable, error) {
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
+
 	if err := s.lockCommand(); err != nil {
 		return nil, err
 	}
 	defer s.lifecycle.unlockCommand()
+
+	if err := checkContext(ctx); err != nil {
+		return nil, err
+	}
 
 	if err := s.ensureOpen(); err != nil {
 		return nil, err

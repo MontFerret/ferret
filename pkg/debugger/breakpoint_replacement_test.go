@@ -36,26 +36,30 @@ func TestReplacementResolutionIdentityAndIsolation(t *testing.T) {
 		second[3].ID <= other[0].ID || second[4].Location.Line != 3 {
 		t.Fatalf("identity or relocation changed: first=%+v second=%+v", first, second)
 	}
-	if got := session.Breakpoints(); len(got) != 6 {
+	if got, err := session.Breakpoints(context.Background()); err != nil || len(got) != 6 {
 		t.Fatalf("source replacement disturbed other source: %+v", got)
 	}
 
 	second[0].ID = -1
-	snapshot := session.Breakpoints()
+	snapshot, err := session.Breakpoints(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	for i := 1; i < len(snapshot); i++ {
 		if snapshot[i-1].ID >= snapshot[i].ID {
 			t.Fatalf("snapshot is not ordered: %+v", snapshot)
 		}
 	}
 	snapshot[0].RequestedLocation.Line = 99
-	if got := session.Breakpoints()[0]; got.RequestedLocation.Line != 1 {
+	if got, err := session.Breakpoints(context.Background()); err != nil || len(got) == 0 || got[0].RequestedLocation.Line != 1 {
 		t.Fatal("caller modified immutable snapshot")
 	}
 
 	if _, err := session.ReplaceBreakpoints(t.Context(), "", nil); err != nil {
 		t.Fatal(err)
 	}
-	if got := session.Breakpoints(); !reflect.DeepEqual(got, other) {
+	if got, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(got, other) {
 		t.Fatalf("clear disturbed another source: %+v", got)
 	}
 
@@ -67,13 +71,13 @@ func TestReplacementResolutionIdentityAndIsolation(t *testing.T) {
 
 func TestEmptyBreakpointSnapshotSurvivesZeroValueClose(t *testing.T) {
 	session := &Session{}
-	if got := session.Breakpoints(); got == nil || len(got) != 0 {
+	if got, err := session.Breakpoints(context.Background()); err != nil || got == nil || len(got) != 0 {
 		t.Fatalf("expected detached empty snapshot: %+v", got)
 	}
 	if err := session.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if got := session.Breakpoints(); got == nil || len(got) != 0 {
+	if got, err := session.Breakpoints(context.Background()); err != nil || got == nil || len(got) != 0 {
 		t.Fatalf("close changed empty snapshot: %+v", got)
 	}
 }
@@ -113,7 +117,7 @@ func TestReplacementFailureDoesNotPublishOrConsumeIDs(t *testing.T) {
 		if _, err := session.ReplaceBreakpoints(t.Context(), "", requests); !errors.Is(err, runtime.ErrInvalidArgument) {
 			t.Fatalf("expected validation failure: %v", err)
 		}
-		if got := session.Breakpoints(); !reflect.DeepEqual(got, old) {
+		if got, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(got, old) {
 			t.Fatalf("failed replacement partially published: %+v", got)
 		}
 		if got := replaceLines(t, session, 3); got[0].ID != old[0].ID+1 {
@@ -136,16 +140,16 @@ func TestReplacementCancellationDoesNotCancelExecutionOrCommittedState(t *testin
 	if _, err := session.ReplaceBreakpoints(nil, "", nil); !errors.Is(err, runtime.ErrInvalidArgument) {
 		t.Fatalf("nil context: %v", err)
 	}
-	if got := session.Breakpoints(); !reflect.DeepEqual(got, old) {
+	if got, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(got, old) {
 		t.Fatalf("cancellation changed committed state: %+v", got)
 	}
 	// Incremental methods retain their pre-existing post-completion admission.
 	session.lifecycle.finishTerminal("completed")
-	added, err := session.SetBreakpoint(source.Location{Position: source.Position{Line: 3}})
+	added, err := session.SetBreakpoint(context.Background(), source.Location{Position: source.Position{Line: 3}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := session.DeleteBreakpoint(added.ID); err != nil {
+	if err := session.DeleteBreakpoint(context.Background(), added.ID); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -165,7 +169,13 @@ func TestBreakpointSnapshotReadsAreAtomic(t *testing.T) {
 					return
 				default:
 				}
-				got := session.Breakpoints()
+				got, err := session.Breakpoints(context.Background())
+				if err != nil {
+					t.Error(err)
+
+					return
+				}
+
 				if len(got) != 2 || got[0].RequestedLocation.Line != got[1].RequestedLocation.Line || got[0].ID >= got[1].ID {
 					t.Errorf("partial snapshot: %+v", got)
 
@@ -198,7 +208,11 @@ func TestConcurrentSourceReplacementsPreserveEachOther(t *testing.T) {
 		}()
 	}
 	writers.Wait()
-	got := session.Breakpoints()
+	got, err := session.Breakpoints(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	counts := make(map[string]int)
 	for _, breakpoint := range got {
 		counts[breakpoint.RequestedLocation.SourceName]++

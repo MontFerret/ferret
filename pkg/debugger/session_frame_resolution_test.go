@@ -1,6 +1,7 @@
 package debugger
 
 import (
+	"context"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
@@ -30,7 +31,7 @@ func TestSessionFramesDoNotResolveLocationsAcrossFunctions(t *testing.T) {
 	}
 	defer session.Close()
 
-	frames, err := session.Frames()
+	frames, err := session.Frames(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +61,7 @@ func TestSessionFramesUseGlobalPointWhenFunctionIdentityIsUnavailable(t *testing
 	}
 	defer session.Close()
 
-	frames, err := session.Frames()
+	frames, err := session.Frames(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

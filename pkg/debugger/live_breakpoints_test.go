@@ -85,7 +85,7 @@ func TestSessionRetainsCommittedHitAfterReplacement(t *testing.T) {
 		t.Fatalf("committed hit changed: %+v", event)
 	}
 
-	if frames, err := session.Frames(); err != nil || len(frames) == 0 {
+	if frames, err := session.Frames(context.Background()); err != nil || len(frames) == 0 {
 		t.Fatalf("committed stop is not inspectable: %+v, %v", frames, err)
 	}
 
@@ -121,7 +121,7 @@ func TestSessionLiveReplacementAndPause(t *testing.T) {
 		replaced <- err
 	}()
 	waitForSignal(t, waiting.waiting, "replacement admission")
-	if err := session.Pause(); err != nil {
+	if err := session.Pause(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	gate.proceed(t)
@@ -177,7 +177,7 @@ func TestSessionCloseWakesWaitingReplacement(t *testing.T) {
 	if event := liveEvent(t, done); event.Reason != ReasonTerminated {
 		t.Fatalf("close failed to terminate execution: %+v", event)
 	}
-	if got := session.Breakpoints(); !reflect.DeepEqual(got, old) {
+	if got, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(got, old) {
 		t.Fatalf("close changed committed snapshot: %+v", got)
 	}
 }
@@ -217,7 +217,7 @@ func TestSessionReplacementOrdersWithCompletion(t *testing.T) {
 	if err := receiveLiveError(t, replaced); !errors.As(err, &state) || state.State != "completed" {
 		t.Fatalf("terminal commitment did not reject replacement: %v", err)
 	}
-	if got := session.Breakpoints(); !reflect.DeepEqual(got, old) {
+	if got, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(got, old) {
 		t.Fatalf("failed replacement changed snapshot: %+v", got)
 	}
 }
@@ -264,7 +264,7 @@ func TestIncrementalBreakpointMutationPublishesWhileRunning(t *testing.T) {
 	session, gate := newLiveSession(t, nil)
 	done := continueLive(t, session, t.Context())
 	gate.visit(t)
-	breakpoint, err := session.SetBreakpoint(source.Location{Position: source.Position{Line: 3}})
+	breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{Position: source.Position{Line: 3}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +275,7 @@ func TestIncrementalBreakpointMutationPublishesWhileRunning(t *testing.T) {
 
 	done = continueLive(t, session, t.Context())
 	gate.visit(t)
-	if err := session.DeleteBreakpoint(breakpoint.ID); err != nil {
+	if err := session.DeleteBreakpoint(context.Background(), breakpoint.ID); err != nil {
 		t.Fatal(err)
 	}
 	gate.proceed(t)

@@ -64,8 +64,9 @@ hits before lifecycle cleanup releases execution and embedding resources.
 
 Source metadata belongs to Session. Breakpoints and inspection borrow the same
 source and debug-point index by pointer; the index is never copied after use.
-Components do not retain Session or close each other's resources. The public
-constructor, dependency interfaces, and native/Universal contracts are unchanged.
+Components do not retain Session or close each other's resources. Context
+validation remains in the Session facade and lifecycle admission guards; the
+inspector has no independent command lock or cancellation state.
 
 ## Session state and concurrency
 
@@ -81,6 +82,14 @@ deeper calls. All three stepping operations report the shared `ReasonStep` stop
 reason when their stepping condition is reached. Execution and inspection
 commands are serialized. `Pause`, breakpoint mutation, and breakpoint listing
 can proceed while a command is running.
+
+All commands except Close take a non-nil context. Inspection checks cancellation
+before waiting for the command mutex and after acquiring it; cancellation does
+not interrupt that wait or introduce another inspector lock. A canceled Pause
+returns before requesting a stop. Incremental breakpoint add/delete use the
+request context for writer admission, construction, and publication checks.
+Cancellation before publication prevents changes and ID consumption; cancellation
+after publication preserves success and never cancels the debuggee.
 
 Resume calls use the retained execution context unless a caller supplies an
 additional context, in which case both lifetimes are observed. Starting or
@@ -123,8 +132,9 @@ Identity matching uses source name, requested position, and binding mode.
 Unchanged requests retain IDs; duplicates match existing IDs in ascending order.
 Removed IDs are never reused. Incremental add/delete methods use the same
 publication mechanism and preserve their existing admission and validation
-contracts. `Breakpoints()` returns a detached, ID-ordered snapshot even after
-closure. Inspection reference lifetimes remain tied to execution commands.
+contracts. `Breakpoints(ctx)` returns a detached, ID-ordered snapshot and an error.
+Nil and canceled contexts return errors; valid-context listing remains available
+after close. Inspection reference lifetimes remain tied to execution commands.
 
 Previously, mutation/listing shared the command mutex held throughout resume,
 the VM referenced a PC map built at resume, and hit IDs were reconstructed from

@@ -109,8 +109,7 @@ func (s *breakpointSet) replace(ctx context.Context, sourceName string, requests
 	return results, nil
 }
 
-func (s *breakpointSet) add(location source.Location, opts BreakpointOptions) (Breakpoint, error) {
-	ctx := context.Background()
+func (s *breakpointSet) add(ctx context.Context, location source.Location, opts BreakpointOptions) (Breakpoint, error) {
 	if err := s.lockBreakpoints(ctx, false); err != nil {
 		return Breakpoint{}, err
 	}
@@ -143,8 +142,7 @@ func (s *breakpointSet) add(location source.Location, opts BreakpointOptions) (B
 	return breakpoint, nil
 }
 
-func (s *breakpointSet) delete(id BreakpointID) error {
-	ctx := context.Background()
+func (s *breakpointSet) delete(ctx context.Context, id BreakpointID) error {
 	if err := s.lockBreakpoints(ctx, false); err != nil {
 		return err
 	}

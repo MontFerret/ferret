@@ -43,7 +43,7 @@ func TestReplacementPublicationFailurePreservesPreparedSet(t *testing.T) {
 			if err := session.breakpoints.publishBreakpoints(ctx, candidate, true); err == nil {
 				t.Fatal("failed commit succeeded")
 			}
-			if got := session.Breakpoints(); !reflect.DeepEqual(got, old) {
+			if got, err := session.Breakpoints(context.Background()); err != nil || !reflect.DeepEqual(got, old) {
 				t.Fatalf("failed commit changed snapshot: %+v", got)
 			}
 			if session.breakpoints.data.Load().nextID != old[0].ID+1 {
