@@ -133,9 +133,9 @@ interaction cost.
 
 ## Related guides
 
-* [Architecture](architecture.md)
+* [Architecture](overview.md)
 * [Runtime and lifecycle](runtime.md)
-* [Development workflow](workflow.md)
+* [Development workflow](../engineering/workflow.md)
 
 ## Portable debugger boundary
 

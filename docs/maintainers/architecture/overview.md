@@ -86,7 +86,7 @@ of the portable runtime interfaces. `New` creates and owns a Native engine;
 `Wrap` borrows one. Runtime close delegates to Native for owned engines and is a
 no-op for borrowed engines. Plan and session close calls delegate to Native.
 The adapter owns no admission, cancellation, or descendant tracking.
-See [Universal adapter](universal.md).
+See [Universal adapter](universal-api.md).
 
 The façade fans out to `pkg/engine` for native engine semantics and directly to
 lower-level packages for shared vocabulary and convenience helpers. Engine
@@ -127,7 +127,7 @@ Owned registrations carry cleanup callbacks, while borrowed registrations record
 ownership outside the scope. The manager provides no service lookup or dependency
 resolution.
 
-See the [engine boundary audit](engine-boundary-audit.md) for the retained export
+See the [engine boundary audit](engine-boundaries.md) for the retained export
 inventory, internal API rationale, consumer classifications, and deferred API
 questions.
 
@@ -233,5 +233,5 @@ or the v1 branch.
 * [Runtime and lifecycle](runtime.md)
 * [Debugger architecture](debugger.md)
 * [Modules, SDK, and standard library](modules.md)
-* [Development workflow](workflow.md)
-* [Release automation](release.md)
+* [Development workflow](../engineering/workflow.md)
+* [Release automation](../release/process.md)

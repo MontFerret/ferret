@@ -76,7 +76,7 @@ registrations. Ferret pins the shared artifact contracts in the tool module,
 not in the root runtime module.
 
 Detailed authoring, local generation, validation, and wire-contract rules live
-in the [Core API artifact maintainer guide](../maintainers/core-api-reference.md).
+in the [Core API artifact maintainer guide](../reference/core-api.md).
 
 ## Immutable `gh-pages` publication
 
@@ -134,7 +134,7 @@ documentation.
 
 ## Related guides
 
-* [Architecture](architecture.md)
-* [Modules, SDK, and standard library](modules.md)
-* [Development workflow](workflow.md)
-* [Core API artifact maintainer guide](../maintainers/core-api-reference.md)
+* [Architecture](../architecture/overview.md)
+* [Modules, SDK, and standard library](../architecture/modules.md)
+* [Development workflow](../engineering/workflow.md)
+* [Core API artifact maintainer guide](../reference/core-api.md)

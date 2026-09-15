@@ -139,8 +139,8 @@ generated artifacts, or command behavior.
 
 ## Related guides
 
-* [Architecture](architecture.md)
-* [Runtime and lifecycle](runtime.md)
-* [Debugger architecture](debugger.md)
-* [Modules, SDK, and standard library](modules.md)
-* [Release automation](release.md)
+* [Architecture](../architecture/overview.md)
+* [Runtime and lifecycle](../architecture/runtime.md)
+* [Debugger architecture](../architecture/debugger.md)
+* [Modules, SDK, and standard library](../architecture/modules.md)
+* [Release automation](../release/process.md)

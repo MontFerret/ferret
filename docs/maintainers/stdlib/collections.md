@@ -48,7 +48,7 @@ joined, including a close failure after a match. Sources and yielded values
 remain borrowed. Delegated `Contains` owns its own internal resources.
 
 Counting and membership propagate context without polling, following the
-[stdlib cancellation policy](../../AGENTS.md#context-cancellation-in-the-standard-library).
+[stdlib cancellation policy](../../../AGENTS.md#context-cancellation-in-the-standard-library).
 Cancellation during EOF or cleanup does not independently turn success into an
 error; errors returned by hosts and cleanup still propagate. Hosts own cancellation
 of their blocking work. The VM observes execution cancellation when control
@@ -67,7 +67,7 @@ relevant configuration. Only the outer list is new; element references remain
 shallow and the source is unchanged. Non-list iterables are not materialized.
 
 Factories own construction failure, as specified by
-[Factory](runtime.md#collection-construction-and-migration). After successful
+[Factory](../architecture/runtime.md#collection-construction-and-migration). After successful
 creation, reversal owns the destination until success. Access and append errors,
 including host cancellation failures, close that incomplete destination when
 closable and join cleanup errors with the primary failure. Successful results transfer ownership

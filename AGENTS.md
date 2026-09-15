@@ -22,19 +22,20 @@ Use the most direct repository authority for facts that can change:
 When these sources disagree with descriptive documentation, verify the current
 implementation and correct the documentation rather than copying stale values.
 
-## Development documentation
+## Maintainer documentation
 
-Detailed contributor documentation lives under `docs/development`. Before making
-a substantial change, read the guide for the affected subsystem; do not load
-every guide for unrelated work.
+Detailed maintainer documentation lives under
+[docs/maintainers](docs/maintainers/README.md). Before making a substantial change,
+read the guide for the affected subsystem; do not load every guide for unrelated
+work.
 
-* [Architecture and package ownership](docs/development/architecture.md)
-* [Runtime, VM, values, and resource lifecycle](docs/development/runtime.md)
-* [Native to Universal API adapter](docs/development/universal.md)
-* [Debugger](docs/development/debugger.md)
-* [Modules, SDK, and standard library](docs/development/modules.md)
-* [Tooling, generation, tests, and benchmarks](docs/development/workflow.md)
-* [Release automation](docs/development/release.md)
+* [Architecture and package ownership](docs/maintainers/architecture/overview.md)
+* [Runtime, VM, values, and resource lifecycle](docs/maintainers/architecture/runtime.md)
+* [Native to Universal API adapter](docs/maintainers/architecture/universal-api.md)
+* [Debugger](docs/maintainers/architecture/debugger.md)
+* [Modules, SDK, and standard library](docs/maintainers/architecture/modules.md)
+* [Tooling, generation, tests, and benchmarks](docs/maintainers/engineering/workflow.md)
+* [Release automation](docs/maintainers/release/process.md)
 
 ## Universal architecture and ownership
 
@@ -586,7 +587,7 @@ example, or contributor guidance.
 
 Update the relevant documentation in the same task:
 
-* Update `docs/development/*` when repository architecture, subsystem
+* Update `docs/maintainers/**` when repository architecture, subsystem
   responsibilities, internal contracts, lifecycle behavior, development
   workflows, tooling, testing, benchmarking, or release behavior changes.
 * Update repository-facing documentation such as `README.md`,

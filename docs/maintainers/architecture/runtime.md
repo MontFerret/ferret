@@ -42,7 +42,7 @@ transfers the result. Wrappers must implement `New` when an inherited factory
 would discard their implementation family or configuration.
 
 Global collection functions and their iterator/result ownership are described
-in [Collection library contracts](collection-library.md).
+in [Collection library contracts](../stdlib/collections.md).
 
 ## Copying values
 
@@ -56,10 +56,10 @@ change cloning and resource ownership; those remain the copy implementation's
 responsibility.
 
 Array bounds, shallow copy ownership, and independent slice backing storage are
-described in [Array library contracts](array-library.md).
+described in [Array library contracts](../stdlib/arrays.md).
 
 Map destination operations, immutable copies, and mutable object-library
-ownership are described in [Object library contracts](object-library.md). Runtime iterator traversal
+ownership are described in [Object library contracts](../stdlib/objects.md). Runtime iterator traversal
 closes acquired closable iterators and preserves both traversal and close errors;
 the iterable itself remains borrowed.
 
@@ -267,7 +267,7 @@ semantic data may be shared with the Universal API; portable option translation
 belongs in `uapi`, which produces Native options without changing their
 private targets.
 
-The [Universal adapter](universal.md) owns the Native engine created by `New` or
+The [Universal adapter](universal-api.md) owns the Native engine created by `New` or
 borrows an existing engine through `Wrap`. Owned runtime close delegates to Native;
 borrowed runtime close is a no-op that leaves the wrapper usable. Plan and session
 close calls delegate to Native. Portable option callbacks run before delegation,
@@ -353,11 +353,11 @@ public façade. Cross-layer semantics should also have coverage in
 
 Resource tests should cover aliases, borrowed versus owned values, failure,
 cancellation, unwind, materialization, and idempotent cleanup. Performance work
-should use the commands described in [Development workflow](workflow.md).
+should use the commands described in [Development workflow](../engineering/workflow.md).
 
 ## Related guides
 
-* [Architecture](architecture.md)
+* [Architecture](overview.md)
 * [Debugger architecture](debugger.md)
 * [Modules, SDK, and standard library](modules.md)
-* [Development workflow](workflow.md)
+* [Development workflow](../engineering/workflow.md)

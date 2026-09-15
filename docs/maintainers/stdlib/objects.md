@@ -85,7 +85,7 @@ their shallow `Value.Copy` contract. The library cannot strengthen a host
 value's copy guarantees. Host implementations of `New` and `Clone` must
 produce independent destinations. `New` transfers ownership only on success;
 the factory owns failed-construction cleanup. See the runtime guide's
-[collection construction migration](runtime.md#collection-construction-and-migration).
+[collection construction migration](../architecture/runtime.md#collection-construction-and-migration).
 
 After successful factory construction, immutable merge owns its destination until
 successful return. Population or cancellation failures close that incomplete
