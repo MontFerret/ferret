@@ -13,19 +13,19 @@ const stdlibPackageMarker = "/pkg/stdlib/"
 
 var (
 	standardLibraryCategories = []apicatalog.Category{
-		{ID: "arrays", Title: "Arrays", Description: "Immutable arrays:: functions, explicit arrays::mut operations, and temporary global migration aliases."},
-		{ID: "collections", Title: "Collections", Description: "Global functions for working with collections."},
-		{ID: "crypto", Title: "Crypto", Description: "Digest and secure token functions in the crypto namespace."},
-		{ID: "datetime", Title: "Date & Time", Description: "Canonical datetime:: functions and deprecated global migration adapters."},
-		{ID: "encoding", Title: "Encoding", Description: "Serialization and escaping functions in the encoding namespace."},
-		{ID: "io", Title: "I/O", Description: "Functions for working with files, networks, and other input/output operations."},
-		{ID: "math", Title: "Math", Description: "Canonical math:: functions and deprecated global compatibility functions."},
-		{ID: "objects", Title: "Objects", Description: "Object functions with explicit mutation in the object::mut namespace."},
-		{ID: "path", Title: "Path", Description: "Functions for working with paths."},
-		{ID: "strings", Title: "Strings", Description: "Global functions for working with strings."},
-		{ID: "testing", Title: "Testing", Description: "Assertion functions for testing Ferret queries."},
-		{ID: "types", Title: "Types", Description: "Global functions for type checks and conversions."},
-		{ID: "utils", Title: "Utilities", Description: "General-purpose global utility functions."},
+		{ID: "arrays", Title: "Arrays", Description: "Functions for creating, transforming, querying, and modifying arrays."},
+		{ID: "collections", Title: "Collections", Description: "Functions for working with collections and collection values."},
+		{ID: "crypto", Title: "Crypto", Description: "Functions for hashing, encoding, and generating secure values."},
+		{ID: "datetime", Title: "Date & Time", Description: "Functions for creating, parsing, formatting, and manipulating dates and times."},
+		{ID: "encoding", Title: "Encoding", Description: "Functions for encoding, decoding, serializing, and escaping values."},
+		{ID: "io", Title: "I/O", Description: "Functions for working with files, networks, and other input and output operations."},
+		{ID: "math", Title: "Math", Description: "Functions for mathematical operations and numeric calculations."},
+		{ID: "objects", Title: "Objects", Description: "Functions for creating, transforming, querying, and modifying objects."},
+		{ID: "path", Title: "Path", Description: "Functions for constructing, inspecting, and manipulating paths."},
+		{ID: "strings", Title: "Strings", Description: "Functions for creating, transforming, searching, and inspecting strings."},
+		{ID: "testing", Title: "Testing", Description: "Functions for assertions and testing Ferret queries."},
+		{ID: "types", Title: "Types", Description: "Functions for inspecting, checking, and converting value types."},
+		{ID: "utils", Title: "Utilities", Description: "General-purpose utility functions."},
 	}
 
 	// categoryOverrides is intentionally keyed by canonical Ferret identity.

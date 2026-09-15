@@ -102,4 +102,36 @@ func assertMathMetadata(t *testing.T, reference *api.Reference, catalog *apicata
 			t.Fatal("both range forms must be in Arrays")
 		}
 	}
+
+	for name, arity := range map[string]int{"e": 0, "sign": 1, "trunc": 1, "cbrt": 1, "log1p": 1, "expm1": 1, "hypot": 2, "clamp": 3} {
+		canonical := apicatalog.FunctionRef{Namespace: "math", Name: name}
+		got := signatures[canonical]
+		if len(got) != 1 || !hasSignature(got, arity, false) {
+			t.Fatalf("math::%s signature = %+v", name, got)
+		}
+
+		result := got[0].Return.Type
+		switch name {
+		case "clamp", "trunc":
+			if result.Kind != api.TypeKindUnion || len(result.Types) != 2 || result.Types[0].Name != "Int" || result.Types[1].Name != "Float" {
+				t.Fatalf("math::%s return type = %+v", name, result)
+			}
+		case "sign":
+			if result.Name != "Int" {
+				t.Fatalf("math::sign return type = %+v", result)
+			}
+		default:
+			if result.Name != "Float" {
+				t.Fatalf("math::%s return type = %+v", name, result)
+			}
+		}
+
+		if _, ok := signatures[apicatalog.FunctionRef{Name: name}]; ok {
+			t.Fatalf("unexpected global %s", name)
+		}
+
+		if categories[canonical] != "math" {
+			t.Fatalf("math::%s category = %q", name, categories[canonical])
+		}
+	}
 }
