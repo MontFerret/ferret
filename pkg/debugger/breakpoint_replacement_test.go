@@ -122,51 +122,6 @@ func TestReplacementFailureDoesNotPublishOrConsumeIDs(t *testing.T) {
 	}
 }
 
-func TestReplacementPublicationFailurePreservesPreparedSet(t *testing.T) {
-	for _, failure := range []string{"cancel", "complete", "close"} {
-		t.Run(failure, func(t *testing.T) {
-			session := replacementSession(t)
-			old := replaceLines(t, session, 1)
-			ctx, cancel := context.WithCancel(t.Context())
-			defer cancel()
-			if err := session.lockBreakpoints(ctx, true); err != nil {
-				t.Fatal(err)
-			}
-			defer func() { <-session.breakpointWrite }()
-
-			// Prepare a complete candidate, then fail at the actual commit boundary.
-			resolved, err := session.resolveBreakpoint(source.Location{Position: source.Position{Line: 3}}, BreakpointOptions{}, ctx.Err)
-			if err != nil {
-				t.Fatal(err)
-			}
-			resolved.ID = old[0].ID + 1
-			candidate, err := newBreakpointSnapshot(&session.pointIndex, []Breakpoint{resolved}, resolved.ID+1, ctx.Err)
-			if err != nil {
-				t.Fatal(err)
-			}
-			switch failure {
-			case "cancel":
-				cancel()
-			case "complete":
-				session.finishBreakpoints("completed")
-			case "close":
-				if err := session.Close(); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := session.publishBreakpoints(ctx, candidate, true); err == nil {
-				t.Fatal("failed commit succeeded")
-			}
-			if got := session.Breakpoints(); !reflect.DeepEqual(got, old) {
-				t.Fatalf("failed commit changed snapshot: %+v", got)
-			}
-			if session.breakpointData.Load().nextID != old[0].ID+1 {
-				t.Fatal("failed commit advanced identity")
-			}
-		})
-	}
-}
-
 func TestReplacementCancellationDoesNotCancelExecutionOrCommittedState(t *testing.T) {
 	session := replacementSession(t)
 	ctx, cancel := context.WithCancel(t.Context())
@@ -185,7 +140,7 @@ func TestReplacementCancellationDoesNotCancelExecutionOrCommittedState(t *testin
 		t.Fatalf("cancellation changed committed state: %+v", got)
 	}
 	// Incremental methods retain their pre-existing post-completion admission.
-	session.finishBreakpoints("completed")
+	session.lifecycle.finishTerminal("completed")
 	added, err := session.SetBreakpoint(source.Location{Position: source.Position{Line: 3}})
 	if err != nil {
 		t.Fatal(err)

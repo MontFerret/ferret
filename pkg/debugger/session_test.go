@@ -423,6 +423,88 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	}
 }
 
+func TestSessionAbortedStartPreservesReferencesUntilRetry(t *testing.T) {
+	for _, invalid := range []string{"nil_context", "canceled_context"} {
+		t.Run(invalid, func(t *testing.T) {
+			execution := &fakeExecution{
+				startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry},
+				locals:     []vm.DebugLocal{{Name: "value", Value: runtime.NewArrayWith(runtime.NewInt(1))}},
+				status:     vm.DebugExecutionNew,
+			}
+			beforeCalls := 0
+			services := &fakeSessionServices{beforeRun: func(ctx context.Context) (context.Context, error) {
+				beforeCalls++
+				if beforeCalls != 1 {
+					return ctx, nil
+				}
+
+				if invalid == "nil_context" {
+					return nil, nil
+				}
+
+				canceled, cancel := context.WithCancel(ctx)
+				cancel()
+
+				return canceled, nil
+			}}
+			session, err := NewSession(Config{
+				Execution: execution,
+				Values:    vm.NewDebugValueAccess(),
+				Services:  services,
+				Source:    source.NewAnonymous("RETURN 1"),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = session.Close() })
+
+			locals, err := session.Locals()
+			if err != nil {
+				t.Fatal(err)
+			}
+			reference := locals[0].Value.Reference
+			expectedErr := runtime.ErrInvalidArgument
+			if invalid == "canceled_context" {
+				expectedErr = context.Canceled
+			}
+
+			if event, err := session.Start(t.Context()); event != nil || !errors.Is(err, expectedErr) {
+				t.Fatalf("aborted start: event=%+v err=%v", event, err)
+			}
+
+			if execution.Status() != vm.DebugExecutionNew || services.afterCalls != 1 || !errors.Is(services.afterRunErr, expectedErr) {
+				t.Fatalf("aborted attempt: status=%v hooks=%d err=%v", execution.Status(), services.afterCalls, services.afterRunErr)
+			}
+
+			if _, err := session.Variables(reference); err != nil {
+				t.Fatalf("aborted start invalidated reference: %v", err)
+			}
+
+			if event, err := session.Start(t.Context()); err != nil || event.Reason != ReasonEntry {
+				t.Fatalf("retry: event=%+v err=%v", event, err)
+			}
+
+			if _, err := session.Variables(reference); !errors.Is(err, runtime.ErrNotFound) {
+				t.Fatalf("successful start retained stale reference: %v", err)
+			}
+
+			if services.afterCalls != 1 {
+				t.Fatalf("retry settled hooks too early: %d", services.afterCalls)
+			}
+
+			for range 2 {
+				if err := session.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if beforeCalls != 2 || services.afterCalls != 2 || !errors.Is(services.afterRunErr, context.Canceled) {
+				t.Fatalf("retry hook pairing: before=%d after=%d err=%v", beforeCalls, services.afterCalls, services.afterRunErr)
+			}
+		})
+	}
+}
+
 func BenchmarkSessionContinueThroughExecutionInterface(b *testing.B) {
 	src := source.New("debug.fql", "RETURN 1")
 	point := bytecode.DebugPoint{ID: 7, PC: 0, Span: source.Span{Start: 0, End: 6}, FunctionID: bytecode.NoFunction}

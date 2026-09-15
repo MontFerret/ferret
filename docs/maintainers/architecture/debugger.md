@@ -41,6 +41,32 @@ acquisition owner as ordinary execution. Root `ferret` aliases the supported
 debugger types through the curated embedding API; source-level debugger policy
 stays in `pkg/debugger`.
 
+## Internal session composition
+
+The public `Session` composes three private concrete components in
+`pkg/debugger`:
+
+* `sessionLifecycle` owns retained execution, embedding services, command and
+  lifecycle locks, cancellation contexts, terminal state, hook pairing, output
+  materialization, and once-only cleanup.
+* `breakpointSet` owns binding, identities, immutable snapshots, the writer
+  gate, the VM predicate, and captured hit IDs. It borrows lifecycle admission
+  and publication guards so publication remains ordered with native termination.
+* `inspector` borrows execution and value access and owns frames, locals,
+  expression evaluation, bounded presentation, and expandable references.
+  All inspection and reference invalidation run under the lifecycle command lock.
+
+`Session` retains source-event projection and coordinates transitions between
+these owners. Run preparation succeeds before it invalidates inspection
+references and enters the VM. Close first rejects new work and cancels execution,
+then acquires the command lock; Session clears inspection references and captured
+hits before lifecycle cleanup releases execution and embedding resources.
+
+Source metadata belongs to Session. Breakpoints and inspection borrow the same
+source and debug-point index by pointer; the index is never copied after use.
+Components do not retain Session or close each other's resources. The public
+constructor, dependency interfaces, and native/Universal contracts are unchanged.
+
 ## Session state and concurrency
 
 A debug session retains one execution across commands. `Start` stops at entry;
@@ -74,15 +100,16 @@ names retain unbound records without affecting launched-source breakpoints.
 Invalid positions or binding modes fail the operation. Unresolved valid
 locations return ordinary unbound results in request order.
 
-The debugger owns an immutable snapshot of requested/resolved records and a
+The breakpoint set owns an immutable snapshot of requested/resolved records and a
 PC-to-hit-IDs index. A cancellable writer gate serializes mutations independently
 of `commandMu`. Resolution and construction precede atomic pointer publication;
 no partially replaced set is visible. A brief `lifecycleMu` critical section
 orders publication with native completion, termination, and closure. Publication
 first succeeds; terminal commitment first rejects replacement. Cancellation
 observed before publication aborts; cancellation afterward does not undo success.
-The gate observes termination, and Pause/Close never acquire it. Lock ordering is
-command lock or writer gate, then lifecycle lock, never the reverse.
+Lifecycle owns the terminal notification observed by the gate, and Pause/Close
+never acquire the writer gate. Lock ordering is command lock or writer gate,
+then lifecycle lock, never the reverse.
 
 VM resume receives a synchronous breakpoint predicate instead of a fixed PC
 map. At existing debug source points, the predicate loads the current snapshot

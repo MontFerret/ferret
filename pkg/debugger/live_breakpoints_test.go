@@ -112,7 +112,7 @@ func TestSessionLiveReplacementAndPause(t *testing.T) {
 	gate.visit(t)
 
 	// Simulate another writer holding admission. Pause must not wait for it.
-	session.breakpointWrite <- struct{}{}
+	session.breakpoints.write <- struct{}{}
 	ctx, cancel := context.WithCancel(t.Context())
 	waiting := &breakpointWaitContext{Context: ctx, waiting: make(chan struct{})}
 	replaced := make(chan error, 1)
@@ -132,7 +132,7 @@ func TestSessionLiveReplacementAndPause(t *testing.T) {
 	if err := receiveLiveError(t, replaced); !errors.Is(err, context.Canceled) {
 		t.Fatalf("waiting replacement did not cancel: %v", err)
 	}
-	<-session.breakpointWrite
+	<-session.breakpoints.write
 
 	installed := replaceLines(t, session, 4)
 	for range 2 {
@@ -157,8 +157,8 @@ func TestSessionCloseWakesWaitingReplacement(t *testing.T) {
 	old := replaceLines(t, session, 3)
 	done := continueLive(t, session, t.Context())
 	gate.visit(t)
-	session.breakpointWrite <- struct{}{}
-	defer func() { <-session.breakpointWrite }()
+	session.breakpoints.write <- struct{}{}
+	defer func() { <-session.breakpoints.write }()
 	waiting := &breakpointWaitContext{Context: t.Context(), waiting: make(chan struct{})}
 	replaced := make(chan error, 1)
 	go func() {
@@ -200,8 +200,8 @@ func TestSessionReplacementOrdersWithCompletion(t *testing.T) {
 
 	// VM return precedes native terminal commitment; this ordering may publish.
 	old := replaceLines(t, session, 3)
-	session.breakpointWrite <- struct{}{}
-	defer func() { <-session.breakpointWrite }()
+	session.breakpoints.write <- struct{}{}
+	defer func() { <-session.breakpoints.write }()
 	waiting := &breakpointWaitContext{Context: t.Context(), waiting: make(chan struct{})}
 	replaced := make(chan error, 1)
 	go func() {
