@@ -16,10 +16,14 @@ user-facing guides are maintained on the [Ferret documentation website](https://
 
 ## Engineering
 
+- [Engineering principles](engineering/principles.md) — Ownership, compatibility, correctness, and documentation policy.
+- [Go code style](engineering/code-style.md) — Handwritten Go organization, declarations, comments, and spacing.
+- [Testing and performance](engineering/testing.md) — Contract coverage, validation requirements, and benchmark policy.
 - [Development workflow](engineering/workflow.md) — Build, generation, testing, lint, and benchmark entry points.
 
 ## Standard Library
 
+- [Shared contracts and overview](stdlib/README.md) — Standard-library cancellation policy and category navigation.
 - [Arrays](stdlib/arrays.md) — Array operations, mutation, ownership, and legacy compatibility.
 - [Collections](stdlib/collections.md) — Collection traversal, construction, and destination ownership.
 - [DateTime](stdlib/datetime.md) — Date and time comparison, arithmetic, and migration compatibility.

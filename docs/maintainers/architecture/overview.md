@@ -32,7 +32,8 @@ rendering concepts.
 `pkg/compiler` owns semantic analysis, lowering, optimization, and program
 construction. It consumes parsed FQL and produces `bytecode.Program`; runtime-only
 behavior does not belong in the compiler unless it is an explicit compile-time
-semantic or validation rule.
+semantic or validation rule. Compiler output must preserve the program semantics
+expected by the VM.
 
 `pkg/bytecode` owns instructions, operands, functions, executable metadata, and
 the program model consumed by the VM. Its `artifact` and `format` subpackages own
@@ -43,7 +44,9 @@ compiler emission, VM execution, validation, debugger metadata, and possibly
 `pkg/vm` owns register-based execution, frame and register state, dispatch,
 cancellation safepoints, cleanup, result ownership, VM pooling, and retained
 debug execution. `pkg/runtime` owns the values and semantic contracts used by the
-VM. See [Runtime and lifecycle](runtime.md) for those boundaries.
+VM; `runtime.Value` is their shared value abstraction. Runtime value behavior
+belongs here, not in VM, stdlib, encoding, or debugger-specific type switches.
+See [Runtime and lifecycle](runtime.md) for those boundaries.
 
 `pkg/encoding` turns runtime values into external representations. Encoding is a
 consumer of runtime semantics and VM result ownership; it does not redefine
@@ -99,8 +102,10 @@ façade. Lower-level production
 packages must not import root `ferret`; compiler, runtime, VM, bytecode, and
 stdlib remain independent of both embedding packages. Integrations such as
 compatibility adapters and the SDK test harness may use `pkg/engine` because
-they construct and own native executions. Public API tests and downstream-style
-examples use root `ferret`.
+they construct and own native executions. Native adapters and implementation
+tooling depend on `pkg/engine` only when they require engine semantics, never for
+convenience types or helpers. Public API tests and downstream-style examples use
+root `ferret`.
 
 `pkg/engine/internal/bootstrap` constructs compilers, orchestrates module
 registration and host finalization, snapshots hooks, runs initialization, and
@@ -153,7 +158,8 @@ questions.
 * `pkg/encoding`: codecs, output encoding, and materialization integration.
 * `pkg/fs`: controlled filesystem construction and access policy.
 * `pkg/net`: controlled network services and HTTP policy.
-* `pkg/logging`: observational logging support.
+* `pkg/logging`: observational logging support; language semantics and control
+  flow must not depend on log output.
 
 ### Extensions and developer tools
 
@@ -182,22 +188,23 @@ See [Modules, SDK, and standard library](modules.md) and
 | Embedding API | root façade and `pkg/engine` | modules, VM, runtime, and public API tests |
 | Native to Universal adaptation | `uapi` | portable contracts, Native options and lifecycle, adapter tests |
 
-Start with the primary owner even when a behavior has several consumers. Shared
-semantics should flow outward from their owner rather than being recreated at
-each call site.
+Use this routing with the shared
+[ownership and boundary principles](../engineering/principles.md#ownership-and-boundaries).
 
 ## Generated and source artifacts
 
 The `.g4` files under `pkg/parser/antlr` are parser sources. The generated
 `pkg/parser/antlr/FqlLexer.tokens` file and artifacts under `pkg/parser/fql` are
-derived by the `go:generate` directives in `pkg/parser/parser.go`. Do not edit
-derived parser output directly.
+derived by the `go:generate` directives in `pkg/parser/parser.go`.
 
-Run `make generate` after grammar changes. That target runs Go generation and
-then the repository formatter, so inspect the full diff for unintended changes.
-Generated changes must be committed with the grammar source that produced them.
+The [parser generation workflow](../engineering/workflow.md#parser-generation)
+owns the rules for changing grammar sources, regenerating artifacts, and
+coordinating language changes across subsystems.
 
 ## Diagnostics and formatting
+
+Runtime execution errors and internal invariant violations are different
+failure classes and must not be collapsed.
 
 User-facing diagnostics should retain the most accurate source span available.
 Parser and compiler failures distinguish syntax errors, semantic errors, runtime
@@ -223,10 +230,10 @@ state, cleanup, encoding/materialization, and debugger integration are
 implementation-sensitive and should be verified in current code before being
 changed.
 
-The root package and `pkg/engine`, `uapi`, `pkg/module`, `pkg/runtime`, and
-`pkg/sdk` are public, API-sensitive surfaces. `pkg/bytecode` artifacts also carry explicit versions
-and validation. Do not infer compatibility promises from obsolete design notes
-or the v1 branch.
+The [public API and compatibility policy](../engineering/principles.md#public-api-and-compatibility)
+identifies API-sensitive surfaces and the rules for changing them. `pkg/bytecode`
+artifacts also carry explicit versions and validation. Optimization work follows
+the shared [correctness principles](../engineering/principles.md#correctness-before-optimization).
 
 ## Related guides
 

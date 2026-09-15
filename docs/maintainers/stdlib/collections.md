@@ -48,7 +48,7 @@ joined, including a close failure after a match. Sources and yielded values
 remain borrowed. Delegated `Contains` owns its own internal resources.
 
 Counting and membership propagate context without polling, following the
-[stdlib cancellation policy](../../../AGENTS.md#context-cancellation-in-the-standard-library).
+[stdlib cancellation policy](README.md#context-cancellation).
 Cancellation during EOF or cleanup does not independently turn success into an
 error; errors returned by hosts and cleanup still propagate. Hosts own cancellation
 of their blocking work. The VM observes execution cancellation when control

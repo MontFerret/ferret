@@ -97,7 +97,7 @@ runtime helpers. Reusable module contracts do not belong in stdlib, and
 stdlib-specific behavior does not belong in `pkg/module`.
 
 Standard-library functions propagate context and follow the canonical
-[cancellation rule](../../../AGENTS.md#context-cancellation-in-the-standard-library).
+[cancellation rule](../stdlib/README.md#context-cancellation).
 The VM observes ordinary execution cancellation at its safepoints after control
 returns; synchronous stdlib work may complete with a canceled context. Downstream
 blocking capabilities own cancellation through the propagated context. WAIT owns
