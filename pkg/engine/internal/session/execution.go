@@ -12,6 +12,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	"github.com/MontFerret/ferret/v2/pkg/rnd"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -19,6 +20,7 @@ import (
 // The native Session owns run admission and hook orchestration. Execution must
 // be used serially, except that concurrent Close calls retain the same result.
 type Execution struct {
+	random            *rnd.Source
 	logger            logging.Logger
 	closeErr          error
 	network           ferretnet.Network
@@ -93,6 +95,7 @@ func (e *Execution) Close() error {
 }
 
 func (e *Execution) extendContext(ctx context.Context) context.Context {
+	ctx = rnd.WithContext(ctx, e.random)
 	ctx = e.logger.WithContext(ctx)
 	ctx = encoding.WithRegistry(ctx, e.encoding)
 	ctx = fs.WithFileSystem(ctx, e.filesystem)

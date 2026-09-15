@@ -10,6 +10,7 @@ import (
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
+	"github.com/MontFerret/ferret/v2/pkg/rnd"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -35,6 +36,7 @@ func newTestContext() context.Context {
 	type Salt struct{}
 
 	ctx := context.WithValue(context.Background(), testSaltKey, &Salt{})
+	ctx = rnd.WithContext(ctx, rnd.NewSeed(0))
 
 	return ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default))
 }

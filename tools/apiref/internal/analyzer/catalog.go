@@ -22,6 +22,7 @@ var (
 		{ID: "math", Title: "Math", Description: "Functions for mathematical operations and numeric calculations."},
 		{ID: "objects", Title: "Objects", Description: "Functions for creating, transforming, querying, and modifying objects."},
 		{ID: "path", Title: "Path", Description: "Functions for constructing, inspecting, and manipulating paths."},
+		{ID: "random", Title: "Random", Description: "Pseudo-random value generation functions in the random namespace."},
 		{ID: "strings", Title: "Strings", Description: "Functions for creating, transforming, searching, and inspecting strings."},
 		{ID: "testing", Title: "Testing", Description: "Functions for assertions and testing Ferret queries."},
 		{ID: "types", Title: "Types", Description: "Functions for inspecting, checking, and converting value types."},

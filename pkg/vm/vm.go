@@ -9,6 +9,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/internal/operator"
+	"github.com/MontFerret/ferret/v2/pkg/rnd"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/diagnostics"
@@ -1459,7 +1460,14 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				state.raiseRuntimeAt(pc, err, recoverDefault, bytecode.NoopOperand, nil, false)
 			}
 		case bytecode.OpRand:
-			state.writeBorrowedRegister(dst, runtime.NewFloat(runtime.RandomDefault()))
+			src, ok := rnd.FromContext(ctx)
+			if !ok {
+				state.raiseRuntimeAt(pc, runtime.Error(runtime.ErrUnexpected, "random source missing from execution context"), recoverDefault, bytecode.NoopOperand, nil, false)
+
+				break
+			}
+
+			state.writeBorrowedRegister(dst, runtime.NewFloat(src.Float64()))
 		case bytecode.OpElapsed:
 			state.writeBorrowedRegister(dst, state.elapsed())
 		default:

@@ -33,6 +33,7 @@ expand the root API.
   `WithSessionFSRoot`, `WithNetwork`, `WithNetworkOptions`.
 * Engine parameters: `WithParam`, `WithParams`, `WithRuntimeParam`,
   `WithRuntimeParams`.
+* Session randomness: `WithSessionRandomSeed`.
 * Session parameters: `WithSessionParam`, `WithSessionParams`,
   `WithSessionRuntimeParam`, `WithSessionRuntimeParams`.
 * Logging configuration: `WithLog`, `WithLogLevel`, `WithLogFields`,

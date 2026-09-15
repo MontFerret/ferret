@@ -15,6 +15,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/math"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/objects"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/path"
+	"github.com/MontFerret/ferret/v2/pkg/stdlib/random"
 	stdlibstrings "github.com/MontFerret/ferret/v2/pkg/stdlib/strings"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/testing"
 	"github.com/MontFerret/ferret/v2/pkg/stdlib/types"
@@ -37,6 +38,7 @@ const (
 	Encoding    Group = "encoding"
 	Crypto      Group = "crypto"
 	Math        Group = "math"
+	Random      Group = "random"
 	Collections Group = "collections"
 	DateTime    Group = "datetime"
 	Arrays      Group = "arrays"
@@ -55,6 +57,7 @@ var groupRegistrations = []groupRegistration{
 	{group: Encoding, register: encoding.RegisterLib},
 	{group: Crypto, register: crypto.RegisterLib},
 	{group: Math, register: math.RegisterLib},
+	{group: Random, register: random.RegisterLib},
 	{group: Collections, register: collections.RegisterLib},
 	{group: DateTime, register: datetime.RegisterLib},
 	{group: Arrays, register: arrays.RegisterLib},
@@ -70,7 +73,7 @@ func expandGroup(group Group) ([]Group, bool) {
 	switch group {
 	case IO:
 		return []Group{FS, NET}, true
-	case Types, Strings, Encoding, Crypto, Math, Collections, DateTime, Arrays, Objects, FS, NET, Path, Utils, Testing:
+	case Types, Strings, Encoding, Crypto, Math, Random, Collections, DateTime, Arrays, Objects, FS, NET, Path, Utils, Testing:
 		return []Group{group}, true
 	default:
 		return nil, false

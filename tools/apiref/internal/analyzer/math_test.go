@@ -74,7 +74,7 @@ func assertMathMetadata(t *testing.T, reference *api.Reference, catalog *apicata
 	}
 
 	for _, signature := range signatures[apicatalog.FunctionRef{Name: "rand"}] {
-		if !strings.Contains(signature.Deprecated, "planned") || !strings.Contains(signature.Deprecated, "no replacement") {
+		if !strings.Contains(signature.Deprecated, "random::") {
 			t.Fatalf("rand deprecation = %q", signature.Deprecated)
 		}
 	}

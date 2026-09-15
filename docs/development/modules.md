@@ -182,9 +182,9 @@ method must still be a string.
 Range generation belongs to Arrays: `arrays::range(start, end[, step])` shares
 its implementation with the deprecated global and exported Go `math.Range`
 forwarder. The global remains registered by Math for Math-only embeddings.
-`math::range` is not registered. Global `rand` retains its existing behavior;
-its deprecation explicitly describes a planned `random::` namespace with no
-current replacement. There is no `math::rand`.
+`math::range` is not registered. Global `rand` retains its existing coercion,
+argument order, and rounded-result behavior as a deprecated adapter. Its draws
+use the same Session source as the canonical `random::` namespace. There is no `math::rand`.
 
 The registry supports functions, not namespaced constants, so pi is exposed as
 `math::pi()` with a deprecated global `pi()`. Euler's number follows the same
@@ -216,6 +216,49 @@ generic finalization, independently of public math registrations. Only
 unqualified `COUNT`, `SUM`, `MIN`, `MAX`, and `AVERAGE` identify those reductions.
 Namespaced and other custom selectors retain ordinary function dispatch, so
 explicit `math::` selectors remain strict. See [VM execution](runtime.md#vm-execution).
+
+## Random value generation
+
+The independent Random group registers `random::float()` and
+`random::float(min, max)`, `random::int(min, max)`, and `random::bool()` with
+fixed arities. Full and Safe include this group. There are no new global aliases.
+Math-only embeddings retain deprecated global `rand`; Random-only embeddings
+expose only canonical names.
+
+Float ranges use `[min, max)` and accept only native Int/Float bounds. Bounds
+must be finite and ordered using runtime numeric comparison before conversion.
+For unequal bounds, ceiling both endpoints to representable Floats preserves
+the original numeric interval. Intervals with no representable Float fail.
+Interpolation avoids overflow for extreme finite endpoints and corrects rounding
+at the excluded upper bound. Equal bounds return ordinary Float conversion of
+`min`, including its signed zero, without drawing.
+
+Integer ranges use `[min, max]`, require native Int bounds, and cover the entire
+int64 domain through unsigned width arithmetic and unbiased bounded sampling.
+Equal bounds return the Int without drawing. Boolean draws consume the same
+source. Argument validation does not consume randomness.
+
+Default sources acquire entropy on their first actual draw. Queries that never
+draw, including calls with invalid arguments or equal canonical bounds, do not
+initialize the source. Explicitly seeded sources are ready at construction.
+
+`pkg/rnd` owns the non-cryptographic generator mechanics; the Session owns its
+source and context only transports it. The VM's `OpRand` for WAITFOR jitter uses
+the same source. Direct stdlib and VM integrations must provide one explicitly
+with `rnd.WithContext`; missing sources fail with `runtime.ErrUnexpected`.
+See [Session ownership and seeding](runtime.md#session-randomness).
+
+Legacy `rand()` draws in `[0, 1)`. Legacy `rand(x)` uses `min=x/2`, `max=x*2`;
+`rand(max, min)` keeps maximum-first ordering. Both ranged forms retain
+`floor(u*(max-min+1))+min`, permissive `runtime.ToFloat` conversion, and historical
+reversed/non-finite behavior. Each successful legacy call draws once, including
+equal bounds. The Go `runtime.RandomDefault`, `Random`, and `Random2` helpers
+remain deprecated standalone wrappers; each creates a fresh source and is never
+used by Session execution.
+
+Pseudo-random values support automation and reproducible tests. They are not
+suitable for passwords, authentication tokens, secrets, keys, or other
+security-sensitive use. Secure randomness remains in Crypto.
 
 ## Testing
 

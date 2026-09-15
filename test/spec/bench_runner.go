@@ -6,6 +6,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/asm"
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/rnd"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/pkg/vm/test"
 
@@ -57,7 +58,7 @@ func prepareBenchmark(c *compiler.Compiler, expression string, vmOpts []vm.Optio
 
 func RunBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
 	prog, instance, env := prepareBenchmark(c, expression, []vm.Option{vm.WithTesting(test.WithBenchmarkMode())}, opts...)
-	ctx := context.Background()
+	ctx := rnd.WithContext(context.Background(), rnd.NewSeed(0))
 
 	if testing.Verbose() {
 		println("Query:")
@@ -92,7 +93,7 @@ func RunBenchmarkWithOptimization(b *testing.B, expression string, level compile
 
 func RunResultBenchmarkWith(b *testing.B, c *compiler.Compiler, expression string, opts ...vm.EnvironmentOption) {
 	prog, instance, env := prepareBenchmark(c, expression, nil, opts...)
-	ctx := context.Background()
+	ctx := rnd.WithContext(context.Background(), rnd.NewSeed(0))
 
 	if testing.Verbose() {
 		println("Query:")

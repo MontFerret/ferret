@@ -82,6 +82,7 @@ func (a *acquisition) newExecution(config Config, h *host.Host, hooks *host.Sess
 	}
 
 	execution := &Execution{
+		random:            config.newRandomSource(),
 		vm:                instance,
 		environment:       a.environment,
 		logger:            a.logger,
@@ -115,6 +116,7 @@ func (a *acquisition) newDebugSession(config Config, h *host.Host, hooks *host.S
 		Execution: execution,
 		Values:    vm.NewDebugValueAccess(),
 		Services: NewDebugServices(DebugServicesConfig{
+			Random:            config.newRandomSource(),
 			Hooks:             hooks,
 			Encoding:          h.Encoding,
 			OutputContentType: config.OutputContentType,
