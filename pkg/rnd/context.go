@@ -2,6 +2,8 @@ package rnd
 
 import "context"
 
+type contextKey struct{}
+
 // WithContext transports an already-owned source to execution-time code.
 // The caller supplies a non-nil context and retains ownership of src.
 func WithContext(ctx context.Context, src *Source) context.Context {
@@ -19,5 +21,3 @@ func FromContext(ctx context.Context) (*Source, bool) {
 
 	return src, ok && src != nil
 }
-
-type contextKey struct{}
