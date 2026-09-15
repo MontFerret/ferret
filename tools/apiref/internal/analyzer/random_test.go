@@ -49,7 +49,7 @@ func assertRandomMetadata(t *testing.T, reference *api.Reference, catalog *apica
 			}
 
 			for _, signature := range function.Signatures {
-				wantType := map[string]string{"float": "Float", "int": "Int", "bool": "Boolean", "choice": "Any", "shuffle": "Any[]"}[function.Name]
+				wantType := map[string]string{"float": "Float", "int": "Int", "bool": "Boolean", "choice": "Any", "shuffle": "List"}[function.Name]
 				if signature.Return.Type.Name != wantType {
 					t.Fatalf("random::%s return type = %+v, want %s", function.Name, signature.Return.Type, wantType)
 				}
@@ -60,7 +60,12 @@ func assertRandomMetadata(t *testing.T, reference *api.Reference, catalog *apica
 
 				if function.Name == "choice" || function.Name == "shuffle" {
 					parameter := signature.Parameters[0]
-					if parameter.Name != "values" || parameter.Type.Name != "Any[]" {
+					wantInput := "Any[]"
+					if function.Name == "shuffle" {
+						wantInput = "List"
+					}
+
+					if parameter.Name != "values" || parameter.Type.Name != wantInput {
 						t.Fatalf("invalid random::%s input: %+v", function.Name, parameter)
 					}
 				}

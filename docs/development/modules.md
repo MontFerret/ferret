@@ -239,19 +239,31 @@ int64 domain through unsigned width arithmetic and unbiased bounded sampling.
 Equal bounds return the Int without drawing. Boolean draws consume the same
 source. Argument validation does not consume randomness.
 
-Collection operations accept `runtime.List` and call only its `ForEach` method.
-Choice uses one-pass reservoir sampling with O(n) time and O(1) additional
-storage. It counts visits independently of callback indices and returns one
-uniformly selected original value, or `None` for an empty traversal.
+Collection operations accept `runtime.List`. Choice calls only `ForEach`, using
+one-pass reservoir sampling with O(n) time and O(1) additional storage. It counts
+visits independently of callback indices and returns one uniformly selected
+original value, or `None` for an empty traversal.
 
-Shuffle intentionally materializes all yielded values into a private snapshot,
-then uses descending Fisher-Yates to produce a new in-memory `runtime.Array`.
-It takes O(n) time and O(n) storage; it does not use the source's collection
-factory or preserve its concrete List implementation. Both operations borrow
-the source and yielded values, preserving value identity and leaving source
-contents unchanged. Traversal owns its iterator cleanup; returned traversal and
-cleanup errors propagate unchanged instead of returning partial results.
-Cancellation is checked during traversal and shuffling and before success.
+Shuffle calls the source's `New(ctx)` factory and traverses the source once,
+appending original value references into the independent destination. The result
+preserves the source's implementation family and backend configuration; native
+Array inputs produce Arrays. The source needs only `New` and `ForEach` during
+this operation. The destination supplies `Append`, `Length`, and `Swap` for
+materialization and descending Fisher-Yates. Negative destination lengths fail
+with `ErrInvalidOperation`. This uses O(n) appends/swaps and constant algorithm
+state; operation costs and destination storage depend on the backend. It does
+not force a storage-backed List into an in-memory Array.
+
+Both operations borrow the source and yielded values, preserving value identity
+and leaving source contents unchanged. Traversal owns its iterator cleanup.
+Factories own failed construction; after successful construction, shuffle owns
+the destination until success. Any subsequent error or cancellation closes a
+closable destination exactly once and joins its cleanup error with the primary
+failure, retaining source traversal and iterator cleanup causes. Successful
+destinations remain open for normal caller/VM ownership. Borrowed sources and
+elements are never explicitly closed. Cancellation is checked before host
+dispatch, during traversal/shuffling, after successful host operations, and
+before success; actual host errors are preserved even alongside cancellation.
 
 Both algorithms use the existing unbiased `rnd.Source.Int64` primitive. Choice
 draws for visits 2 through n; shuffle draws only after successful materialization,

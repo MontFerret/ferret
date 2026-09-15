@@ -36,7 +36,7 @@ func TestRandomCollectionValues(t *testing.T) {
 					var input runtime.List = runtime.NewArrayOf(values)
 					list := &traversalList{values: values}
 					if host {
-						input = list
+						input = collectionInput(name, list)
 					}
 
 					ctx := rnd.WithContext(t.Context(), rnd.NewSeed(42))
@@ -55,12 +55,22 @@ func TestRandomCollectionValues(t *testing.T) {
 							t.Fatal("choice did not return the expected original value")
 						}
 					} else {
-						result, ok := got.(*runtime.Array)
+						result, ok := got.(runtime.List)
 						if !ok || result == input {
-							t.Fatalf("shuffle returned %T instead of a fresh Array", got)
+							t.Fatalf("shuffle returned %T instead of an independent List", got)
 						}
 
-						shuffled := arrayValues(t, result)
+						if host {
+							source := input.(*shuffleList)
+							destination, ok := result.(*shuffleList)
+							if !ok || destination != source.created || destination.backend != source.backend || destination.closes != 0 || source.operations["New"] != 1 {
+								t.Fatal("shuffle did not transfer an open destination with the source backend")
+							}
+						} else if _, ok := result.(*runtime.Array); !ok {
+							t.Fatalf("native Array input returned %T", result)
+						}
+
+						shuffled := listValues(t, result)
 						want := make([]runtime.Value, len(test.order))
 						for i, index := range test.order {
 							want[i] = original[index]
@@ -71,12 +81,21 @@ func TestRandomCollectionValues(t *testing.T) {
 
 						if len(shuffled) == 0 {
 							err = result.Append(ctx, runtime.True)
+						} else if host {
+							result.(*shuffleList).values[0] = runtime.False
 						} else {
 							err = result.SetAt(ctx, 0, runtime.False)
 						}
 
 						if err != nil {
 							t.Fatal(err)
+						}
+
+						if host {
+							destination := result.(*shuffleList)
+							if err := destination.Close(); err != nil || destination.closes != 1 {
+								t.Fatal("caller could not close the successful destination exactly once")
+							}
 						}
 					}
 
@@ -86,7 +105,7 @@ func TestRandomCollectionValues(t *testing.T) {
 							t.Fatalf("traversals %d, iterator closes %d, source closes %d", list.calls, list.cursorCloses, list.closes)
 						}
 					} else {
-						assertCollectionValues(t, arrayValues(t, input.(*runtime.Array)), original)
+						assertCollectionValues(t, listValues(t, input), original)
 					}
 
 					for _, value := range original {
@@ -107,8 +126,21 @@ func TestRandomCollectionTrivialCallsDoNotDraw(t *testing.T) {
 				src, control := rnd.NewSeed(42), rnd.NewSeed(42)
 				ctx := rnd.WithContext(t.Context(), src)
 				for range 3 {
-					if _, err := call(ctx, &traversalList{values: collectionValues()[:size]}); err != nil {
+					input := collectionInput(name, &traversalList{values: collectionValues()[:size]})
+					result, err := call(ctx, input)
+					if err != nil {
 						t.Fatal(err)
+					}
+
+					if name == "shuffle" {
+						destination := result.(*shuffleList)
+						if destination.closes != 0 {
+							t.Fatal("trivial shuffle closed its successful destination")
+						}
+
+						if err := destination.Close(); err != nil {
+							t.Fatal(err)
+						}
 					}
 
 					if src.Float64() != control.Float64() {
@@ -168,13 +200,18 @@ func TestRandomCollectionTraversalErrors(t *testing.T) {
 						return nil
 					}
 
-					got, err := call(ctx, list)
+					input := collectionInput(name, list)
+					got, err := call(ctx, input)
 					if got != runtime.None || err != list.traversalErr || !errors.Is(err, primary) || errors.Is(err, cleanup) != (closeErr != nil) {
 						t.Fatalf("traversal error lost: result %v, error %v", got, err)
 					}
 
 					if list.calls != 1 || list.cursorCloses != 1 || list.closes != 0 || value.closes != 0 {
 						t.Fatal("incorrect traversal or borrowed-resource cleanup")
+					}
+
+					if name == "shuffle" && input.(*shuffleList).created.closes != 1 {
+						t.Fatal("traversal failure did not close the destination exactly once")
 					}
 
 					if name == "choice" {
@@ -192,9 +229,14 @@ func TestRandomCollectionTraversalErrors(t *testing.T) {
 
 		t.Run(name+"/cleanup-only", func(t *testing.T) {
 			list := &traversalList{values: []runtime.Value{&borrowedValue{}}, closeErr: cleanup}
-			got, err := call(rnd.WithContext(t.Context(), rnd.NewSeed(42)), list)
+			input := collectionInput(name, list)
+			got, err := call(rnd.WithContext(t.Context(), rnd.NewSeed(42)), input)
 			if got != runtime.None || err != list.traversalErr || !errors.Is(err, cleanup) || list.cursorCloses != 1 || list.closes != 0 {
 				t.Fatalf("cleanup error lost: result %v, error %v", got, err)
+			}
+
+			if name == "shuffle" && input.(*shuffleList).created.closes != 1 {
+				t.Fatal("iterator cleanup failure did not close the destination exactly once")
 			}
 		})
 	}
@@ -228,7 +270,8 @@ func TestRandomCollectionCancellation(t *testing.T) {
 					return nil
 				}
 
-				got, err := call(ctx, list)
+				input := collectionInput(name, list)
+				got, err := call(ctx, input)
 				if got != runtime.None || !errors.Is(err, context.Canceled) || list.closes != 0 {
 					t.Fatalf("cancellation: result %v, error %v", got, err)
 				}
@@ -240,6 +283,10 @@ func TestRandomCollectionCancellation(t *testing.T) {
 
 				if list.calls != wantTraversals || list.cursorCloses != wantTraversals {
 					t.Fatalf("traversals %d, iterator closes %d", list.calls, list.cursorCloses)
+				}
+
+				if name == "shuffle" && stage != "before" && input.(*shuffleList).created.closes != 1 {
+					t.Fatal("traversal cancellation did not close the destination exactly once")
 				}
 
 				if name == "choice" {
@@ -266,11 +313,19 @@ func collectionValues() []runtime.Value {
 	}
 }
 
-func arrayValues(t *testing.T, array *runtime.Array) []runtime.Value {
+func collectionInput(name string, list *traversalList) runtime.List {
+	if name == "shuffle" {
+		return newShuffleList(list)
+	}
+
+	return list
+}
+
+func listValues(t *testing.T, list runtime.List) []runtime.Value {
 	t.Helper()
 
 	var values []runtime.Value
-	err := array.ForEach(t.Context(), func(_ context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+	err := list.ForEach(t.Context(), func(_ context.Context, value runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 		values = append(values, value)
 
 		return true, nil
