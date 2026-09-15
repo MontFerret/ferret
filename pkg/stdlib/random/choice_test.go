@@ -71,7 +71,7 @@ func TestReservoirPreservesEveryValue(t *testing.T) {
 	}
 }
 
-func TestReservoirCancellationDuringDraw(t *testing.T) {
+func TestReservoirCompletesAfterCancellationDuringDraw(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	list := &traversalList{values: []runtime.Value{runtime.Int(1), runtime.Int(2), runtime.Int(3)}}
@@ -82,7 +82,7 @@ func TestReservoirCancellationDuringDraw(t *testing.T) {
 
 		return 0
 	})
-	if got != runtime.None || err != context.Canceled || calls != 1 || list.cursorCloses != 1 {
+	if got != runtime.Int(3) || err != nil || calls != 2 || list.cursorCloses != 1 {
 		t.Fatalf("cancellation: result %v, error %v, draws %d, closes %d", got, err, calls, list.cursorCloses)
 	}
 }

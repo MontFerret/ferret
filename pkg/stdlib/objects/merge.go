@@ -38,10 +38,6 @@ func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(cont
 		return runtime.None, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	if len(sources) == 0 {
 		return runtime.NewObject(), nil
 	}
@@ -61,16 +57,8 @@ func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(cont
 		}
 	}()
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, mergeArgumentError(err, 0, listForm, 0)
-	}
-
 	for index, src := range sources {
 		err := mergeInto(ctx, dst, src)
-		if canceled := ctx.Err(); canceled != nil && !errors.Is(err, canceled) {
-			err = errors.Join(err, canceled)
-		}
-
 		if err != nil {
 			return runtime.None, mergeArgumentError(err, index, listForm, 0)
 		}
@@ -81,10 +69,6 @@ func mergeObjects(ctx context.Context, args []runtime.Value, mergeInto func(cont
 
 func mergeMutableObjects(ctx context.Context, args []runtime.Value, mergeInto func(context.Context, runtime.Map, ...runtime.Map) error) (runtime.Value, error) {
 	if err := runtime.ValidateArgs(args, 1, runtime.MaxArgs); err != nil {
-		return runtime.None, err
-	}
-
-	if err := ctx.Err(); err != nil {
 		return runtime.None, err
 	}
 

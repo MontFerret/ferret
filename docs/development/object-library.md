@@ -120,6 +120,10 @@ sources, and original nested branches remain borrowed by the operation.
 Failed calls return `runtime.None`; immutable calls preserve their sources while
 mutable calls can leave their target partially updated.
 Runtime errors retain their causes with argument and key/entry context.
+Wrappers and traversals propagate context without polling. Runtime merge
+and key-filter operations own their internal cancellation. Immutable merge joins
+errors returned by population with destination cleanup errors; it does not
+sample cancellation after successful population.
 Entry iteration closes the acquired iterator exactly once when it implements
 `io.Closer`; the source iterable remains borrowed. Runtime traversal preserves
 both iteration/predicate and close errors through `errors.Join`.

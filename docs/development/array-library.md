@@ -89,9 +89,10 @@ Mutable removal compacts survivors forward and trims the tail,
 preserving survivor order without quadratic native middle removals.
 
 The caller's context reaches host operations and comparisons. Mutable wrappers
-reject pre-canceled calls and poll cancellation during removal. Errors preserve
-their causes and return `runtime.None`; a host, comparison, or cancellation
-failure can leave earlier writes applied. There is no rollback or new panic
+and removal loops rely on VM cancellation and propagate host failures without
+polling. Errors preserve their causes and return `runtime.None`; a host,
+comparison, or downstream cancellation failure can leave earlier writes applied.
+There is no rollback or new panic
 recovery policy. Host implementations must honor their runtime contracts.
 Targets and element values are borrowed: mutation neither clones nor closes
 inserted, retained, or removed values.

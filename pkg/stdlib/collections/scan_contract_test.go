@@ -40,7 +40,7 @@ func TestCountingIterableCapabilities(t *testing.T) {
 
 func TestCountMeasurementNeverTraverses(t *testing.T) {
 	failure := errors.New("length failed")
-	for _, stage := range []string{"success", "failure", "cancel", "pre-cancel"} {
+	for _, stage := range []string{"success", "failure", "cancel"} {
 		t.Run(stage, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
@@ -50,10 +50,7 @@ func TestCountMeasurementNeverTraverses(t *testing.T) {
 			case "failure":
 				source.lengthErr, want = failure, failure
 			case "cancel":
-				source.onLength, want = cancel, context.Canceled
-			case "pre-cancel":
-				cancel()
-				want = context.Canceled
+				source.onLength, source.lengthErr, want = cancel, context.Canceled, context.Canceled
 			}
 
 			got, err := collections.Count(ctx, source)
@@ -61,12 +58,7 @@ func TestCountMeasurementNeverTraverses(t *testing.T) {
 				t.Fatalf("got %v, %v; want error %v", got, err, want)
 			}
 
-			calls := 1
-			if stage == "pre-cancel" {
-				calls = 0
-			}
-
-			if source.lengthCalls != calls || source.iterations != 0 || source.closes != 0 || source.sourceCloses != 0 {
+			if source.lengthCalls != 1 || source.iterations != 0 || source.closes != 0 || source.sourceCloses != 0 {
 				t.Fatalf("unexpected host work: %+v", source)
 			}
 		})
@@ -75,37 +67,21 @@ func TestCountMeasurementNeverTraverses(t *testing.T) {
 
 func TestCountRejectsNegativeMeasurements(t *testing.T) {
 	for _, length := range []runtime.Int{-1, math.MinInt64, 0, 42} {
-		for _, cancelDuringLength := range []bool{false, true} {
-			t.Run(fmt.Sprintf("length=%d/cancel=%v", length, cancelDuringLength), func(t *testing.T) {
-				ctx, cancel := context.WithCancel(t.Context())
-				defer cancel()
-				source := &measuredSource{scanSource: &scanSource{expected: ctx}, length: length}
-				if cancelDuringLength {
-					source.onLength = cancel
-				}
+		t.Run(fmt.Sprint(length), func(t *testing.T) {
+			source := &measuredSource{scanSource: &scanSource{expected: t.Context()}, length: length}
+			result, err := collections.Count(t.Context(), source)
+			if source.lengthCalls != 1 || source.iterations != 0 || source.closes != 0 || source.sourceCloses != 0 {
+				t.Fatal("measurement traversed or closed a borrowed source")
+			}
 
-				result, err := collections.Count(ctx, source)
-				if source.lengthCalls != 1 || source.iterations != 0 || source.closes != 0 || source.sourceCloses != 0 {
-					t.Fatal("measurement traversed or closed a borrowed source")
+			if length < 0 {
+				if result != runtime.ZeroInt || !errors.Is(err, runtime.ErrInvalidOperation) || !strings.Contains(err.Error(), "negative iterable length") {
+					t.Fatalf("invalid measurement: %v, %v", result, err)
 				}
-
-				if errors.Is(err, runtime.ErrInvalidOperation) != (length < 0) || errors.Is(err, context.Canceled) != cancelDuringLength {
-					t.Fatalf("error identities lost: %v", err)
-				}
-
-				if length < 0 && !strings.Contains(err.Error(), "negative iterable length") {
-					t.Fatalf("wrong contract error: %v", err)
-				}
-
-				if length < 0 || cancelDuringLength {
-					if result != runtime.ZeroInt || err == nil {
-						t.Fatalf("invalid measurement succeeded: %v, %v", result, err)
-					}
-				} else if result != length || err != nil {
-					t.Fatalf("valid measurement failed: %v, %v", result, err)
-				}
-			})
-		}
+			} else if result != length || err != nil {
+				t.Fatalf("valid measurement: %v, %v", result, err)
+			}
+		})
 	}
 }
 
@@ -118,7 +94,7 @@ func TestOwnedScans(t *testing.T) {
 			return collections.Includes(ctx, source, runtime.Int(2))
 		},
 	} {
-		for _, stage := range []string{"empty", "success", "create", "next", "next+close", "close", "pre-cancel", "cancel", "cancel+close", "cancel-eof", "cancel-close"} {
+		for _, stage := range []string{"empty", "success", "create", "next", "next+close", "next+close-canceled", "close", "pre-cancel", "cancel", "cancel+close", "cancel-eof", "cancel-close", "cancel-close-success"} {
 			t.Run(name+"/"+stage, func(t *testing.T) {
 				ctx, cancel := context.WithCancel(t.Context())
 				defer cancel()
@@ -134,11 +110,14 @@ func TestOwnedScans(t *testing.T) {
 					source.nextErr, wantPrimary = primary, primary
 				case "next+close":
 					source.nextErr, source.closeErr, wantPrimary, wantClose = primary, cleanup, primary, cleanup
+				case "next+close-canceled":
+					source.nextErr, source.closeErr, wantPrimary, wantClose = primary, context.Canceled, primary, context.Canceled
 				case "close":
 					source.closeErr, wantClose = cleanup, cleanup
 				case "pre-cancel":
 					cancel()
-					wantPrimary, wantCloses, wantIterations = context.Canceled, 0, 0
+					source.iterateErr = context.Canceled
+					wantPrimary, wantCloses, wantIterations = context.Canceled, 0, 1
 				case "cancel", "cancel+close":
 					source.onNext = func(index int) {
 						if index == 1 {
@@ -146,20 +125,22 @@ func TestOwnedScans(t *testing.T) {
 						}
 					}
 
-					wantPrimary = context.Canceled
+					source.nextErr, wantPrimary = context.Canceled, context.Canceled
 					if stage == "cancel+close" {
 						source.closeErr, wantClose = cleanup, cleanup
 					}
 				case "cancel-eof":
 					source.values = nil
 					source.onNext = func(int) { cancel() }
-					wantPrimary = context.Canceled
 				case "cancel-close":
-					source.onClose, source.closeErr, wantPrimary, wantClose = cancel, cleanup, context.Canceled, cleanup
+					source.onClose, source.closeErr, wantClose = cancel, cleanup, cleanup
+				case "cancel-close-success":
+					source.onClose = cancel
 				}
 
 				got, err := call(ctx, source)
-				if (wantPrimary != nil && !errors.Is(err, wantPrimary)) || (wantClose != nil && !errors.Is(err, wantClose)) {
+				wantCanceled := errors.Is(wantPrimary, context.Canceled) || errors.Is(wantClose, context.Canceled)
+				if (wantPrimary != nil && !errors.Is(err, wantPrimary)) || (wantClose != nil && !errors.Is(err, wantClose)) || errors.Is(err, context.Canceled) != wantCanceled {
 					t.Fatalf("lost failure: %v; want %v, %v", err, wantPrimary, wantClose)
 				}
 
@@ -173,7 +154,7 @@ func TestOwnedScans(t *testing.T) {
 						want = runtime.True
 					}
 
-					if stage == "empty" {
+					if stage == "empty" || stage == "cancel-eof" {
 						want = runtime.ZeroInt
 						if name == "includes" {
 							want = runtime.False
@@ -191,7 +172,7 @@ func TestOwnedScans(t *testing.T) {
 					t.Fatalf("ownership: iterations %d, closes %d, source closes %d", source.iterations, source.closes, source.sourceCloses)
 				}
 
-				if (stage == "cancel" || stage == "cancel+close" || (name == "includes" && stage == "success")) && source.nexts != 2 {
+				if name == "includes" && stage == "success" && source.nexts != 2 {
 					t.Fatalf("did not stop promptly: %d next calls", source.nexts)
 				}
 			})
@@ -201,7 +182,7 @@ func TestOwnedScans(t *testing.T) {
 
 func TestIncludesDelegatesContains(t *testing.T) {
 	failure := errors.New("membership failed")
-	for _, stage := range []string{"success", "false", "failure", "cancel", "pre-cancel"} {
+	for _, stage := range []string{"success", "false", "failure", "cancel"} {
 		t.Run(stage, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
@@ -213,10 +194,7 @@ func TestIncludesDelegatesContains(t *testing.T) {
 			case "failure":
 				source.containsErr, want = failure, failure
 			case "cancel":
-				source.onContains, want = cancel, context.Canceled
-			case "pre-cancel":
-				cancel()
-				want = context.Canceled
+				source.onContains, source.containsErr, want = cancel, context.Canceled, context.Canceled
 			}
 
 			got, err := collections.Includes(ctx, source, runtime.Int(2))
@@ -224,12 +202,7 @@ func TestIncludesDelegatesContains(t *testing.T) {
 				t.Fatalf("got %v, %v", got, err)
 			}
 
-			calls := 1
-			if stage == "pre-cancel" {
-				calls = 0
-			}
-
-			if source.containsCalls != calls || source.iterations != 0 || source.sourceCloses != 0 || source.closes != 0 {
+			if source.containsCalls != 1 || source.iterations != 0 || source.sourceCloses != 0 || source.closes != 0 {
 				t.Fatalf("incorrect dispatch: %+v", source)
 			}
 		})
@@ -239,7 +212,7 @@ func TestIncludesDelegatesContains(t *testing.T) {
 func TestScanEqualityAndBorrowedValues(t *testing.T) {
 	primary, cleanup := errors.New("equality"), errors.New("close")
 	for _, operation := range []string{"count", "distinct", "includes"} {
-		for _, stage := range []string{"success", "equality", "cancel-equality"} {
+		for _, stage := range []string{"success", "equality", "cancel-equality", "cancel-equality-success"} {
 			if operation == "count" && stage != "success" {
 				continue
 			}
@@ -255,7 +228,11 @@ func TestScanEqualityAndBorrowedValues(t *testing.T) {
 				}
 
 				if stage == "cancel-equality" {
-					first.onEqual, want, source.closeErr = cancel, context.Canceled, cleanup
+					first.onEqual, first.equalErr, want, source.closeErr = cancel, context.Canceled, context.Canceled, cleanup
+				}
+
+				if stage == "cancel-equality-success" {
+					first.onEqual = cancel
 				}
 
 				var got runtime.Value

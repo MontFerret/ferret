@@ -18,7 +18,8 @@ falls back to `Iterable`. This validates both requirements in one dispatch for
 measured sources; `Measurable` alone is insufficient. It calls `Length` when available.
 It does not create an iterator or retry a failed length operation by scanning.
 Negative host lengths fail with `ErrInvalidOperation` without traversal; zero is
-valid. Cancellation during measurement is retained alongside an invalid-length error.
+valid. Measurement forwards the context and propagates host errors without
+additional cancellation polling.
 Native ranges use this path, including propagation of range-length overflow.
 A host length can perform I/O or take nonconstant time.
 
@@ -46,27 +47,30 @@ failure acquires no cleanup obligation. Traversal/equality and close errors are
 joined, including a close failure after a match. Sources and yielded values
 remain borrowed. Delegated `Contains` owns its own internal resources.
 
-The counting and membership wrappers check cancellation before host dispatch,
-within traversal, and before successful completion. Equality/set operations are
-followed by cancellation checks, and cancellation during EOF or iterator cleanup
-cannot produce success. Hosts receive the caller's context and remain responsible
-while they retain control. Entry checks cannot interrupt arbitrary blocking host
-operations. Global iterator and equality semantics are unchanged.
+Counting and membership propagate context without polling, following the
+[stdlib cancellation policy](../../AGENTS.md#context-cancellation-in-the-standard-library).
+Cancellation during EOF or cleanup does not independently turn success into an
+error; errors returned by hosts and cleanup still propagate. Hosts own cancellation
+of their blocking work. The VM observes execution cancellation when control
+returns to a safepoint. An unbounded host scan that ignores context may never
+return control. Global iterator and equality semantics are unchanged.
 
 ## Reversal and destination ownership
 
 String reversal reverses Unicode code points, not grapheme clusters. List
 reversal obtains length, calls `source.New(ctx)`, reads descending indexes, and
-checks every append. Negative host lengths fail before construction. It returns
+checks every append error. It propagates context to each host operation without
+polling before transferring the completed destination.
+Negative host lengths fail before construction. It returns
 the same implementation family with the source's
 relevant configuration. Only the outer list is new; element references remain
 shallow and the source is unchanged. Non-list iterables are not materialized.
 
 Factories own construction failure, as specified by
 [Factory](runtime.md#collection-construction-and-migration). After successful
-creation, reversal owns the destination until success. Access, append, and
-cancellation failures close that incomplete destination when closable and join
-cleanup errors with the primary failure. Successful results transfer ownership
+creation, reversal owns the destination until success. Access and append errors,
+including host cancellation failures, close that incomplete destination when
+closable and join cleanup errors with the primary failure. Successful results transfer ownership
 through normal VM/result lifecycle handling. The borrowed source and element
 values are never explicitly closed.
 
@@ -84,10 +88,8 @@ Context-sensitive benchmarks also cover empty, singleton, small, and larger
 inputs with Background, cancellable, deadline, and layered contexts. Reused
 contexts exclude setup and first `Done` access; fresh contexts include creation,
 the collection operation, and cancellation. Keep these measurements separate:
-first access to a cancellation channel can allocate. Loop checkpoints use
-`ctx.Err()` directly, preserving the caller's context and error identity without
-forcing channel creation. Context polling changes must demonstrate benefits
-across these cases, not only for Background or deeply wrapped contexts.
+first access to a cancellation channel can allocate in downstream components.
+Stdlib loops carry no cancellation checkpoints or polling bookkeeping.
 
 The Factory rename intentionally breaks Go implementers of List and Map; existing
 FQL names and arities are retained. Counting accepts additional read-only inputs,

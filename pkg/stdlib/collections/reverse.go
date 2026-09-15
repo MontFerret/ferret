@@ -36,10 +36,6 @@ func Reverse(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 }
 
 func reverseList(ctx context.Context, col runtime.List) (_ runtime.Value, err error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	size, err := col.Length(ctx)
 	if err != nil {
 		return runtime.None, err
@@ -47,10 +43,6 @@ func reverseList(ctx context.Context, col runtime.List) (_ runtime.Value, err er
 
 	if size < 0 {
 		return runtime.None, runtime.Error(runtime.ErrInvalidOperation, "negative list length")
-	}
-
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
 	}
 
 	result, err := col.New(ctx)
@@ -69,26 +61,14 @@ func reverseList(ctx context.Context, col runtime.List) (_ runtime.Value, err er
 	}()
 
 	for i := size; i > 0; i-- {
-		if err := ctx.Err(); err != nil {
-			return runtime.None, err
-		}
-
 		item, err := col.At(ctx, i-1)
 		if err != nil {
-			return runtime.None, err
-		}
-
-		if err := ctx.Err(); err != nil {
 			return runtime.None, err
 		}
 
 		if err := result.Append(ctx, item); err != nil {
 			return runtime.None, err
 		}
-	}
-
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
 	}
 
 	return result, nil

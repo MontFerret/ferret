@@ -328,27 +328,7 @@ func TestObjectHostErrors(t *testing.T) {
 	}
 }
 
-func TestObjectCancellationAndArgumentPositions(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	for _, run := range []func() (runtime.Value, error){
-		func() (runtime.Value, error) { return objects.Keys(ctx, runtime.NewObject()) },
-		func() (runtime.Value, error) { return objects.Values(ctx, runtime.NewObject()) },
-		func() (runtime.Value, error) { return objects.Entries(ctx, runtime.NewObject()) },
-		func() (runtime.Value, error) { return objects.HasKey(ctx, runtime.NewObject(), runtime.String("a")) },
-		func() (runtime.Value, error) { return objects.Merge(ctx, runtime.NewArray(0)) },
-		func() (runtime.Value, error) { return objects.MergeDeep(ctx, runtime.NewArray(0)) },
-		func() (runtime.Value, error) { return objects.KeepKeys(ctx, runtime.NewObject(), runtime.NewArray(0)) },
-		func() (runtime.Value, error) { return objects.OmitKeys(ctx, runtime.NewObject(), runtime.NewArray(0)) },
-		func() (runtime.Value, error) { return objects.Zip(ctx, runtime.NewArray(0), runtime.NewArray(0)) },
-		func() (runtime.Value, error) { return objects.FromEntries(ctx, &entryStream{Value: runtime.None}) },
-	} {
-		result, err := run()
-		if result != runtime.None || !errors.Is(err, context.Canceled) {
-			t.Fatalf("cancellation: %v, %v", result, err)
-		}
-	}
-
+func TestObjectArgumentPositions(t *testing.T) {
 	for _, apply := range []func(context.Context, ...runtime.Value) (runtime.Value, error){objects.KeepKeys, objects.OmitKeys} {
 		_, err := apply(context.Background(), runtime.NewObject(), runtime.String("ok"), runtime.Int(1))
 		if err == nil || !strings.Contains(err.Error(), "position 3") {

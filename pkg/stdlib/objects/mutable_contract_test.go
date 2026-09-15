@@ -205,8 +205,12 @@ func TestMutableArgumentsValidateBeforeMutation(t *testing.T) {
 			canceled, cancel := context.WithCancel(ctx)
 			cancel()
 			got, err = apply(canceled, runtime.NewObject(), runtime.NewArray(0))
-			if got != runtime.None || !errors.Is(err, context.Canceled) {
-				t.Fatalf("cancellation: %v, %v", got, err)
+			if merge {
+				if err != nil || got == runtime.None {
+					t.Fatalf("empty merge: %v, %v", got, err)
+				}
+			} else if got != runtime.None || !errors.Is(err, context.Canceled) {
+				t.Fatalf("runtime cancellation: %v, %v", got, err)
 			}
 		})
 	}

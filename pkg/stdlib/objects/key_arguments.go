@@ -48,10 +48,6 @@ func normalizeKeyArgs(ctx context.Context, args []runtime.Value) (runtime.Map, [
 		return nil, nil, err
 	}
 
-	if err := ctx.Err(); err != nil {
-		return nil, nil, err
-	}
-
 	src, err := runtime.CastArg[runtime.Map](args[0], 0)
 	if err != nil {
 		return nil, nil, err
@@ -60,11 +56,7 @@ func normalizeKeyArgs(ctx context.Context, args []runtime.Value) (runtime.Map, [
 	if len(args) == 2 {
 		if list, ok := args[1].(runtime.List); ok {
 			var keys []runtime.String
-			err := list.ForEach(ctx, func(ctx context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
-				if err := ctx.Err(); err != nil {
-					return false, err
-				}
-
+			err := list.ForEach(ctx, func(_ context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 				key, err := runtime.CastString(value)
 				if err != nil {
 					return false, fmt.Errorf("item %d: %w", index, err)

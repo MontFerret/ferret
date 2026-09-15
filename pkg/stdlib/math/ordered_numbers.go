@@ -22,20 +22,11 @@ func snapshotNumbers(ctx context.Context, source runtime.List, policy numberPoli
 }
 
 func sortNumbers(ctx context.Context, values []runtime.Value, ascending bool) error {
-	err := runtime.SortSliceWith(ctx, values, func(c context.Context, left, right runtime.Value) (runtime.Ordering, error) {
-		if err := c.Err(); err != nil {
-			return runtime.Equal, err
-		}
-
+	return runtime.SortSliceWith(ctx, values, func(c context.Context, left, right runtime.Value) (runtime.Ordering, error) {
 		if !ascending {
 			left, right = right, left
 		}
 
 		return runtime.CompareValues(c, left, right)
 	})
-	if err != nil {
-		return err
-	}
-
-	return ctx.Err()
 }

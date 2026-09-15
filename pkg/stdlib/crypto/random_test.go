@@ -40,12 +40,13 @@ func TestRandomTokenSampling(t *testing.T) {
 		t.Fatalf("error = %v, want %v", err, failure)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	_, err = randomToken(ctx, cancelingTokenReader{cancel: cancel}, 4)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("error = %v, want cancellation during rejection sampling", err)
+	for _, rejected := range []bool{false, true} {
+		ctx, cancel := context.WithCancel(t.Context())
+		got, err := randomToken(ctx, &cancelingTokenReader{cancel: cancel, rejected: rejected}, 4)
+		cancel()
+		if err != nil || got != runtime.String("aaaa") {
+			t.Fatalf("sampling after cancellation = %v, %v", got, err)
+		}
 	}
 }
 
@@ -74,9 +75,9 @@ func TestRandomTokenValidationAndConcurrency(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := RandomToken(ctx, runtime.Int(32))
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("error = %v, want %v", err, context.Canceled)
+	got, err := RandomToken(ctx, runtime.Int(32))
+	if err != nil || len(got.String()) != 32 {
+		t.Fatalf("pre-canceled token = %v, %v", got, err)
 	}
 
 	for i := 0; i < 32; i++ {

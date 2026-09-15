@@ -87,7 +87,7 @@ func (s *scanSource) Close() error {
 	return nil
 }
 
-// Next intentionally ignores cancellation to exercise the caller's safepoints.
+// Next returns only injected errors, independently of context cancellation.
 func (i *scanIterator) Next(ctx context.Context) (runtime.Value, runtime.Value, error) {
 	s := i.source
 	s.nexts++

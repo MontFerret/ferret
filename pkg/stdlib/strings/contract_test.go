@@ -454,9 +454,9 @@ func TestJoinContract(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err = strings.Join(ctx, runtime.NewArray(0), runtime.String(","))
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("error = %v, want %v", err, context.Canceled)
+	got, err := strings.Join(ctx, runtime.NewArray(0), runtime.String(","))
+	if err != nil || got != runtime.String("") {
+		t.Fatalf("canceled join = %v, %v", got, err)
 	}
 
 	failure := errors.New("iteration failed")
@@ -468,8 +468,8 @@ func TestJoinContract(t *testing.T) {
 
 	ctx, cancel = context.WithCancel(context.Background())
 	values = &joinTestList{List: runtime.NewArrayWith(runtime.String("first")), cancel: cancel}
-	_, err = strings.Join(ctx, values, runtime.String(","))
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("error = %v, want %v", err, context.Canceled)
+	got, err = strings.Join(ctx, values, runtime.String(","))
+	if err != nil || got != runtime.String("first,second") {
+		t.Fatalf("completed join = %v, %v", got, err)
 	}
 }

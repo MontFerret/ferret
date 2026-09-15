@@ -37,8 +37,8 @@ func TestCollectionContextStates(t *testing.T) {
 					want = list.created
 				}
 
-				if expected := ctx.Err(); expected != nil {
-					if !errors.Is(err, expected) || source.iterations != 0 || len(list.calls) != 0 || ctx.doneCalls != 0 {
+				if expected := ctx.Err(); expected != nil && operation == "reverse" {
+					if !errors.Is(err, expected) || source.iterations != 0 || list.calls["Length"] != 1 || ctx.doneCalls != 0 {
 						t.Fatalf("pre-canceled work: %v, %v, %+v, %+v", got, err, source, list)
 					}
 
@@ -142,7 +142,7 @@ func TestLayeredScanCancellationPreservesCauses(t *testing.T) {
 					got, err = collections.Includes(ctx, source, first)
 				}
 
-				if !errors.Is(err, context.Canceled) || wantPrimary && !errors.Is(err, primary) || wantCloses == 1 && !errors.Is(err, cleanup) {
+				if errors.Is(err, context.Canceled) || wantPrimary && !errors.Is(err, primary) || wantCloses == 1 && !errors.Is(err, cleanup) {
 					t.Fatalf("lost failure: %v, %v", got, err)
 				}
 
@@ -154,7 +154,7 @@ func TestLayeredScanCancellationPreservesCauses(t *testing.T) {
 	}
 }
 
-func TestReverseLayeredCancellationBoundaries(t *testing.T) {
+func TestReverseLayeredContextReachesHostOperations(t *testing.T) {
 	cleanup := errors.New("destination cleanup")
 	for _, stage := range []string{"Length", "New", "At", "Append"} {
 		t.Run(stage, func(t *testing.T) {
@@ -169,21 +169,19 @@ func TestReverseLayeredCancellationBoundaries(t *testing.T) {
 			}
 
 			got, err := collections.Reverse(ctx, source)
-			if got != runtime.None || !errors.Is(err, context.Canceled) || source.closes != 0 || value.closes+value.copies+value.clones != 0 {
-				t.Fatalf("cancellation: %v, %v", got, err)
-			}
 
 			if stage == "Length" {
-				if source.created != nil || source.calls["New"] != 0 {
-					t.Fatal("constructed after cancellation")
+				if got != runtime.None || !errors.Is(err, context.Canceled) || source.created != nil {
+					t.Fatal("factory did not reject the propagated canceled context")
 				}
-			} else if source.created == nil || source.created.closes != 1 || !errors.Is(err, cleanup) {
-				t.Fatal("incomplete destination cleanup lost")
+			} else if err != nil || got != source.created || source.created.closes != 0 {
+				t.Fatalf("successful host operation became failure: %T, %v", got, err)
 			}
 
-			if stage == "New" && source.calls["At"] != 0 || stage == "At" && source.created.calls["Append"] != 0 {
-				t.Fatal("host operation after cancellation")
+			if source.closes != 0 || value.closes+value.copies+value.clones != 0 {
+				t.Fatal("borrowed source or element consumed")
 			}
+
 		})
 	}
 }

@@ -7,11 +7,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func mutableListArg(ctx context.Context, value runtime.Value) (runtime.List, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, runtime.ArgError(err, 0)
-	}
-
+func mutableListArg(_ context.Context, value runtime.Value) (runtime.List, error) {
 	// A nil receiver can satisfy List while being unsafe to call.
 	reflected := reflect.ValueOf(value)
 	if !reflected.IsValid() {
@@ -29,10 +25,6 @@ func mutableListArg(ctx context.Context, value runtime.Value) (runtime.List, err
 }
 
 func mutableListLength(ctx context.Context, list runtime.List) (runtime.Int, error) {
-	if err := ctx.Err(); err != nil {
-		return 0, err
-	}
-
 	size, err := list.Length(ctx)
 	if err != nil {
 		return 0, err

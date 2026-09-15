@@ -23,10 +23,6 @@ func HasKey(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, error
 	target := arg1.(runtime.Map)
 	key := arg2.(runtime.String)
 
-	if err := ctx.Err(); err != nil {
-		return runtime.None, err
-	}
-
 	exists, err := target.ContainsKey(ctx, key)
 	if err != nil {
 		return runtime.None, runtime.ArgError(fmt.Errorf("key %q: %w", key, err), 0)

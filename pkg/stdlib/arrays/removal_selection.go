@@ -66,10 +66,6 @@ func removeMatchingInPlace(ctx context.Context, list runtime.List, target runtim
 	keep := removalPredicate(target)
 	write := runtime.ZeroInt
 	for read := runtime.ZeroInt; read < size; read++ {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-
 		value, err := list.At(ctx, read)
 		if err != nil {
 			return err
@@ -94,10 +90,6 @@ func removeMatchingInPlace(ctx context.Context, list runtime.List, target runtim
 	}
 
 	for end := size; end > write; end-- {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-
 		if _, err := list.RemoveAt(ctx, end-1); err != nil {
 			return err
 		}

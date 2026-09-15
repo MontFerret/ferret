@@ -2,7 +2,6 @@ package collections
 
 import (
 	"context"
-	"errors"
 	"math"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -18,10 +17,6 @@ import (
 // @param collection {Iterable} Source whose yielded values are counted.
 // @return {Int} Number of yielded values, or the source's measured length.
 func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
-	if err := ctx.Err(); err != nil {
-		return runtime.ZeroInt, err
-	}
-
 	var (
 		count runtime.Int
 		err   error
@@ -33,12 +28,14 @@ func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		if err == nil && count < 0 {
 			err = runtime.Error(runtime.ErrInvalidOperation, "negative iterable length")
 		}
-	case runtime.Iterable:
-		err = runtime.ForEach(ctx, collection, func(c context.Context, _, _ runtime.Value) (runtime.Boolean, error) {
-			if err := c.Err(); err != nil {
-				return false, err
-			}
 
+		if err != nil {
+			return runtime.ZeroInt, err
+		}
+
+		return count, nil
+	case runtime.Iterable:
+		err = runtime.ForEach(ctx, collection, func(_ context.Context, _, _ runtime.Value) (runtime.Boolean, error) {
 			var err error
 			count, err = incrementCount(count)
 
@@ -46,10 +43,6 @@ func Count(ctx context.Context, arg runtime.Value) (runtime.Value, error) {
 		})
 	default:
 		return runtime.ZeroInt, runtime.ArgError(runtime.TypeErrorOf(arg, runtime.TypeIterable), 0)
-	}
-
-	if canceled := ctx.Err(); canceled != nil && !errors.Is(err, canceled) {
-		err = errors.Join(err, canceled)
 	}
 
 	if err != nil {

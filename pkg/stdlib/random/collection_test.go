@@ -242,7 +242,7 @@ func TestRandomCollectionTraversalErrors(t *testing.T) {
 	}
 }
 
-func TestRandomCollectionCancellation(t *testing.T) {
+func TestRandomCollectionCancellationOwnership(t *testing.T) {
 	for name, call := range collectionOperations {
 		for _, stage := range []string{"before", "first callback", "later callback", "after traversal", "empty traversal"} {
 			t.Run(name+"/"+stage, func(t *testing.T) {
@@ -272,32 +272,40 @@ func TestRandomCollectionCancellation(t *testing.T) {
 
 				input := collectionInput(name, list)
 				got, err := call(ctx, input)
-				if got != runtime.None || !errors.Is(err, context.Canceled) || list.closes != 0 {
-					t.Fatalf("cancellation: result %v, error %v", got, err)
-				}
 
-				wantTraversals := 1
-				if stage == "before" {
-					wantTraversals = 0
-				}
+				if name == "shuffle" && stage == "before" {
+					if got != runtime.None || !errors.Is(err, context.Canceled) || list.calls != 0 || list.cursorCloses != 0 {
+						t.Fatal("factory cancellation was not propagated")
+					}
+				} else {
+					if err != nil || list.calls != 1 || list.cursorCloses != 1 || list.closes != 0 {
+						t.Fatalf("completion: result %T, error %v, traversals %d, closes %d", got, err, list.calls, list.cursorCloses)
+					}
 
-				if list.calls != wantTraversals || list.cursorCloses != wantTraversals {
-					t.Fatalf("traversals %d, iterator closes %d", list.calls, list.cursorCloses)
-				}
+					if name == "shuffle" {
+						destination := input.(*shuffleList).created
+						if got != destination || destination.closes != 0 || len(destination.values) != len(list.values) {
+							t.Fatal("successful shuffle ownership changed")
+						}
 
-				if name == "shuffle" && stage != "before" && input.(*shuffleList).created.closes != 1 {
-					t.Fatal("traversal cancellation did not close the destination exactly once")
-				}
+						for i := len(list.values) - 1; i > 0; i-- {
+							control.Int64(0, int64(i))
+						}
+					} else {
+						if len(list.values) == 0 && got != runtime.None || len(list.values) != 0 && got == runtime.None {
+							t.Fatal("choice returned an unexpected value")
+						}
 
-				if name == "choice" {
-					for n := 2; n <= cancelAt; n++ {
-						control.Int64(0, int64(n-1))
+						for n := 2; n <= len(list.values); n++ {
+							control.Int64(0, int64(n-1))
+						}
 					}
 				}
 
 				if src.Float64() != control.Float64() {
-					t.Fatal("canceled operation continued drawing")
+					t.Fatal("draw count did not match completed work")
 				}
+
 			})
 		}
 	}
