@@ -188,11 +188,13 @@ func TestSourceFirstDrawAllocations(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			// AllocsPerRun performs one warmup call. Supply a fresh, already-owned
-			// source for every call so the measured draws all require entropy.
+			// source for every call so the measured draws all initialize a source.
+			// Fixed entropy isolates our allocations from crypto/rand, which can
+			// move its buffer to the heap under race instrumentation on Linux.
 			const runs = 100
 			sources := make([]*Source, runs+1)
 			for index := range sources {
-				sources[index] = New()
+				sources[index] = newSource(func() [16]byte { return [16]byte{42} })
 			}
 
 			next := 0
@@ -202,6 +204,32 @@ func TestSourceFirstDrawAllocations(t *testing.T) {
 			})
 			if allocations != 0 {
 				t.Fatalf("first draw allocated %v times", allocations)
+			}
+		})
+	}
+}
+
+func TestSourceSteadyStateDrawAllocations(t *testing.T) {
+	for name, draw := range map[string]func(*Source){
+		"float":    func(src *Source) { src.Float64() },
+		"int":      func(src *Source) { src.Int64(-3, 7) },
+		"int full": func(src *Source) { src.Int64(math.MinInt64, math.MaxInt64) },
+		"bool":     func(src *Source) { src.Bool() },
+		"legacy":   func(src *Source) { src.LegacyFloat64(8.5, -2.5) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			// Exercise the real entropy reader before measuring initialized draws.
+			src := New()
+			draw(src)
+			if src.entropy != nil {
+				t.Fatal("first draw did not finish initialization")
+			}
+
+			allocations := testing.AllocsPerRun(100, func() {
+				draw(src)
+			})
+			if allocations != 0 {
+				t.Fatalf("steady-state draw allocated %v times", allocations)
 			}
 		})
 	}

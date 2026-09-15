@@ -39,7 +39,8 @@ func NewSeed(seed int64) *Source {
 
 // The private entropy boundary allows deterministic initialization tests without
 // replacing crypto/rand.Reader or exposing host RNG injection. Returning an array
-// keeps the seed buffer local to the callback instead of escaping through it.
+// avoids passing a buffer pointer through the callback. The entropy reader may
+// still cause the buffer to escape, depending on the platform and instrumentation.
 func newSource(entropy func() [16]byte) *Source {
 	return &Source{entropy: entropy}
 }
