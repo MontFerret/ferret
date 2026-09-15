@@ -304,6 +304,30 @@ Before hooks run in registration order. After and close hooks unwind in reverse
 order, with the error behavior defined by `pkg/module` and the engine's internal
 host hook implementation. See [Modules, SDK, and standard library](modules.md).
 
+## Session randomness
+
+Every ordinary Session owns a `rnd.Source` through its internal execution;
+every native debug Session owns one through its debug services. Sources are
+independent of pooled VMs, Engine/Plan state, and resource managers. They require
+no cleanup or synchronization. Context extension attaches the source after
+before-run hooks, overriding any caller-provided source. Sequential runs and
+debugger resumes advance the existing sequence instead of reseeding it.
+
+`ferret.WithSessionRandomSeed(seed int64)` selects a deterministic sequence for
+an ordinary or debug Session. Zero and negative seeds are supported; the last
+option wins and reusing an option creates independent sources. Unseeded
+construction reads operating-system entropy once per source. The generator is
+Go's math/rand/v2 PCG; explicit seeds initialize its two words as `uint64(seed)`
+and zero. No host RNG injection or query-level seed mutation is exposed.
+
+Reproducibility is guaranteed within a Ferret version for the same inputs and
+executed control flow. Canonical random functions, deprecated global `rand`,
+and WAITFOR jitter consume this sequence in VM order. Seeding does not make
+external I/O or timing deterministic; different polling attempts consume
+different numbers of jitter draws. Direct stdlib/VM users must attach an owned
+source with `rnd.WithContext`. Lookup never creates a fallback; a random
+operation without a source reports `runtime.ErrUnexpected`.
+
 ## Performance-sensitive boundaries
 
 The VM dispatch loop, register and frame operations, runtime comparison,

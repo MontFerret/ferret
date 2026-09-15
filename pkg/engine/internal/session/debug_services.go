@@ -11,6 +11,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/fs"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	"github.com/MontFerret/ferret/v2/pkg/rnd"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
@@ -19,6 +20,7 @@ type (
 	// The debugger serializes its use and owns once-only closure; retained VM state
 	// is owned by the debugger, independently of these host resources and permit.
 	DebugServices struct {
+		random            *rnd.Source
 		logger            logging.Logger
 		hooks             *host.SessionHooks
 		filesystem        fs.FileSystem
@@ -29,9 +31,10 @@ type (
 		outputContentType string
 	}
 
-	// DebugServicesConfig supplies the borrowed services and output settings for
-	// one debug session. Resource ownership is tracked separately by its manager.
+	// DebugServicesConfig supplies the Session-owned source, borrowed host services,
+	// and output settings. Host resources are tracked separately by their manager.
 	DebugServicesConfig struct {
+		Random            *rnd.Source
 		Logger            logging.Logger
 		Hooks             *host.SessionHooks
 		FileSystem        fs.FileSystem
@@ -46,6 +49,7 @@ type (
 // the caller retains rollback until the debugger session is successfully built.
 func NewDebugServices(config DebugServicesConfig, limiter *Limiter, resources *resource.Manager) *DebugServices {
 	return &DebugServices{
+		random:            config.Random,
 		logger:            config.Logger,
 		hooks:             config.Hooks,
 		filesystem:        config.FileSystem,
@@ -69,6 +73,7 @@ func (s *DebugServices) AfterRun(ctx context.Context, runErr error) error {
 
 // ExtendContext injects the session host services in their established order.
 func (s *DebugServices) ExtendContext(ctx context.Context) context.Context {
+	ctx = rnd.WithContext(ctx, s.random)
 	ctx = s.logger.WithContext(ctx)
 	ctx = encoding.WithRegistry(ctx, s.encoding)
 	ctx = fs.WithFileSystem(ctx, s.filesystem)

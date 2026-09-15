@@ -16,6 +16,15 @@ import (
 // SessionOption configures a native execution or debug session before resource acquisition.
 type SessionOption = gooptions.Option[sessionConfig]
 
+// WithSessionRandomSeed selects the pseudo-random sequence for one ordinary or
+// debug session. The same seed and execution inputs reproduce the same sequence
+// within a Ferret version. Sequential runs and debugger resumes advance it.
+func WithSessionRandomSeed(seed int64) SessionOption {
+	return gooptions.New(func(cfg *sessionConfig, seed int64) {
+		cfg.config.RandomSeed = &seed
+	}).Value(seed).Named("random seed").Build()
+}
+
 // WithDebugFormat configures bounded debugger value formatting.
 func WithDebugFormat(format debugger.FormatOptions) SessionOption {
 	return func(session *sessionConfig) error {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"math"
-	"math/rand"
 	"reflect"
 	"time"
 )
@@ -46,25 +45,6 @@ func NumberUpperBoundary(input float64) float64 {
 
 func NumberLowerBoundary(input float64) float64 {
 	return input / 2
-}
-
-func RandomDefault() float64 {
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return rnd.Float64()
-}
-
-func Random(max float64, min float64) float64 {
-	r := RandomDefault()
-	i := r * (max - min + 1)
-	out := math.Floor(i) + min
-
-	return out
-}
-
-func Random2(mid float64) float64 {
-	randMax, randMin := NumberBoundaries(mid)
-
-	return Random(randMax, randMin)
 }
 
 // Parse attempts to convert an arbitrary input into a Value type.

@@ -10,6 +10,13 @@ import (
 // SessionOption configures a native execution or debug session before resource acquisition.
 type SessionOption = engine.SessionOption
 
+// WithSessionRandomSeed selects the pseudo-random sequence for one ordinary or
+// debug session. The same seed and execution inputs reproduce the same sequence
+// within a Ferret version. Sequential runs and debugger resumes advance it.
+func WithSessionRandomSeed(seed int64) SessionOption {
+	return engine.WithSessionRandomSeed(seed)
+}
+
 // WithDebugFormat configures bounded debugger value formatting.
 func WithDebugFormat(format DebugFormatOptions) SessionOption {
 	return engine.WithDebugFormat(format)

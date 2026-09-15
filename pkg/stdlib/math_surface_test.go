@@ -70,7 +70,7 @@ func TestMathSurface(t *testing.T) {
 			}
 		}
 
-		for _, name := range strings.Fields("math::average math::variance_population math::stddev_population math::range math::rand clamp sign trunc cbrt hypot log1p expm1 e random::float") {
+		for _, name := range strings.Fields("math::average math::variance_population math::stddev_population math::range math::rand clamp sign trunc cbrt hypot log1p expm1 e") {
 			for _, spelling := range []string{name, strings.ToUpper(name)} {
 				if functions.Has(spelling) {
 					t.Fatalf("unexpected function %s", spelling)

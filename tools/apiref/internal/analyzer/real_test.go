@@ -72,6 +72,7 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 	assertDateTimeMetadata(t, first.Reference, first.Catalog)
 	assertCollectionMetadata(t, first.Reference)
 	assertMathMetadata(t, first.Reference, first.Catalog)
+	assertRandomMetadata(t, first.Reference, first.Catalog)
 }
 
 func assertMutableObjectMetadata(t *testing.T, reference *api.Reference, catalog *apicatalog.Catalog) {
@@ -276,7 +277,7 @@ func assertCatalog(t *testing.T, reference *api.Reference, catalog *apicatalog.C
 		}
 	}
 
-	wantCategories := []string{"arrays", "collections", "crypto", "datetime", "encoding", "io", "math", "objects", "path", "strings", "testing", "types", "utils"}
+	wantCategories := []string{"arrays", "collections", "crypto", "datetime", "encoding", "io", "math", "objects", "path", "random", "strings", "testing", "types", "utils"}
 	if !reflect.DeepEqual(categoryIDs, wantCategories) {
 		t.Fatalf("categories = %v, want %v", categoryIDs, wantCategories)
 	}

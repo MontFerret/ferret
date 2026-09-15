@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/logging"
+	"github.com/MontFerret/ferret/v2/pkg/rnd"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -13,6 +14,7 @@ import (
 // Config holds applied session settings before acquisition. Native option
 // validation and ordering remain with the engine's private option target.
 type Config struct {
+	RandomSeed        *int64
 	OutputContentType string
 	FSRoot            string
 	Logger            []logging.Option
@@ -52,4 +54,12 @@ func (cfg *Config) SetParams(params map[string]any) error {
 	cfg.Environment = append(cfg.Environment, vm.WithParams(converted))
 
 	return nil
+}
+
+func (cfg Config) newRandomSource() *rnd.Source {
+	if cfg.RandomSeed != nil {
+		return rnd.NewSeed(*cfg.RandomSeed)
+	}
+
+	return rnd.New()
 }
