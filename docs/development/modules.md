@@ -220,8 +220,9 @@ explicit `math::` selectors remain strict. See [VM execution](runtime.md#vm-exec
 ## Random value generation
 
 The independent Random group registers `random::float()` and
-`random::float(min, max)`, `random::int(min, max)`, and `random::bool()` with
-fixed arities. Full and Safe include this group. There are no new global aliases.
+`random::float(min, max)`, `random::int(min, max)`, `random::bool()`,
+`random::choice(values)`, and `random::shuffle(values)` with fixed arities.
+Full and Safe include this group. There are no new global aliases.
 Math-only embeddings retain deprecated global `rand`; Random-only embeddings
 expose only canonical names.
 
@@ -238,9 +239,30 @@ int64 domain through unsigned width arithmetic and unbiased bounded sampling.
 Equal bounds return the Int without drawing. Boolean draws consume the same
 source. Argument validation does not consume randomness.
 
+Collection operations accept `runtime.List` and call only its `ForEach` method.
+Choice uses one-pass reservoir sampling with O(n) time and O(1) additional
+storage. It counts visits independently of callback indices and returns one
+uniformly selected original value, or `None` for an empty traversal.
+
+Shuffle intentionally materializes all yielded values into a private snapshot,
+then uses descending Fisher-Yates to produce a new in-memory `runtime.Array`.
+It takes O(n) time and O(n) storage; it does not use the source's collection
+factory or preserve its concrete List implementation. Both operations borrow
+the source and yielded values, preserving value identity and leaving source
+contents unchanged. Traversal owns its iterator cleanup; returned traversal and
+cleanup errors propagate unchanged instead of returning partial results.
+Cancellation is checked during traversal and shuffling and before success.
+
+Both algorithms use the existing unbiased `rnd.Source.Int64` primitive. Choice
+draws for visits 2 through n; shuffle draws only after successful materialization,
+for snapshot positions n-1 through 1. Empty and singleton inputs consume no
+randomness. Failed choice traversals retain draws already consumed; failures
+during shuffle materialization consume none.
+
 Default sources acquire entropy on their first actual draw. Queries that never
-draw, including calls with invalid arguments or equal canonical bounds, do not
-initialize the source. Explicitly seeded sources are ready at construction.
+draw, including calls with invalid arguments, equal canonical bounds, or empty
+and singleton collection inputs, do not initialize the source. Explicitly
+seeded sources are ready at construction.
 
 `pkg/rnd` owns the non-cryptographic generator mechanics; the Session owns its
 source and context only transports it. The VM's `OpRand` for WAITFOR jitter uses

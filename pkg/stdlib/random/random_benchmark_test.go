@@ -2,6 +2,7 @@ package random
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"testing"
 
@@ -32,5 +33,43 @@ func BenchmarkRandom(b *testing.B) {
 				}
 			}
 		})
+	}
+}
+
+func BenchmarkRandomCollections(b *testing.B) {
+	for name, call := range collectionOperations {
+		for _, size := range []int{10, 1000} {
+			b.Run(fmt.Sprintf("%s/Array/%d", name, size), func(b *testing.B) {
+				values := make([]runtime.Value, size)
+				for i := range values {
+					values[i] = runtime.Int(i)
+				}
+
+				benchmarkRandomCollection(b, call, runtime.NewArrayOf(values))
+			})
+		}
+	}
+
+	b.Run("choice/traversal-only/1000", func(b *testing.B) {
+		values := make([]runtime.Value, 1000)
+		for i := range values {
+			values[i] = runtime.Int(i)
+		}
+
+		benchmarkRandomCollection(b, Choice, &traversalValues{values: values})
+	})
+}
+
+func benchmarkRandomCollection(b *testing.B, call func(context.Context, runtime.Value) (runtime.Value, error), values runtime.List) {
+	b.Helper()
+
+	ctx := rnd.WithContext(b.Context(), rnd.NewSeed(42))
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		if _, err := call(ctx, values); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

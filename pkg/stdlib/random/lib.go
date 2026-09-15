@@ -13,6 +13,7 @@ import (
 func RegisterLib(ns runtime.Namespace) {
 	ns = ns.Namespace("random")
 	ns.Function().A0().Add("float", float0).Add("bool", Bool)
+	ns.Function().A1().Add("choice", Choice).Add("shuffle", Shuffle)
 	ns.Function().A2().Add("float", float2).Add("int", Int)
 }
 

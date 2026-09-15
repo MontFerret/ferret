@@ -317,8 +317,9 @@ debugger resumes advance the existing sequence instead of reseeding it.
 an ordinary or debug Session. Zero and negative seeds are supported; the last
 option wins and reusing an option creates independent sources. An unseeded source
 reads operating-system entropy once, on its first actual draw. Construction,
-context lookup, invalid arguments, and equal canonical bounds do not initialize
-it. Each source embeds Go's math/rand/v2 PCG; explicit seeds initialize its two
+context lookup, invalid arguments, equal canonical bounds, and empty or singleton
+`random::choice`/`random::shuffle` inputs do not initialize it. Each source embeds
+Go's math/rand/v2 PCG; explicit seeds initialize its two
 words as `uint64(seed)` and zero without reading entropy. No host RNG injection
 or query-level seed mutation is exposed.
 

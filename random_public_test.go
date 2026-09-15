@@ -14,7 +14,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const randomSequenceQuery = `RETURN [random::float(), random::int(-5, @max), random::bool(), rand(), rand(8), rand(6, 1), random::float(-3, 9)]`
+const randomSequenceQuery = `RETURN [random::float(), random::int(-5, @max), random::choice([10, 20, 30]), random::bool(), random::shuffle([1, 2, 3, 4]), rand(), rand(8), rand(6, 1), random::float(-3, 9)]`
 
 func TestRandomSeededSessions(t *testing.T) {
 	poison := rnd.NewSeed(999)
@@ -80,12 +80,14 @@ func TestRandomSeedSurvivesDebugResumes(t *testing.T) {
 	plan, err := eng.CompileDebug(t.Context(), ferret.NewAnonymousSource(`
 LET first = random::float()
 LET second = random::int(-5, @max)
+LET chosen = random::choice([10, 20, 30])
 LET third = random::bool()
+LET shuffled = random::shuffle([1, 2, 3, 4])
 LET fourth = rand()
 LET fifth = rand(8)
 LET sixth = rand(6, 1)
 LET seventh = random::float(-3, 9)
-RETURN [first, second, third, fourth, fifth, sixth, seventh]`))
+RETURN [first, second, chosen, third, shuffled, fourth, fifth, sixth, seventh]`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +247,7 @@ func TestRandomFQLArity(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = eng.Close() })
-	for _, call := range []string{"random::float(1)", "random::float(1, 2, 3)", "random::int()", "random::int(1)", "random::int(1, 2, 3)", "random::bool(1)", "rand(1, 2, 3)"} {
+	for _, call := range []string{"random::float(1)", "random::float(1, 2, 3)", "random::int()", "random::int(1)", "random::int(1, 2, 3)", "random::bool(1)", "random::choice()", "random::choice([], [])", "random::shuffle()", "random::shuffle([], [])", "rand(1, 2, 3)"} {
 		if _, err := eng.Run(t.Context(), ferret.NewAnonymousSource("RETURN "+call), ferret.WithSessionRandomSeed(42)); err == nil {
 			t.Fatalf("accepted unsupported arity %s", call)
 		}
@@ -325,7 +327,22 @@ func TestRandomFQLNumericContracts(t *testing.T) {
 func expectedRandomSequence(t *testing.T, src *rnd.Source) string {
 	t.Helper()
 
-	values := []any{src.Float64(), src.Int64(-5, 7), src.Bool(), src.Float64(), src.LegacyFloat64(16, 4), src.LegacyFloat64(6, 1), -3 + src.Float64()*12}
+	values := []any{src.Float64(), src.Int64(-5, 7)}
+	choice := 10
+	for ordinal := int64(2); ordinal <= 3; ordinal++ {
+		if src.Int64(0, ordinal-1) == 0 {
+			choice = int(ordinal) * 10
+		}
+	}
+
+	values = append(values, choice, src.Bool())
+	shuffled := []int{1, 2, 3, 4}
+	for i := len(shuffled) - 1; i > 0; i-- {
+		j := int(src.Int64(0, int64(i)))
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	}
+
+	values = append(values, shuffled, src.Float64(), src.LegacyFloat64(16, 4), src.LegacyFloat64(6, 1), -3+src.Float64()*12)
 	content, err := json.Marshal(values)
 	if err != nil {
 		t.Fatal(fmt.Errorf("encode expected random sequence: %w", err))

@@ -10,7 +10,7 @@ import (
 )
 
 func TestRandomSurface(t *testing.T) {
-	want := []string{"random::bool", "random::float", "random::int"}
+	want := []string{"random::bool", "random::choice", "random::float", "random::int", "random::shuffle"}
 	if got := functionNames(buildFunctions(t, stdlib.Only(stdlib.Random))); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Random functions = %v, want %v", got, want)
 	}
@@ -24,7 +24,7 @@ func TestRandomSurface(t *testing.T) {
 		{stdlib.Full().Without(stdlib.Random), false, true},
 	} {
 		functions := buildFunctions(t, selection.set)
-		for name, arities := range map[string][]int{"random::float": {0, 2}, "random::int": {2}, "random::bool": {0}, "rand": {0, 1, 2}} {
+		for name, arities := range map[string][]int{"random::float": {0, 2}, "random::int": {2}, "random::bool": {0}, "random::choice": {1}, "random::shuffle": {1}, "rand": {0, 1, 2}} {
 			present := selection.random
 			if name == "rand" {
 				present = selection.legacy
@@ -43,7 +43,10 @@ func TestRandomSurface(t *testing.T) {
 			}
 		}
 
-		for _, name := range []string{"float", "int", "bool", "math::rand", "math::random", "random::seed", "random::choice", "random::shuffle"} {
+		for _, name := range []string{
+			"float", "int", "bool", "math::rand", "math::random", "random::seed", "choice", "shuffle",
+			"arrays::choice", "arrays::shuffle", "collections::choice", "collections::shuffle", "math::choice", "math::shuffle",
+		} {
 			if functions.Has(name) {
 				t.Fatalf("unexpected function %s", name)
 			}
