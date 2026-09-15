@@ -13,15 +13,16 @@ import (
 // @throws {TypeError} A bound is not an Int.
 // @throws {InvalidArgument} The minimum exceeds the maximum.
 func Int(ctx context.Context, min, max runtime.Value) (runtime.Value, error) {
-	if err := runtime.ValidateArgValue(min, 0, runtime.AssertInt); err != nil {
+	lower, err := runtime.CastArg[runtime.Int](min, 0)
+	if err != nil {
 		return runtime.None, err
 	}
 
-	if err := runtime.ValidateArgValue(max, 1, runtime.AssertInt); err != nil {
+	upper, err := runtime.CastArg[runtime.Int](max, 1)
+	if err != nil {
 		return runtime.None, err
 	}
 
-	lower, upper := int64(min.(runtime.Int)), int64(max.(runtime.Int))
 	if lower > upper {
 		return runtime.None, runtime.ArgError(runtime.Error(runtime.ErrInvalidArgument, "minimum must not exceed maximum"), 0)
 	}
@@ -31,5 +32,5 @@ func Int(ctx context.Context, min, max runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	return runtime.Int(src.Int64(lower, upper)), nil
+	return runtime.Int(src.Int64(int64(lower), int64(upper))), nil
 }

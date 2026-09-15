@@ -220,8 +220,9 @@ explicit `math::` selectors remain strict. See [VM execution](runtime.md#vm-exec
 ## Random value generation
 
 The independent Random group registers `random::float()` and
-`random::float(min, max)`, `random::int(min, max)`, and `random::bool()` with
-fixed arities. Full and Safe include this group. There are no new global aliases.
+`random::float(min, max)`, `random::int(min, max)`, `random::bool()`,
+`random::choice(values)`, and `random::shuffle(values)` with fixed arities.
+Full and Safe include this group. There are no new global aliases.
 Math-only embeddings retain deprecated global `rand`; Random-only embeddings
 expose only canonical names.
 
@@ -238,9 +239,42 @@ int64 domain through unsigned width arithmetic and unbiased bounded sampling.
 Equal bounds return the Int without drawing. Boolean draws consume the same
 source. Argument validation does not consume randomness.
 
+Collection operations accept `runtime.List`. Choice calls only `ForEach`, using
+one-pass reservoir sampling with O(n) time and O(1) additional storage. It counts
+visits independently of callback indices and returns one uniformly selected
+original value, or `None` for an empty traversal.
+
+Shuffle calls the source's `New(ctx)` factory and traverses the source once,
+appending original value references into the independent destination. The result
+preserves the source's implementation family and backend configuration; native
+Array inputs produce Arrays. The source needs only `New` and `ForEach` during
+this operation. The destination supplies `Append`, `Length`, and `Swap` for
+materialization and descending Fisher-Yates. Negative destination lengths fail
+with `ErrInvalidOperation`. This uses O(n) appends/swaps and constant algorithm
+state; operation costs and destination storage depend on the backend. It does
+not force a storage-backed List into an in-memory Array.
+
+Both operations borrow the source and yielded values, preserving value identity
+and leaving source contents unchanged. Traversal owns its iterator cleanup.
+Factories own failed construction; after successful construction, shuffle owns
+the destination until success. Any subsequent error or cancellation closes a
+closable destination exactly once and joins its cleanup error with the primary
+failure, retaining source traversal and iterator cleanup causes. Successful
+destinations remain open for normal caller/VM ownership. Borrowed sources and
+elements are never explicitly closed. Cancellation is checked before host
+dispatch, during traversal/shuffling, after successful host operations, and
+before success; actual host errors are preserved even alongside cancellation.
+
+Both algorithms use the existing unbiased `rnd.Source.Int64` primitive. Choice
+draws for visits 2 through n; shuffle draws only after successful materialization,
+for snapshot positions n-1 through 1. Empty and singleton inputs consume no
+randomness. Failed choice traversals retain draws already consumed; failures
+during shuffle materialization consume none.
+
 Default sources acquire entropy on their first actual draw. Queries that never
-draw, including calls with invalid arguments or equal canonical bounds, do not
-initialize the source. Explicitly seeded sources are ready at construction.
+draw, including calls with invalid arguments, equal canonical bounds, or empty
+and singleton collection inputs, do not initialize the source. Explicitly
+seeded sources are ready at construction.
 
 `pkg/rnd` owns the non-cryptographic generator mechanics; the Session owns its
 source and context only transports it. The VM's `OpRand` for WAITFOR jitter uses
