@@ -104,9 +104,11 @@ blocking capabilities own cancellation through the propagated context. WAIT owns
 its timer/select handling. Contextless filesystem and entropy reads cannot be
 interrupted by context; crypto token sampling does not poll between reads.
 
-The Collections group registers global `count`, `count_distinct`, `includes`,
-and `reverse`. Their minimum input capabilities, cancellation boundaries, and
-ownership contracts are described in [Collection library contracts](../stdlib/collections.md).
+The Collections group registers canonical `collections::count`,
+`collections::count_distinct`, `collections::includes`, and `collections::reverse`,
+plus deprecated global aliases sharing the same implementations. Their minimum
+input capabilities, cancellation boundaries, and ownership contracts are described
+in [Collection library contracts](../stdlib/collections.md).
 
 The function definitions registered by `stdlib.Full()` are also the source for
 the published Ferret Core API artifacts. Structured documentation requirements

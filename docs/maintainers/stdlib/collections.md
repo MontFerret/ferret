@@ -1,20 +1,24 @@
 # Collection library contracts
 
-The Collections group retains four global functions: unary `count`,
-`count_distinct`, and `reverse`, and binary `includes`. Their Go implementations
-live in `pkg/stdlib/collections`. FQL argument validation belongs here; collection
-construction and canonical equality remain runtime contracts.
+The Collections group registers canonical unary `collections::count`,
+`collections::count_distinct`, and `collections::reverse`, and binary
+`collections::includes`. Their Go implementations live in `pkg/stdlib/collections`.
+The same names remain available globally as deprecated compatibility aliases,
+with identical signatures and behavior. Separate private forwarders attach
+`@deprecated` replacement metadata without deprecating the canonical declarations;
+deprecation does not produce compiler or runtime warnings. FQL argument validation
+belongs here; collection construction and canonical equality remain runtime contracts.
 
 ## Counting read-only sources
 
-`count` and `count_distinct` require only `runtime.Iterable` in addition to the
-`runtime.Value` input contract. Read-only host values do not need collection
+`collections::count` and `collections::count_distinct` require only
+`runtime.Iterable` in addition to the `runtime.Value` input contract. Read-only host values do not need collection
 mutation, cloning, membership, equality, or ordering methods. Native ascending
 and descending ranges are supported. Strings and non-iterable scalars remain
 invalid counting inputs.
 
-`count` first checks the combined `Iterable` and `Measurable` capability, then
-falls back to `Iterable`. This validates both requirements in one dispatch for
+`collections::count` first checks the combined `Iterable` and `Measurable`
+capability, then falls back to `Iterable`. This validates both requirements in one dispatch for
 measured sources; `Measurable` alone is insufficient. It calls `Length` when available.
 It does not create an iterator or retry a failed length operation by scanning.
 Negative host lengths fail with `ErrInvalidOperation` without traversal; zero is
@@ -23,23 +27,24 @@ additional cancellation polling.
 Native ranges use this path, including propagation of range-length overflow.
 A host length can perform I/O or take nonconstant time.
 
-Without measurement, `count` traverses once through `runtime.ForEach`. Checked
-increments return `ErrRange` before exceeding `runtime.Int`. No partial count is
+Without measurement, `collections::count` traverses once through `runtime.ForEach`.
+Checked increments return `ErrRange` before exceeding `runtime.Int`. No partial count is
 returned after a failure. Scanning may consume a one-shot source, perform I/O,
 or fail to terminate on an unbounded source.
 
-`count_distinct` always traverses yielded values. Objects contribute values,
-not keys or key/value pairs. It uses `pkg/internal/valueset`: hashes select
+`collections::count_distinct` always traverses yielded values. Objects contribute
+values, not keys or key/value pairs. It uses `pkg/internal/valueset`: hashes select
 candidates, and canonical equality resolves collisions. Equivalent Int/Float
 values share a distinct entry, Duration equality remains strict, and host
 equality failures propagate. Stored references are borrowed, never cloned or closed.
 
 ## Membership and traversal ownership
 
-`includes` dispatches to string handling first, then `runtime.Containable`, then
-an iterable scan. String needles retain textual conversion, so
-`includes("123", 123)` is true; the separate string `contains` remains strict.
-Object membership searches values. A matching key alone is insufficient.
+`collections::includes` dispatches to string handling first, then
+`runtime.Containable`, then an iterable scan. String needles retain textual
+conversion, so `collections::includes("123", 123)` is true; the separate string
+`contains` remains strict. Object membership searches values. A matching key alone
+is insufficient.
 
 Fallback scans use `runtime.ForEach`, which closes only its acquired closable
 iterator exactly once on exhaustion, early match, or failure. Iterator creation
