@@ -39,17 +39,17 @@ RETURN value`
 	}
 	defer session.Close()
 
-	beforeBody, err := session.SetBreakpoint(source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 2}})
+	beforeBody, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	body, err := session.SetBreakpoint(source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 3}})
+	body, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 3}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	callSite, err := session.SetBreakpoint(source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 6}})
+	callSite, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "udf-breakpoints.fql", Position: source.Position{Line: 6}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,12 +117,12 @@ RETURN a + b`
 	}
 	defer session.Close()
 
-	first, err := session.SetBreakpoint(source.Location{SourceName: "multiple-udfs.fql", Position: source.Position{Line: 2}})
+	first, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "multiple-udfs.fql", Position: source.Position{Line: 2}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	second, err := session.SetBreakpoint(source.Location{SourceName: "multiple-udfs.fql", Position: source.Position{Line: 5}})
+	second, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "multiple-udfs.fql", Position: source.Position{Line: 5}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ RETURN add(seed)`
 	}
 	defer session.Close()
 
-	inside, err := session.SetBreakpointAt(
+	inside, err := session.SetBreakpointAt(context.Background(),
 		source.Location{SourceName: "udf-binding.fql", Position: source.Position{Line: 4}},
 		debugger.BreakpointOptions{BindingMode: debugger.BreakpointBindNextExecutableInFunction},
 	)
@@ -192,7 +192,7 @@ RETURN add(seed)`
 		t.Fatalf("expected blank line inside UDF to bind within the UDF: %#v", inside)
 	}
 
-	before, err := session.SetBreakpointAt(
+	before, err := session.SetBreakpointAt(context.Background(),
 		source.Location{SourceName: "udf-binding.fql", Position: source.Position{Line: 2}},
 		debugger.BreakpointOptions{BindingMode: debugger.BreakpointBindNextExecutableInFunction},
 	)
@@ -203,7 +203,7 @@ RETURN add(seed)`
 		t.Fatalf("function-scoped binding entered a UDF from its declaration boundary: %#v", before)
 	}
 
-	after, err := session.SetBreakpointAt(
+	after, err := session.SetBreakpointAt(context.Background(),
 		source.Location{SourceName: "udf-binding.fql", Position: source.Position{Line: 7}},
 		debugger.BreakpointOptions{BindingMode: debugger.BreakpointBindNextExecutableInFunction},
 	)
@@ -266,7 +266,7 @@ RETURN y`
 		t.Fatalf("expected UDF entry, got %#v", event)
 	}
 
-	frames, err := session.Frames()
+	frames, err := session.Frames(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +275,7 @@ RETURN y`
 		frames[1].Name != "<main>" || frames[1].Location.Line != 9 {
 		t.Fatalf("unexpected UDF frames: %#v", frames)
 	}
-	locals, err := session.Locals()
+	locals, err := session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,7 +290,7 @@ RETURN y`
 	if event.Location.Line != 4 {
 		t.Fatalf("unexpected UDF return StepIn: %#v", event)
 	}
-	locals, err = session.Locals()
+	locals, err = session.Locals(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,7 +353,7 @@ RETURN outer(2) + x + @input + box.value - 10`
 	}
 	defer session.Close()
 
-	breakpoint, err := session.SetBreakpoint(source.Location{SourceName: "caller-frames.fql", Position: source.Position{Line: 5}})
+	breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "caller-frames.fql", Position: source.Position{Line: 5}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -372,7 +372,7 @@ RETURN outer(2) + x + @input + box.value - 10`
 		t.Fatalf("unexpected nested stop: %#v", event)
 	}
 
-	frames, err := session.Frames()
+	frames, err := session.Frames(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -384,7 +384,7 @@ RETURN outer(2) + x + @input + box.value - 10`
 	assertFrameValues(t, session, 1, map[string]string{"p": "2", "x": "2", "shared": "1", "@input": "5"})
 	assertFrameValues(t, session, 2, map[string]string{"x": "10", "shared": "1", "@input": "5"})
 
-	callerLocals, err := session.FrameLocals(2)
+	callerLocals, err := session.FrameLocals(context.Background(), 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,10 +402,10 @@ RETURN outer(2) + x + @input + box.value - 10`
 	if err != nil || value.Display != "16" {
 		t.Fatalf("unexpected caller evaluation: %#v, %v", value, err)
 	}
-	if _, err := session.FrameLocals(-1); !errors.Is(err, runtime.ErrInvalidArgument) {
+	if _, err := session.FrameLocals(context.Background(), -1); !errors.Is(err, runtime.ErrInvalidArgument) {
 		t.Fatalf("expected negative frame rejection, got %v", err)
 	}
-	if _, err := session.FrameLocals(len(frames)); !errors.Is(err, runtime.ErrNotFound) {
+	if _, err := session.FrameLocals(context.Background(), len(frames)); !errors.Is(err, runtime.ErrNotFound) {
 		t.Fatalf("expected missing frame rejection, got %v", err)
 	}
 
@@ -416,7 +416,7 @@ RETURN outer(2) + x + @input + box.value - 10`
 	if event.Location.Line != 6 {
 		t.Fatalf("unexpected mutable-cell StepIn: %#v", event)
 	}
-	if _, err := session.Variables(callerReference); !errors.Is(err, runtime.ErrNotFound) {
+	if _, err := session.Variables(context.Background(), callerReference); !errors.Is(err, runtime.ErrNotFound) {
 		t.Fatalf("expected caller reference to become stale on resume, got %v", err)
 	}
 	assertFrameValues(t, session, 0, map[string]string{"shared": "4", "@input": "5"})
@@ -430,11 +430,11 @@ RETURN outer(2) + x + @input + box.value - 10`
 }
 
 func assertFrameValues(t *testing.T, session interface {
-	FrameLocals(int) ([]debugger.Variable, error)
+	FrameLocals(context.Context, int) ([]debugger.Variable, error)
 }, frame int, expected map[string]string) {
 	t.Helper()
 
-	locals, err := session.FrameLocals(frame)
+	locals, err := session.FrameLocals(context.Background(), frame)
 	if err != nil {
 		t.Fatal(err)
 	}

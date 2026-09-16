@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func earliestDeadline(contexts ...context.Context) (deadline time.Time, ok bool) {
@@ -37,4 +39,12 @@ func propagateCancellation(parent context.Context, cancel context.CancelCauseFun
 
 		cancel(context.Cause(parent))
 	})
+}
+
+func checkContext(ctx context.Context) error {
+	if ctx == nil {
+		return runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	return ctx.Err()
 }

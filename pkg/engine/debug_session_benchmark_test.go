@@ -86,7 +86,7 @@ RETURN FOR i IN 1..100
 				}
 
 				if tc.line != 0 {
-					breakpoint, err := session.SetBreakpoint(source.Location{Position: source.Position{Line: tc.line}})
+					breakpoint, err := session.SetBreakpoint(context.Background(), source.Location{Position: source.Position{Line: tc.line}})
 					if err != nil || !breakpoint.Bound {
 						b.Fatalf("set breakpoint: %#v, %v", breakpoint, err)
 					}
@@ -140,7 +140,7 @@ RETURN outer(2)`))
 	}
 	defer session.Close()
 
-	if _, err := session.SetBreakpoint(source.Location{SourceName: "caller.fql", Position: source.Position{Line: 5}}); err != nil {
+	if _, err := session.SetBreakpoint(context.Background(), source.Location{SourceName: "caller.fql", Position: source.Position{Line: 5}}); err != nil {
 		b.Fatal(err)
 	}
 	if _, err := session.Start(context.Background()); err != nil {
@@ -154,7 +154,7 @@ RETURN outer(2)`))
 	b.ResetTimer()
 
 	for b.Loop() {
-		locals, localsErr := session.FrameLocals(2)
+		locals, localsErr := session.FrameLocals(context.Background(), 2)
 		if localsErr != nil {
 			b.Fatal(localsErr)
 		}

@@ -50,7 +50,7 @@ RETURN outer(20) + marker`))
 		}
 	})
 
-	breakpoint, err := session.SetBreakpoint(apisource.Location{
+	breakpoint, err := session.SetBreakpoint(context.Background(), apisource.Location{
 		SourceName: sourcePath,
 		Position:   apisource.Position{Line: 4, Column: 1},
 	})
@@ -80,7 +80,7 @@ RETURN outer(20) + marker`))
 		t.Fatalf("breakpoint event = %+v", stopped)
 	}
 
-	frames, err := session.Frames()
+	frames, err := session.Frames(context.Background())
 	if err != nil {
 		t.Fatalf("Frames: %v", err)
 	}
@@ -97,7 +97,7 @@ RETURN outer(20) + marker`))
 			t.Fatalf("Frames()[%d] = %+v, want %s in %s", index, frame, wantNames[index], sourcePath)
 		}
 
-		locals, err := session.FrameLocals(index)
+		locals, err := session.FrameLocals(context.Background(), index)
 		if err != nil {
 			t.Fatalf("FrameLocals(%d): %v", index, err)
 		}

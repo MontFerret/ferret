@@ -35,7 +35,7 @@ func TestDebugLocationsUseByteCoordinates(t *testing.T) {
 	start := strings.Index(query, "RETURN")
 	location := api.Location{SourceName: src.Name, Position: api.Position{Line: 1, Column: start + 1}}
 
-	breakpoint, err := session.SetBreakpointAt(location, apidebugger.BreakpointOptions{BindingMode: apidebugger.BreakpointBindExact})
+	breakpoint, err := session.SetBreakpointAt(context.Background(), location, apidebugger.BreakpointOptions{BindingMode: apidebugger.BreakpointBindExact})
 	if err != nil || !breakpoint.Bound {
 		t.Fatalf("breakpoint=%+v error=%v", breakpoint, err)
 	}
@@ -84,7 +84,7 @@ RETURN [value, result]`))
 				line = 3
 			}
 
-			breakpoint, err := session.SetBreakpoint(api.Location{SourceName: "buffer://steps", Position: api.Position{Line: line, Column: 1}})
+			breakpoint, err := session.SetBreakpoint(context.Background(), api.Location{SourceName: "buffer://steps", Position: api.Position{Line: line, Column: 1}})
 			if err != nil || !breakpoint.Bound {
 				t.Fatalf("breakpoint=%+v err=%v", breakpoint, err)
 			}
@@ -108,13 +108,13 @@ RETURN [value, result]`))
 
 				reference = value.Reference
 
-				children, err := session.Variables(reference)
+				children, err := session.Variables(context.Background(), reference)
 				if err != nil || len(children) != 2 {
 					t.Fatalf("children=%+v err=%v", children, err)
 				}
 			}
 
-			if err := session.DeleteBreakpoint(breakpoint.ID); err != nil {
+			if err := session.DeleteBreakpoint(context.Background(), breakpoint.ID); err != nil {
 				t.Fatal(err)
 			}
 
@@ -137,7 +137,7 @@ RETURN [value, result]`))
 			}
 
 			if reference.Valid() {
-				if _, err := session.Variables(reference); err == nil {
+				if _, err := session.Variables(context.Background(), reference); err == nil {
 					t.Fatal("resumed session accepted a stale value reference")
 				}
 			}
@@ -211,7 +211,7 @@ func TestDebugPauseAndCancellationReachNativeExecution(t *testing.T) {
 
 			switch mode {
 			case "pause":
-				if err := session.Pause(); err != nil {
+				if err := session.Pause(context.Background()); err != nil {
 					t.Fatal(err)
 				}
 
@@ -268,7 +268,11 @@ func TestDebugRuntimeErrorRemainsInspectable(t *testing.T) {
 		t.Fatalf("event=%+v err=%v diagnostics=%+v", event, err, diagnostics)
 	}
 
-	if frames, err := session.Frames(); err != nil || len(frames) == 0 {
+	if frames, err := session.Frames(context.Background()); err != nil || len(frames) == 0 {
 		t.Fatalf("frames=%+v err=%v", frames, err)
+	}
+
+	if value, err := session.EvaluateFrame(t.Context(), 0, "value + 1"); err != nil || value.Display != "2" {
+		t.Fatalf("evaluation at runtime error stop: value=%+v err=%v", value, err)
 	}
 }
