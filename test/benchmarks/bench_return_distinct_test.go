@@ -37,7 +37,7 @@ RETURN UNION_DISTINCT(
 `
 
 	countDistinctQuery = `
-RETURN COUNT_DISTINCT([
+RETURN collections::count_distinct([
 	1, 2, 3, 4, 5, 6, 7, 8,
 	1, 2, 3, 4, 5, 6, 7, 8
 ])

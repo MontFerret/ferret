@@ -15,25 +15,21 @@ import (
 
 func TestCollectionContracts(t *testing.T) {
 	cases := []spec.Spec{
-		S(`return {ascending: count(1..3), descending: count(3..1), distinct: count_distinct({first: 7, second: 7.0}), present: includes("123", 123), reversed: reverse([1,2,3])} == {ascending: 3, descending: 3, distinct: 1, present: true, reversed: [3,2,1]}`, true),
-		S(`return count(1..3) == 3 and count(3..1) == 3`, true),
-		S(`return count_distinct(1..3) == 3 and count_distinct(3..1) == 3`, true),
-		S(`return count(@source) == 3 and count_distinct(@source) == 2`, true),
-		S(`return includes(@source, 2) and not includes(@source, 3)`, true),
-		S(`return count({a: 1, b: 1.0}) == 2 and count_distinct({a: 1, b: 1.0}) == 1`, true),
-		S(`return includes({key: 7}, 7) and not includes({key: 7}, "key")`, true),
-		S(`return includes("123", 123)`, true),
-		S(`return reverse("a狐犬") == "犬狐a" and reverse([1,2,3]) == [3,2,1]`, true),
-		S(`return count([]) == 0 and count_distinct({}) == 0 and reverse([]) == []`, true),
-		S(`let source = [1,2,3] let result = reverse(source) return source == [1,2,3] and result == [3,2,1]`, true),
+		S(`return {ascending: collections::count(1..3), descending: collections::count(3..1), distinct: collections::count_distinct({first: 7, second: 7.0}), present: collections::includes("123", 123), reversed: collections::reverse([1,2,3])} == {ascending: 3, descending: 3, distinct: 1, present: true, reversed: [3,2,1]}`, true),
+		S(`return collections::count(1..3) == 3 and collections::count(3..1) == 3`, true),
+		S(`return collections::count_distinct(1..3) == 3 and collections::count_distinct(3..1) == 3`, true),
+		S(`return collections::count(@source) == 3 and collections::count_distinct(@source) == 2`, true),
+		S(`return collections::includes(@source, 2) and not collections::includes(@source, 3)`, true),
+		S(`return collections::count({a: 1, b: 1.0}) == 2 and collections::count_distinct({a: 1, b: 1.0}) == 1`, true),
+		S(`return collections::includes({key: 7}, 7) and not collections::includes({key: 7}, "key")`, true),
+		S(`return collections::includes("123", 123)`, true),
+		S(`return collections::reverse("a狐犬") == "犬狐a" and collections::reverse([1,2,3]) == [3,2,1]`, true),
+		S(`return collections::count([]) == 0 and collections::count_distinct({}) == 0 and collections::reverse([]) == []`, true),
+		S(`let source = [1,2,3] let result = collections::reverse(source) return source == [1,2,3] and result == [3,2,1]`, true),
 	}
 
-	for _, call := range []string{`count("abc")`, `count_distinct("abc")`, `count(1)`, `count_distinct(true)`, `reverse(1..3)`, `includes(1, 1)`} {
+	for _, call := range []string{`collections::count("abc")`, `collections::count_distinct("abc")`, `collections::count(1)`, `collections::count_distinct(true)`, `collections::reverse(1..3)`, `collections::includes(1, 1)`} {
 		cases = append(cases, S("return "+call+` on error return "caught"`, "caught", call))
-	}
-
-	for _, call := range []string{"count()", "count([], [])", "count_distinct()", "count_distinct([], [])", "includes([])", "includes([], 1, 2)", "reverse()", "reverse([], [])"} {
-		cases = append(cases, spec.NewSpec("return "+call, call).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "invalid number of arguments"}))
 	}
 
 	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
@@ -47,6 +43,36 @@ func TestCollectionContracts(t *testing.T) {
 	}
 }
 
+func TestCollectionCompatibility(t *testing.T) {
+	var cases []spec.Spec
+	for _, prefix := range []string{"collections::", ""} {
+		for _, tc := range []struct {
+			want any
+			call string
+		}{
+			{3, "count(1..3)"},
+			{1, "count_distinct([7, 7.0])"},
+			{true, `includes("123", 123)`},
+			{"犬狐a", `reverse("a狐犬")`},
+		} {
+			cases = append(cases, S("return "+prefix+tc.call, tc.want))
+		}
+
+		for _, call := range []string{"count()", "count([], [])", "count_distinct()", "count_distinct([], [])", "includes([])", "includes([], 1, 2)", "reverse()", "reverse([], [])"} {
+			cases = append(cases, spec.NewSpec("return "+prefix+call).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{Message: "invalid number of arguments"}))
+		}
+	}
+
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+		c, err := compiler.New(compiler.WithOptimizationLevel(level))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		RunSpecsWith(t, level.String(), c, cases)
+	}
+}
+
 func TestMeasuredCollectionCountContracts(t *testing.T) {
 	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
 		for _, length := range []runtime.Int{-1, math.MinInt64, 0, 42} {
@@ -57,9 +83,9 @@ func TestMeasuredCollectionCountContracts(t *testing.T) {
 				}
 
 				source := &measuredCollectionIterable{collectionIterable: &collectionIterable{values: runtime.NewArray(0)}, length: length}
-				test := S(`return count(@source)`, float64(length))
+				test := S(`return collections::count(@source)`, float64(length))
 				if length < 0 {
-					test = spec.NewSpec(`return count(@source)`).Expect().ExecError(func(t *testing.T, actual any, _ ...any) {
+					test = spec.NewSpec(`return collections::count(@source)`).Expect().ExecError(func(t *testing.T, actual any, _ ...any) {
 						t.Helper()
 
 						err, ok := actual.(error)
@@ -123,7 +149,7 @@ func TestReverseHostResultLifecycle(t *testing.T) {
 
 		source := &ownedCollectionList{Array: runtime.NewArrayWith(runtime.Int(1), runtime.Int(2), runtime.Int(3)), backend: "host storage"}
 		RunSpecsWith(t, level.String(), c, []spec.Spec{
-			S(`return reverse(@source)`, []any{float64(3), float64(2), float64(1)}),
+			S(`return collections::reverse(@source)`, []any{float64(3), float64(2), float64(1)}),
 		}, vm.WithParam("source", source))
 		if source.closes != 0 || source.created == nil || source.created.backend != source.backend || source.created.closes != 1 {
 			t.Fatalf("result ownership: source closes %d, destination %+v", source.closes, source.created)

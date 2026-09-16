@@ -17,6 +17,10 @@ func TestLib(t *testing.T) {
 
 		// Check that all expected functions are registered
 		expectedFunctions := []string{
+			"collections::count_distinct",
+			"collections::count",
+			"collections::includes",
+			"collections::reverse",
 			"count_distinct",
 			"count",
 			"includes",
@@ -26,6 +30,7 @@ func TestLib(t *testing.T) {
 		funcs, err := ns.Build()
 		So(err, ShouldBeNil)
 		registeredFunctions := funcs.List()
+		So(len(registeredFunctions), ShouldEqual, len(expectedFunctions))
 
 		for _, funcName := range expectedFunctions {
 			found := false

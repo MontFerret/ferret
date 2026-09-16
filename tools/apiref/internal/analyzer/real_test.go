@@ -70,7 +70,7 @@ func TestGenerateMatchesFullRuntimeRegistryAndIsDeterministic(t *testing.T) {
 	assertObjectCompatibilityMetadata(t, first.Reference, first.Catalog)
 	assertArrayMetadata(t, first.Reference, first.Catalog)
 	assertDateTimeMetadata(t, first.Reference, first.Catalog)
-	assertCollectionMetadata(t, first.Reference)
+	assertCollectionMetadata(t, first.Reference, first.Catalog)
 	assertMathMetadata(t, first.Reference, first.Catalog)
 	assertRandomMetadata(t, first.Reference, first.Catalog)
 }

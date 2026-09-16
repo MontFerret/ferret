@@ -558,7 +558,7 @@ RETURN FOR i WHILE UNTIL(LENGTH(users))
 				LET u = users[i]
 				COLLECT AGGREGATE
 					allSkills = UNION_DISTINCT(u.skills, u.skills),
-					uniqueSkillCount = COUNT_DISTINCT(u.skills)
+					uniqueSkillCount = collections::count_distinct(u.skills)
 				RETURN {
 					allSkills: SORTED(allSkills),
 					uniqueSkillCount

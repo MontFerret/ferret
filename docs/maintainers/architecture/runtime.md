@@ -41,8 +41,9 @@ owned result. After successful creation, the caller owns cleanup until it
 transfers the result. Wrappers must implement `New` when an inherited factory
 would discard their implementation family or configuration.
 
-Global collection functions and their iterator/result ownership are described
-in [Collection library contracts](../stdlib/collections.md).
+Canonical `collections::` functions, their deprecated global aliases, and
+iterator/result ownership are described in
+[Collection library contracts](../stdlib/collections.md).
 
 ## Copying values
 
