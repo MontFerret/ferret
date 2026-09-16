@@ -271,4 +271,8 @@ func TestDebugRuntimeErrorRemainsInspectable(t *testing.T) {
 	if frames, err := session.Frames(context.Background()); err != nil || len(frames) == 0 {
 		t.Fatalf("frames=%+v err=%v", frames, err)
 	}
+
+	if value, err := session.EvaluateFrame(t.Context(), 0, "value + 1"); err != nil || value.Display != "2" {
+		t.Fatalf("evaluation at runtime error stop: value=%+v err=%v", value, err)
+	}
 }

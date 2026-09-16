@@ -102,7 +102,7 @@ func (s *sessionLifecycle) prepareStart(ctx context.Context) error {
 func (s *sessionLifecycle) start() (*vm.DebugExecutionEvent, error) {
 	event, err := s.execution.Start(s.services.ExtendContext(s.executionCtx))
 	if err != nil {
-		s.recordExecutionTerminal()
+		err = s.settleExecutionError(err)
 	}
 
 	return event, err
@@ -144,7 +144,7 @@ func (s *sessionLifecycle) finishResume(command resumeCommand) {
 func (s *sessionLifecycle) resume(ctx context.Context, mode vm.DebugResumeMode, predicate vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
 	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, predicate)
 	if err != nil {
-		s.recordExecutionTerminal()
+		err = s.settleExecutionError(err)
 	}
 
 	return event, err
@@ -343,13 +343,18 @@ func (s *sessionLifecycle) finishTerminalLocked(state string) {
 }
 
 // Called only after execution returns; Status may acquire the VM run lock.
-func (s *sessionLifecycle) recordExecutionTerminal() {
+// Admission errors that leave execution nonterminal do not settle the run.
+func (s *sessionLifecycle) settleExecutionError(runErr error) error {
 	switch s.execution.Status() {
 	case vm.DebugExecutionCompleted:
 		s.finishTerminal("completed")
 	case vm.DebugExecutionTerminated, vm.DebugExecutionClosed:
 		s.finishTerminal("terminated")
+	default:
+		return runErr
 	}
+
+	return s.settleRunError(runErr)
 }
 
 func (s *sessionLifecycle) checkBreakpointContext(ctx context.Context, replacement bool) error {

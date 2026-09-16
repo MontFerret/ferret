@@ -66,6 +66,22 @@ func TestDebugAdapterPreservesContextErrors(t *testing.T) {
 
 			return err
 		},
+		"evaluate": func(ctx context.Context) error {
+			value, err := session.Evaluate(ctx, "1")
+			if value != (apidebugger.Value{}) {
+				t.Errorf("canceled evaluation returned a value: %+v", value)
+			}
+
+			return err
+		},
+		"evaluate_frame": func(ctx context.Context) error {
+			value, err := session.EvaluateFrame(ctx, 0, "1")
+			if value != (apidebugger.Value{}) {
+				t.Errorf("canceled frame evaluation returned a value: %+v", value)
+			}
+
+			return err
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			for _, tc := range []struct {

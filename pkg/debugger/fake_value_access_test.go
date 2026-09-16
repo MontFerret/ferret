@@ -10,6 +10,8 @@ type fakeValueAccess struct {
 	inspect        func(runtime.Value, int) (vm.DebugValueInspection, bool)
 	debugInfoCalls int
 	typeCalls      int
+	lookupCalls    int
+	inspectCalls   int
 }
 
 func (f *fakeValueAccess) TypeName(value runtime.Value) string {
@@ -23,10 +25,14 @@ func (f *fakeValueAccess) DebugInfo(value runtime.Value) (runtime.DebugInfo, boo
 }
 
 func (f *fakeValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
+	f.lookupCalls++
+
 	return f.inner.Lookup(value, key)
 }
 
 func (f *fakeValueAccess) Inspect(value runtime.Value, maxItems int) (vm.DebugValueInspection, bool) {
+	f.inspectCalls++
+
 	if f.inspect != nil {
 		return f.inspect(value, maxItems)
 	}

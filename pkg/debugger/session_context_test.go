@@ -8,6 +8,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
+	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func TestSessionInspectionAndBreakpointContexts(t *testing.T) {
@@ -57,6 +58,22 @@ func TestSessionInspectionAndBreakpointContexts(t *testing.T) {
 
 			return err
 		},
+		"evaluate": func(s *Session, ctx context.Context) error {
+			value, err := s.Evaluate(ctx, "value[0]")
+			if value != (Value{}) {
+				t.Errorf("canceled evaluation returned a value: %+v", value)
+			}
+
+			return err
+		},
+		"evaluate_frame": func(s *Session, ctx context.Context) error {
+			value, err := s.EvaluateFrame(ctx, 0, "value[0]")
+			if value != (Value{}) {
+				t.Errorf("canceled frame evaluation returned a value: %+v", value)
+			}
+
+			return err
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			for _, tc := range []struct {
@@ -75,6 +92,8 @@ func TestSessionInspectionAndBreakpointContexts(t *testing.T) {
 							t.Fatalf("error = %v, want %v", err, tc.want)
 						}
 					}
+
+					assertNoInspectionWork(t, session)
 				})
 			}
 		})
@@ -103,9 +122,32 @@ func TestInspectionRechecksCancellationAfterCommandWait(t *testing.T) {
 
 			return err
 		},
+		"evaluate": func(s *Session, ctx context.Context) error {
+			value, err := s.Evaluate(ctx, "value[0]")
+			if value != (Value{}) {
+				t.Errorf("canceled evaluation returned a value: %+v", value)
+			}
+
+			return err
+		},
+		"evaluate_frame": func(s *Session, ctx context.Context) error {
+			value, err := s.EvaluateFrame(ctx, 0, "value[0]")
+			if value != (Value{}) {
+				t.Errorf("canceled frame evaluation returned a value: %+v", value)
+			}
+
+			return err
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			session := replacementSession(t)
+			execution := session.lifecycle.execution.(*fakeExecution)
+			execution.startEvent = &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry}
+			execution.locals = []vm.DebugLocal{{Name: "value", Value: runtime.NewArrayWith(runtime.NewInt(1))}}
+			if _, err := session.Start(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			checked := make(chan struct{}, 1)
@@ -129,6 +171,8 @@ func TestInspectionRechecksCancellationAfterCommandWait(t *testing.T) {
 			if err := receiveLiveError(t, done); !errors.Is(err, context.Canceled) {
 				t.Fatalf("inspection entered after cancellation: %v", err)
 			}
+
+			assertNoInspectionWork(t, session)
 		})
 	}
 }
@@ -165,4 +209,18 @@ func TestCanceledPauseDoesNotInterruptExecution(t *testing.T) {
 	}
 
 	waitForError(t, done, "valid pause")
+}
+
+func assertNoInspectionWork(t *testing.T, session *Session) {
+	t.Helper()
+
+	execution := session.lifecycle.execution.(*fakeExecution)
+	if execution.framesCalls != 0 || execution.localsCalls != 0 || execution.paramsCalls != 0 {
+		t.Fatalf("canceled inspection read execution: frames=%d locals=%d params=%d", execution.framesCalls, execution.localsCalls, execution.paramsCalls)
+	}
+
+	values := session.inspector.values.(*fakeValueAccess)
+	if values.lookupCalls != 0 || values.inspectCalls != 0 || values.debugInfoCalls != 0 || values.typeCalls != 0 {
+		t.Fatalf("canceled inspection accessed values: lookup=%d inspect=%d debugInfo=%d type=%d", values.lookupCalls, values.inspectCalls, values.debugInfoCalls, values.typeCalls)
+	}
 }

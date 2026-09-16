@@ -83,8 +83,9 @@ reason when their stepping condition is reached. Execution and inspection
 commands are serialized. `Pause`, breakpoint mutation, and breakpoint listing
 can proceed while a command is running.
 
-All commands except Close take a non-nil context. Inspection checks cancellation
-before waiting for the command mutex and after acquiring it; cancellation does
+All commands except Close take a non-nil context. Inspection, including Evaluate
+and EvaluateFrame, checks cancellation before waiting for the command mutex and
+after acquiring it, before reading frame bindings or evaluating; cancellation does
 not interrupt that wait or introduce another inspector lock. A canceled Pause
 returns before requesting a stop. Incremental breakpoint add/delete use the
 request context for writer admission, construction, and publication checks.
@@ -178,6 +179,15 @@ When all before-run hooks succeed but context validation prevents VM entry,
 `Start` settles that attempt's after-run hooks immediately. The session remains
 new and accepts a later valid `Start`; `Close` does not repeat the aborted
 attempt's hooks or consume the later run's hook obligation.
+
+When retained execution returns an error directly from `Start` or `Resume` and
+its status is terminal, lifecycle commits terminal state and immediately settles
+`AfterRun` with the original execution error. Hook failures are joined with that
+error. Later `Close` releases resources without repeating the hook or replacing
+the run failure with cancellation. Direct admission errors that leave execution
+nonterminal do not settle the run. A `DebugStopRuntimeError` event still settles
+after-run hooks at the stop while retaining paused, inspectable state; it does
+not commit terminal state.
 
 `Close` requests termination, waits for an active command to leave the retained
 execution, invalidates value references, runs after-run handling when needed,
