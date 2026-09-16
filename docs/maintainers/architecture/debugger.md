@@ -233,8 +233,14 @@ constructing portable debugger values. The Universal API debugger package owns
 `NoFunction` for the top-level body and the positive value-reference convention;
 references are usable only in their paused state.
 
-Native source positions use one-based lines and byte columns; spans are
-zero-based half-open byte offsets. Source names can be anonymous or non-path
+Native source positions use one-based lines and one-based byte columns; spans
+are zero-based half-open byte offsets. Native line numbering advances on LF;
+CRLF remains two bytes in the original source. A zero breakpoint-request column
+means a line-only request. Malformed UTF-8 follows the parser's Go rune decoding:
+each invalid byte becomes one replacement rune while consuming that one original
+byte. Published spans and columns still address the original bytes, including
+after malformed sequences. Protocol adapters own any conversion to UTF-16 and
+must use the compiled source snapshot. Source names can be anonymous or non-path
 identities. The compiler converts ANTLR rune offsets into byte spans when
 publishing diagnostics and program metadata, including debug points and
 call-argument spans. Analysis already publishes byte spans. Breakpoint creation accepts a source location and optional binding
