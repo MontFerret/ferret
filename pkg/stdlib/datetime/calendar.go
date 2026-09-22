@@ -40,13 +40,13 @@ func addCalendar(ctx context.Context, date time.Time, amount runtime.Int, u unit
 	// verify that extracting the calendar fields did not narrow it on 32-bit
 	// hosts, even when the requested shift is zero.
 	if seconds := date.Unix(); seconds < -(1<<55) || seconds > 1<<55 {
-		wall, err := calendarWallTime(ctx, date, y, m, d)
+		wall, err := calendarWallSeconds(date, y, m, d)
 		if err != nil {
 			return time.Time{}, err
 		}
 
 		_, offset := date.Zone()
-		restored, err := calendarUnixSeconds(ctx, wall.Unix(), offset)
+		restored, err := calendarUnixSeconds(ctx, wall, offset)
 		if err != nil || restored != seconds {
 			return time.Time{}, calendarRangeError()
 		}
@@ -73,9 +73,29 @@ func addCalendar(ctx context.Context, date time.Time, amount runtime.Int, u unit
 		return time.Time{}, calendarRangeError()
 	}
 
-	wall, err := calendarWallTime(ctx, date, y, time.Month(monthIndex+1), d)
+	wallSeconds, err := calendarWallSeconds(date, y, time.Month(monthIndex+1), d)
 	if err != nil {
 		return time.Time{}, err
+	}
+
+	result := date.AddDate(nativeYears, nativeMonths, nativeDays)
+	if result.Nanosecond() != date.Nanosecond() {
+		return time.Time{}, calendarRangeError()
+	}
+
+	// A local wall value is not the final instant. Only use it as a time.Time
+	// for zone lookup when its internal epoch is representable. The ordinary
+	// interval is safe without invoking the allocating epoch converter.
+	var wall time.Time
+	if wallSeconds >= -(1<<50) && wallSeconds <= 1<<50 {
+		wall = time.Unix(wallSeconds, 0).UTC()
+	} else {
+		converted, err := runtime.ToDateTimeEpoch(ctx, runtime.NewInt64(wallSeconds), runtime.String("s"))
+		if err != nil {
+			return calendarBoundaryResult(ctx, wallSeconds, result)
+		}
+
+		wall = converted.Time
 	}
 
 	// Follow Date's zone selection, checking subtraction before it can wrap.
@@ -83,34 +103,43 @@ func addCalendar(ctx context.Context, date time.Time, amount runtime.Int, u unit
 	zone := wall.In(date.Location())
 	_, offset := zone.Zone()
 	start, end := zone.ZoneBounds()
-	seconds, err := calendarUnixSeconds(ctx, wall.Unix(), offset)
+	seconds, err := calendarOffsetSeconds(wallSeconds, offset)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	provisional := time.Unix(seconds, 0)
-	if (!start.IsZero() && provisional.Before(start)) || (!end.IsZero() && !provisional.Before(end)) {
-		_, offset = provisional.In(date.Location()).Zone()
-		seconds, err = calendarUnixSeconds(ctx, wall.Unix(), offset)
-		if err != nil {
-			return time.Time{}, err
+	// ZoneBounds can itself return endpoints beyond the supported internal
+	// epoch. Compare their Unix seconds, never their wrapped internal ordering.
+	if (!start.IsZero() && seconds < start.Unix()) || (!end.IsZero() && seconds >= end.Unix()) {
+		// The first offset is only a guess. If it puts the provisional instant
+		// beyond time.Time's internal range, let Date resolve the offset and
+		// validate its actual result without constructing that provisional time.
+		if _, err := calendarUnixSeconds(ctx, wallSeconds, offset); err != nil {
+			return calendarBoundaryResult(ctx, wallSeconds, result)
 		}
+
+		provisional := time.Unix(seconds, 0)
+		_, offset = provisional.In(date.Location()).Zone()
 	}
 
-	result := date.AddDate(nativeYears, nativeMonths, nativeDays)
-	if result.Unix() != seconds || result.Nanosecond() != date.Nanosecond() {
+	seconds, err = calendarUnixSeconds(ctx, wallSeconds, offset)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if result.Unix() != seconds {
 		return time.Time{}, calendarRangeError()
 	}
 
 	return result, nil
 }
 
-func calendarWallTime(ctx context.Context, date time.Time, year int, month time.Month, day int) (time.Time, error) {
+func calendarWallSeconds(date time.Time, year int, month time.Month, day int) (int64, error) {
 	h, min, sec := date.Clock()
 	// This interval and its day normalization fit both native int widths and
 	// time.Time comfortably. Keep ordinary calendar range checks allocation-free.
 	if year >= -10000 && year <= 10000 && day >= -3660000 && day <= 3660000 {
-		return time.Date(year, month, day, h, min, sec, date.Nanosecond(), time.UTC), nil
+		return time.Date(year, month, day, h, min, sec, date.Nanosecond(), time.UTC).Unix(), nil
 	}
 
 	// A Gregorian 400-year cycle has exactly 146097 days. Reduce both the year
@@ -122,30 +151,58 @@ func calendarWallTime(ctx context.Context, date time.Time, year int, month time.
 	seconds := new(big.Int).Mul(big.NewInt(cycles), big.NewInt(146097*86400))
 	seconds.Add(seconds, big.NewInt(reference.Unix()))
 	if !seconds.IsInt64() {
-		return time.Time{}, calendarRangeError()
+		return 0, calendarRangeError()
 	}
 
 	// Once the seconds fit, the reconstructed year also fits int64.
 	normalizedYear := cycles*400 + int64(reference.Year())
 	if _, ok := runtime.ToNativeInt(runtime.Int(normalizedYear)); !ok {
-		return time.Time{}, calendarRangeError()
+		return 0, calendarRangeError()
 	}
 
-	wall, err := runtime.ToDateTimeEpoch(ctx, runtime.NewInt64(seconds.Int64()), runtime.String("s"))
-	if err != nil {
-		return time.Time{}, calendarRangeError()
-	}
-
-	return wall.Time, nil
+	return seconds.Int64(), nil
 }
 
-func calendarUnixSeconds(ctx context.Context, wall int64, offset int) (int64, error) {
+func calendarBoundaryResult(ctx context.Context, wall int64, result time.Time) (time.Time, error) {
+	// Date applies the selected zone offset before constructing its time.Time.
+	// Recover that offset from the exact wall value, rather than result.Zone():
+	// the latter can describe a different offset after a DST-gap normalization.
+	// Until validation succeeds, inspect only Unix and nanoseconds, which do
+	// not extract calendar fields or compare internal time.Time epochs.
+	seconds := result.Unix()
+	if (seconds > 0 && wall < math.MinInt64+seconds) || (seconds < 0 && wall > math.MaxInt64+seconds) {
+		return time.Time{}, calendarRangeError()
+	}
+
+	offset, ok := runtime.ToNativeInt(runtime.Int(wall - seconds))
+	if !ok {
+		return time.Time{}, calendarRangeError()
+	}
+
+	// A wrapped offset subtraction differs by 2^64 and cannot reconstruct a
+	// native Go offset. Validate the actual instant against the runtime range.
+	if _, err := calendarUnixSeconds(ctx, wall, offset); err != nil {
+		return time.Time{}, err
+	}
+
+	return result, nil
+}
+
+func calendarOffsetSeconds(wall int64, offset int) (int64, error) {
 	zoneOffset := int64(offset)
 	if (zoneOffset > 0 && wall < math.MinInt64+zoneOffset) || (zoneOffset < 0 && wall > math.MaxInt64+zoneOffset) {
 		return 0, calendarRangeError()
 	}
 
-	seconds := wall - zoneOffset
+	return wall - zoneOffset, nil
+}
+
+func calendarUnixSeconds(ctx context.Context, wall int64, offset int) (int64, error) {
+	seconds, err := calendarOffsetSeconds(wall, offset)
+	if err != nil {
+		return 0, err
+	}
+
 	// This inner interval is representable even with time.Time's epoch offset.
 	// Extreme epochs use the runtime's authoritative DateTime range validation.
 	if seconds < -(1<<50) || seconds > 1<<50 {

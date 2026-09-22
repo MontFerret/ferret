@@ -10,7 +10,7 @@ import (
 )
 
 func TestIntWidthConversions(t *testing.T) {
-	for _, value := range []int64{math.MinInt64, math.MinInt32 - 1, math.MinInt32, 0, math.MaxInt32, math.MaxInt32 + 1, 1<<53 + 1, math.MaxInt64} {
+	for _, value := range []int64{math.MinInt64, math.MinInt32 - 1, math.MinInt32, 0, 42, math.MaxInt32, math.MaxInt32 + 1, 1<<53 + 1, math.MaxInt64} {
 		t.Run(strconv.FormatInt(value, 10), func(t *testing.T) {
 			integer := runtime.NewInt64(value)
 			unwrapped, ok := integer.Unwrap().(int64)

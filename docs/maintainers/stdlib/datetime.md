@@ -53,6 +53,22 @@ the amount argument. Calendar shifts check negation, week scaling, native
 accepting the result. Their necessary native-integer boundary can reject
 larger calendar shifts on 32-bit hosts; it does not narrow other Ferret values.
 
+Intermediate local-wall calculations and final timezone-adjusted instants have
+different validation roles. Keep wall seconds exact and apply the runtime's
+DateTime range validation to the actual result. A positive zone offset can put
+the wall value beyond the upper DateTime boundary while the final instant still
+fits. The ordinary-date path stays allocation-free apart from result boxing;
+extreme normalization uses bounded Gregorian reference dates and exact arithmetic.
+Only represent a wall or provisional value as `time.Time` after establishing
+that its internal epoch is safe. Compare zone-transition bounds by Unix seconds,
+since those bounds can themselves exceed the internal epoch range.
+
+At a boundary, Go `AddDate` still selects the timezone offset. Check its candidate
+against exact wall/offset arithmetic and the runtime epoch converter before
+accepting it; a DST gap can select an offset different from the candidate's
+`Zone()`. Preserve source reconstruction checks even for zero shifts: near the
+lower epoch endpoint, Go's calendar extraction can wrap on 64-bit hosts too.
+
 All unit-taking functions accept descriptive singular/plural names,
 case-insensitively. Existing one-letter unit spellings remain accepted for
 migration compatibility but are not the canonical vocabulary.

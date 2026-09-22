@@ -259,3 +259,144 @@ boundary tests, error preservation, ownership, and benchmark evidence. No
 outstanding finding remained. The existing staged audit was verified unchanged
 byte-for-byte; unrelated website edits were preserved. This follow-up introduces
 no additional FQL semantic change.
+
+## Calendar boundary follow-up (2026-09-22)
+
+The baseline for this correction is `dd5cfa07344e7a76482faa4cd9c326cfb46d9e9c`.
+The preceding sections record the earlier audit and helper-refactor results;
+their measurements are historical, not measurements of this correction.
+
+At the supported upper epoch, `math.MaxInt64 - 62_135_596_800`, a UTC+01 wall
+value is 3600 seconds greater than the actual instant. Validating that wall
+value as a final DateTime prematurely rejected both source reconstruction and
+destination calculation. Twelve positive-offset regression cases failed before
+the production change, covering zero Add/Subtract shifts across calendar units,
+adding a day into the boundary, and subtracting a day from it.
+
+Calendar validation now keeps exact wall seconds separate from representable
+`time.Time` intermediates. Bounded reference dates still handle extreme
+Gregorian normalization, and source reconstruction applies the known source
+offset before validating its epoch. Native field/delta checks, week scaling,
+negation checks, and the ordinary-date fast path remain in place.
+
+Go `AddDate` selects the offset and produces the candidate. When a wall value
+or first offset guess exceeds the internal epoch range, validation reconstructs
+the selected native offset from exact wall seconds and the candidate's Unix
+seconds. A wrapped final subtraction would differ by 2^64 and cannot pass this
+checked reconstruction. Only raw Unix seconds and nanoseconds are inspected
+until the actual instant passes the runtime epoch converter. No out-of-range
+wall or provisional `time.Time` is constructed for calendar extraction or
+ordering. Zone-transition endpoints are compared by Unix seconds, since an
+endpoint's internal epoch can itself wrap.
+
+For an accepted result at the upper boundary, TZif offsets (signed 32-bit) leave
+Go's initial offset subtraction within int64; the supported upper endpoint is
+more than 62 billion seconds below `MaxInt64`. `FixedZone` can use a larger native
+offset, but uses that same offset for both probes, so checked reconstruction
+also detects its subtraction overflow. The representable-wall path retains an
+explicit int64 check before the first probe.
+
+Synthetic TZif regressions cover DST gaps with an out-of-range wall value or
+provisional instant, including a selected offset that differs from the returned
+date's `Zone()`. Fixed-zone tests cover UTC, positive and negative offsets, both
+epoch endpoints, invalid final dates, and Unix-second wraparound. Existing
+month-end, named-zone, and 386 source-year tests remain. Near `MinInt64`, source
+calendar extraction can already wrap on 64-bit Go; those sources still fail
+reconstruction, including zero shifts. The shared tests assert explicit 386
+range failures instead of skipping the group.
+
+Public parameter/FQL regressions run Add and Subtract at None, Basic, and Full
+optimization. Successful results preserve exact seconds, nanoseconds, and
+location; errors remain `None` plus `runtime.ErrRange` attributed to argument 1.
+The runtime epoch limits, fixed-unit arithmetic, and other integer-audit
+contracts are unchanged. The intentional FQL change is acceptance of these
+representable boundary calendar results.
+
+The website's existing Go embedding migration guide now explicitly replaces
+`Unwrap().(int)` with `Unwrap().(int64)` and shows checked `ToNativeInt` use with
+failure handling. It explains that small values and 64-bit hosts are affected,
+and is linked from host-value guidance. Runtime and compatibility tests now
+also exercise the small value 42. Existing website edits were preserved.
+
+### Benchmark evidence
+
+Both revisions used Go 1.26.5 on darwin/arm64, Apple M2 Max. The initial
+before/after command was:
+
+```sh
+go test ./pkg/stdlib/datetime -run '^$' \
+  -bench '^(BenchmarkDateTime|BenchmarkDateTimeSame|BenchmarkIntegerWidthCalendar)$' \
+  -benchmem -count=6 -benchtime=200ms
+```
+
+All allocation counts and byte counts were unchanged. The first samples showed
+calendar increases of roughly 7–8%, alongside 3–11% increases in several
+untouched controls. To investigate the timing variation, the baseline commit
+was extracted with `git archive` into a temporary directory, and each revision
+was compiled once:
+
+```sh
+go -C "$TMPDIR/ferret-calendar-boundary-baseline" test -c \
+  -o "$TMPDIR/ferret-calendar-boundary-before.test" ./pkg/stdlib/datetime
+go test -c -o "$TMPDIR/ferret-calendar-boundary-after.test" ./pkg/stdlib/datetime
+```
+
+After native and Docker validation finished, six pairs alternated these
+commands, reversing the order in every other pair:
+
+```sh
+"$TMPDIR/ferret-calendar-boundary-before.test" -test.run='^$' \
+  -test.bench='^BenchmarkIntegerWidthCalendar$' \
+  -test.benchmem -test.count=1 -test.benchtime=500ms
+"$TMPDIR/ferret-calendar-boundary-after.test" -test.run='^$' \
+  -test.bench='^BenchmarkIntegerWidthCalendar$' \
+  -test.benchmem -test.count=1 -test.benchtime=500ms
+benchstat "$TMPDIR/ferret-calendar-boundary-paired-before.txt" \
+  "$TMPDIR/ferret-calendar-boundary-paired-after.txt"
+```
+
+The repeated comparison measured:
+
+| IntegerWidthCalendar case | Before | After | Timing delta | B/op, unchanged | allocs/op, unchanged |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| hour | 121.7 ns | 122.3 ns | no significant change (`p=0.102`) | 104 | 6 |
+| day | 118.8 ns | 123.5 ns | +4.00% (`p=0.002`) | 64 | 3 |
+| month | 119.6 ns | 123.7 ns | +3.34% (`p=0.002`) | 64 | 3 |
+| year | 119.1 ns | 123.4 ns | +3.61% (`p=0.002`) | 64 | 3 |
+
+The correction adds approximately 4 ns/op in these ordinary calendar samples,
+with no additional allocation. Exact-arithmetic allocations remain outside the
+ordinary-date fast path. Fixed-unit optimization remains separate; its
+implementation was not changed to recover benchmark numbers.
+
+### Validation and review
+
+The final tree passed:
+
+```sh
+go test ./pkg/runtime ./pkg/stdlib/datetime ./compat/... . -count=1
+make fmt
+make lint
+make test
+make compile-32bit
+```
+
+Actual Linux/386 execution of `make test-32bit` passed across the root,
+`tools/apiref`, and `tools/apipublish` modules, using the Go 1.25.14 Docker command
+documented above. The installed Docker daemon was started for this run. This
+was executed validation, separately from the Go 1.26.5 cross-compilation check.
+Other Go versions remain covered by the existing CI matrix.
+
+The website's `mage build`, the rendered migration anchor and link, affected
+maintainer links, and `git diff --check` in both repositories passed. Native
+checks used the task-scoped writable Go cache; lint was rerun with module-cache
+access after the sandbox denied a metadata write.
+
+The mandatory full-diff self-review covered arithmetic and `time.Time` safety,
+native narrowing, DST normalization, error attribution, public/FQL behavior,
+tests, performance, documentation, and scope. The transition regression exposed
+premature validation of the first offset guess; this was corrected along with
+unsafe ordering of extreme zone endpoints. Full validation also caught the
+formatter reordering a test struct with positional literals; those cases now use
+keyed fields. All affected checks were rerun successfully. No outstanding
+finding remains in this follow-up's scope, and unrelated work was preserved.
