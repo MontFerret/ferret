@@ -137,7 +137,7 @@ func arrayFlatten(ctx context.Context, value runtime.Value, depth int) (runtime.
 		return nil, err
 	}
 
-	result := runtime.NewArray64(size * 2)
+	result := runtime.NewArray(runtime.CapacityHint(size, 2, 0))
 	var flatten func(input runtime.List, level int) error
 
 	flatten = func(input runtime.List, level int) error {
@@ -174,8 +174,9 @@ func arrayDistinct(ctx context.Context, value runtime.Value) (runtime.List, erro
 		return nil, err
 	}
 
-	result := runtime.NewArray64(size)
-	seen := valueset.New(int(size))
+	capacity := runtime.CapacityHint(size, 1, 0)
+	result := runtime.NewArray(capacity)
+	seen := valueset.New(capacity)
 
 	err = list.ForEach(ctx, func(ctx context.Context, item runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 		added, err := seen.Add(ctx, item)

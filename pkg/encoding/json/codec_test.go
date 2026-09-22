@@ -756,8 +756,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("overflow_int_fallback", func(t *testing.T) {
-		maxInt := int64(^uint(0) >> 1)
-		overflow := new(big.Int).SetInt64(maxInt)
+		overflow := new(big.Int).SetInt64(math.MaxInt64)
 		overflow.Add(overflow, big.NewInt(1))
 
 		value, err := codec.Decode([]byte(overflow.String()))

@@ -501,8 +501,13 @@ func validateInstructions(program *Program) error {
 				return err
 			}
 
-			if _, ok := program.Constants[src2.Constant()].(runtime.Int); !ok {
+			selector, ok := program.Constants[src2.Constant()].(runtime.Int)
+			if !ok {
 				return fmt.Errorf("%w: pc %d expects int constant in src2", ErrInvalidInstruction, pc)
+			}
+
+			if _, ok := runtime.ToNativeInt(selector); !ok {
+				return fmt.Errorf("%w: pc %d aggregate selector index exceeds native integer range", ErrInvalidInstruction, pc)
 			}
 		case OpLoadIndexConst, OpLoadIndexOptionalConst, OpLoadKeyConst, OpLoadKeyOptionalConst,
 			OpLoadPropertyConst, OpLoadPropertyOptionalConst:

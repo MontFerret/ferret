@@ -38,12 +38,36 @@ the interval cannot fit a Duration (roughly 292 years). Day, week, month, and
 year differences are rejected with an argument error, even for identical inputs.
 Calendar-aware differences are deferred; they are never duration approximations.
 
-`add` and `subtract` retain integer amounts and existing Go time arithmetic:
-subday units use elapsed duration arithmetic, while day/week/month/year use
+`add` and `subtract` retain signed 64-bit amounts:
+subday units use checked runtime Duration multiplication and DateTime arithmetic,
+while day/week/month/year use
 `time.Time.AddDate` in the input's location. A calendar day can span 23 or 25
 elapsed hours. Month-end values normalize rather than clamp: January 31, 2023
 plus one month becomes March 3, and February 29, 2024 plus one year becomes
 March 1, 2025.
+
+Subday amounts are not restricted to the host's native integer range.
+Unrepresentable Durations or dates fail with `runtime.ErrRange`, attributed to
+the amount argument. Calendar shifts check negation, week scaling, native
+`AddDate` arguments, component normalization, and the resulting date before
+accepting the result. Their necessary native-integer boundary can reject
+larger calendar shifts on 32-bit hosts; it does not narrow other Ferret values.
+
+Intermediate local-wall calculations and final timezone-adjusted instants have
+different validation roles. Keep wall seconds exact and apply the runtime's
+DateTime range validation to the actual result. A positive zone offset can put
+the wall value beyond the upper DateTime boundary while the final instant still
+fits. The ordinary-date path stays allocation-free apart from result boxing;
+extreme normalization uses bounded Gregorian reference dates and exact arithmetic.
+Only represent a wall or provisional value as `time.Time` after establishing
+that its internal epoch is safe. Compare zone-transition bounds by Unix seconds,
+since those bounds can themselves exceed the internal epoch range.
+
+At a boundary, Go `AddDate` still selects the timezone offset. Check its candidate
+against exact wall/offset arithmetic and the runtime epoch converter before
+accepting it; a DST gap can select an offset different from the candidate's
+`Zone()`. Preserve source reconstruction checks even for zero shifts: near the
+lower epoch endpoint, Go's calendar extraction can wrap on 64-bit hosts too.
 
 All unit-taking functions accept descriptive singular/plural names,
 case-insensitively. Existing one-letter unit spellings remain accepted for

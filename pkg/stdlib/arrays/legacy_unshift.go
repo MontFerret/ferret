@@ -37,7 +37,7 @@ func legacyUnshift3(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtim
 		return runtime.None, err
 	}
 
-	result := runtime.NewArray64(size + 1)
+	result := runtime.NewArray(runtime.CapacityHint(size, 1, 1))
 
 	if !uniq {
 		_ = result.Append(ctx, arg2)

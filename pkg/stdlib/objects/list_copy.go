@@ -17,7 +17,7 @@ func copyListValues(ctx context.Context, values runtime.List) (runtime.Value, er
 		return runtime.None, runtime.Error(runtime.ErrInvalidArgument, "list length must not be negative")
 	}
 
-	result := runtime.NewArray64(length)
+	result := runtime.NewArray(runtime.CapacityHint(length, 1, 0))
 	err = values.ForEach(ctx, func(ctx context.Context, value runtime.Value, index runtime.Int) (runtime.Boolean, error) {
 		copied, err := runtime.CloneOrCopy(ctx, value)
 		if err != nil {

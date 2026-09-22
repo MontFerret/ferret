@@ -15,6 +15,35 @@ Consumers should use the runtime's shared operations rather than matching
 concrete built-in types. Host values may implement capabilities without being a
 built-in value, and consumers must preserve those contracts.
 
+## Integer width
+
+Ferret `Int` is always signed 64-bit, independently of the host architecture.
+Do not use Go's native `int`, `strconv.Atoi`, or equivalent architecture-dependent
+conversions for values belonging to the Ferret value model. Parse those values
+with an explicit 64-bit width and use `NewInt64` for signed 64-bit sources.
+`Int.Unwrap()` returns Go `int64`; consumers must not assume Go `int`.
+
+Native `int` remains appropriate for indexes, lengths, capacities, registers,
+and internal collection offsets. Narrow a Ferret Int only at an API that
+requires it, after checking the host range unless the value is already
+structurally bounded. Return a Ferret error on an invalid mandatory size.
+An unrepresentable optional allocation hint may instead be omitted without
+restricting traversal. Check size arithmetic before conversion as well.
+
+Use `ToNativeInt(value)` for checked narrowing: it returns the exact Go `int`
+and `true`, or `0, false` when the value does not fit. It accepts negative
+integers; callers own domain restrictions and error attribution.
+
+Use `CapacityHint(length, multiplier, extra)` for optional allocation sizing.
+It checks `length*multiplier+extra` before native arithmetic, returning zero
+for overflow, negative length or extra, or a nonpositive multiplier. It performs
+no allocation. A zero hint does not validate a mandatory size, and a nonzero
+hint does not guarantee allocation success. Codec limits and calendar rules
+remain with their owning subsystems.
+
+See the [integer-width audit](integer-width-audit.md) for classifications and
+allocation API follow-ups.
+
 ## Collection construction and migration
 
 `runtime.Factory[T Collection]` exposes `New(context.Context) (T, error)`.

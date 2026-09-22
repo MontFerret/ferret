@@ -28,12 +28,12 @@ func equalObjectLike(ctx context.Context, left, right runtime.ObjectLike) (bool,
 		return false, nil
 	}
 
-	leftSnapshot, err := snapshotObjectLike(ctx, left, int(leftSize))
+	leftSnapshot, err := snapshotObjectLike(ctx, left, leftSize)
 	if err != nil {
 		return false, err
 	}
 
-	rightSnapshot, err := snapshotObjectLike(ctx, right, int(rightSize))
+	rightSnapshot, err := snapshotObjectLike(ctx, right, rightSize)
 	if err != nil {
 		return false, err
 	}
@@ -79,12 +79,12 @@ func compareObjectLike(ctx context.Context, left, right runtime.ObjectLike) (run
 		return runtime.Greater, nil
 	}
 
-	leftSnapshot, err := snapshotObjectLike(ctx, left, int(leftSize))
+	leftSnapshot, err := snapshotObjectLike(ctx, left, leftSize)
 	if err != nil {
 		return runtime.Equal, err
 	}
 
-	rightSnapshot, err := snapshotObjectLike(ctx, right, int(rightSize))
+	rightSnapshot, err := snapshotObjectLike(ctx, right, rightSize)
 	if err != nil {
 		return runtime.Equal, err
 	}
@@ -117,7 +117,7 @@ func compareObjectLike(ctx context.Context, left, right runtime.ObjectLike) (run
 	return runtime.Equal, nil
 }
 
-func snapshotObjectLike(ctx context.Context, object runtime.ObjectLike, size int) (objectComparisonSnapshot, error) {
+func snapshotObjectLike(ctx context.Context, object runtime.ObjectLike, size runtime.Int) (objectComparisonSnapshot, error) {
 	if fastObject, ok := object.(*FastObject); ok {
 		keys := fastObject.keys()
 		sort.Strings(keys)
@@ -125,8 +125,9 @@ func snapshotObjectLike(ctx context.Context, object runtime.ObjectLike, size int
 		return objectComparisonSnapshot{fast: fastObject, keys: keys}, nil
 	}
 
-	keys := make([]string, 0, size)
-	values := make(map[string]runtime.Value, size)
+	capacity := runtime.CapacityHint(size, 1, 0)
+	keys := make([]string, 0, capacity)
+	values := make(map[string]runtime.Value, capacity)
 	err := object.ForEach(ctx, func(ctx context.Context, value, key runtime.Value) (runtime.Boolean, error) {
 		stringKey, ok := key.(runtime.String)
 		if !ok {

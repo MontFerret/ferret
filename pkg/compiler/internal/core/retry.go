@@ -16,7 +16,7 @@ type (
 		DelayNode   antlr.ParserRuleContext
 		BackoffNode antlr.ParserRuleContext
 		Backoff     RetryBackoff
-		Count       int
+		Count       int64
 		HasDelay    bool
 	}
 

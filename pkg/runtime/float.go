@@ -44,7 +44,7 @@ func ParseFloat(input any) (Float, error) {
 	str, ok := input.(string)
 
 	if ok {
-		i, err := strconv.Atoi(str)
+		i, err := strconv.ParseInt(str, 10, 64)
 
 		if err == nil {
 			if i == 0 {
@@ -139,7 +139,14 @@ func IsNaN(input Float) Boolean {
 }
 
 func IsInf(input Float, sign Int) Boolean {
-	return NewBoolean(math.IsInf(float64(input), int(sign)))
+	var direction int
+	if sign < 0 {
+		direction = -1
+	} else if sign > 0 {
+		direction = 1
+	}
+
+	return NewBoolean(math.IsInf(float64(input), direction))
 }
 
 func (f Float) Type() Type {

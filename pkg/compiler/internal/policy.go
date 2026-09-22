@@ -276,7 +276,7 @@ func (c *RecoveryCompiler) compileOperationWithErrorRetry(
 
 	resultReg := bytecode.NoopOperand
 	zeroReg := c.facts.LoadConstant(runtime.ZeroInt)
-	retriesRemainingReg := c.facts.LoadConstant(runtime.NewInt(retry.Count))
+	retriesRemainingReg := c.facts.LoadConstant(runtime.NewInt64(retry.Count))
 
 	state := c.initRetryDelayState(retry)
 	retryStart := c.ctx.Program.Emitter.NewLabel("recovery", "retry", "start")

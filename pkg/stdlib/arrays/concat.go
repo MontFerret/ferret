@@ -24,7 +24,7 @@ func Concat(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
 		return runtime.None, err
 	}
 
-	capacity := len(args) * int(firstSize)
+	capacity := runtime.CapacityHint(firstSize, len(args), 0)
 
 	if capacity == 0 {
 		capacity = len(args) * 5

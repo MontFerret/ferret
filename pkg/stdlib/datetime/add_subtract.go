@@ -2,7 +2,7 @@ package datetime
 
 import (
 	"context"
-	"time"
+	"math"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -14,18 +14,19 @@ import (
 // @param amount {Int} Number of units to add; may be negative.
 // @param unit {String} Millisecond, second, minute, hour, day, week, month, or year; plurals are accepted.
 // @return {DateTime} Calculated date, retaining the input's location.
-func Add(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+// @throws {RangeError} The shift or resulting date cannot be represented safely.
+func Add(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	date, amount, u, err := shiftArguments(arg1, arg2, arg3)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	result, err := addUnit(date.Time, int(amount), u)
+	result, err := shiftDate(ctx, date, amount, u, false)
 	if err != nil {
-		return runtime.None, err
+		return runtime.None, runtime.ArgError(err, 1)
 	}
 
-	return runtime.NewDateTime(result), nil
+	return result, nil
 }
 
 // Subtract subtracts an integer number of units from a date. Subday units are
@@ -35,18 +36,19 @@ func Add(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, erro
 // @param amount {Int} Number of units to subtract; may be negative.
 // @param unit {String} Millisecond, second, minute, hour, day, week, month, or year; plurals are accepted.
 // @return {DateTime} Calculated date, retaining the input's location.
-func Subtract(_ context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
+// @throws {RangeError} The shift or resulting date cannot be represented safely.
+func Subtract(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	date, amount, u, err := shiftArguments(arg1, arg2, arg3)
 	if err != nil {
 		return runtime.None, err
 	}
 
-	result, err := addUnit(date.Time, -int(amount), u)
+	result, err := shiftDate(ctx, date, amount, u, true)
 	if err != nil {
-		return runtime.None, err
+		return runtime.None, runtime.ArgError(err, 1)
 	}
 
-	return runtime.NewDateTime(result), nil
+	return result, nil
 }
 
 func shiftArguments(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.Int, unit, error) {
@@ -60,21 +62,32 @@ func shiftArguments(arg1, arg2, arg3 runtime.Value) (runtime.DateTime, runtime.I
 	return date, amount, u, err
 }
 
-func addUnit(date time.Time, amount int, u unit) (time.Time, error) {
+func shiftDate(ctx context.Context, date runtime.DateTime, amount runtime.Int, u unit, subtract bool) (runtime.Value, error) {
 	if duration, ok := fixedDuration(u); ok {
-		return date.Add(time.Duration(amount) * duration), nil
+		delta, err := runtime.Multiply(ctx, runtime.Duration(duration), amount)
+		if err != nil {
+			return runtime.None, err
+		}
+
+		if subtract {
+			return runtime.Subtract(ctx, date, delta)
+		}
+
+		return runtime.Add(ctx, date, delta)
 	}
 
-	switch u {
-	case day:
-		return date.AddDate(0, 0, amount), nil
-	case week:
-		return date.AddDate(0, 0, amount*7), nil
-	case month:
-		return date.AddDate(0, amount, 0), nil
-	case year:
-		return date.AddDate(amount, 0, 0), nil
-	default:
-		return time.Time{}, runtime.Errorf(runtime.ErrUnexpected, "unsupported datetime unit %d", u)
+	if subtract {
+		if amount == math.MinInt64 {
+			return runtime.None, calendarRangeError()
+		}
+
+		amount = -amount
 	}
+
+	result, err := addCalendar(ctx, date.Time, amount, u)
+	if err != nil {
+		return runtime.None, err
+	}
+
+	return runtime.NewDateTime(result), nil
 }
