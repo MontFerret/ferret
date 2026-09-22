@@ -1,4 +1,4 @@
-.PHONY: build install compile test doc fmt lint vet release bench
+.PHONY: build install compile compile-32bit test doc fmt lint vet release bench
 export CGO_ENABLED=0
 
 DIR_BIN = ./bin
@@ -40,6 +40,10 @@ install:
 compile:
 	go build -v -o ${DIR_BIN}/ferret \
 	${DIR_TEST}/cli.go
+
+compile-32bit:
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go build ./... && \
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go test -run '^$$' -exec=true ./...
 
 test: test-unit test-integration test-security
 

@@ -35,6 +35,7 @@ and their own module files.
 | `make build` | Run lint, generation/formatting, all tests, and compile the test CLI harness. |
 | `make install-tools` | Install the exact auxiliary tool versions selected by the Makefile. |
 | `make compile` | Build `test/cli.go` as `bin/ferret`; this is a repository test harness, not the separate MontFerret CLI product. |
+| `make compile-32bit` | Cross-compile all root-module production and test packages for Linux/386 with CGO disabled; test binaries are not executed. |
 | `make test` | Run unit/race, integration/race, and security suites. |
 | `make test-unit` | Run race-enabled package, script, tool-module, compatibility, and root tests. |
 | `make test-integration` | Run race-enabled tests under `test/integration`. |
@@ -109,6 +110,24 @@ Race-enabled Make targets require CGO for the race detector.
 `go test ./...` is a useful broad, non-race check for the root Go module. It does
 not cover the independent tool modules or reproduce the full race and security
 composition of `make test`.
+
+## Linux/386 validation
+
+The main CI workflow has a separate Linux/386 job using the Go version declared
+in `go.mod`. It runs `make compile-32bit`, then executes the MessagePack codec
+tests with `GOOS=linux GOARCH=386 CGO_ENABLED=0`.
+
+The compile target works from other supported Go build hosts. It uses
+`go test -run '^$' -exec=true ./...` to compile test packages without executing
+their binaries. To run the codec tests on a host that can execute Linux/386
+binaries, use:
+
+```sh
+GOOS=linux GOARCH=386 CGO_ENABLED=0 go test -count=1 ./pkg/encoding/msgpack
+```
+
+This job covers the root module. The independent API tooling modules and the
+full test and race suites retain their existing CI jobs.
 
 ## Benchmarks
 

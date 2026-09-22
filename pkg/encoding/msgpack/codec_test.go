@@ -290,13 +290,23 @@ func TestMsgpackCodecEncode(t *testing.T) {
 					t.Fatalf("decode failed: %v", err)
 				}
 
-				if _, ok := decoded.(*runtime.Array); !ok {
+				arr, ok := decoded.(*runtime.Array)
+				if !ok {
 					t.Fatalf("decoded range = %T, want *runtime.Array", decoded)
 				}
 
 				values := make([]runtime.Value, len(test.want))
 				for idx, value := range test.want {
 					values[idx] = runtime.NewInt64(value)
+
+					item, err := arr.At(ctx, runtime.NewInt(idx))
+					if err != nil {
+						t.Fatalf("array at %d failed: %v", idx, err)
+					}
+
+					if item != values[idx] {
+						t.Fatalf("item %d = %v (%T), want Int(%d)", idx, item, item, value)
+					}
 				}
 
 				assertValueEqual(t, decoded, runtime.NewArrayOf(values))
@@ -806,6 +816,63 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 	})
 }
 
+func TestMsgpackCodecIntegerBoundaries(t *testing.T) {
+	codec := ferretmsgpack.Default
+
+	for _, input := range []int64{
+		math.MinInt64,
+		math.MinInt32 - 1,
+		math.MinInt32,
+		math.MinInt32 + 1,
+		-1, 0, 1,
+		math.MaxInt32 - 1,
+		math.MaxInt32,
+		math.MaxInt32 + 1,
+		math.MaxUint32,
+		math.MaxUint32 + 1,
+		1<<53 + 1,
+		math.MaxInt64,
+	} {
+		t.Run(strconv.FormatInt(input, 10), func(t *testing.T) {
+			assertDecodedInt := func(t *testing.T, data []byte) {
+				t.Helper()
+
+				value, err := codec.Decode(data)
+				if err != nil {
+					t.Fatalf("decode failed: %v", err)
+				}
+
+				if value != runtime.NewInt64(input) {
+					t.Fatalf("decoded value = %v (%T), want Int(%d)", value, value, input)
+				}
+			}
+
+			t.Run("signed", func(t *testing.T) {
+				assertDecodedInt(t, mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+					return enc.EncodeInt64(input)
+				}))
+			})
+
+			if input >= 0 {
+				t.Run("unsigned", func(t *testing.T) {
+					assertDecodedInt(t, mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+						return enc.EncodeUint64(uint64(input))
+					}))
+				})
+			}
+
+			t.Run("roundtrip", func(t *testing.T) {
+				data, err := codec.Encode(runtime.NewInt64(input))
+				if err != nil {
+					t.Fatalf("encode failed: %v", err)
+				}
+
+				assertDecodedInt(t, data)
+			})
+		})
+	}
+}
+
 func TestMsgpackCodecDecode(t *testing.T) {
 	codec := ferretmsgpack.Default
 	ctx := context.Background()
@@ -855,13 +922,17 @@ func TestMsgpackCodecDecode(t *testing.T) {
 	})
 
 	t.Run("float", func(t *testing.T) {
-		value, err := codec.Decode(mustMarshalNative(t, 1.5))
-		if err != nil {
-			t.Fatalf("decode failed: %v", err)
-		}
+		for _, input := range []float64{1.5, math.MaxInt32 + 1, 1 << 53} {
+			t.Run(strconv.FormatFloat(input, 'g', -1, 64), func(t *testing.T) {
+				value, err := codec.Decode(mustMarshalNative(t, input))
+				if err != nil {
+					t.Fatalf("decode failed: %v", err)
+				}
 
-		if _, ok := value.(runtime.Float); !ok {
-			t.Fatalf("expected Float, got %T", value)
+				if value != runtime.NewFloat(input) {
+					t.Fatalf("decoded value = %v (%T), want Float(%v)", value, value, input)
+				}
+			})
 		}
 	})
 
@@ -982,32 +1053,22 @@ func TestMsgpackCodecDecode(t *testing.T) {
 	})
 
 	t.Run("unsigned_overflow_error", func(t *testing.T) {
-		data := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
-			return enc.EncodeUint64(math.MaxUint64)
-		})
+		for _, input := range []uint64{uint64(math.MaxInt64) + 1, math.MaxUint64} {
+			t.Run(strconv.FormatUint(input, 10), func(t *testing.T) {
+				data := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
+					return enc.EncodeUint64(input)
+				})
 
-		_, err := codec.Decode(data)
-		if err == nil {
-			t.Fatal("expected overflow error")
-		}
-	})
+				value, err := codec.Decode(data)
+				wantErr := "msgpack: integer " + strconv.FormatUint(input, 10) + " exceeds runtime range"
+				if err == nil || err.Error() != wantErr {
+					t.Fatalf("decode error = %v, want %q", err, wantErr)
+				}
 
-	t.Run("int_overflow_float_on_32bit", func(t *testing.T) {
-		if strconv.IntSize != 32 {
-			t.Skip("only relevant on 32-bit platforms")
-		}
-
-		data := mustEncodeRaw(t, func(enc *vmmsgpack.Encoder) error {
-			return enc.EncodeInt64(int64(math.MaxInt32) + 1)
-		})
-
-		value, err := codec.Decode(data)
-		if err != nil {
-			t.Fatalf("decode failed: %v", err)
-		}
-
-		if _, ok := value.(runtime.Float); !ok {
-			t.Fatalf("expected Float, got %T", value)
+				if value != runtime.None {
+					t.Fatalf("decoded value = %v (%T), want None", value, value)
+				}
+			})
 		}
 	})
 

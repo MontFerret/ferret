@@ -11,13 +11,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-const maxExactIntegerFloat64 = uint64(1 << 53)
-
-var (
-	maxRuntimeInt = int64(^uint(0) >> 1)
-	minRuntimeInt = -maxRuntimeInt - 1
-)
-
 type decoder struct {
 	pre  []encoding.PreDecoderHook
 	post []encoding.PostDecoderHook
@@ -70,7 +63,7 @@ func (dec decoder) decodeValue(ctx context.Context, d *vmmsgpack.Decoder) (runti
 			return runtime.None, err
 		}
 
-		return signedIntValue(value)
+		return runtime.Int(value), nil
 	case isUnsignedIntCode(code):
 		value, err := d.DecodeUint64()
 		if err != nil {
