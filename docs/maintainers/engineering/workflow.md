@@ -35,7 +35,9 @@ and their own module files.
 | `make build` | Run lint, generation/formatting, all tests, and compile the test CLI harness. |
 | `make install-tools` | Install the exact auxiliary tool versions selected by the Makefile. |
 | `make compile` | Build `test/cli.go` as `bin/ferret`; this is a repository test harness, not the separate MontFerret CLI product. |
+| `make compile-32bit` | Cross-compile all root-module production and test packages for Linux/386 with CGO disabled; test binaries are not executed. |
 | `make test` | Run unit/race, integration/race, and security suites. |
+| `make test-32bit` | Run all root-module and independent API-tool-module tests on Linux/386 with CGO disabled and without the race detector. |
 | `make test-unit` | Run race-enabled package, script, tool-module, compatibility, and root tests. |
 | `make test-integration` | Run race-enabled tests under `test/integration`. |
 | `make test-security` | Run `test/security` without the race flag. |
@@ -109,6 +111,31 @@ Race-enabled Make targets require CGO for the race detector.
 `go test ./...` is a useful broad, non-race check for the root Go module. It does
 not cover the independent tool modules or reproduce the full race and security
 composition of `make test`.
+
+## Linux/386 validation
+
+The main CI workflow has a separate Linux/386 matrix matching the Go versions
+in the 64-bit build matrix. Each job runs `make compile-32bit`, followed by
+`make test-32bit`. Matrix fail-fast is disabled so a failure on one Go version
+does not cancel the others.
+
+The compile target works from other supported Go build hosts. It uses
+`go test -run '^$' -exec=true ./...` to compile root-module test packages without
+executing their binaries. To execute the full test suite on a host that can run
+Linux/386 binaries, use:
+
+```sh
+make test-32bit
+```
+
+The test target sets `GOOS=linux GOARCH=386 CGO_ENABLED=0` and runs
+`go test -count=1 ./...` in the root module and both independent API tooling
+modules, `tools/apiref` and `tools/apipublish`. This includes unit, integration,
+security, compatibility, script, and tool tests. Test caching is disabled;
+benchmarks and extended fuzzing remain separate.
+
+The Linux/386 suite runs without the race detector. Existing 64-bit build,
+coverage, security, and race jobs retain their coverage.
 
 ## Benchmarks
 

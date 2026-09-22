@@ -33,7 +33,9 @@ rendering concepts.
 construction. It consumes parsed FQL and produces `bytecode.Program`; runtime-only
 behavior does not belong in the compiler unless it is an explicit compile-time
 semantic or validation rule. Compiler output must preserve the program semantics
-expected by the VM.
+expected by the VM. Integer literal parsing and constant analysis use the
+runtime's signed 64-bit integer range, independently of the host's native `int`
+width.
 
 `pkg/bytecode` owns instructions, operands, functions, executable metadata, and
 the program model consumed by the VM. Its `artifact` and `format` subpackages own

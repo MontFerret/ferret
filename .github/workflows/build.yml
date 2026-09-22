@@ -78,6 +78,33 @@ jobs:
       - name: Unit tests
         run: make cover
 
+  build-32bit:
+    name: Build and Test (Linux/386, Go ${{ matrix.goVer }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goVer: [1.25, 1.26, 1.27]
+
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.goVer }}
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.goVer }}
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
+
+      - name: Compile production and test packages for Linux/386
+        run: make compile-32bit
+
+      - name: Run all tests on Linux/386
+        run: make test-32bit
+
   security:
     name: Security Tests
     runs-on: ubuntu-latest

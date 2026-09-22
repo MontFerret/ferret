@@ -13,6 +13,15 @@ func TestNumericLiteralRangeErrors(t *testing.T) {
 
 	RunSpecs(t, []spec.Spec{
 		Failure(
+			"RETURN 9223372036854775808",
+			E{
+				Kind:    parserd.SyntaxError,
+				Message: "Integer literal is out of range",
+				Hint:    "Use an integer value that fits within the supported range.",
+			},
+			"Integer literal above MaxInt64 should report a syntax diagnostic",
+		),
+		Failure(
 			"RETURN "+hugeInt,
 			E{
 				Kind:    parserd.SyntaxError,

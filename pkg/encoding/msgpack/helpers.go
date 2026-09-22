@@ -2,6 +2,7 @@ package msgpack
 
 import (
 	"fmt"
+	"math"
 
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
@@ -42,26 +43,9 @@ func isMapCode(code byte) bool {
 	return msgpcode.IsFixedMap(code) || code == msgpcode.Map16 || code == msgpcode.Map32
 }
 
-func signedIntValue(value int64) (runtime.Value, error) {
-	if value >= minRuntimeInt && value <= maxRuntimeInt {
-		return runtime.Int(value), nil
-	}
-
-	floatValue := float64(value)
-	if int64(floatValue) == value {
-		return runtime.NewFloat(floatValue), nil
-	}
-
-	return runtime.None, fmt.Errorf("msgpack: integer %d exceeds runtime range", value)
-}
-
 func unsignedIntValue(value uint64) (runtime.Value, error) {
-	if value <= uint64(maxRuntimeInt) {
+	if value <= math.MaxInt64 {
 		return runtime.Int(value), nil
-	}
-
-	if value <= maxExactIntegerFloat64 {
-		return runtime.NewFloat(float64(value)), nil
 	}
 
 	return runtime.None, fmt.Errorf("msgpack: integer %d exceeds runtime range", value)
