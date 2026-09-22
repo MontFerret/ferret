@@ -226,7 +226,7 @@ func (c *RecoveryCompiler) resolveRetryPlan(action fql.IRecoveryRetryActionConte
 		valid = false
 	} else {
 		plan.CountNode = countCtx.(antlr.ParserRuleContext)
-		count, err := strconv.Atoi(countCtx.IntegerLiteral().GetText())
+		count, err := strconv.ParseInt(countCtx.IntegerLiteral().GetText(), 10, 64)
 		if err != nil {
 			c.reportInvalidTail(countCtx, "Expected retry count after 'RETRY'", "Provide an integer retry count, e.g. ON ERROR RETRY 3.")
 			valid = false

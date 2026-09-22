@@ -104,7 +104,7 @@ func ToSlice[T any](ctx context.Context, input runtime.Value, mapper Mapper[T]) 
 			return nil, err
 		}
 
-		capacity = int(res)
+		capacity = runtime.CapacityHint(res, 1, 0)
 	}
 
 	result := make([]T, 0, capacity)

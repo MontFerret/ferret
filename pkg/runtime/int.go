@@ -9,16 +9,19 @@ import (
 	"strconv"
 )
 
+// Int is a signed 64-bit integer on every host architecture.
 type Int int64
 
 const (
 	ZeroInt = Int(0)
 )
 
+// NewInt lifts a native integer, such as an index or length, into an Int.
 func NewInt(input int) Int {
 	return Int(int64(input))
 }
 
+// NewInt64 preserves a signed 64-bit value on every host architecture.
 func NewInt64(input int64) Int {
 	return Int(input)
 }
@@ -40,7 +43,7 @@ func ParseInt(input any) (Int, error) {
 	case int8:
 		return Int(val), nil
 	case string:
-		i, err := strconv.Atoi(val)
+		i, err := strconv.ParseInt(val, 10, 64)
 
 		if err == nil {
 			if i == 0 {
@@ -83,7 +86,7 @@ func ToInt(ctx context.Context, input Value) (Int, error) {
 			return ZeroInt, nil
 		}
 
-		return NewInt(int(dt.Unix())), nil
+		return NewInt64(dt.Unix()), nil
 	case List:
 		iterator, err := val.Iterate(ctx)
 
@@ -177,6 +180,7 @@ func (i Int) Copy() Value {
 	return i
 }
 
+// Unwrap returns the integer as a Go int64 without narrowing the value.
 func (i Int) Unwrap() any {
-	return int(i)
+	return int64(i)
 }

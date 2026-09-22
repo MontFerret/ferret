@@ -657,7 +657,18 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 				break
 			}
 
-			reg[dst] = data.NewAggregateKey(reg[src1], int(selectorVal))
+			selector, ok := runtime.ToNativeInt(selectorVal)
+			if !ok {
+				invariantErr := diagnostics.NewInvariantError(
+					"invalid aggregate selector index constant",
+					runtime.Error(runtime.ErrRange, "aggregate selector index exceeds native integer range"),
+				)
+				state.raiseInvariantAt(pc, invariantErr)
+
+				break
+			}
+
+			reg[dst] = data.NewAggregateKey(reg[src1], selector)
 		case bytecode.OpAssertDestructure:
 			value := reg[dst]
 			if value == runtime.None {

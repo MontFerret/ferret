@@ -96,6 +96,7 @@ func legacyAtan(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) 
 // ceil returns the least integer value greater than or equal to a given value.
 // @param number {Int | Float} Input number.
 // @return {Int} The least integer value greater than or equal to a given value.
+// @throws {RangeError} The rounded result is not a finite signed 64-bit integer.
 // @deprecated Use math::ceil instead.
 func legacyCeil(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return Ceil(ctx, arg1)
@@ -136,6 +137,7 @@ func legacyExp2(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) 
 // floor returns the greatest integer value less than or equal to a given value.
 // @param number {Int | Float} Input number.
 // @return {Int} The greatest integer value less than or equal to a given value.
+// @throws {RangeError} The rounded result is not a finite signed 64-bit integer.
 // @deprecated Use math::floor instead.
 func legacyFloor(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return Floor(ctx, arg1)
@@ -176,6 +178,7 @@ func legacyRadians(ctx context.Context, arg1 runtime.Value) (runtime.Value, erro
 // round returns the nearest integer, rounding half away from zero.
 // @param number {Int | Float} Input number.
 // @return {Int} The nearest integer, rounding half away from zero.
+// @throws {RangeError} The rounded result is not a finite signed 64-bit integer.
 // @deprecated Use math::round instead.
 func legacyRound(ctx context.Context, arg1 runtime.Value) (runtime.Value, error) {
 	return Round(ctx, arg1)

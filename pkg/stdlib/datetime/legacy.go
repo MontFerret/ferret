@@ -175,6 +175,7 @@ func legacyFormat(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value,
 // @param amount {Int} Number of units to add; may be negative.
 // @param unit {String} Millisecond, second, minute, hour, day, week, month, or year; plurals are accepted.
 // @return {DateTime} Calculated date, retaining the input's location.
+// @throws {RangeError} The shift or resulting date cannot be represented safely.
 // @deprecated Use datetime::add instead.
 func legacyAdd(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return Add(ctx, arg1, arg2, arg3)
@@ -187,6 +188,7 @@ func legacyAdd(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Val
 // @param amount {Int} Number of units to subtract; may be negative.
 // @param unit {String} Millisecond, second, minute, hour, day, week, month, or year; plurals are accepted.
 // @return {DateTime} Calculated date, retaining the input's location.
+// @throws {RangeError} The shift or resulting date cannot be represented safely.
 // @deprecated Use datetime::subtract instead.
 func legacySubtract(ctx context.Context, arg1, arg2, arg3 runtime.Value) (runtime.Value, error) {
 	return Subtract(ctx, arg1, arg2, arg3)

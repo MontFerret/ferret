@@ -19,7 +19,7 @@ func TestAddUnitInvalidUnit(t *testing.T) {
 		{"above maximum", year + 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := addUnit(time.Date(2024, time.January, 1, 12, 0, 0, 0, time.UTC), 1, tc.unit)
+			got, err := addCalendar(t.Context(), time.Date(2024, time.January, 1, 12, 0, 0, 0, time.UTC), 1, tc.unit)
 			if !got.IsZero() || !errors.Is(err, runtime.ErrUnexpected) {
 				t.Fatalf("addUnit(%d) = %v, %v; want zero time and an unexpected error", tc.unit, got, err)
 			}

@@ -90,7 +90,12 @@ func (enc encoder) encodeMap(ctx context.Context, menc *vmmsgpack.Encoder, value
 		return err
 	}
 
-	if err := menc.EncodeMapLen(int(length)); err != nil {
+	nativeLength, err := collectionLength(length)
+	if err != nil {
+		return err
+	}
+
+	if err := menc.EncodeMapLen(nativeLength); err != nil {
 		return err
 	}
 
@@ -113,7 +118,12 @@ func (enc encoder) encodeList(ctx context.Context, menc *vmmsgpack.Encoder, valu
 		return err
 	}
 
-	if err := menc.EncodeArrayLen(int(length)); err != nil {
+	nativeLength, err := collectionLength(length)
+	if err != nil {
+		return err
+	}
+
+	if err := menc.EncodeArrayLen(nativeLength); err != nil {
 		return err
 	}
 
@@ -137,18 +147,12 @@ func (enc encoder) encodeRange(ctx context.Context, menc *vmmsgpack.Encoder, val
 		return err
 	}
 
-	// MessagePack array headers are uint32, while EncodeArrayLen accepts a native int.
-	maxArrayLength := uint64(^uint32(0))
-	maxNativeInt := uint64(^uint(0) >> 1)
-	if maxNativeInt < maxArrayLength {
-		maxArrayLength = maxNativeInt
+	nativeLength, err := collectionLength(length)
+	if err != nil {
+		return err
 	}
 
-	if uint64(length) > maxArrayLength {
-		return runtime.Error(runtime.ErrRange, "range length exceeds MessagePack array capacity")
-	}
-
-	if err := menc.EncodeArrayLen(int(length)); err != nil {
+	if err := menc.EncodeArrayLen(nativeLength); err != nil {
 		return err
 	}
 

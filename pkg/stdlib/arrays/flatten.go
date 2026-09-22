@@ -65,7 +65,7 @@ func flatten2(ctx context.Context, arg1, arg2 runtime.Value) (runtime.Value, err
 	}
 
 	var currentLevel runtime.Int
-	result := runtime.NewArray64(size * 2)
+	result := runtime.NewArray(runtime.CapacityHint(size, 2, 0))
 	var unwrap func(input runtime.List) error
 
 	unwrap = func(input runtime.List) error {

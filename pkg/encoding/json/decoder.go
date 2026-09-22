@@ -134,10 +134,10 @@ func (dec decoder) decodeValue(ctx context.Context, jdec *json.Decoder) (runtime
 			raw := v.String()
 
 			if !strings.ContainsAny(raw, ".eE") {
-				parsed, err := strconv.ParseInt(raw, 10, 0)
+				parsed, err := strconv.ParseInt(raw, 10, 64)
 
 				if err == nil {
-					if err := attach(runtime.NewInt(int(parsed))); err != nil {
+					if err := attach(runtime.NewInt64(parsed)); err != nil {
 						return runtime.None, err
 					}
 
