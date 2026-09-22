@@ -79,28 +79,31 @@ jobs:
         run: make cover
 
   build-32bit:
-    name: Build (Linux/386)
+    name: Build and Test (Linux/386, Go ${{ matrix.goVer }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goVer: [1.25, 1.26, 1.27]
 
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Set up Go ${{ matrix.goVer }}
         uses: actions/setup-go@v6
         with:
-          go-version-file: go.mod
-          cache-dependency-path: go.sum
+          go-version: ${{ matrix.goVer }}
+          cache-dependency-path: |
+            go.sum
+            tools/apiref/go.sum
+            tools/apipublish/go.sum
 
       - name: Compile production and test packages for Linux/386
         run: make compile-32bit
 
-      - name: Run MessagePack tests on Linux/386
-        env:
-          GOOS: linux
-          GOARCH: "386"
-          CGO_ENABLED: "0"
-        run: go test -count=1 ./pkg/encoding/msgpack
+      - name: Run all tests on Linux/386
+        run: make test-32bit
 
   security:
     name: Security Tests

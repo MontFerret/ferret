@@ -1,4 +1,4 @@
-.PHONY: build install compile compile-32bit test doc fmt lint vet release bench
+.PHONY: build install compile compile-32bit test test-32bit doc fmt lint vet release bench
 export CGO_ENABLED=0
 
 DIR_BIN = ./bin
@@ -46,6 +46,11 @@ compile-32bit:
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go test -run '^$$' -exec=true ./...
 
 test: test-unit test-integration test-security
+
+test-32bit:
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go test -count=1 ./... && \
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIREF} test -count=1 ./... && \
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIPUBLISH} test -count=1 ./...
 
 test-unit:
 	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_UAPI}/... ${DIR_SCRIPTS}/... && \
