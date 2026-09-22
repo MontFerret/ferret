@@ -50,9 +50,7 @@ func matchQueryOperatorErrors(src source.Source, err *diagnostics.Diagnostic, of
 	typedExample := fmt.Sprintf("doc[%s css`...`]", operator)
 
 	if is(offending, operator) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 
 		err.Message = fmt.Sprintf("Expected query literal after '%s'", operator)
 		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", literalExample)
@@ -66,9 +64,7 @@ func matchQueryOperatorErrors(src source.Source, err *diagnostics.Diagnostic, of
 	if prev := offending.Prev(); prev != nil && is(prev, operator) {
 		if isIdentifier(offending) {
 			queryType := offending.GetText()
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start = span.End
-			span.End = span.Start + 1
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			err.Message = fmt.Sprintf("Expected query string after '%s'", queryType)
 			err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", typedExample)
@@ -79,9 +75,7 @@ func matchQueryOperatorErrors(src source.Source, err *diagnostics.Diagnostic, of
 			return true
 		}
 
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(prev.Token(), src)
 
 		err.Message = fmt.Sprintf("Expected query literal after '%s'", operator)
 		err.Hint = fmt.Sprintf("Provide a query literal, e.g. %s.", literalExample)
@@ -94,9 +88,7 @@ func matchQueryOperatorErrors(src source.Source, err *diagnostics.Diagnostic, of
 
 	if prev := offending.Prev(); prev != nil && isIdentifier(prev) && hasPrevToken(prev, operator, 4) {
 		queryType := prev.GetText()
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(prev.Token(), src)
 
 		err.Message = fmt.Sprintf("Expected query string after '%s'", queryType)
 		err.Hint = fmt.Sprintf("Provide a query string, e.g. %s.", typedExample)
@@ -108,9 +100,7 @@ func matchQueryOperatorErrors(src source.Source, err *diagnostics.Diagnostic, of
 	}
 
 	if hasMissingClosingBracket(err.Message) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 
 		err.Message = "Unclosed query operator"
 		err.Hint = "Add a closing ']' to complete the query operator."
@@ -130,9 +120,7 @@ func matchArrayInlineReturnErrors(src source.Source, err *diagnostics.Diagnostic
 	}
 
 	if is(offending, "RETURN") {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 
 		err.Message = "Expected expression after 'RETURN' in array operator"
 		err.Hint = "Provide a projection expression, e.g. [* RETURN .]."
@@ -148,9 +136,7 @@ func matchArrayInlineReturnErrors(src source.Source, err *diagnostics.Diagnostic
 		return false
 	}
 
-	span := spanFromTokenSafe(prev.Token(), src)
-	span.Start = span.End
-	span.End = span.Start + 1
+	span := insertionSpanAfterToken(prev.Token(), src)
 
 	err.Message = "Expected expression after 'RETURN' in array operator"
 	err.Hint = "Provide a projection expression, e.g. [* RETURN .]."
@@ -174,15 +160,12 @@ func matchArrayQuestionQuantifierErrors(src source.Source, err *diagnostics.Diag
 		return false
 	}
 
-	prev := offending.Prev()
-	span := spanFromTokenSafe(offending.Token(), src)
-
-	if prev != nil {
-		span = spanFromTokenSafe(prev.Token(), src)
+	quantifier := offending
+	if is(offending, "]") || isEOF(offending) {
+		quantifier = offending.Prev()
 	}
 
-	span.Start = span.End
-	span.End = span.Start + 1
+	span := insertionSpanAfterToken(quantifier.Token(), src)
 
 	err.Message = "Expected FILTER after quantifier in array filter"
 	err.Hint = "Add a FILTER expression, e.g. [? NONE FILTER <expr>]."
@@ -206,9 +189,7 @@ func matchArrayOperatorUnclosed(src source.Source, err *diagnostics.Diagnostic, 
 		return false
 	}
 
-	span := spanFromTokenSafe(offending.Token(), src)
-	span.Start = span.End
-	span.End = span.Start + 1
+	span := insertionSpanAfterToken(offending.Token(), src)
 
 	err.Message = "Unclosed array operator"
 	err.Hint = "Add a closing ']' to complete the array operator."

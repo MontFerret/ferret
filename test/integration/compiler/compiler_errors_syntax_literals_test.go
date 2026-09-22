@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
@@ -394,21 +393,12 @@ RETURN products[*
 		t.Fatalf("unexpected span location: got %d:%d, want 7:47", position.Line, position.Column)
 	}
 
-	formatted := pkgdiagnostics.Format(err)
-	if got := strings.Count(formatted, "SyntaxError:"); got != 1 {
-		t.Fatalf("expected one syntax diagnostic, got %d:\n%s", got, formatted)
+	if err != diag {
+		t.Fatalf("expected one native diagnostic, got %T: %v", err, err)
 	}
 
-	if !strings.Contains(formatted, "7 |     { name: \"Whatchamacallit\", price: 129.99 }\n  |                                               ^ missing comma\n8 |     { name: \"Contraption\", price: 89.99 },") {
-		t.Fatalf("diagnostic should point after previous array item, got:\n%s", formatted)
-	}
-
-	for _, unexpected := range []string{
-		"no viable alternative at input",
-		"mismatched input ']'",
-	} {
-		if strings.Contains(formatted, unexpected) {
-			t.Fatalf("formatted diagnostic contains cascade %q:\n%s", unexpected, formatted)
-		}
+	offset := strings.Index(query, "129.99 }") + len("129.99 }")
+	if got := diag.Spans[0].Span; got != (source.Span{Start: offset, End: offset}) {
+		t.Fatalf("span = %+v, want insertion after previous array item at %d", got, offset)
 	}
 }

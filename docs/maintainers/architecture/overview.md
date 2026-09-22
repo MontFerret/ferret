@@ -216,6 +216,16 @@ message. Labels, notes, and hints should make common misuse actionable. Tests fo
 diagnostic changes should assert both the category or message contract and span
 accuracy.
 
+Published diagnostic spans are zero-based, half-open byte offsets and must obey
+`0 <= Start <= End <= len(Source.Content())` for every annotation. Missing syntax
+uses a zero-width insertion point at the relevant token boundary, including
+`[N,N)` at EOF. Existing offending syntax uses its actual source range. Native
+positions retain one-based lines and byte columns. Parser producers keep ANTLR
+character offsets until the compiler converts them to the original source bytes.
+Producers own coordinate correctness; source lookup and Universal API projection
+must not repair invalid spans. Caret visibility and snippet layout belong to
+diagnostic rendering, not span construction.
+
 `pkg/formatter` consumes current parser semantics and owns canonical FQL layout.
 Formatter changes must preserve executable meaning and should be covered by
 focused fixtures or integration tests. A syntax change should update formatter

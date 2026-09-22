@@ -81,7 +81,7 @@ func TestCompileAndAnalyzeDiagnosticByteSpansAgree(t *testing.T) {
 
 		start := strings.Index(query, "missing")
 		if start < 0 {
-			start = strings.Index(query, "RETURN") + len("RETURN")
+			start = strings.Index(query, ")")
 		}
 
 		if len(compiled.Spans) == 0 || compiled.Spans[0].Span.Start != start ||

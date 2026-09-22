@@ -13,6 +13,8 @@ import (
 
 	ferretdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/engine"
+	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
+	nativesource "github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 func TestWrapRequiresNativeEngine(t *testing.T) {
@@ -204,22 +206,37 @@ func TestRuntimeConvertsDiagnosticsAndPreservesNativeCause(t *testing.T) {
 		t.Fatal("Compile unexpectedly succeeded")
 	}
 
-	var nativeSet *ferretdiagnostics.DiagnosticSet
-
 	var native *ferretdiagnostics.Diagnostic
-	if !errors.As(err, &nativeSet) && !errors.As(err, &native) {
+	if !errors.As(err, &native) {
 		t.Fatalf("error does not preserve native diagnostic cause: %v", err)
 	}
 
-	var portable apidiagnostics.Diagnostics
-	if !errors.As(err, &portable) || len(portable) == 0 {
-		t.Fatalf("portable diagnostics = %+v, want non-empty", portable)
+	const message = "Expected expression after 'RETURN'"
+	const hint = "Did you forget to provide a value to return?"
+	const label = "missing return value"
+	wantSpan := nativesource.Span{Start: len(source.Content), End: len(source.Content)}
+	wantPosition := nativesource.Position{Line: 1, Column: 7}
+	if native.Source.Name() != source.Name || native.Source.Content() != source.Content ||
+		native.Kind != parserd.SyntaxError || native.Message != message || native.Hint != hint ||
+		len(native.Spans) != 1 || native.Spans[0] != ferretdiagnostics.NewMainErrorSpan(wantSpan, label) ||
+		native.Source.PositionAt(native.Spans[0].Span) != wantPosition {
+		t.Errorf("native diagnostic = %+v, want RETURN insertion at 1:7 / [6,6)", native)
 	}
 
-	if portable[0].Source != source || portable[0].Message == "" ||
-		len(portable[0].Annotations) == 0 ||
-		portable[0].Annotations[0].Range.SourceName != source.Name {
+	var portable apidiagnostics.Diagnostics
+	if !errors.As(err, &portable) || len(portable) != 1 {
+		t.Fatalf("portable diagnostics = %+v, want one", portable)
+	}
+
+	if portable[0].Source != source || portable[0].Kind != apidiagnostics.Kind(parserd.SyntaxError) ||
+		portable[0].Message != message || portable[0].Hint != hint || len(portable[0].Annotations) != 1 {
 		t.Fatalf("portable diagnostic = %+v", portable[0])
+	}
+
+	annotation := portable[0].Annotations[0]
+	if annotation.Range.SourceName != source.Name || annotation.Range.Position != wantPosition ||
+		annotation.Range.Span != wantSpan || annotation.Message != label || !annotation.Primary {
+		t.Fatalf("portable annotation = %+v, want primary %q at %s:1:7 / [6,6)", annotation, label, source.Name)
 	}
 }
 

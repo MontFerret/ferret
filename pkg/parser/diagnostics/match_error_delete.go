@@ -22,10 +22,8 @@ func matchDeleteStatementErrors(src source.Source, err *diagnostics.Diagnostic, 
 	}
 
 	span := spanFromTokenSafe(offending.Token(), src)
-	if isMissing(err.Message) {
-		span = spanFromTokenSafe(deleteToken.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+	if isMissing(err.Message) || (is(offending, "DELETE") && isEOF(offending.Next())) {
+		span = insertionSpanAfterToken(deleteToken.Token(), src)
 	}
 
 	err.Message = deleteTargetMessage

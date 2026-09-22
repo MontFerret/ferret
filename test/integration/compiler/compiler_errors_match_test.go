@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
@@ -105,8 +104,8 @@ RETURN fib(10)`
 		t.Fatalf("unexpected span location: got %d:%d, want 3:15", position.Line, position.Column)
 	}
 
-	formatted := pkgdiagnostics.Format(err)
-	if !strings.Contains(formatted, "3 |         0 => 0\n  |               ^ missing comma\n4 |         1 => 1") {
-		t.Fatalf("diagnostic should point after previous MATCH arm value, got:\n%s", formatted)
+	offset := strings.Index(query, "0 => 0") + len("0 => 0")
+	if got := diag.Spans[0].Span; got != (source.Span{Start: offset, End: offset}) {
+		t.Fatalf("span = %+v, want insertion after previous MATCH arm at %d", got, offset)
 	}
 }

@@ -36,7 +36,7 @@ func hasRangeToken(message string) bool {
 
 func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 	if tok == nil {
-		return source.Span{Start: 0, End: 1}
+		return source.Span{Start: 0, End: 0}
 	}
 
 	start := tok.GetStart()
@@ -46,8 +46,8 @@ func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 		start = 0
 	}
 
-	if end <= start {
-		end = start + 1
+	if end < start {
+		end = start
 	}
 
 	// clamp to source length
@@ -58,10 +58,19 @@ func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 	}
 
 	if start > maxLen {
-		start = maxLen - 1
+		start = maxLen
 	}
 
 	return source.Span{Start: start, End: end}
+}
+
+// Insertion points do not consume source characters, including at EOF. Keep
+// ANTLR offsets here; the compiler publishes diagnostics in byte coordinates.
+func insertionSpanAfterToken(tok antlr.Token, src source.Source) source.Span {
+	span := spanFromTokenSafe(tok, src)
+	span.Start = span.End
+
+	return span
 }
 
 func isIdentifier(node *TokenNode) bool {

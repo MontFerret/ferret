@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -13,9 +15,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) || isExtraneous(err.Message) {
 		prev := offending.Prev()
 		if node := anyIs(prev, offending, "=>"); node != nil && !isArrowBodyStart(node, offending) {
-			span := spanFromTokenSafe(node.Token(), src)
-			span.Start += 2
-			span.End += 2
+			span := insertionSpanAfterToken(node.Token(), src)
 
 			err.Message = "Expected expression after '=>'"
 			err.Hint = "Provide an expression, e.g. FUNC f() => x + 1"
@@ -28,9 +28,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 		if has(err.Message, "=>") && has(err.Message, "'{'") && hasPrevToken(offending, "FUNC", 12) {
 			if paren := findPrevToken(offending, ")", 8); paren != nil {
-				span := spanFromTokenSafe(paren.Token(), src)
-				span.Start++
-				span.End++
+				span := insertionSpanAfterToken(paren.Token(), src)
 
 				err.Message = "Expected '=>' or '{' after function declaration"
 				err.Hint = "Use 'FUNC f(x) => expr' or 'FUNC f(x) { ... RETURN expr }'."
@@ -44,10 +42,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 	}
 
 	if isNoAlternative(err.Message) {
-		if span, missingArgument, ok := malformedFunctionCallOpen(src, err); ok {
-			span.Start++
-			span.End++
-
+		if span, missingArgument, ok := malformedFunctionCallInsertionSpan(src, err); ok {
 			if missingArgument {
 				err.Message = "Expected a valid list of arguments"
 				err.Hint = "Did you forget to provide a value?"
@@ -71,9 +66,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 				spanNode = offending.Prev()
 			}
 
-			span := spanFromTokenSafe(spanNode.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(spanNode.Token(), src)
 
 			err.Message = "Expected a valid list of arguments"
 			err.Hint = "Did you forget to provide a value?"
@@ -86,9 +79,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 		prevLogical := isLogicalOperator(offending.Prev())
 		if prevLogical && !isExpressionStart(offending) {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
-			span.Start += 2
-			span.End += 2
+			span := insertionSpanAfterToken(offending.Prev().Token(), src)
 
 			operator := offending.Prev().GetText()
 			err.Message = fmt.Sprintf("Expected right-hand expression after '%s'", operator)
@@ -101,9 +92,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if groupParen := findGroupingParen(offending, 8); groupParen != nil {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			err.Message = "Unclosed parenthesized expression"
 			err.Hint = "Add a closing ')' to complete the expression."
@@ -115,9 +104,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if is(offending.Prev(), ",") {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Prev().Token(), src)
 
 			err.Message = "Expected expression after ','"
 			err.Hint = "Did you forget to provide a value?"
@@ -130,9 +117,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 		// Ternary operator, incomplete expression
 		if is(offending.Prev(), "?") {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Prev().Token(), src)
 
 			err.Message = "Expected expression after '?' in ternary operator"
 			err.Hint = "Provide an expression after the question mark to complete the ternary operation."
@@ -145,9 +130,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 		// Ternary operator, missing the right-hand expression
 		if is(offending.Prev(), ":") {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Prev().Token(), src)
 
 			err.Message = "Expected expression after ':' in ternary operator"
 			err.Hint = "Provide an expression after the colon to complete the ternary operation."
@@ -161,9 +144,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 	if isMissing(err.Message) {
 		if is(offending.Prev(), "..") || is(offending, "..") || hasRangeToken(err.Message) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start += 2
-			span.End += 2
+			span := rangeEndInsertionSpan(src, err, offending)
 
 			start := ""
 			if is(offending, "..") && offending.Prev() != nil {
@@ -189,13 +170,9 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 			var span source.Span
 
 			if isKeyword(offending) {
-				span = spanFromTokenSafe(offending.Prev().Token(), src)
-				span.Start++
-				span.End++
+				span = insertionSpanAfterToken(offending.Prev().Token(), src)
 			} else {
-				span = spanFromTokenSafe(offending.Token(), src)
-				span.Start++
-				span.End++
+				span = insertionSpanAfterToken(offending.Token(), src)
 			}
 
 			err.Message = "Unclosed function call"
@@ -210,9 +187,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 	if isMissing(err.Message) {
 		if isMissingToken(err.Message, ")") {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			err.Message = "Unclosed parenthesized expression"
 			err.Hint = "Add a closing ')' to complete the expression."
@@ -224,9 +199,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if is(offending.Prev(), "..") {
-			span := spanFromTokenSafe(offending.Prev().Token(), src)
-			span.Start += 2
-			span.End += 2
+			span := insertionSpanAfterToken(offending.Prev().Token(), src)
 
 			start := ""
 			if prevPrev := offending.Prev().Prev(); prevPrev != nil {
@@ -243,9 +216,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if is(offending, "..") || hasRangeToken(err.Message) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start += 2
-			span.End += 2
+			span := rangeEndInsertionSpan(src, err, offending)
 
 			start := ""
 			if is(offending, "..") && offending.Prev() != nil {
@@ -266,9 +237,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 
 	if isExtraneous(err.Message) {
 		if is(offending, "(") {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			err.Message = "Expected a valid list of arguments"
 			err.Hint = "Did you forget to provide a value?"
@@ -280,9 +249,7 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 		}
 
 		if is(offending, "..") {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start += 2
-			span.End += 2
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			start := offending.Prev().GetText()
 			err.Message = "Expected end value after '..' in range expression"
@@ -298,7 +265,25 @@ func matchCommonErrors(src source.Source, err *diagnostics.Diagnostic, offending
 	return false
 }
 
-func malformedFunctionCallOpen(src source.Source, err *diagnostics.Diagnostic) (source.Span, bool, bool) {
+func rangeEndInsertionSpan(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) source.Span {
+	for _, node := range []*TokenNode{offending, offending.Next(), offending.Prev()} {
+		if is(node, "..") {
+			return insertionSpanAfterToken(node.Token(), src)
+		}
+	}
+
+	// The parser can report the range token without retaining it in history.
+	span := spanFromTokenSafe(offending.Token(), src)
+	if len(err.Spans) > 0 {
+		span = err.Spans[0].Span
+	}
+
+	span.Start = span.End
+
+	return span
+}
+
+func malformedFunctionCallInsertionSpan(src source.Source, err *diagnostics.Diagnostic) (source.Span, bool, bool) {
 	if src.Empty() || err == nil || extractNoAlternativeInput(err.Message) != "(" {
 		return source.Span{}, false, false
 	}
@@ -316,8 +301,26 @@ func malformedFunctionCallOpen(src source.Source, err *diagnostics.Diagnostic) (
 	}
 
 	missingArgument := idx+1 < len(tokens) && isTokenText(tokens[idx+1], ",")
+	span := insertionSpanAfterToken(tokens[idx], src)
+	if missingArgument || idx+1 == len(tokens) {
+		return span, missingArgument, true
+	}
 
-	return spanFromTokenSafe(tokens[idx], src), missingArgument, true
+	// Locate the end of the arguments using the grammar, including multiline
+	// and nested expressions. The original diagnostic can point at the opener.
+	text := []rune(src.Content())
+	lexer := fql.NewFqlLexer(antlr.NewInputStream(string(text[span.End:])))
+	lexer.RemoveErrorListeners()
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := fql.NewFqlParser(stream)
+	p.RemoveErrorListeners()
+	arguments := p.ArgumentList()
+	if stop := arguments.GetStop(); stop != nil {
+		end := span.End + stop.GetStop() + 1
+		span = source.Span{Start: end, End: end}
+	}
+
+	return span, false, true
 }
 
 func isArrowBodyStart(arrow, offending *TokenNode) bool {
