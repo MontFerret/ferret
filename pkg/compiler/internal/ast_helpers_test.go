@@ -3,7 +3,9 @@ package internal
 import (
 	"context"
 	"errors"
+	"math"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -96,6 +98,25 @@ func TestLiteralNumericValue(t *testing.T) {
 
 	if _, ok = literalIntValue("x"); ok {
 		t.Fatal("expected invalid int literal to fail")
+	}
+}
+
+func TestLiteralIntValueBoundaries(t *testing.T) {
+	for _, input := range []int64{math.MinInt64, math.MinInt32 - 1, math.MaxInt32 + 1, 1<<53 + 1, math.MaxInt64} {
+		t.Run(strconv.FormatInt(input, 10), func(t *testing.T) {
+			value, ok := literalIntValue(strconv.FormatInt(input, 10))
+			if !ok || value != runtime.NewInt64(input) {
+				t.Fatalf("literal = %v (%T), valid = %v, want Int(%d)", value, value, ok, input)
+			}
+		})
+	}
+
+	for _, input := range []string{"9223372036854775808", "-9223372036854775809"} {
+		t.Run(input, func(t *testing.T) {
+			if value, ok := literalIntValue(input); ok {
+				t.Fatalf("out-of-range literal accepted: %v", value)
+			}
+		})
 	}
 }
 

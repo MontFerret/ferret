@@ -208,11 +208,11 @@ func literalValueOf(ctx fql.ILiteralContext) (runtime.Value, bool) {
 
 		return val, true
 	case ctx.IntegerLiteral() != nil:
-		val, err := strconv.Atoi(ctx.IntegerLiteral().GetText())
+		val, err := strconv.ParseInt(ctx.IntegerLiteral().GetText(), 10, 64)
 		if err != nil {
 			return nil, false
 		}
-		return runtime.NewInt(val), true
+		return runtime.NewInt64(val), true
 	case ctx.FloatLiteral() != nil:
 		val, err := strconv.ParseFloat(ctx.FloatLiteral().GetText(), 64)
 		if err != nil {

@@ -131,12 +131,12 @@ func literalFloatValue(text string) (runtime.Value, bool) {
 }
 
 func literalIntValue(text string) (runtime.Value, bool) {
-	val, err := strconv.Atoi(text)
+	val, err := strconv.ParseInt(text, 10, 64)
 	if err != nil {
 		return nil, false
 	}
 
-	return runtime.NewInt(val), true
+	return runtime.NewInt64(val), true
 }
 
 func newOperandBranch(enabled bool, compile func() bytecode.Operand) operandBranch {

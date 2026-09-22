@@ -218,7 +218,7 @@ func literalTruthinessFromExpression(ctx fql.IExpressionContext) (bool, bool) {
 	case lit.BooleanLiteral() != nil:
 		return strings.ToLower(lit.BooleanLiteral().GetText()) == "true", true
 	case lit.IntegerLiteral() != nil:
-		val, err := strconv.Atoi(lit.IntegerLiteral().GetText())
+		val, err := strconv.ParseInt(lit.IntegerLiteral().GetText(), 10, 64)
 		if err != nil {
 			return false, false
 		}

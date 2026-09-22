@@ -170,13 +170,13 @@ func (c *LiteralCompiler) CompileTemplateLiteral(ctx fql.ITemplateLiteralContext
 
 // CompileIntegerLiteral processes an integer literal from the FQL AST and converts it into a runtime integer.
 func (c *LiteralCompiler) CompileIntegerLiteral(ctx fql.IIntegerLiteralContext) bytecode.Operand {
-	val, err := strconv.Atoi(ctx.GetText())
+	val, err := strconv.ParseInt(ctx.GetText(), 10, 64)
 	if err != nil {
 		c.reportInvalidNumericLiteral(ctx, "integer", err)
 		return bytecode.NoopOperand
 	}
 
-	return c.facts.LoadConstant(runtime.NewInt(val))
+	return c.facts.LoadConstant(runtime.NewInt64(val))
 }
 
 // CompileFloatLiteral processes a float literal from the FQL AST and converts it into a runtime float.
