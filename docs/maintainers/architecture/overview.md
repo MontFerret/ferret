@@ -226,6 +226,12 @@ Producers own coordinate correctness; source lookup and Universal API projection
 must not repair invalid spans. Caret visibility and snippet layout belong to
 diagnostic rendering, not span construction.
 
+`SpanRenderer` renders valid zero-width insertion points with a single caret,
+including insertions at EOF of a nonempty source. It continues to reject invalid
+spans without repairing their coordinates. The diagnostic formatter's primary
+span selection still omits `[0,0)` annotations; that separate rendering limitation
+does not change the validity of an insertion at the start of a source.
+
 `pkg/formatter` consumes current parser semantics and owns canonical FQL layout.
 Formatter changes must preserve executable meaning and should be covered by
 focused fixtures or integration tests. A syntax change should update formatter

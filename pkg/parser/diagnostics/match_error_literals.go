@@ -255,20 +255,36 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 }
 
 func quotedLiteralInsertionSpan(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode, opening bool) source.Span {
-	span := spanFromTokenSafe(offending.Token(), src)
-	if len(err.Spans) > 0 {
+	text := []rune(src.Content())
+	valid := func(span source.Span) bool {
+		return span.Start >= 0 && span.Start <= span.End && span.End <= len(text)
+	}
+
+	// Recovery metadata is optional and remains in ANTLR character coordinates.
+	// Reject unusable anchors before scanning instead of repairing their offsets.
+	var span source.Span
+	if err != nil && len(err.Spans) > 0 && valid(err.Spans[0].Span) {
 		span = err.Spans[0].Span
+	} else if offending != nil && offending.Token() != nil {
+		span = SpanFromToken(offending.Token())
+		if !valid(span) {
+			return source.Span{}
+		}
+	} else {
+		return source.Span{}
 	}
 
 	if opening {
 		tokens := lexDefaultTokens(src.Content())
 		idx := findDiagnosticSpanTokenIndex(tokens, err)
-		for i := idx - 1; i >= 0 && tokens[i].GetTokenType() == fql.FqlLexerIdentifier; i-- {
-			if tokens[i].GetLine() != tokens[idx].GetLine() {
-				break
-			}
+		if idx >= 0 && idx < len(tokens) {
+			for i := idx - 1; i >= 0 && tokens[i].GetTokenType() == fql.FqlLexerIdentifier; i-- {
+				if tokens[i].GetLine() != tokens[idx].GetLine() {
+					break
+				}
 
-			span.Start = tokens[i].GetStart()
+				span.Start = tokens[i].GetStart()
+			}
 		}
 
 		span.End = span.Start
@@ -278,7 +294,6 @@ func quotedLiteralInsertionSpan(src source.Source, err *diagnostics.Diagnostic, 
 
 	// Ordinary quoted strings end at the line boundary. Count ANTLR characters,
 	// not bytes or words from the human-readable parser error.
-	text := []rune(src.Content())
 	end := span.End
 	for end < len(text) && text[end] != '\n' && text[end] != '\r' {
 		end++

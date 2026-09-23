@@ -21,7 +21,7 @@ func (r SpanRenderer) Render(out io.Writer, src source.Source, span source.Span,
 		return false
 	}
 
-	if span.Start < 0 || span.End <= span.Start || span.End > len(src.Content()) {
+	if span.Start < 0 || span.End < span.Start || span.End > len(src.Content()) {
 		return false
 	}
 
