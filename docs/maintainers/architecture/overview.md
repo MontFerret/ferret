@@ -228,9 +228,13 @@ diagnostic rendering, not span construction.
 
 `SpanRenderer` renders valid zero-width insertion points with a single caret,
 including insertions at EOF of a nonempty source. It continues to reject invalid
-spans without repairing their coordinates. The diagnostic formatter's primary
-span selection still omits `[0,0)` annotations; that separate rendering limitation
-does not change the validity of an insertion at the start of a source.
+spans without repairing their coordinates. The diagnostic formatter tracks primary
+annotation presence independently of its coordinates, so `[0,0)` is rendered at
+the start of a nonempty source. Secondary annotations render before the primary;
+diagnostics without a primary annotation do not gain a synthetic source marker.
+Formatter tests cover source locations, snippets, markers, labels, and nested
+diagnostics. Compiler-to-formatter tests preserve this human-visible contract
+alongside structural coordinate assertions for representative malformed FQL.
 
 `pkg/formatter` consumes current parser semantics and owns canonical FQL layout.
 Formatter changes must preserve executable meaning and should be covered by
