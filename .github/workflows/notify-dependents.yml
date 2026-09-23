@@ -33,7 +33,7 @@ jobs:
           TARGET_REPOSITORY: ${{ github.event_name == 'workflow_dispatch' && inputs.repository || 'all' }}
         run: |
           # Names must match the actual repositories in the MontFerret organization.
-          repositories=(cli lab worker ferret-js contrib editorium)
+          repositories=(cli lab worker ferretd ferret-js contrib editorium)
 
           semver_pattern='^v2\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
           if [[ ! "$FERRET_VERSION" =~ $semver_pattern ]]; then
