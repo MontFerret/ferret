@@ -23,9 +23,11 @@ func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 
 	// Group by file (assumes single file now)
 	mainSpan := ErrorSpan{}
+	hasMainSpan := false
 	for _, s := range spans {
 		if s.Main {
 			mainSpan = s
+			hasMainSpan = true
 
 			continue
 		}
@@ -34,7 +36,7 @@ func FormatDiagnostic(out io.Writer, e *Diagnostic, indent int) {
 	}
 
 	// Render primary span last
-	if mainSpan.Span.End > 0 {
+	if hasMainSpan {
 		renderErrorSpan(out, prefix, e.Source, mainSpan)
 	}
 
