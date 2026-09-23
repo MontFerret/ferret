@@ -35,9 +35,7 @@ func matchMissingAssignmentValue(src source.Source, err *diagnostics.Diagnostic,
 			return false
 		}
 
-		span := spanFromTokenSafe(node.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(node.Token(), src)
 
 		prevText := ""
 		if node.Prev() != nil {
@@ -54,9 +52,12 @@ func matchMissingAssignmentValue(src source.Source, err *diagnostics.Diagnostic,
 	}
 
 	if is(offending, "LET") || is(offending, "VAR") {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
+		if next := offending.Next(); is(next, "=") {
+			span = spanFromTokenSafe(next.Token(), src)
+			span.End = span.Start
+		}
+
 		err.Message = "Expected variable name"
 		err.Hint = "Did you forget to provide a variable name?"
 		err.Spans = []diagnostics.ErrorSpan{

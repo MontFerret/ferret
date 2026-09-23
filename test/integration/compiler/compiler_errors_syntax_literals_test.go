@@ -394,6 +394,15 @@ RETURN products[*
 		t.Fatalf("unexpected span location: got %d:%d, want 7:47", position.Line, position.Column)
 	}
 
+	if err != diag {
+		t.Fatalf("expected one native diagnostic, got %T: %v", err, err)
+	}
+
+	offset := strings.Index(query, "129.99 }") + len("129.99 }")
+	if got := diag.Spans[0].Span; got != (source.Span{Start: offset, End: offset}) {
+		t.Fatalf("span = %+v, want insertion after previous array item at %d", got, offset)
+	}
+
 	formatted := pkgdiagnostics.Format(err)
 	if got := strings.Count(formatted, "SyntaxError:"); got != 1 {
 		t.Fatalf("expected one syntax diagnostic, got %d:\n%s", got, formatted)

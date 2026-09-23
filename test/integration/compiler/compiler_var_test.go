@@ -97,8 +97,8 @@ func TestVarCompoundAssignmentMissingValueDiagnosticSpan(t *testing.T) {
 
 	wantStart := strings.Index(src, "+=") + len("+=")
 	got := diag.Spans[0].Span
-	if got.Start != wantStart || got.End != wantStart+1 {
-		t.Fatalf("expected span [%d,%d), got [%d,%d)", wantStart, wantStart+1, got.Start, got.End)
+	if got.Start != wantStart || got.End != wantStart {
+		t.Fatalf("expected span [%d,%d), got [%d,%d)", wantStart, wantStart, got.Start, got.End)
 	}
 }
 

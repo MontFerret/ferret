@@ -158,12 +158,8 @@ func arrayItemSeparatorInsertionSpan(tokens []antlr.Token, openIdx, closeIdx int
 	}
 
 	previous := tokens[previousIdx]
-	offset := previous.GetStop() + 1
-	if offset < 0 || offset >= len(src.Content()) {
-		return spanFromTokenSafe(previous, src), true
-	}
 
-	return source.Span{Start: offset, End: offset + 1}, true
+	return insertionSpanAfterToken(previous, src), true
 }
 
 func missingArrayItemSeparatorPreviousToken(tokens []antlr.Token, openIdx, closeIdx int) int {

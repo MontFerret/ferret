@@ -12,8 +12,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 
 	if eq := findPrevToken(offending, "=", 4); eq != nil && is(eq.Prev(), "COLLECT") {
 		span := spanFromTokenSafe(eq.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span.End = span.Start
 
 		err.Message = "Expected variable before '=' in COLLECT"
 		err.Hint = "COLLECT must group by a variable."
@@ -25,9 +24,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if is(prev, "IN") {
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End + 1
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(prev.Token(), src)
 		err.Message = "Expected expression after 'IN'"
 		err.Hint = "Each FOR loop must iterate over a collection or range."
 		err.Spans = []diagnostics.ErrorSpan{
@@ -38,9 +35,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if is(prev, "FOR") {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 		err.Message = "Expected 'IN' after loop variable"
 		err.Hint = "Use 'FOR x IN [iterable]' syntax."
 		err.Spans = []diagnostics.ErrorSpan{
@@ -51,9 +46,12 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if is(offending, "FOR") {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
+		if next := offending.Next(); is(next, "IN") {
+			span = spanFromTokenSafe(next.Token(), src)
+			span.End = span.Start
+		}
+
 		err.Message = "Expected loop variable before 'IN'"
 		err.Hint = "FOR must declare a variable."
 		err.Spans = []diagnostics.ErrorSpan{
@@ -67,9 +65,11 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		msg := err.Message
 
 		if has(msg, "COLLECT =") {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start = span.End
-			span.End = span.Start + 1
+			span := insertionSpanAfterToken(offending.Token(), src)
+			if next := offending.Next(); is(next, "=") {
+				span = spanFromTokenSafe(next.Token(), src)
+				span.End = span.Start
+			}
 
 			err.Message = "Expected variable before '=' in COLLECT"
 			err.Hint = "COLLECT must group by a variable."
@@ -79,9 +79,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 
 			return true
 		} else if isNoAlternative(msg) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start = span.End
-			span.End = span.Start + 1
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			err.Message = "Incomplete COLLECT clause"
 			err.Hint = "COLLECT must specify a grouping key, an AGGREGATE clause, or WITH COUNT."
@@ -94,9 +92,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if is(offending, "INTO") {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End + 1
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 
 		err.Message = "Expected variable name after INTO"
 		err.Hint = "Provide a variable name to store grouped values, e.g. INTO groups."
@@ -113,8 +109,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		span := err.Spans[0].Span
-		span.Start = span.End + 1
-		span.End = span.Start + 1
+		span.Start = span.End
 
 		err.Message = "Expected variable name after INTO"
 		err.Hint = "Provide a variable name to store grouped values, e.g. INTO groups."
@@ -127,9 +122,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 
 	if is(offending, "AGGREGATE") {
 		if isNoAlternative(err.Message) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start = span.End + 1
-			span.End = span.Start + 1
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			err.Message = "Expected variable assignment after AGGREGATE"
 			err.Hint = "Provide at least one variable assignment, e.g. AGGREGATE total = COUNT(x)."
@@ -142,9 +135,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if is(prev, "FILTER") {
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(prev.Token(), src)
 
 		err.Message = "Incomplete FILTER clause"
 		err.Hint = "FILTER requires a boolean expression."
@@ -156,9 +147,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if is(prev, "LIMIT") {
-		span := spanFromTokenSafe(prev.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(prev.Token(), src)
 
 		err.Message = "Expected number after 'LIMIT'"
 		err.Hint = "LIMIT requires a numeric value."
@@ -178,8 +167,11 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 
 		if is(prev, "LIMIT") || diagnosticImmediatelyFollowsToken(src, err, "LIMIT") {
 			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			if len(err.Spans) > 0 {
+				span = err.Spans[0].Span
+			}
+
+			span.Start = span.End
 
 			err.Message = "Dangling comma in LIMIT clause"
 			err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
@@ -198,10 +190,10 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		if is(prev, "LIMIT") {
-			limitSpan := spanFromTokenSafe(prev.Token(), src)
 			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start = limitSpan.End + 1
-			span.End += 4
+			if len(err.Spans) > 0 {
+				span = err.Spans[0].Span
+			}
 
 			err.Message = "Too many arguments provided to LIMIT clause"
 			err.Hint = "LIMIT accepts at most two arguments: offset and count."
@@ -223,9 +215,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 			}
 
 			if is(prev, "LIMIT") {
-				span := spanFromTokenSafe(offending.Prev().Token(), src)
-				span.Start++
-				span.End++
+				span := insertionSpanAfterToken(offending.Prev().Token(), src)
 
 				err.Message = "Dangling comma in LIMIT clause"
 				err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"
@@ -243,9 +233,7 @@ func matchForLoopErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 			tokens := strings.Fields(input)
 
 			if len(tokens) > 0 && has(tokens[len(tokens)-1], ",") {
-				span := spanFromTokenSafe(offending.Token(), src)
-				span.Start = span.End
-				span.End = span.Start + 1
+				span := insertionSpanAfterToken(offending.Token(), src)
 
 				err.Message = "Dangling comma in LIMIT clause"
 				err.Hint = "LIMIT accepts one or two arguments. Did you forget to add a value?"

@@ -187,12 +187,7 @@ func matchArmSeparatorInsertionSpan(tokens []antlr.Token, currentArrowIdx, nextA
 		return source.Span{}, false
 	}
 
-	offset := previousValue.GetStop() + 1
-	if offset < 0 || offset >= len(src.Content()) {
-		return spanFromTokenSafe(previousValue, src), true
-	}
-
-	return source.Span{Start: offset, End: offset + 1}, true
+	return insertionSpanAfterToken(previousValue, src), true
 }
 
 func matchArmStartTokenIndex(tokens []antlr.Token, currentArrowIdx, nextArrowIdx int) int {

@@ -2,7 +2,11 @@ package diagnostics
 
 import (
 	"testing"
+	"unicode/utf8"
 
+	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -360,9 +364,47 @@ func TestSpanFromTokenSafe_EdgeCases(t *testing.T) {
 
 	// Test nil token
 	result := spanFromTokenSafe(nil, src)
-	expected := source.Span{Start: 0, End: 1}
+	expected := source.Span{Start: 0, End: 0}
 	if result != expected {
 		t.Errorf("spanFromTokenSafe(nil, src) = %v, want %v", result, expected)
+	}
+}
+
+func TestSpanFromTokenSafePreservesEmptyTokens(t *testing.T) {
+	for _, text := range []string{"", "RETURN", "RETURN \"é😀\""} {
+		t.Run(text, func(t *testing.T) {
+			src := source.New("test.fql", text)
+			if got := spanFromTokenSafe(nil, src); got != (source.Span{}) {
+				t.Fatalf("nil token span = %+v, want [0,0)", got)
+			}
+
+			lexer := fql.NewFqlLexer(antlr.NewInputStream(text))
+			for token := lexer.NextToken(); ; token = lexer.NextToken() {
+				if token.GetTokenType() != antlr.TokenEOF {
+					continue
+				}
+
+				offset := utf8.RuneCountInString(text)
+				want := source.Span{Start: offset, End: offset}
+				if got := spanFromTokenSafe(token, src); got != want {
+					t.Fatalf("EOF span = %+v, want ANTLR insertion %+v", got, want)
+				}
+
+				break
+			}
+		})
+	}
+}
+
+func TestSpanFromTokenSafeUnavailableCoordinates(t *testing.T) {
+	for _, text := range []string{"", "RETURN"} {
+		for _, bounds := range [][2]int{{-1, -1}, {0, -1}, {99, 98}, {99, 100}, {2, 0}} {
+			token := antlr.NewCommonToken(&antlr.TokenSourceCharStreamPair{}, 0, antlr.TokenDefaultChannel, bounds[0], bounds[1])
+			span := spanFromTokenSafe(token, source.NewAnonymous(text))
+			if span.Start < 0 || span.Start > span.End || span.End > len(text) {
+				t.Fatalf("%q / %v: invalid fallback span %+v", text, bounds, span)
+			}
+		}
 	}
 }
 

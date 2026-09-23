@@ -20,9 +20,7 @@ func matchMissingReturnDistinctValue(src source.Source, err *diagnostics.Diagnos
 		return false
 	}
 
-	span := spanFromTokenSafe(distinct.Token(), src)
-	span.Start = span.End
-	span.End = span.Start + 1
+	span := insertionSpanAfterToken(distinct.Token(), src)
 	err.Message = "Expected expression after 'RETURN DISTINCT'"
 	err.Hint = "RETURN DISTINCT treats DISTINCT as a modifier. To return an identifier named DISTINCT, wrap it in parentheses, e.g. RETURN (DISTINCT)."
 	err.Spans = []diagnostics.ErrorSpan{
@@ -35,9 +33,7 @@ func matchMissingReturnDistinctValue(src source.Source, err *diagnostics.Diagnos
 func matchMissingReturnValue(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	// Prefer range-specific error when the parser trips on an incomplete range like "0.. RETURN".
 	if is(offending, "..") || is(offending.Prev(), "..") || hasRangeToken(err.Message) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start += 2
-		span.End += 2
+		span := rangeEndInsertionSpan(src, err, offending)
 
 		start := ""
 		if is(offending, "..") && offending.Prev() != nil {
@@ -61,9 +57,11 @@ func matchMissingReturnValue(src source.Source, err *diagnostics.Diagnostic, off
 		return false
 	}
 
-	span := spanFromTokenSafe(offending.Token(), src)
-	span.Start = span.End
-	span.End = span.Start + 1
+	span := insertionSpanAfterToken(offending.Token(), src)
+	if next := offending.Next(); is(next, ")") {
+		span = spanFromTokenSafe(next.Token(), src)
+	}
+
 	err.Message = fmt.Sprintf("Expected expression after '%s'", offending)
 	err.Hint = "Did you forget to provide a value to return?"
 	err.Spans = []diagnostics.ErrorSpan{

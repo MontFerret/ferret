@@ -2,7 +2,6 @@ package diagnostics
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -29,9 +28,7 @@ func isComputedPropertyPrefix(node *TokenNode) bool {
 
 func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
 	if isUnclosedTemplateLiteral(offending) {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 
 		err.Message = "Unclosed string literal"
 		err.Hint = "Add a matching '`' to close the string."
@@ -43,9 +40,7 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if isMissing(err.Message) && has(err.Message, "`") {
-		span := spanFromTokenSafe(offending.Token(), src)
-		span.Start = span.End
-		span.End = span.Start + 1
+		span := insertionSpanAfterToken(offending.Token(), src)
 
 		err.Message = "Unclosed string literal"
 		err.Hint = "Add a matching '`' to close the string."
@@ -75,17 +70,11 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 			if isMissingClosingQuote {
 				quote = token
 				typeOfQuote = "closing"
-				span = spanFromTokenSafe(offending.Token(), src)
-				inputRaw := extractNoAlternativeInput(err.Message)
-				spaces := strings.Count(inputRaw, " ") + 1
-				span.Start += spaces
-				span.End += spaces
+				span = quotedLiteralInsertionSpan(src, err, offending, false)
 			} else {
 				quote = token[len(token)-1:]
 				typeOfQuote = "opening"
-				span = spanFromTokenSafe(offending.Token(), src)
-				span.Start = span.End
-				span.End = span.Start + 1
+				span = quotedLiteralInsertionSpan(src, err, offending, true)
 			}
 
 			err.Message = "Unclosed string literal"
@@ -111,13 +100,13 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 			var span source.Span
 
 			if isKeyword(offending) {
-				span = spanFromTokenSafe(offending.Prev().Token(), src)
-				span.Start++
-				span.End++
+				span = insertionSpanAfterToken(offending.Prev().Token(), src)
 			} else {
-				span = spanFromTokenSafe(offending.Token(), src)
-				span.Start++
-				span.End++
+				span = insertionSpanAfterToken(offending.Token(), src)
+			}
+
+			if next := offending.Next(); is(next, "[") {
+				span = insertionSpanAfterToken(next.Token(), src)
 			}
 
 			if !isKeyword(offending.PrevAt(2)) {
@@ -138,9 +127,10 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		if is(offending, "[") || extractNoAlternativeInput(err.Message) == "[" {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
+			if next := offending.Next(); is(next, "[") {
+				span = insertionSpanAfterToken(next.Token(), src)
+			}
 
 			if isComputedPropertyPrefix(offending.Prev()) {
 				err.Message = "Unclosed computed property expression"
@@ -165,13 +155,9 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 			var span source.Span
 
 			if isKeyword(offending) {
-				span = spanFromTokenSafe(offending.Prev().Token(), src)
-				span.Start++
-				span.End++
+				span = insertionSpanAfterToken(offending.Prev().Token(), src)
 			} else {
-				span = spanFromTokenSafe(offending.Token(), src)
-				span.Start++
-				span.End++
+				span = insertionSpanAfterToken(offending.Token(), src)
 			}
 
 			err.Message = "Unclosed object literal"
@@ -184,9 +170,11 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		if is(offending, "{") && isNoAlternative(err.Message) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
+			if next := offending.Next(); is(next, ":") {
+				span = spanFromTokenSafe(next.Token(), src)
+				span.End = span.Start
+			}
 
 			err.Message = "Expected property name before ':'"
 			err.Hint = "Object properties must have a name before the colon, e.g. { property: 123 }."
@@ -198,9 +186,7 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		if is(offending, ":") && isIdentifier(offending.Prev()) {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.Start++
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
 			property := offending.Prev().GetText()
 
 			err.Message = "Expected value after object property name"
@@ -227,15 +213,13 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 			var typeOfQuote string
 
 			if isKeyword(offending) {
-				span = spanFromTokenSafe(offending.Token(), src)
+				span = quotedLiteralInsertionSpan(src, err, offending, false)
 				typeOfQuote = "closing"
 			} else {
-				span = spanFromTokenSafe(offending.Prev().Token(), src)
+				span = quotedLiteralInsertionSpan(src, err, offending, true)
 				typeOfQuote = "opening"
 			}
 
-			span.Start += 2
-			span.End += 2
 			err.Message = "Unclosed string literal"
 
 			if token == "'" {
@@ -254,8 +238,7 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 		}
 
 		if is(offending, "[") && token == "]" {
-			span := spanFromTokenSafe(offending.Token(), src)
-			span.End++
+			span := insertionSpanAfterToken(offending.Token(), src)
 
 			val := offending.Prev().String()
 			err.Message = "Expected expression inside computed property brackets"
@@ -269,6 +252,54 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	return false
+}
+
+func quotedLiteralInsertionSpan(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode, opening bool) source.Span {
+	text := []rune(src.Content())
+	valid := func(span source.Span) bool {
+		return span.Start >= 0 && span.Start <= span.End && span.End <= len(text)
+	}
+
+	// Recovery metadata is optional and remains in ANTLR character coordinates.
+	// Reject unusable anchors before scanning instead of repairing their offsets.
+	var span source.Span
+	if err != nil && len(err.Spans) > 0 && valid(err.Spans[0].Span) {
+		span = err.Spans[0].Span
+	} else if offending != nil && offending.Token() != nil {
+		span = SpanFromToken(offending.Token())
+		if !valid(span) {
+			return source.Span{}
+		}
+	} else {
+		return source.Span{}
+	}
+
+	if opening {
+		tokens := lexDefaultTokens(src.Content())
+		idx := findDiagnosticSpanTokenIndex(tokens, err)
+		if idx >= 0 && idx < len(tokens) {
+			for i := idx - 1; i >= 0 && tokens[i].GetTokenType() == fql.FqlLexerIdentifier; i-- {
+				if tokens[i].GetLine() != tokens[idx].GetLine() {
+					break
+				}
+
+				span.Start = tokens[i].GetStart()
+			}
+		}
+
+		span.End = span.Start
+
+		return span
+	}
+
+	// Ordinary quoted strings end at the line boundary. Count ANTLR characters,
+	// not bytes or words from the human-readable parser error.
+	end := span.End
+	for end < len(text) && text[end] != '\n' && text[end] != '\r' {
+		end++
+	}
+
+	return source.Span{Start: end, End: end}
 }
 
 func isUnclosedTemplateLiteral(node *TokenNode) bool {
