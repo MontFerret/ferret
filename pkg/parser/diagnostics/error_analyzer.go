@@ -8,6 +8,10 @@ import (
 type SyntaxErrorMatcher func(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool
 
 func AnalyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+	return analyzeSyntaxError(src, err, offending, matchLiteralErrors)
+}
+
+func analyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode, literals SyntaxErrorMatcher) bool {
 	matchers := []SyntaxErrorMatcher{
 		matchCoalesceErrors,
 		matchArrayOperatorErrors,
@@ -20,7 +24,7 @@ func AnalyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offendin
 		matchArrayLiteralSeparatorErrors,
 		matchMissingFunctionParamsClose,
 		matchMixedFunctionBodySyntax,
-		matchLiteralErrors,
+		literals,
 		matchMissingAssignmentValue,
 		matchDeleteStatementErrors,
 		matchForLoopErrors,

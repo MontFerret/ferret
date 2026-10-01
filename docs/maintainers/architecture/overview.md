@@ -236,6 +236,16 @@ Formatter tests cover source locations, snippets, markers, labels, and nested
 diagnostics. Compiler-to-formatter tests preserve this human-visible contract
 alongside structural coordinate assertions for representative malformed FQL.
 
+Incomplete-literal diagnostics establish the construct from parser context and
+lexer tokens before applying generic token heuristics. An array is ready to close
+when its entries are complete; empty arrays and a trailing comma do not require
+another item. Error-path validation reuses the generated entry grammar on the
+original buffered tokens, with a separate bounded cursor and cached results.
+Earlier missing separators, missing operands, unfinished inner constructs, and
+non-literal brackets must not become an outer-array closing diagnosis. Missing
+closers use zero-width spans after the last syntactic token, before trailing
+whitespace or comments, while preserving the compiler's coordinate conversion.
+
 `pkg/formatter` consumes current parser semantics and owns canonical FQL layout.
 Formatter changes must preserve executable meaning and should be covered by
 focused fixtures or integration tests. A syntax change should update formatter

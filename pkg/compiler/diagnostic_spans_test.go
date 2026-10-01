@@ -121,7 +121,7 @@ func TestMissingSyntaxInsertionAnchors(t *testing.T) {
 		{"LET x = F(1", "", "missing ')'"},
 		{"LET x = F(1\nRETURN x", "\nRETURN x", "missing ')'"},
 		{"LET x = F([1, 2]", "", "missing ')'"},
-		{"RETURN [", "", "missing value"},
+		{"RETURN [", "", "expected ']'"},
 		{"RETURN {", "", "missing property name"},
 		{"RETURN { : 1 }", ": 1 }", "missing property name"},
 		{"RETURN {x:", "", "missing value"},

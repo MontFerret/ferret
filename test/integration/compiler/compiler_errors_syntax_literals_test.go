@@ -1,6 +1,7 @@
 package compiler_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/source"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
+	specexec "github.com/MontFerret/ferret/v2/test/spec/exec"
 )
 
 func TestLiteralsSyntaxErrors(t *testing.T) {
@@ -241,7 +243,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		`, E{
 				Kind:    parserd.SyntaxError,
 				Message: "Unclosed array literal",
-				Hint:    "Add a closing ']' to complete the array.",
+				Hint:    "Add ']' to close the array.",
 			}, "Incomplete array literal"),
 
 		Failure(
@@ -251,7 +253,7 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 		`, E{
 				Kind:    parserd.SyntaxError,
 				Message: "Unclosed array literal",
-				Hint:    "Add a closing ']' to complete the array.",
+				Hint:    "Add ']' to close the array.",
 			}, "Incomplete array literal 2"),
 
 		Failure(
@@ -335,6 +337,178 @@ func TestLiteralsSyntaxErrors(t *testing.T) {
 				Message: "Unclosed computed property expression",
 				Hint:    "Add a closing ']' to complete the computed property expression.",
 			}, "Invalid computed property expression"),
+	})
+}
+
+func TestIncompleteArrayDiagnosticRendering(t *testing.T) {
+	for _, test := range []struct {
+		query   string
+		snippet string
+		span    source.Span
+		line    int
+		column  int
+	}{
+		{
+			query: "let arr = [1, 2, 3", span: source.Span{Start: 18, End: 18}, line: 1, column: 19,
+			snippet: "1 | let arr = [1, 2, 3\n  |                   ^ expected ']'\n",
+		},
+		{
+			query: "let arr = [1, 2,", span: source.Span{Start: 16, End: 16}, line: 1, column: 17,
+			snippet: "1 | let arr = [1, 2,\n  |                 ^ expected ']'\n",
+		},
+		{
+			query: "return [\n  \"é🙂\"", span: source.Span{Start: 19, End: 19}, line: 2, column: 11,
+			snippet: "2 |   \"é🙂\"\n  |       ^ expected ']'\n",
+		},
+	} {
+		t.Run(test.query, func(t *testing.T) {
+			src := source.New(".tmp/errors/arr.fql", test.query)
+			_, err := mustNewCompiler(t).Compile(t.Context(), src)
+			diagnostic := firstCompilationError(err)
+			if diagnostic == nil {
+				t.Fatalf("expected diagnostic, got %v", err)
+			}
+
+			if diagnostic.Kind != parserd.SyntaxError || diagnostic.Message != "Unclosed array literal" || diagnostic.Hint != "Add ']' to close the array." {
+				t.Fatalf("unexpected diagnostic: %+v", diagnostic)
+			}
+
+			want := pkgdiagnostics.NewMainErrorSpan(test.span, "expected ']'")
+			if len(diagnostic.Spans) != 1 || diagnostic.Spans[0] != want {
+				t.Fatalf("primary span = %+v, want %+v", diagnostic.Spans, want)
+			}
+
+			formatted := pkgdiagnostics.Format(err)
+			location := fmt.Sprintf(" --> .tmp/errors/arr.fql:%d:%d\n", test.line, test.column)
+			for _, required := range []string{"SyntaxError: Unclosed array literal\n", location, test.snippet, "Hint: Add ']' to close the array.\n"} {
+				if !strings.Contains(formatted, required) {
+					t.Errorf("missing %q in:\n%s", required, formatted)
+				}
+			}
+
+			for _, forbidden := range []string{"Expected expression after ','", "no viable alternative", "Syntax error:"} {
+				if strings.Contains(formatted, forbidden) {
+					t.Errorf("unexpected %q in:\n%s", forbidden, formatted)
+				}
+			}
+
+			if err != diagnostic || strings.Count(formatted, "SyntaxError:") != 1 {
+				t.Fatalf("expected one actionable diagnostic, got:\n%s", formatted)
+			}
+		})
+	}
+}
+
+func TestIncompleteArrayLiteralBoundaries(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		query  string
+		before string
+	}{
+		{name: "empty", query: "return ["},
+		{name: "one entry", query: "return [1"},
+		{name: "trailing comma", query: "return [1,"},
+		{name: "final newline", query: "return [1,\n", before: "\n"},
+		{name: "trailing whitespace", query: "return [1,  \t", before: "  \t"},
+		{name: "line comment", query: "return [1, // ] , [", before: " // ] , ["},
+		{name: "block comment", query: "return [1 /* ] , [ */", before: " /* ] , [ */"},
+		{name: "comment between entries", query: "return [1, /* ], [ */ 2"},
+		{name: "multiline CRLF", query: "return [\r\n  1,\r\n  2, // ] ,\r\n", before: " // ] ,\r\n"},
+		{name: "Unicode before insertion", query: "let text = 'é🙂'\nreturn [text,"},
+		{name: "delimiter strings", query: "return [\"[,]}\", '(',"},
+		{name: "complete nested array", query: "return [1, [2, 3]"},
+		{name: "two unfinished arrays", query: "return [1, [2, 3"},
+		{name: "three unfinished arrays", query: "return [1, [2, [3,"},
+		{name: "empty inner array", query: "return [1, ["},
+		{name: "complete object", query: "return [1, { value: 2 }"},
+		{name: "complete call", query: "func value() => 2\nreturn [1, value()"},
+		{name: "keyword-named call", query: "func return() => 2\nreturn [1, return()"},
+		{name: "keyword property", query: "let doc = { return: 1 }\nreturn [doc.return"},
+		{name: "complete computed key", query: "let key = 'value'\nreturn [{ [key]: 1 }"},
+		{name: "complete arithmetic", query: "return [1, 2 + 3"},
+		{name: "complete spread", query: "return [1, ...[2, 3]"},
+		{name: "complete template", query: "return [1, `[, ] ${2}`"},
+		{name: "long array", query: "return [" + strings.Repeat("1, ", 256) + "2"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := mustNewCompiler(t).Compile(t.Context(), source.New("array.fql", test.query))
+			diagnostic := firstCompilationError(err)
+			if diagnostic == nil || diagnostic.Kind != parserd.SyntaxError || diagnostic.Message != "Unclosed array literal" || diagnostic.Hint != "Add ']' to close the array." {
+				t.Fatalf("unexpected diagnostic: %v", err)
+			}
+
+			offset := len(test.query) - len(test.before)
+			want := pkgdiagnostics.NewMainErrorSpan(source.Span{Start: offset, End: offset}, "expected ']'")
+			if len(diagnostic.Spans) != 1 || diagnostic.Spans[0] != want {
+				t.Fatalf("spans = %+v, want %+v", diagnostic.Spans, want)
+			}
+
+			if err != diagnostic {
+				t.Fatalf("unexpected diagnostic cascade: %v", err)
+			}
+		})
+	}
+}
+
+func TestIncompleteArrayPreservesOtherSyntaxErrors(t *testing.T) {
+	for _, test := range []struct {
+		query   string
+		message string
+	}{
+		{query: "return [1,,2]", message: "Expected expression after ','"},
+		{query: "return [1,,2", message: "Expected expression after ','"},
+		{query: "return [1 2]", message: "Expected ',' between array items"},
+		{query: "return [1 2", message: "Expected ',' between array items"},
+		{query: "return [1 2, [3", message: "Expected ',' between array items"},
+		{query: "return [1,, [2"},
+		{query: "return [1, return 2]"},
+		{query: "return [1, 2 +", message: "Expected right-hand expression after '+'"},
+		{query: "return [1, ...", message: "Expected expression after '...' in array spread"},
+		{query: "return [1, 2)", message: "Unexpected closing delimiter ')'"},
+		{query: "return [1, (2 + 3", message: "Unclosed parenthesized expression"},
+		{query: "return [1, { value: 2"},
+		{query: "func value(x) => x\nreturn [1, value(2"},
+		{query: "return [1, 'unfinished"},
+		{query: "return [1, `unfinished"},
+		{query: "return [1, 2 ? 3"},
+		{query: "let arr = [1, 2]\nreturn arr[1"},
+		{query: "return [1][0"},
+		{query: "let arr = [1, 2]\nreturn [arr[1"},
+		{query: "let key = 'value'\nreturn { [key"},
+		{query: "let key = 'value'\nreturn { first: 1, [key"},
+		{query: "let [first, second"},
+		{query: "let [[first"},
+		{query: "for [first, second"},
+	} {
+		t.Run(test.query, func(t *testing.T) {
+			_, err := mustNewCompiler(t).Compile(t.Context(), source.NewAnonymous(test.query))
+			diagnostic := firstCompilationError(err)
+			if diagnostic == nil || diagnostic.Kind != parserd.SyntaxError {
+				t.Fatalf("expected syntax diagnostic, got %v", err)
+			}
+
+			if diagnostic.Message == "Unclosed array literal" {
+				t.Fatalf("more-specific error hidden: %v", err)
+			}
+
+			if test.message != "" && diagnostic.Message != test.message {
+				t.Fatalf("message = %q, want %q", diagnostic.Message, test.message)
+			}
+
+			for _, annotation := range diagnostic.Spans {
+				span := annotation.Span
+				if span.Start < 0 || span.End < span.Start || span.End > len(test.query) {
+					t.Fatalf("out-of-bounds span: %+v", span)
+				}
+			}
+		})
+	}
+}
+
+func TestArrayOptionalContentsRemainValid(t *testing.T) {
+	specexec.RunSpecs(t, []spec.Spec{
+		specexec.S("return []", []any{}),
+		specexec.S("return [1, 2,]", []any{float64(1), float64(2)}),
 	})
 }
 

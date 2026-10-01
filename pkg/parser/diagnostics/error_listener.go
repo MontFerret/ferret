@@ -13,6 +13,7 @@ type ErrorListener struct {
 	*antlr.DiagnosticErrorListener
 	handler              *ErrorHandler
 	history              *TokenHistory
+	arrayLiterals        *arrayLiteralAnalysis
 	src                  source.Source
 	stopAfterSyntaxError bool
 }
@@ -88,7 +89,7 @@ func (d *ErrorListener) isCoalesceAmbiguity(recognizer antlr.Parser, startIndex,
 	return false
 }
 
-func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+func (d *ErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
 	if d.stopAfterSyntaxError {
 		return
 	}
@@ -101,14 +102,14 @@ func (d *ErrorListener) SyntaxError(_ antlr.Recognizer, offendingSymbol interfac
 	}
 
 	if !d.handler.HasErrorOnLine(line) {
-		if err := d.parseError(msg, offending); err != nil {
+		if err := d.parseError(msg, offending, recognizer); err != nil {
 			d.handler.Add(err)
 			d.stopAfterSyntaxError = isCascadeStoppingSyntaxDiagnostic(err)
 		}
 	}
 }
 
-func (d *ErrorListener) parseError(msg string, offending antlr.Token) *diagnostics.Diagnostic {
+func (d *ErrorListener) parseError(msg string, offending antlr.Token, recognizer antlr.Recognizer) *diagnostics.Diagnostic {
 	span := spanFromTokenSafe(offending, d.src)
 
 	err := &diagnostics.Diagnostic{
@@ -123,7 +124,19 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token) *diagnosti
 
 	node := analyzedTokenNode(d.history, offending)
 
-	AnalyzeSyntaxError(d.src, err, node)
+	analyzeSyntaxError(d.src, err, node, func(src source.Source, diagnostic *diagnostics.Diagnostic, token *TokenNode) bool {
+		if p, ok := recognizer.(antlr.Parser); ok {
+			if d.arrayLiterals == nil {
+				d.arrayLiterals = newArrayLiteralAnalysis(p.GetTokenStream())
+			}
+
+			if d.arrayLiterals != nil && d.arrayLiterals.match(src, diagnostic, p.GetParserRuleContext()) {
+				return true
+			}
+		}
+
+		return matchLiteralErrors(src, diagnostic, token)
+	})
 
 	return err
 }
