@@ -241,6 +241,10 @@ lexer tokens before applying generic token heuristics. An array is ready to clos
 when its entries are complete; empty arrays and a trailing comma do not require
 another item. Error-path validation reuses the generated entry grammar on the
 original buffered tokens, with a separate bounded cursor and cached results.
+Recovery-action `RETURN` tokens remain part of their entry rather than marking a
+following statement. Recovery productions intentionally accept partial tails
+for diagnostics, so error-path entry validation also checks that their required
+parts are present; grammar acceptance alone does not prove completeness.
 Earlier missing separators, missing operands, unfinished inner constructs, and
 non-literal brackets must not become an outer-array closing diagnosis. Missing
 closers use zero-width spans after the last syntactic token, before trailing

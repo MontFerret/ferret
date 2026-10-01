@@ -2,6 +2,7 @@ package diagnostics
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -105,9 +106,10 @@ scan:
 		}
 
 		// Preserve the existing missing-delimiter diagnosis before a following
-		// statement, but do not mistake keyword-named calls for that boundary.
+		// statement, but do not truncate recovery actions or keyword-named calls.
 		if len(stack) == 1 && (typeID == fql.FqlLexerReturn || typeID == fql.FqlLexerLet || typeID == fql.FqlLexerVar) &&
 			a.tokens.Get(last).GetTokenType() != fql.FqlLexerDot &&
+			(typeID != fql.FqlLexerReturn || !a.isRecoveryReturn(last)) &&
 			a.next(i+1) < a.tokens.Size() && a.tokens.Get(a.next(i+1)).GetTokenType() != fql.FqlLexerOpenParen {
 			if a.hasClosingBracket(i) {
 				return arrayLiteralProblem{}
@@ -221,6 +223,28 @@ func (a *arrayLiteralAnalysis) next(index int) int {
 	}
 
 	return index
+}
+
+func (a *arrayLiteralAnalysis) isRecoveryReturn(previous int) bool {
+	typeID := a.tokens.Get(previous).GetTokenType()
+	if typeID == fql.FqlLexerOr {
+		// The entry grammar decides whether this is a retry fallback or an
+		// incomplete ordinary expression; neither is a statement boundary.
+		return true
+	}
+
+	if typeID != fql.FqlLexerIdentifier && typeID != fql.FqlLexerTimeout {
+		return false
+	}
+
+	for previous--; previous >= 0; previous-- {
+		token := a.tokens.Get(previous)
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			return token.GetTokenType() == fql.FqlLexerIdentifier && strings.EqualFold(token.GetText(), "ON")
+		}
+	}
+
+	return false
 }
 
 // The suffix has not been visited by the structural scan yet. A later closer

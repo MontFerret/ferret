@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	pkgdiagnostics "github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -360,6 +361,10 @@ func TestIncompleteArrayDiagnosticRendering(t *testing.T) {
 			query: "return [\n  \"é🙂\"", span: source.Span{Start: 19, End: 19}, line: 2, column: 11,
 			snippet: "2 |   \"é🙂\"\n  |       ^ expected ']'\n",
 		},
+		{
+			query: "RETURN [FAIL() ON ERROR RETURN NONE", span: source.Span{Start: 35, End: 35}, line: 1, column: 36,
+			snippet: "1 | RETURN [FAIL() ON ERROR RETURN NONE\n  |                                    ^ expected ']'\n",
+		},
 	} {
 		t.Run(test.query, func(t *testing.T) {
 			src := source.New(".tmp/errors/arr.fql", test.query)
@@ -422,6 +427,24 @@ func TestIncompleteArrayLiteralBoundaries(t *testing.T) {
 		{name: "empty inner array", query: "return [1, ["},
 		{name: "complete object", query: "return [1, { value: 2 }"},
 		{name: "complete call", query: "func value() => 2\nreturn [1, value()"},
+		{name: "recovery return", query: "RETURN [FAIL() ON ERROR RETURN NONE"},
+		{name: "recovery return and entry", query: "RETURN [FAIL() ON ERROR RETURN NONE, 2"},
+		{name: "recovery return and statement", query: "RETURN [FAIL() ON ERROR RETURN NONE RETURN 1", before: " RETURN 1"},
+		{name: "following return statement", query: "RETURN [1 RETURN 2", before: " RETURN 2"},
+		{name: "following let statement", query: "LET arr = [1 LET next = 2", before: " LET next = 2"},
+		{name: "following var statement", query: "LET arr = [1 VAR next = 2", before: " VAR next = 2"},
+		{name: "timeout recovery return", query: "RETURN [WAITFOR VALUE NONE TIMEOUT 1ms ON TIMEOUT RETURN NONE"},
+		{name: "retry recovery return", query: "RETURN [FAIL() ON ERROR RETRY 3 OR RETURN NONE"},
+		{name: "retry recovery and statement", query: "RETURN [FAIL() ON ERROR RETRY 3 OR RETURN NONE RETURN 1", before: " RETURN 1"},
+		{name: "nested recovery return", query: "RETURN [[FAIL() ON ERROR RETURN NONE"},
+		{name: "mixed case recovery return", query: "return [FAIL() on error return none"},
+		{name: "recovery token comments", query: "RETURN [FAIL() ON /* ] */ ERROR /* , */ RETURN NONE"},
+		{name: "recovery trailing comment", query: "RETURN [FAIL() ON ERROR RETURN NONE // ]", before: " // ]"},
+		{name: "Unicode recovery operand", query: "RETURN [FAIL() ON ERROR RETURN 'é🙂'"},
+		{name: "recovery trailing comma", query: "RETURN [FAIL() ON ERROR RETURN NONE,"},
+		{name: "recovery retry", query: "RETURN [FAIL() ON ERROR RETRY 3"},
+		{name: "complete retry policy", query: "RETURN [FAIL() ON ERROR RETRY 3 DELAY 1ms BACKOFF CONSTANT OR FAIL"},
+		{name: "nested recovery operand", query: "RETURN [FAIL() ON ERROR RETURN FAIL() ON ERROR RETURN NONE"},
 		{name: "keyword-named call", query: "func return() => 2\nreturn [1, return()"},
 		{name: "keyword property", query: "let doc = { return: 1 }\nreturn [doc.return"},
 		{name: "complete computed key", query: "let key = 'value'\nreturn [{ [key]: 1 }"},
@@ -471,6 +494,25 @@ func TestIncompleteArrayPreservesOtherSyntaxErrors(t *testing.T) {
 		{query: "return [1, 'unfinished"},
 		{query: "return [1, `unfinished"},
 		{query: "return [1, 2 ? 3"},
+		{query: "RETURN [FAIL() ON"},
+		{query: "RETURN [FAIL() ON ERROR"},
+		{query: "RETURN [FAIL() ON ERROR RETURN"},
+		{query: "RETURN [FAIL() ON ERROR RETURN 1 +", message: "Expected right-hand expression after '+'"},
+		{query: "RETURN [FAIL() ON ERROR RETURN (1"},
+		{query: "RETURN [FAIL() ON ERROR RETRY"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 DELAY"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 DELAY 1ms BACKOFF"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 OR"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 OR RETURN"},
+		{query: "RETURN [FAIL() ON, 2"},
+		{query: "RETURN [FAIL() ON ERROR, 2"},
+		{query: "RETURN [FAIL() ON ERROR RETURN, 2"},
+		{query: "RETURN [FAIL() ON ERROR RETRY, 2"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 DELAY, 2"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 DELAY 1ms BACKOFF, 2"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 OR, 2"},
+		{query: "RETURN [FAIL() ON ERROR RETRY 3 OR RETURN, 2"},
+		{query: "RETURN [1 OR RETURN 2"},
 		{query: "let arr = [1, 2]\nreturn arr[1"},
 		{query: "return [1][0"},
 		{query: "let arr = [1, 2]\nreturn [arr[1"},
@@ -510,6 +552,10 @@ func TestArrayOptionalContentsRemainValid(t *testing.T) {
 		specexec.S("return []", []any{}),
 		specexec.S("return [1, 2,]", []any{float64(1), float64(2)}),
 	})
+	RunSpecsLevels(t, []spec.Spec{
+		ProgramCheck("RETURN [FAIL() ON ERROR RETURN NONE,]", expectCatchTableSize(1)),
+		ProgramCheck("RETURN [FAIL() ON ERROR RETRY 0 OR RETURN NONE]", expectCatchTableSize(1)),
+	}, compiler.None, compiler.Full)
 }
 
 func TestArrayMissingCommaDiagnosticSpanDoesNotCascade(t *testing.T) {
