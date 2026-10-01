@@ -96,7 +96,7 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 	}
 
 	if isNoAlternative(err.Message) || isMissing(err.Message) || isMismatched(err.Message) {
-		if is(offending.Prev(), "[") {
+		if is(offending.Prev(), "[") && !isKeyword(offending.PrevAt(2)) {
 			var span source.Span
 
 			if isKeyword(offending) {
@@ -109,18 +109,10 @@ func matchLiteralErrors(src source.Source, err *diagnostics.Diagnostic, offendin
 				span = insertionSpanAfterToken(next.Token(), src)
 			}
 
-			if !isKeyword(offending.PrevAt(2)) {
-				err.Message = "Unclosed computed property expression"
-				err.Hint = "Add a closing ']' to complete the computed property expression."
-				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "missing ']'"),
-				}
-			} else {
-				err.Message = "Unclosed array literal"
-				err.Hint = "Add a closing ']' to complete the array."
-				err.Spans = []diagnostics.ErrorSpan{
-					diagnostics.NewMainErrorSpan(span, "missing ']'"),
-				}
+			err.Message = "Unclosed computed property expression"
+			err.Hint = "Add a closing ']' to complete the computed property expression."
+			err.Spans = []diagnostics.ErrorSpan{
+				diagnostics.NewMainErrorSpan(span, "missing ']'"),
 			}
 
 			return true
