@@ -37,10 +37,6 @@ func recoveryPlanHasReturnHandler(plan core.RecoveryPlan) bool {
 	return recoveryHandlerReturns(plan.OnError) || recoveryHandlerReturns(plan.OnTimeout)
 }
 
-func allowsTailCallRecovery(plan core.RecoveryPlan) bool {
-	return plan.OnError == nil || plan.OnError.ActionKind == core.RecoveryActionFail
-}
-
 func recoveryHandlerReturns(handler *core.RecoveryHandler) bool {
 	switch {
 	case handler == nil:

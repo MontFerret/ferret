@@ -10,9 +10,10 @@ import (
 type OptimizationLevel int
 
 const (
-	// OptimizationNone disables optimizer passes.
+	// OptimizationNone disables optimizer passes, including tail-call elimination.
 	OptimizationNone OptimizationLevel = iota
-	// OptimizationBasic enables the reduced pipeline without register coalescing.
+	// OptimizationBasic enables the reduced pipeline, including safe tail-call
+	// elimination, without register coalescing.
 	OptimizationBasic
 	// OptimizationFull is the default and enables the complete supported pipeline.
 	OptimizationFull

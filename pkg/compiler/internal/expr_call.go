@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"github.com/antlr4-go/antlr/v4"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler/internal/core"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
@@ -71,10 +69,6 @@ func (c *ExprCompiler) CompileFunctionCallWith(ctx fql.IFunctionCallContext, pro
 
 func (c *ExprCompiler) CompileFunctionCallByNameWith(ctx fql.IFunctionCallContext, name runtime.String, protected bool, seq core.RegisterSequence) bytecode.Operand {
 	return c.callCompiler.compileFunctionCallByNameWith(ctx, name, protected, seq)
-}
-
-func (c *ExprCompiler) EmitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
-	c.callCompiler.emitUdfTailCall(fn, seq, callCtx)
 }
 
 func (c *ExprCompiler) CompileArgumentList(ctx fql.IArgumentListContext) core.RegisterSequence {

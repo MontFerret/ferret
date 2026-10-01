@@ -10,27 +10,19 @@ import (
 
 // UDFCompiler compiles user-defined functions into bytecode.
 type UDFCompiler struct {
-	ctx      *CompilationSession
-	calls    *CallResolver
-	exprs    *ExprCompiler
-	facts    *TypeFacts
-	recovery *RecoveryCompiler
-	stmts    *StatementCompiler
+	ctx   *CompilationSession
+	stmts *StatementCompiler
 }
 
 func NewUDFCompiler(ctx *CompilationSession) *UDFCompiler {
 	return &UDFCompiler{ctx: ctx}
 }
 
-func (c *UDFCompiler) bind(calls *CallResolver, exprs *ExprCompiler, facts *TypeFacts, recovery *RecoveryCompiler, stmts *StatementCompiler) {
+func (c *UDFCompiler) bind(stmts *StatementCompiler) {
 	if c == nil {
 		return
 	}
 
-	c.calls = calls
-	c.exprs = exprs
-	c.facts = facts
-	c.recovery = recovery
 	c.stmts = stmts
 }
 
@@ -172,65 +164,7 @@ func (c *UDFCompiler) compileExpressionReturn(expr fql.IExpressionContext, disti
 }
 
 func (c *UDFCompiler) compileExpressionReturnInner(expr fql.IExpressionContext, distinct bool) {
-	if !distinct {
-		if fce := directFunctionCall(expr); fce != nil && fce.ErrorOperator() == nil && allowsTailCallRecovery(c.recovery.CollectPlan(fce, core.RecoveryPlanOptions{})) {
-			call := fce.FunctionCall()
-			if call != nil {
-				if fn, ok := c.calls.ResolveUDF(call); ok {
-					seq := c.exprs.CompileArgumentList(call.ArgumentList())
-					c.exprs.EmitUdfTailCall(fn, seq, call.(antlr.ParserRuleContext))
-					return
-				}
-			}
-		}
-	}
-
 	val := c.stmts.CompileReturnValue(expr, distinct)
 
 	c.ctx.Program.Emitter.EmitA(bytecode.OpReturn, val)
-}
-
-func directFunctionCall(expr fql.IExpressionContext) fql.IFunctionCallExpressionContext {
-	if expr == nil {
-		return nil
-	}
-
-	expCtx, ok := expr.(*fql.ExpressionContext)
-	if !ok {
-		return nil
-	}
-
-	if expCtx.GetLeft() != nil || expCtx.GetRight() != nil || expCtx.GetCondition() != nil || expCtx.GetOnTrue() != nil || expCtx.GetOnFalse() != nil {
-		return nil
-	}
-
-	pred := expCtx.Predicate()
-	if pred == nil {
-		return nil
-	}
-
-	predCtx, ok := pred.(*fql.PredicateContext)
-	if !ok {
-		return nil
-	}
-
-	if predCtx.GetLeft() != nil || predCtx.GetRight() != nil {
-		return nil
-	}
-
-	atom := predCtx.ExpressionAtom()
-	if atom == nil {
-		return nil
-	}
-
-	atomCtx, ok := atom.(*fql.ExpressionAtomContext)
-	if !ok {
-		return nil
-	}
-
-	if atomCtx.ExpressionAtom(0) != nil || atomCtx.ExpressionAtom(1) != nil {
-		return nil
-	}
-
-	return atomCtx.FunctionCallExpression()
 }

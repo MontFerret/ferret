@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	// None disables optimizer passes.
+	// None disables optimizer passes, including tail-call elimination.
 	None = optimization.None
-	// Basic enables constant propagation, liveness analysis, and peephole optimization.
+	// Basic enables tail-call elimination, constant propagation, liveness analysis,
+	// and peephole optimization.
 	Basic = optimization.Basic
 	// Full is the default and adds register coalescing to the Basic pipeline.
 	Full = optimization.Full
@@ -56,7 +57,8 @@ func WithOptimizationLevel(level OptimizationLevel) Option {
 }
 
 // WithDebugInfo emits source-level debugger metadata and disables optimization
-// so debugger-visible register bindings remain stable.
+// so debugger-visible bindings and caller frames remain stable. The compiler
+// selects effective None regardless of option ordering.
 func WithDebugInfo() Option {
 	return func(config *config) error {
 		config.DebugInfo = true

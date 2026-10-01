@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 	"github.com/MontFerret/ferret/v2/test/spec"
 	. "github.com/MontFerret/ferret/v2/test/spec/compile"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestReturnDistinctLowering(t *testing.T) {
-	RunSpecs(t, []spec.Spec{
+	RunSpecsLevels(t, []spec.Spec{
 		Opcode("RETURN DISTINCT [1, 1]", OpcodeExistence{
 			Exists: []bytecode.Opcode{bytecode.OpDistinct},
 		}, "top-level RETURN DISTINCT lowers to OpDistinct"),
@@ -37,7 +38,7 @@ RETURN unique()
 			}
 
 			return nil
-		}, "UDF RETURN DISTINCT disables tail-call lowering"),
+		}, "UDF RETURN DISTINCT prevents tail-call elimination"),
 		ProgramCheck(`
 FOR value IN [1, 1]
 	RETURN DISTINCT value
@@ -54,7 +55,7 @@ FOR value IN [1, 1]
 
 			return nil
 		}, "discarded loop RETURN DISTINCT omits uniqueness accumulation"),
-	})
+	}, compiler.None, compiler.Basic, compiler.Full)
 }
 
 func TestReturnDistinctRejectsKnownNonArrayTypes(t *testing.T) {
