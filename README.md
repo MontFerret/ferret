@@ -84,10 +84,11 @@ There are currently two ways to start with Ferret v2:
 Use `github.com/MontFerret/ferret/v2` and `ferret.New(opts...)` for Native
 embedding. For integrations using `github.com/MontFerret/api`, the official
 adapter is the separate `github.com/MontFerret/ferret/v2/uapi` package.
-`uapi.New(opts...)` creates
-and owns a Native engine; runtime Close closes it. `uapi.Wrap(native)` borrows
-an existing engine; its Close is a no-op that leaves both usable. Settle work and
-close sessions and plans before their owning runtime or borrowed engine. See the
+`uapi.New(version, opts...)` creates and owns a Native engine; runtime Close
+closes it. `uapi.Wrap(native, version)` borrows an existing engine; its Close is
+a no-op that leaves both usable. Both retain the supplied Ferret Core version
+for `Runtime.Version(ctx)`. Settle work and close sessions and plans before
+their owning runtime or borrowed engine. See the
 [Universal adapter guide](docs/maintainers/architecture/universal-api.md) for the supported options
 and lifecycle contract.
 

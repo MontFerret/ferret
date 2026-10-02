@@ -39,7 +39,7 @@ func TestCancellationAndHookFailureRetainBothCauses(t *testing.T) {
 			}
 
 			t.Cleanup(func() { _ = engine.Close() })
-			runtime := Wrap(engine)
+			runtime := Wrap(engine, "test-core-version")
 			t.Cleanup(func() { _ = runtime.Close() })
 			src := api.NewAnonymousSource("RETURN 1")
 
@@ -93,7 +93,7 @@ func TestRuntimeRunPreservesOutputAndAllCleanupErrors(t *testing.T) {
 	}
 
 	t.Cleanup(func() { _ = engine.Close() })
-	runtime := Wrap(engine)
+	runtime := Wrap(engine, "test-core-version")
 	t.Cleanup(func() { _ = runtime.Close() })
 
 	output, err := runtime.Run(t.Context(), api.NewAnonymousSource("RETURN 42"))
@@ -195,7 +195,7 @@ func TestCancellationDuringRunHookSurvivesContextReplacement(t *testing.T) {
 	}
 
 	t.Cleanup(func() { _ = engine.Close() })
-	runtime := Wrap(engine)
+	runtime := Wrap(engine, "test-core-version")
 	t.Cleanup(func() { _ = runtime.Close() })
 
 	output, err := runtime.Run(ctx, api.NewAnonymousSource("RETURN 42"))

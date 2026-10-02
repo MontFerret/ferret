@@ -17,7 +17,7 @@ func BenchmarkCompile(b *testing.B) {
 		for _, adapter := range []string{"Native", "Universal"} {
 			b.Run(query.name+"/"+adapter, func(b *testing.B) {
 				native := newTestEngine(b)
-				portable := Wrap(native)
+				portable := Wrap(native, "test-core-version")
 				b.Cleanup(func() { _ = portable.Close() })
 				b.ReportAllocs()
 				b.ResetTimer()
@@ -156,7 +156,7 @@ func BenchmarkRuntimeRun(b *testing.B) {
 	for _, adapter := range []string{"Native", "Universal"} {
 		b.Run(adapter, func(b *testing.B) {
 			native := newTestEngine(b)
-			portable := Wrap(native)
+			portable := Wrap(native, "test-core-version")
 			b.Cleanup(func() { _ = portable.Close() })
 			nativeSource := source.NewAnonymous("RETURN @value + 1")
 			portableSource := api.NewAnonymousSource("RETURN @value + 1")
@@ -196,7 +196,7 @@ func BenchmarkRuntimeConstruction(b *testing.B) {
 						b.Fatal(err)
 					}
 				} else {
-					portable, err := New()
+					portable, err := New("test-core-version")
 					if err != nil {
 						b.Fatal(err)
 					}

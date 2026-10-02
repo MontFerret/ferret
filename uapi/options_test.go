@@ -20,7 +20,7 @@ func TestRuntimeOptimizationOptions(t *testing.T) {
 		}
 
 		t.Cleanup(func() { _ = engine.Close() })
-		runtime := Wrap(engine)
+		runtime := Wrap(engine, "test-core-version")
 		t.Cleanup(func() { _ = runtime.Close() })
 		for _, debug := range []bool{false, true} {
 			compile := runtime.Compile

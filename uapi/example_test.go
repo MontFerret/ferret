@@ -19,7 +19,7 @@ func ExampleWrap() {
 
 	defer native.Close()
 
-	var portable api.Runtime = uapi.Wrap(native)
+	var portable api.Runtime = uapi.Wrap(native, "dev")
 	defer portable.Close()
 
 	output, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN @value + 1"), api.WithParam("value", 41))
@@ -32,7 +32,7 @@ func ExampleWrap() {
 }
 
 func ExampleNew() {
-	portable, err := uapi.New(ferret.WithParam("value", 41))
+	portable, err := uapi.New("dev", ferret.WithParam("value", 41))
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +50,7 @@ func ExampleNew() {
 
 func ExampleRuntime_Run() {
 	failure := errors.New("after-run hook failed")
-	portable, err := uapi.New(ferret.WithAfterRunHook(func(context.Context, error) error {
+	portable, err := uapi.New("dev", ferret.WithAfterRunHook(func(context.Context, error) error {
 		return failure
 	}))
 	if err != nil {

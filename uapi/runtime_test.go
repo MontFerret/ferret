@@ -20,11 +20,11 @@ import (
 func TestWrapRequiresNativeEngine(t *testing.T) {
 	defer func() {
 		if got := recover(); got != "uapi: nil native engine" {
-			t.Fatalf("Wrap(nil) panic = %v, want uapi: nil native engine", got)
+			t.Fatalf("Wrap(nil, version) panic = %v, want uapi: nil native engine", got)
 		}
 	}()
 
-	Wrap(nil)
+	Wrap(nil, "test-core-version")
 }
 
 func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
@@ -47,17 +47,17 @@ func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
 
 	t.Cleanup(func() { _ = compiled.Close() })
 
-	if got, err := compiled.Params(); err != nil || len(got) != 1 || got[0] != "value" {
+	if got, err := compiled.Params(t.Context()); err != nil || len(got) != 1 || got[0] != "value" {
 		t.Fatalf("Params = %v, want [value]", got)
 	}
 
-	parameters, err := compiled.Params()
+	parameters, err := compiled.Params(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
 	parameters[0] = "changed"
 
-	if got, err := compiled.Params(); err != nil || len(got) != 1 || got[0] != "value" {
+	if got, err := compiled.Params(t.Context()); err != nil || len(got) != 1 || got[0] != "value" {
 		t.Fatalf("Params after caller mutation = %v, want [value]", got)
 	}
 
@@ -268,13 +268,13 @@ func TestPortableParamsRemainDetachedAfterClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	params, err := plan.Params()
+	params, err := plan.Params(t.Context())
 	if err != nil || len(params) != 1 || params[0] != "value" {
 		t.Fatalf("Params after close = %v, %v", params, err)
 	}
 
 	params[0] = "changed"
-	if again, err := plan.Params(); err != nil || len(again) != 1 || again[0] != "value" {
+	if again, err := plan.Params(t.Context()); err != nil || len(again) != 1 || again[0] != "value" {
 		t.Fatalf("Params snapshot was aliased: %v, %v", again, err)
 	}
 }
@@ -282,7 +282,7 @@ func TestPortableParamsRemainDetachedAfterClose(t *testing.T) {
 func newTestRuntime(t testing.TB, options ...engine.Option) api.Runtime {
 	t.Helper()
 
-	runtime := Wrap(newTestEngine(t, options...))
+	runtime := Wrap(newTestEngine(t, options...), "test-core-version")
 	t.Cleanup(func() {
 		if err := runtime.Close(); err != nil {
 			t.Errorf("runtime Close: %v", err)

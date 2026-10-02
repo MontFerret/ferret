@@ -91,7 +91,11 @@ Native engine types and options remain independent
 of the portable runtime interfaces. `New` creates and owns a Native engine;
 `Wrap` borrows one. Runtime close delegates to Native for owned engines and is a
 no-op for borrowed engines. Plan and session close calls delegate to Native.
-The adapter owns no admission, cancellation, or descendant tracking.
+The adapter owns no execution admission, cancellation, or descendant tracking.
+Its local `Plan.Params(ctx)` and `Runtime.Version(ctx)` metadata methods check
+caller contexts directly because there is no context-aware Native operation to
+delegate to. Native `Plan.Params()` remains context-free; `Runtime.Version`
+returns the Ferret Core implementation version supplied to `New` or `Wrap`.
 See [Universal adapter](universal-api.md).
 
 The façade fans out to `pkg/engine` for native engine semantics and directly to

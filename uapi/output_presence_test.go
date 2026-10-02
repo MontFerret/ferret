@@ -51,7 +51,7 @@ func TestExecutionPreservesOutputPresence(t *testing.T) {
 					}))
 				}
 
-				portable, err := uapi.New(opts...)
+				portable, err := uapi.New("test-core-version", opts...)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -98,7 +98,7 @@ func TestExecutionPreservesOutputPresence(t *testing.T) {
 }
 
 func TestRuntimeCompilationFailureReturnsNoOutput(t *testing.T) {
-	portable, err := uapi.New()
+	portable, err := uapi.New("test-core-version")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestRuntimeCompilationFailureReturnsNoOutput(t *testing.T) {
 func TestCanceledExecutionReturnsNoOutput(t *testing.T) {
 	for _, mode := range []string{"runtime", "session"} {
 		t.Run(mode, func(t *testing.T) {
-			portable, err := uapi.New()
+			portable, err := uapi.New("test-core-version")
 			if err != nil {
 				t.Fatal(err)
 			}

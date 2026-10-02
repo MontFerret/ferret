@@ -7,6 +7,7 @@ import (
 	apidebugger "github.com/MontFerret/api/debugger"
 
 	"github.com/MontFerret/ferret/v2/pkg/engine"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type plan struct {
@@ -15,7 +16,17 @@ type plan struct {
 
 var _ api.Plan = (*plan)(nil)
 
-func (p *plan) Params() ([]string, error) {
+// Params returns Native's caller-owned parameter snapshot, including after Close.
+// The portable context must be non-nil and not already canceled.
+func (p *plan) Params(ctx context.Context) ([]string, error) {
+	if ctx == nil {
+		return nil, runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	return p.native.Params(), nil
 }
 
