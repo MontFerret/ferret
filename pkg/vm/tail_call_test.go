@@ -3,8 +3,11 @@ package vm
 import (
 	"context"
 	"errors"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/bytecode"
 	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -217,6 +220,7 @@ return forward(OPEN())`
 				}),
 			)
 			instance := mustNewVM(t, program)
+			assertTailCallCandidate(t, instance, level, "forward", "leaf", true)
 			t.Cleanup(func() { _ = instance.Close() })
 			result := mustRunResult(t, instance, env)
 			if result.Root() != resources[0] || resources[0].closed != 0 || resources[1].closed != 0 {
@@ -232,4 +236,287 @@ return forward(OPEN())`
 			}
 		})
 	}
+}
+
+func TestTailCallEliminationTransfersFrameOwnedResourceAliases(t *testing.T) {
+	cases := []struct {
+		name        string
+		grow        bool
+		failCleanup bool
+	}{
+		{name: "reused window"},
+		{name: "grown window", grow: true},
+		{name: "cleanup error", failCleanup: true},
+	}
+
+	for _, tc := range cases {
+		for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+			t.Run(tc.name+"/"+level.String(), func(t *testing.T) {
+				fixture := newTailCallLifecycleFixture(t, level, tc.grow, "return forward(@borrowed)")
+				if tc.failCleanup {
+					fixture.closeErr = errors.New("resource cleanup failed")
+				}
+
+				result := mustRunResult(t, fixture.instance, fixture.env)
+				t.Cleanup(func() { _ = result.Close() })
+				fixture.assertProgress(1, 1, 1, 1)
+				fixture.assertSettled()
+				fixture.assertResult(result, 0)
+				fixture.assertResourceCloses(0, 0)
+
+				// Successful execution transfers responsibility to Result. Closing
+				// the VM must not shorten either returned or discarded lifetimes.
+				fixture.closeVM()
+				fixture.assertResourceCloses(0, 0)
+
+				if err := result.Close(); !errors.Is(err, fixture.closeErr) {
+					t.Fatalf("result cleanup error = %v, want %v", err, fixture.closeErr)
+				}
+
+				if err := result.Close(); err != nil {
+					t.Fatalf("repeated result close = %v", err)
+				}
+
+				fixture.assertResourceCloses(0, 1)
+			})
+		}
+	}
+}
+
+func TestTailCallEliminationFrameOwnedResourcesOnFailure(t *testing.T) {
+	for _, failCleanup := range []bool{false, true} {
+		name := "execution error"
+		if failCleanup {
+			name = "execution and cleanup errors"
+		}
+
+		for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+			t.Run(name+"/"+level.String(), func(t *testing.T) {
+				fixture := newTailCallLifecycleFixture(t, level, true, "return forward(@borrowed)")
+				stop := errors.New("tail callee failed")
+				fixture.action = func(context.Context) error { return stop }
+				if failCleanup {
+					fixture.closeErr = errors.New("resource cleanup failed")
+				}
+
+				result, err := fixture.instance.Run(t.Context(), fixture.env)
+				if result != nil || !errors.Is(err, stop) {
+					t.Fatalf("run = %v, %v; want nil result and execution error", result, err)
+				}
+
+				// Raw VM failure cleanup preserves the execution error rather than
+				// adding cleanup errors or retaining them for a later VM.Close.
+				if fixture.closeErr != nil && errors.Is(err, fixture.closeErr) {
+					t.Fatalf("cleanup error changed execution error reporting: %v", err)
+				}
+
+				fixture.assertProgress(1, 1, 1, 0)
+				fixture.assertSettled()
+				fixture.assertResourceCloses(0, 1)
+				fixture.closeVM()
+				fixture.assertResourceCloses(0, 1)
+			})
+		}
+	}
+}
+
+func TestTailCallEliminationFrameOwnedResourcesAcrossOuterRecovery(t *testing.T) {
+	const main = `let recovered = forward(@borrowed) on error return none
+CHECK_RECOVERY(recovered)
+return forward(@borrowed)`
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
+			fixture := newTailCallLifecycleFixture(t, level, false, main)
+			fixture.boundaries = []int{0, -1}
+			stop := errors.New("first tail callee failed")
+			fixture.action = func(context.Context) error {
+				if fixture.actions == 1 {
+					return stop
+				}
+
+				return nil
+			}
+
+			result := mustRunResult(t, fixture.instance, fixture.env)
+			t.Cleanup(func() { _ = result.Close() })
+			fixture.assertProgress(2, 2, 2, 1)
+			if fixture.recoveries != 1 {
+				t.Fatalf("recovery callbacks = %d, want 1", fixture.recoveries)
+			}
+
+			fixture.assertSettled()
+			fixture.assertResult(result, 0)
+			fixture.assertResourceCloses(0, 0)
+			if err := result.Close(); err != nil {
+				t.Fatal(err)
+			}
+
+			fixture.assertResourceCloses(0, 1)
+			fixture.closeVM()
+			fixture.assertResourceCloses(0, 1)
+		})
+	}
+}
+
+func TestTailCallEliminationFrameOwnedResourcesOnCancellationAndReuse(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
+			fixture := newTailCallLifecycleFixture(t, level, false, "return forward(@borrowed)")
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			fixture.entryAction = func() {
+				if fixture.entries == 1 {
+					cancel()
+				}
+			}
+
+			result, err := fixture.instance.Run(ctx, fixture.env)
+			if result != nil || !errors.Is(err, context.Canceled) {
+				t.Fatalf("canceled run = %v, %v", result, err)
+			}
+
+			// ENTRY cancels after proving replacement and transfer. The next
+			// host call is an existing safepoint and must not run.
+			fixture.assertProgress(1, 0, 0, 0)
+			fixture.assertSettled()
+			fixture.assertResourceCloses(0, 1)
+
+			firstRunResources := len(fixture.resources)
+			result = mustRunResult(t, fixture.instance, fixture.env)
+			t.Cleanup(func() { _ = result.Close() })
+			fixture.assertProgress(2, 1, 1, 1)
+			fixture.assertSettled()
+			fixture.assertResult(result, firstRunResources)
+			fixture.assertResourceCloses(firstRunResources, 0)
+			if err := result.Close(); err != nil {
+				t.Fatal(err)
+			}
+
+			fixture.assertResourceCloses(0, 1)
+			fixture.closeVM()
+			fixture.assertResourceCloses(0, 1)
+		})
+	}
+}
+
+func TestTailCallEliminationReusesWindowAcrossRuns(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+		t.Run(level.String(), func(t *testing.T) {
+			fixture := newTailCallLifecycleFixture(t, level, false, "return forward(@borrowed)")
+			var window *runtime.Value
+			for run := range 3 {
+				start := len(fixture.resources)
+				result := mustRunResult(t, fixture.instance, fixture.env)
+				t.Cleanup(func() { _ = result.Close() })
+				fixture.assertSettled()
+				fixture.assertResult(result, start)
+				if run == 0 {
+					window = fixture.window
+				} else if fixture.window != window {
+					t.Fatal("repeated execution allocated another forward window after tail-call reuse")
+				}
+
+				if err := result.Close(); err != nil {
+					t.Fatal(err)
+				}
+				fixture.assertResourceCloses(0, 1)
+			}
+			fixture.assertProgress(3, 3, 3, 3)
+			fixture.closeVM()
+			fixture.assertResourceCloses(0, 1)
+		})
+	}
+}
+
+func tailCallLifecycleQuery(grow bool, main string) string {
+	// Context-aware host calls keep all 32 arguments live, including when
+	// register coalescing runs. Runtime assertions still verify the actual path.
+	values := make([]string, 32)
+	for i := range values {
+		values[i] = "VALUE(" + strconv.Itoa(i) + ")"
+	}
+	wide := "PAD(" + strings.Join(values, ",") + ")\n"
+	forwardWork, leafWork := wide, ""
+	if grow {
+		forwardWork, leafWork = "", wide
+	}
+
+	return "func leaf(a,b,borrowed) {\nENTRY()\n" + leafWork + `CHECK_SURVIVOR(b,borrowed)
+STEP()
+AFTER_STEP()
+return b
+}
+func forward(borrowed) {
+let resource = OPEN()
+let discarded = OPEN()
+` + forwardWork + `SNAPSHOT()
+return leaf(resource,resource,borrowed)
+}
+` + main
+}
+
+func assertTailCallCandidate(t testing.TB, instance *VM, level compiler.OptimizationLevel, callerName, calleeName string, eligible bool) callDescriptor {
+	t.Helper()
+
+	callerID, calleeID := bytecode.NoFunction, bytecode.NoFunction
+	for id, udf := range instance.program.Functions.UserDefined {
+		if udf.DisplayName == callerName {
+			callerID = bytecode.FunctionID(id)
+		}
+
+		if udf.DisplayName == calleeName {
+			calleeID = bytecode.FunctionID(id)
+		}
+	}
+
+	if !callerID.Valid() || !calleeID.Valid() {
+		t.Fatalf("missing candidate functions %q and %q", callerName, calleeName)
+	}
+
+	start := instance.program.Functions.UserDefined[callerID].Entry
+	end := len(instance.program.Bytecode)
+	for _, udf := range instance.program.Functions.UserDefined {
+		if udf.Entry > start && udf.Entry < end {
+			end = udf.Entry
+		}
+	}
+
+	want := bytecode.OpCall
+	descriptors := instance.plan.udfCallDescriptors
+	if eligible && level != compiler.None {
+		want = bytecode.OpTailCall
+		descriptors = instance.plan.udfTailCallDescriptors
+	}
+
+	var candidate callDescriptor
+	count := 0
+	for _, descriptor := range descriptors {
+		if descriptor.ID == calleeID && descriptor.PC >= start && descriptor.PC < end {
+			candidate = descriptor
+			count++
+		}
+	}
+
+	if count != 1 {
+		t.Fatalf("%s -> %s candidate calls with opcode %v = %d, want 1", callerName, calleeName, want, count)
+	}
+
+	call := instance.program.Bytecode[candidate.PC]
+	if call.Opcode != want {
+		t.Fatalf("candidate opcode = %v, want %v", call.Opcode, want)
+	}
+
+	if eligible {
+		if candidate.PC+1 >= end {
+			t.Fatal("candidate has no retained return")
+		}
+
+		ret := instance.program.Bytecode[candidate.PC+1]
+		if ret.Opcode != bytecode.OpReturn || ret.Operands[0] != candidate.Dst {
+			t.Fatalf("candidate return = %v, want unchanged call result", ret)
+		}
+	}
+
+	return candidate
 }

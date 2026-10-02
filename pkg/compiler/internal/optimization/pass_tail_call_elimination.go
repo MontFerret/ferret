@@ -91,6 +91,9 @@ func (p *TailCallEliminationPass) forwardsLocalCell(call bytecode.Instruction, c
 	return unsafe
 }
 
+// This analysis relies on MakeCell creating local handles and Move/MoveTracked
+// forwarding them. New instructions that create or transport cell handles must
+// be reflected here.
 func (p *TailCallEliminationPass) localCellAliases(code []bytecode.Instruction) map[int]bool {
 	var cells map[int]bool
 	var pending []int

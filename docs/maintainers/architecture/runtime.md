@@ -123,6 +123,12 @@ The VM observes cancellation at its own safepoints. Context-aware host
 operations receive the execution context and are responsible for observing
 cancellation while they retain control.
 
+Tail replacement can shorten a register window while retaining its backing
+capacity. The VM's internal window pool scrubs and returns the full capacity
+when releasing that window, so repeated execution can reuse the original
+storage. Window storage never closes runtime resources; frame ownership and
+deferred cleanup retain that responsibility.
+
 Generic `COLLECT AGGREGATE` finalization emits `OpAggregateReduce(dst, list,
 kind)` for built-in one-argument reductions. Its immediate `AggregateKind`
 selects the same state update/finalization logic as fused collectors. The
