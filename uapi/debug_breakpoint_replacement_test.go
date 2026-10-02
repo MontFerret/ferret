@@ -45,7 +45,7 @@ func TestPortableBreakpointReplacementReachesRunningNativeSession(t *testing.T) 
 				t.Fatal(err)
 			}
 			defer native.Close()
-			portable := Wrap(native)
+			portable := Wrap(native, "test-core-version")
 			plan, err := portable.CompileDebug(ctx, api.NewSource("live.fql", "LET value = WAIT_NATIVE()\n\nLET next = value + 1\nRETURN next"))
 			if err != nil {
 				t.Fatal(err)

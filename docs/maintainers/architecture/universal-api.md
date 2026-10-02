@@ -14,7 +14,7 @@ import (
     "github.com/MontFerret/ferret/v2/uapi"
 )
 
-portable, err := uapi.New(ferret.WithParam("value", 42))
+portable, err := uapi.New("dev", ferret.WithParam("value", 42))
 if err != nil {
     return err
 }
@@ -30,8 +30,9 @@ if err != nil {
 ```
 
 Use the root `ferret` package for ordinary Native embedding and configuration.
-`uapi.New` accepts its Native options and returns `(*uapi.Runtime, error)`;
-calling `uapi.New()` uses Native defaults. The adapter internally depends on
+`uapi.New(version, opts...)` accepts a Ferret Core implementation version and
+Native options, returning `(*uapi.Runtime, error)`. Calling `uapi.New(version)`
+uses Native defaults. The adapter internally depends on
 `pkg/engine`; root `ferret.Engine` and `ferret.Option` aliases preserve type
 identity. Native owns construction and rollback, and the adapter projects
 construction errors. Nil options are handled by Native and skipped.
@@ -45,11 +46,11 @@ if err != nil {
 }
 defer native.Close()
 
-var portable api.Runtime = uapi.Wrap(native)
+var portable api.Runtime = uapi.Wrap(native, "dev")
 ```
 
 Configure Native modules, codecs, host services, and engine defaults before
-wrapping. `uapi.Wrap(native)` returns `*uapi.Runtime` and panics when native is
+wrapping. `uapi.Wrap(native, version)` returns `*uapi.Runtime` and panics when native is
 nil. The caller retains responsibility for closing the Native engine. Both
 constructors remain in `uapi`; the root façade exposes the Native API.
 
@@ -104,9 +105,28 @@ Pause, breakpoint operations, and inspection receive the original caller context
 just like execution and evaluation. Native owns cancellation checks and command
 admission; the adapter introduces no derived context or synchronization.
 
-Portable `Plan.Params() ([]string, error)` returns the Native detached parameter
-snapshot with a nil error, including after plan closure. Native
-`Plan.Params() []string` remains unchanged. Portable `Breakpoints(ctx)` projects
+Portable `Plan.Params(ctx) ([]string, error)` returns the Native detached parameter
+snapshot with a nil error for a valid context, including after plan closure.
+Parameter ordering is unchanged; an empty snapshot with a nil error means there
+are no parameters. Native `Plan.Params() []string` intentionally remains
+context-free because this operation is local and immediate.
+
+`Runtime.Version(ctx) (api.Version, error)` returns the Ferret Core implementation
+version supplied to `New` or `Wrap`. Both constructors accept `api.Version`; the
+caller supplies the Core version independently of the Universal API, host
+application, CLI, daemon, transport, compiler, or Go version. For example, pass
+the linked Core release version in a released build or `dev` in development.
+The adapter stores and returns the value unchanged, including an empty value,
+without discovery, validation, SemVer parsing, or normalization. Version metadata
+remains available after runtime closure.
+
+Both metadata methods reject nil contexts with the existing invalid-argument
+error and return already-canceled or expired context errors unchanged, preserving
+`errors.Is`. They check caller contexts directly at the portable boundary because
+there is no context-aware Native operation to delegate to. Retrieval is
+synchronous and creates no background work.
+
+Portable `Breakpoints(ctx)` projects
 Native listing errors and preserves valid-context listing after debug Close.
 
 `debugger.Session.ReplaceBreakpoints(ctx, sourceName, requests)` delegates
@@ -128,14 +148,15 @@ Projection preserves Native error messages and available output or completion ev
 ## Ownership and delegation
 
 For `New`, `Runtime.Close` delegates to the owned Native engine, which releases
-its resources and rejects subsequent runtime operations. For `Wrap`, Close is a
+its resources and rejects subsequent execution and compilation. Version metadata
+remains available with a valid context. For `Wrap`, Close is a
 no-op that leaves the adapter and borrowed engine usable. Multiple adapters may
 borrow one engine independently; external engine closure is observed by all.
 
 Plan and session close calls also delegate to Native. Native owns idempotence,
 concurrent closure, and the completed cleanup result. Repeated projections need
-not have identical pointers. Runtime stores only its Native pointer and an
-immutable ownership flag.
+not have identical pointers. Runtime stores its Native pointer, the supplied
+immutable Core version, and an immutable ownership flag.
 
 Portable option callbacks run independently of the operation context. If they
 fail, only their returned errors are projected; cancellation is included only
@@ -159,9 +180,10 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
-Universal API `v1.0.0-alpha.19` includes context parameters for debugger
-operations and error returns from `Plan.Params` and `Session.Breakpoints`, along
-with `debugger.Session.ReplaceBreakpoints` and `BreakpointRequest`.
+Universal API `v1.0.0-alpha.20` adds context-aware `Plan.Params` and
+`Runtime.Version` metadata contracts. It also includes context parameters for
+debugger operations, error returns from `Session.Breakpoints`, and
+`debugger.Session.ReplaceBreakpoints` with `BreakpointRequest`.
 The root module and API-reference tool both pin this published version. The API
 prerequisite is complete; downstream live DAP support still requires the separate
 ferretd integration and release described in the

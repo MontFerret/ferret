@@ -19,7 +19,7 @@ import (
 
 func TestNewOwnsConfiguredEngine(t *testing.T) {
 	var initialized int
-	r, err := New(
+	r, err := New("test-core-version",
 		engine.WithEngineInitHook(func() error {
 			initialized++
 
@@ -50,7 +50,7 @@ func TestNewOwnsConfiguredEngine(t *testing.T) {
 }
 
 func TestNewIgnoresNilNativeOption(t *testing.T) {
-	r, err := New(nil)
+	r, err := New("test-core-version", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestNewIgnoresNilNativeOption(t *testing.T) {
 
 func TestNewDelegatesOptionFailureRollback(t *testing.T) {
 	client := &ownershipHTTPClient{}
-	r, err := New(
+	r, err := New("test-core-version",
 		engine.WithNetworkOptions(ferretnet.WithHTTPClient(client)),
 		engine.WithEngineInitHook(nil),
 	)
@@ -95,7 +95,7 @@ func TestNewProjectsConstructionAndRollbackFailures(t *testing.T) {
 	initDiagnostic := diagnostics.NewUnexpectedErrorWith(src, "init diagnostic", initCause)
 	closeDiagnostic := diagnostics.NewUnexpectedErrorWith(src, "close diagnostic", closeCause)
 	var closes int
-	r, err := New(
+	r, err := New("test-core-version",
 		engine.WithNetworkOptions(ferretnet.WithHTTPClient(client)),
 		engine.WithEngineInitHook(func() error { return initDiagnostic }),
 		engine.WithEngineCloseHook(func() error {
@@ -134,7 +134,7 @@ func TestOwnedRuntimeCloseDelegatesCleanupAndRejection(t *testing.T) {
 	cause := errors.New("engine cleanup failed")
 	diagnostic := diagnostics.NewUnexpectedErrorWith(source.Source{}, "close diagnostic", cause)
 	var closes atomic.Int32
-	r, err := New(
+	r, err := New("test-core-version",
 		engine.WithNetworkOptions(ferretnet.WithHTTPClient(client)),
 		engine.WithEngineCloseHook(func() error {
 			closes.Add(1)

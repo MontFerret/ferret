@@ -6,6 +6,7 @@ import (
 	"github.com/MontFerret/api"
 
 	"github.com/MontFerret/ferret/v2/pkg/engine"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -13,6 +14,7 @@ import (
 // New, or borrow an existing engine with Wrap.
 type Runtime struct {
 	native     *engine.Engine
+	version    api.Version
 	ownsEngine bool
 }
 
@@ -20,25 +22,41 @@ var _ api.Runtime = (*Runtime)(nil)
 
 // New constructs and owns a Native engine using its options. Native handles
 // construction rollback; failures return a nil runtime and a projected error.
+// version identifies the Ferret Core implementation and is retained unchanged.
 // Callers must settle work and close sessions and plans before the runtime.
-func New(opts ...engine.Option) (*Runtime, error) {
+func New(version api.Version, opts ...engine.Option) (*Runtime, error) {
 	native, err := engine.New(opts...)
 	if err != nil {
 		return nil, wrapDiagnosticError(err)
 	}
 
-	return &Runtime{native: native, ownsEngine: true}, nil
+	return &Runtime{native: native, version: version, ownsEngine: true}, nil
 }
 
 // Wrap borrows native without transferring ownership of it or its resources.
+// version identifies the Ferret Core implementation and is retained unchanged.
 // The caller must settle outstanding work and close its children before native.
 // Wrap panics when native is nil.
-func Wrap(native *engine.Engine) *Runtime {
+func Wrap(native *engine.Engine, version api.Version) *Runtime {
 	if native == nil {
 		panic("uapi: nil native engine")
 	}
 
-	return &Runtime{native: native}
+	return &Runtime{native: native, version: version}
+}
+
+// Version returns the Ferret Core version supplied to New or Wrap unchanged,
+// including after Close. The context must be non-nil and not already canceled.
+func (r *Runtime) Version(ctx context.Context) (api.Version, error) {
+	if ctx == nil {
+		return "", runtime.Error(runtime.ErrInvalidArgument, "context is required")
+	}
+
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+
+	return r.version, nil
 }
 
 // Run delegates convenience execution and transient session/plan cleanup to

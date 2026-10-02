@@ -254,7 +254,7 @@ func TestDebugOptimizationValidationIsDelegatedToNative(t *testing.T) {
 
 				return nil
 			}))
-			portable := Wrap(native)
+			portable := Wrap(native, "test-core-version")
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			if tc.canceled {

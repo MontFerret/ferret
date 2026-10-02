@@ -173,7 +173,7 @@ func TestDebugPauseAndCancellationReachNativeExecution(t *testing.T) {
 			}
 
 			t.Cleanup(func() { _ = engine.Close() })
-			runtime := Wrap(engine)
+			runtime := Wrap(engine, "test-core-version")
 			t.Cleanup(func() { _ = runtime.Close() })
 
 			plan, err := runtime.CompileDebug(ctx, api.NewAnonymousSource("LET value = WAIT_NATIVE()\nRETURN value"))

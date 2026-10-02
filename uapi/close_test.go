@@ -26,8 +26,8 @@ func TestRuntimeBorrowsEngineAndLeavesChildrenIndependent(t *testing.T) {
 
 		return nil
 	}))
-	var first api.Runtime = Wrap(native)
-	var second api.Runtime = Wrap(native)
+	var first api.Runtime = Wrap(native, "test-core-version")
+	var second api.Runtime = Wrap(native, "test-core-version")
 	t.Cleanup(func() { _ = second.Close() })
 	p, err := first.Compile(t.Context(), api.NewAnonymousSource("RETURN 42"))
 	if err != nil {
@@ -112,7 +112,7 @@ func TestRuntimeCloseDoesNotWaitOrCancelNativeCalls(t *testing.T) {
 
 					var r api.Runtime
 					if owned {
-						created, err := New(hook)
+						created, err := New("test-core-version", hook)
 						if err != nil {
 							t.Fatal(err)
 						}
@@ -266,7 +266,7 @@ func TestClosePreservesNativeErrorsAndCleansExactlyOnce(t *testing.T) {
 
 func TestRuntimeObservesBorrowedEngineClosure(t *testing.T) {
 	native := newTestEngine(t)
-	r := Wrap(native)
+	r := Wrap(native, "test-core-version")
 	if err := native.Close(); err != nil {
 		t.Fatal(err)
 	}
