@@ -71,8 +71,19 @@ func TestRuntimeErrorFormatting(t *testing.T) {
 				"Caused by: invalid type",
 			},
 		}),
-		spec.NewSpec(
-			`
+	})
+}
+
+func TestRuntimeErrorTailCallFormatting(t *testing.T) {
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+		stack := []string{"called from Inner (#1)", "VM stack: Inner"}
+		if level == compiler.None {
+			stack = []string{"called from Inner (#1)", "called from Outer (#2)", "VM stack: Outer -> Inner"}
+		}
+
+		RunSpecsWith(t, level.String(), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
+			spec.NewSpec(
+				`
 FUNC Inner() => FAIL()
 FUNC Outer() {
   LET result = Inner()
@@ -80,19 +91,16 @@ FUNC Outer() {
 }
 RETURN Outer()
 `,
-			"nested_udf_stack.fql",
-		).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-			Contains: []string{
-				"called from Inner (#1)",
-				"called from Outer (#2)",
-				"VM stack: Outer -> Inner",
-			},
-		}).Env(
-			vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
-				return runtime.None, errors.New("boom")
-			}),
-		),
-	})
+				"nested_udf_stack.fql",
+			).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+				Contains: stack,
+			}).Env(
+				vm.WithFunction("FAIL", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+					return runtime.None, errors.New("boom")
+				}),
+			),
+		})
+	}
 }
 
 func TestZeroDivisorDiagnosticsUseRuntimeOperationIdentity(t *testing.T) {

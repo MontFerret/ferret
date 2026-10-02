@@ -38,14 +38,16 @@ func (p *WindowPool) Acquire(size int) []runtime.Value {
 	return reg
 }
 
-// Release scrubs a register window and stores it for reuse. Window storage
-// never closes values directly; frame-owned cleanup must already be handled by
-// OwnedResources before release.
+// Release scrubs the full backing capacity and stores it for reuse, even when
+// tail replacement shortened the active window. Window storage never closes
+// values directly; frame-owned cleanup must already be handled by OwnedResources
+// before release.
 func (p *WindowPool) Release(reg []runtime.Value) {
 	if len(reg) == 0 {
 		return
 	}
 
+	reg = reg[:cap(reg)]
 	fillWithNone(reg)
 
 	size := len(reg)

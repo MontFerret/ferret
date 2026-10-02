@@ -202,6 +202,13 @@ remain inspectable until the next resume or close releases their retained state.
 If `Close` wins while the VM returns a paused or runtime-error stop, the session
 drains that state before reporting termination and preserves concurrent failures.
 
+Debug compilation centrally selects effective optimization level `None`.
+Lowering always emits ordinary UDF calls and returns, so tail-position calls
+retain independently inspectable caller frames. Optional tail-call elimination
+belongs exclusively to the optimizer; lowering and the VM have no debug-specific
+tail-call bypass or synthetic frames. Recursive debug execution therefore retains
+frames in proportion to call depth.
+
 Debugger state must not change normal VM execution. Debugger-only work on a
 normal execution path must be explicit, measurable, and immediately bypassable.
 

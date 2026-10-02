@@ -459,7 +459,7 @@ RETURN outer(3)
 	}, compiler.None, compiler.Full)
 }
 
-func TestUdfNestedDirectReturnStillLowersToTailCall(t *testing.T) {
+func TestUdfNestedDirectReturnOptimizesToTailCall(t *testing.T) {
 	RunSpecsLevels(t, []spec.Spec{
 		ProgramCheck(`
 LET base = 1
@@ -489,8 +489,8 @@ RETURN outer(3)
 			}
 
 			return fmt.Errorf("expected tail call in forward body between %d and %d", forward.Entry, nextEntry)
-		}, "nested udf direct return preserves tail-call lowering"),
-	}, compiler.None, compiler.Full)
+		}, "nested udf direct return preserves tail-call optimization"),
+	}, compiler.Basic, compiler.Full)
 }
 
 func TestUdfNestedScopeDoesNotLeakToSiblingCompilation(t *testing.T) {

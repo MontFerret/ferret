@@ -259,6 +259,41 @@ Low-level textual program representations belong in `pkg/asm`. They follow the
 bytecode model and debugger metadata rather than defining independent opcode or
 source semantics.
 
+## Compiler lowering and optimization
+
+Lowering produces correct executable behavior without optional tail-call
+elimination: UDF calls evaluate their arguments, call the function, and return
+its result through the ordinary expression path. The optimization pipeline owns
+tail-call eligibility and rewriting. Debug compilation centrally selects the
+effective `None` policy, independently of compiler option ordering.
+
+`None` skips optimizer passes. `Basic` runs tail-call elimination, constant
+propagation, liveness analysis, and peephole optimization. `Full` is the default
+and adds register coalescing between liveness analysis and peephole optimization.
+Tail-call elimination runs first so it can inspect ordinary call operands before
+register rewrites; the pipeline rebuilds the CFG after modification, and later
+analyses see the transformed terminators.
+
+The pass recognizes adjacent UDF call-and-return instructions returning the
+call's result unchanged within one function and basic block. A local binding
+returned immediately is also eligible when it lowers to this same pair. Protected
+calls, catch-covered instructions, shared return targets, result transformations, and
+intervening work are excluded. Arguments that may alias cells created by the
+caller are also excluded: frame replacement deletes those cells. Borrowed cells
+owned by an outer frame may be forwarded. Cell provenance is conservatively
+propagated through moves using bytecode, without parser contexts or lowering
+eligibility flags.
+
+Rewriting changes only `OpCall` to `OpTailCall`, retaining the return instruction
+and every instruction position. Existing operands and metadata stay intact; no
+instruction compaction or argument/capture lowering is duplicated in the pass.
+Broader tail-position analysis, including `MATCH` branches and result-copy
+chains, is outside this pass's contract.
+
+Tail-call elimination is an optional optimization, not an FQL guarantee of
+constant-space recursion. Unoptimized and debug calls retain caller frames;
+recursive execution in those modes uses stack space proportional to call depth.
+
 ## Stability and compatibility
 
 The pipeline, parser-generation workflow, and root embedding lifecycle are

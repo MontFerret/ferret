@@ -60,6 +60,12 @@ func TestWindowPoolZeroAndOversizeBehavior(t *testing.T) {
 	if &reused[0] == &oversize[0] {
 		t.Fatal("did not expect oversize window to be pooled")
 	}
+
+	pool.Release(oversize[:1])
+	small := pool.Acquire(1)
+	if &small[0] == &oversize[0] {
+		t.Fatal("shortening an oversize window must not make it poolable")
+	}
 }
 
 func TestWindowPoolRelease_ScrubsWithoutClosingValues(t *testing.T) {
@@ -76,5 +82,49 @@ func TestWindowPoolRelease_ScrubsWithoutClosingValues(t *testing.T) {
 	reused := pool.Acquire(1)
 	if got := reused[0]; got != runtime.None {
 		t.Fatalf("expected pooled slot to be scrubbed to runtime.None, got %v", got)
+	}
+}
+
+func TestWindowPoolReleaseShrunkWindowReusesBackingCapacity(t *testing.T) {
+	pool := NewWindowPool(8)
+	reg := pool.Acquire(8)
+	closer := newTestCloser("discarded tail slot")
+	reg[7] = closer
+
+	// Tail replacement reuses a larger window with the callee's shorter length.
+	pool.Release(reg[:4])
+	reused := pool.Acquire(8)
+	if len(reused) != 8 {
+		t.Fatalf("reused window length = %d, want 8", len(reused))
+	}
+	if &reused[0] != &reg[0] {
+		t.Fatal("shrinking a window must preserve reuse of its backing capacity")
+	}
+
+	for i, value := range reused {
+		if value != runtime.None {
+			t.Fatalf("released backing slot %d = %v, want runtime.None", i, value)
+		}
+	}
+
+	if closer.closed != 0 {
+		t.Fatalf("window storage closed a resource %d times", closer.closed)
+	}
+}
+
+func TestWindowPoolRepeatedShrinkingKeepsRetainedWindowsBounded(t *testing.T) {
+	pool := NewWindowPool(8)
+	for range 64 {
+		reg := pool.Acquire(8)
+		pool.Release(reg[:4])
+	}
+
+	retained := 0
+	for _, bucket := range pool.buckets {
+		retained += len(bucket)
+	}
+
+	if retained != 1 {
+		t.Fatalf("repeatedly shrinking one active window retained %d windows, want 1", retained)
 	}
 }

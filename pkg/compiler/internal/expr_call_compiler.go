@@ -297,21 +297,6 @@ func (c *exprCallCompiler) compileUdfCallWith(fn *core.UDFInfo, protected bool, 
 	return dest
 }
 
-func (c *exprCallCompiler) emitUdfTailCall(fn *core.UDFInfo, seq core.RegisterSequence, callCtx antlr.ParserRuleContext) {
-	args := c.prepareUdfCallArgs(fn, seq, callCtx)
-	argSpans := c.argumentSpansFromCall(callCtx)
-
-	dest := c.ctx.Function.Registers.Allocate()
-	c.ctx.Program.Emitter.EmitLoadConst(dest, c.ctx.Function.Symbols.AddConstant(runtime.NewInt(int(fn.ID))))
-	c.ctx.Program.Emitter.EmitAsWithCallArgumentSpans(bytecode.OpTailCall, dest, args, argSpans)
-
-	if c.ctx.Program.Semantics != nil {
-		if call, ok := callCtx.(fql.IFunctionCallContext); ok {
-			c.recordCall(call, resolvedCall{Function: fn, Name: fn.DisplayName, Kind: resolvedCallUDF}, bytecode.NoopOperand, argSpans)
-		}
-	}
-}
-
 func (c *exprCallCompiler) recordCall(
 	ctx fql.IFunctionCallContext,
 	resolved resolvedCall,
@@ -452,15 +437,6 @@ func (c *exprCallCompiler) compileArgumentList(ctx fql.IArgumentListContext) cor
 	}
 
 	return seq
-}
-
-func (c *exprCallCompiler) argumentSpansFromCall(ctx antlr.ParserRuleContext) []source.Span {
-	call, ok := ctx.(fql.IFunctionCallContext)
-	if !ok {
-		return nil
-	}
-
-	return c.argumentSpansFromList(call.ArgumentList())
 }
 
 func (c *exprCallCompiler) argumentSpansFromList(ctx fql.IArgumentListContext) []source.Span {

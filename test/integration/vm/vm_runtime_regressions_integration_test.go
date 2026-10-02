@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -382,8 +383,16 @@ func TestModuloTypeErrorNotMisclassifiedAsModuloByZero(t *testing.T) {
 }
 
 func TestRuntimeErrorIncludesUDFCallStackContext(t *testing.T) {
-	RunSpecFactory(t, func() []spec.Spec {
-		return []spec.Spec{
+	for _, level := range []compiler.OptimizationLevel{compiler.None, compiler.Basic, compiler.Full} {
+		stack := "VM stack: inner"
+		var absent []string
+		if level == compiler.None {
+			stack = "VM stack: outer -> middle -> inner"
+		} else {
+			absent = []string{"called from middle", "called from outer"}
+		}
+
+		RunSpecsWith(t, level.String(), mustNewCompiler(t, compiler.WithOptimizationLevel(level)), []spec.Spec{
 			spec.NewSpec(`
 FUNC inner() {
 	RETURN @x.foo
@@ -397,14 +406,13 @@ FUNC outer() {
 	RETURN value
 }
 RETURN outer()
-`).
-				Env(vm.WithParam("x", runtime.None)).
-				Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
-				Message:  "invalid type",
-				Contains: []string{`cannot read property "foo" of None`, "called from inner (#1)", "VM stack: outer -> middle -> inner"},
+`).Env(vm.WithParam("x", runtime.None)).Expect().ExecError(ShouldBeRuntimeError, &ExpectedRuntimeError{
+				Message:     "invalid type",
+				Contains:    []string{`cannot read property "foo" of None`, "called from inner (#1)", stack},
+				NotContains: absent,
 			}),
-		}
-	})
+		})
+	}
 }
 
 func TestRuntimeErrorSingleUdfStackFormattingUsesSourceSpelling(t *testing.T) {
