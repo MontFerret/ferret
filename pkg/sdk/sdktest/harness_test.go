@@ -38,12 +38,18 @@ func TestHarnessRunsExternalModuleAndCleansUp(t *testing.T) {
 			t.Fatal("expected harness engine")
 		}
 
-		output, err := harness.Run(t.Context(), "RETURN synthetic::add(2, 3)")
+		handle, err := harness.Run(t.Context(), "RETURN synthetic::add(2, 3)")
 		if err != nil {
 			t.Fatalf("run: %v", err)
 		}
-		if string(output.Content) != "5" {
-			t.Fatalf("got output %s", output.Content)
+
+		output, err := handle.Collect(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(output.Data) != "5" {
+			t.Fatalf("got output %s", output.Data)
 		}
 	})
 

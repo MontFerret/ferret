@@ -49,14 +49,14 @@ func TestCalendarBoundaryParameter(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				output, runErr := session.Run(t.Context())
+				output, runErr := collectSession(session, t.Context())
 				closeErr := session.Close()
 				want := tc.want
 				if math.MaxInt == math.MaxInt32 {
 					want = `"range"`
 				}
 
-				if runErr != nil || closeErr != nil || output == nil || string(output.Content) != want {
+				if runErr != nil || closeErr != nil || output == nil || string(output.Data) != want {
 					t.Fatalf("level %v %s(%d, %d) = %v, %v, %v; want %s", level, function, tc.seconds, amount, output, runErr, closeErr, want)
 				}
 			}
@@ -84,10 +84,10 @@ func TestIntegerWidthParameterRoundTrip(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			output, runErr := session.Run(t.Context())
+			output, runErr := collectSession(session, t.Context())
 			closeErr := session.Close()
 			want := fmt.Sprintf("[%d,%d,%d,%d,%d,\"Int\"]", value, value, value, value, value)
-			if runErr != nil || closeErr != nil || output == nil || string(output.Content) != want {
+			if runErr != nil || closeErr != nil || output == nil || string(output.Data) != want {
 				t.Fatalf("level %v value %d = %v, run %v, close %v; want %s", level, value, output, runErr, closeErr, want)
 			}
 		}
@@ -117,9 +117,9 @@ func TestIntegerWidthRangeErrorRecovery(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			output, runErr := session.Run(t.Context())
+			output, runErr := collectSession(session, t.Context())
 			closeErr := session.Close()
-			if runErr != nil || closeErr != nil || output == nil || string(output.Content) != "\"range\"" {
+			if runErr != nil || closeErr != nil || output == nil || string(output.Data) != "\"range\"" {
 				t.Fatalf("level %v %s = %v, %v, %v", level, query, output, runErr, closeErr)
 			}
 		}

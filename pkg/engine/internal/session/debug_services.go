@@ -82,7 +82,7 @@ func (s *DebugServices) ExtendContext(ctx context.Context) context.Context {
 }
 
 // Materialize encodes output while leaving result cleanup to the debugger.
-func (s *DebugServices) Materialize(result *vm.Result) (*encoding.Output, error) {
+func (s *DebugServices) Materialize(result *vm.Result) (*encoding.Content, error) {
 	return Materialize(s.encoding, s.outputContentType, result)
 }
 

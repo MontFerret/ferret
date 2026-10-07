@@ -90,12 +90,17 @@ func TestSDKModuleHostFunctionsResolveQualifiedNamesCaseInsensitively(t *testing
 		"Db::Postgres::QuErY",
 	} {
 		query := `return ` + name + `("ok")`
-		output, runErr := engine.Run(t.Context(), source.NewAnonymous(query))
+		handle, runErr := engine.Run(t.Context(), source.NewAnonymous(query))
 		if runErr != nil {
 			t.Fatalf("run %q: %v", query, runErr)
 		}
 
-		if got := string(output.Content); got != `"ok"` {
+		output, err := handle.Collect(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got := string(output.Data); got != `"ok"` {
 			t.Fatalf("run %q = %s, want %q", query, got, `"ok"`)
 		}
 	}

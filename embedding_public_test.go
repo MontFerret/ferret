@@ -42,7 +42,7 @@ func TestPublicEngineRunPreservesOptionsOutputAndCleanup(t *testing.T) {
 		}
 	})
 
-	output, err := eng.Run(t.Context(), ferret.NewAnonymousSource("RETURN @base + @value"),
+	output, err := collectEngine(eng, t.Context(), ferret.NewAnonymousSource("RETURN @base + @value"),
 		ferret.WithSessionParam("value", 3),
 		nil,
 		ferret.WithSessionParams(map[string]any{"value": 4}),
@@ -51,7 +51,7 @@ func TestPublicEngineRunPreservesOptionsOutputAndCleanup(t *testing.T) {
 		t.Fatalf("lost hook error: %v", err)
 	}
 
-	if output == nil || output.ContentType != "application/json" || string(output.Content) != "14" {
+	if output == nil || output.Metadata.ContentType != "application/json" || string(output.Data) != "14" {
 		t.Fatalf("unexpected output: %+v", output)
 	}
 
@@ -266,7 +266,7 @@ func TestPublicDebugSession(t *testing.T) {
 	}
 
 	if event == nil || event.Reason != ferret.DebugReasonCompleted || event.Error != nil ||
-		event.Output == nil || string(event.Output.Content) != "42" {
+		event.Output == nil || string(event.Output.Data) != "42" {
 		t.Fatalf("unexpected completion: %+v", event)
 	}
 }

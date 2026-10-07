@@ -122,7 +122,7 @@ func TestPathTraversalVulnerability(t *testing.T) {
 
 	baseURL := "http://" + ln.Addr().String()
 
-	_, err = engine.Run(context.Background(), source.NewAnonymous(fmt.Sprintf(`
+	_, err = collectEngine(engine, context.Background(), source.NewAnonymous(fmt.Sprintf(`
 LET response = IO::NET::HTTP::GET({url: "%s/api/articles"})
 LET articles = ENCODING::JSON_PARSE(TO_STRING(response))
 

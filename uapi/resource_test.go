@@ -61,7 +61,7 @@ func TestSessionFilesystemOwnershipRemainsNative(t *testing.T) {
 					}
 
 					closer = s
-					if _, err := s.Run(t.Context()); err != nil {
+					if _, err := collectSession(s, t.Context()); err != nil {
 						t.Fatal(err)
 					}
 				}

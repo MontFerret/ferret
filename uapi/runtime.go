@@ -60,17 +60,20 @@ func (r *Runtime) Version(ctx context.Context) (api.Version, error) {
 }
 
 // Run delegates convenience execution and transient session/plan cleanup to
-// Native. Available encoded output is retained alongside execution or cleanup errors.
-// A nil output means Native produced no output; an empty output remains non-nil.
-func (r *Runtime) Run(ctx context.Context, src api.Source, setters ...api.SessionOption) (*api.Output, error) {
+// Native. Terminal failures and content are observed through the returned handle;
+// the invocation context must outlive consumption.
+func (r *Runtime) Run(ctx context.Context, src api.Source, setters ...api.SessionOption) (api.Output, error) {
 	opts, err := newSessionOptions(setters)
 	if err != nil {
 		return nil, wrapDiagnosticError(err)
 	}
 
 	output, err := r.native.Run(ctx, source.New(src.Name, src.Content), opts.native...)
+	if err != nil {
+		return nil, wrapDiagnosticError(err)
+	}
 
-	return output, wrapDiagnosticError(err)
+	return &outputAdapter{native: output}, nil
 }
 
 // Compile translates portable compilation options and creates a reusable plan.

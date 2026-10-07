@@ -169,7 +169,13 @@ func (p *Program) Run(ctx context.Context, setters ...Option) ([]byte, error) {
 		return nil, err
 	}
 
-	return out.Content, nil
+	defer out.Close()
+	content, err := out.Collect(ctx)
+	if content == nil {
+		return nil, err
+	}
+
+	return content.Data, err
 }
 
 // MustRun executes the program and panics on error.

@@ -31,14 +31,14 @@ func TestSessionRunInjectsConfiguredNetwork(t *testing.T) {
 	engine := mustNewEngine(t, WithNetwork(network))
 	defer func() { _ = engine.Close() }()
 
-	out, err := engine.Run(context.Background(), source.NewAnonymous(`
+	out, err := collectEngine(engine, context.Background(), source.NewAnonymous(`
 RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/session" }))
 `))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got := string(out.Content); got != `"session-network"` {
+	if got := string(out.Data); got != `"session-network"` {
 		t.Fatalf("expected injected network response, got %s", got)
 	}
 
@@ -88,7 +88,7 @@ RETURN TO_STRING(IO::NET::HTTP::GET({ url: "https://example.test/debug" }))
 	if event.Reason != debugger.ReasonCompleted {
 		t.Fatalf("expected debug session to complete, got %#v", event)
 	}
-	if event.Output == nil || string(event.Output.Content) != `"debug-network"` {
+	if event.Output == nil || string(event.Output.Data) != `"debug-network"` {
 		t.Fatalf("expected injected network output, got %#v", event.Output)
 	}
 

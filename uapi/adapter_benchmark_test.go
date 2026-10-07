@@ -137,13 +137,13 @@ func BenchmarkReusableSession(b *testing.B) {
 			b.ResetTimer()
 			for b.Loop() {
 				if adapter == "Native" {
-					out, err := s.Run(b.Context())
-					if err != nil || out == nil || string(out.Content) != "42" {
+					out, err := collectSession(s, b.Context())
+					if err != nil || out == nil || string(out.Data) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
 					}
 				} else {
-					out, err := portable.Run(b.Context())
-					if err != nil || out == nil || string(out.Content) != "42" {
+					out, err := collectSession(portable, b.Context())
+					if err != nil || out == nil || string(out.Data) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
 					}
 				}
@@ -166,13 +166,13 @@ func BenchmarkRuntimeRun(b *testing.B) {
 			b.ResetTimer()
 			for b.Loop() {
 				if adapter == "Native" {
-					out, err := native.Run(b.Context(), nativeSource, nativeOption)
-					if err != nil || out == nil || string(out.Content) != "42" {
+					out, err := collectEngine(native, b.Context(), nativeSource, nativeOption)
+					if err != nil || out == nil || string(out.Data) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
 					}
 				} else {
-					out, err := portable.Run(b.Context(), portableSource, portableOption)
-					if err != nil || out == nil || string(out.Content) != "42" {
+					out, err := collectRuntime(portable, b.Context(), portableSource, portableOption)
+					if err != nil || out == nil || string(out.Data) != "42" {
 						b.Fatalf("output=%+v err=%v", out, err)
 					}
 				}

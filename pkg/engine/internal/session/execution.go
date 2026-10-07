@@ -57,7 +57,7 @@ func (e *Execution) Run(ctx context.Context) (*vm.Result, error) {
 
 // MaterializeAndClose encodes and releases a successful VM result. Separate
 // errors let the native Session preserve hook, encoding, and cleanup ordering.
-func (e *Execution) MaterializeAndClose(result *vm.Result) (output *encoding.Output, materializeErr, closeErr error) {
+func (e *Execution) MaterializeAndClose(result *vm.Result) (output *encoding.Content, materializeErr, closeErr error) {
 	output, materializeErr = Materialize(e.encoding, e.outputContentType, result)
 	closeErr = result.Close()
 

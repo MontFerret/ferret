@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -425,13 +426,7 @@ func execQuery(ctx context.Context, engine *ferret.Engine, opts []ferret.Session
 	}
 
 	if err != nil {
-		frmt, ok := err.(diagnostics.Formattable)
-
-		if ok {
-			fmt.Println(frmt.Format())
-		} else {
-			fmt.Println(err)
-		}
+		fmt.Println(ferret.FormatError(err))
 
 		os.Exit(1)
 	}
@@ -577,16 +572,30 @@ func (r *ResultPrinter) Write(p []byte) (n int, err error) {
 	return r.out.Write(p)
 }
 
-func printResult(_ context.Context, res *ferret.Output) (uint64, error) {
+func printResult(ctx context.Context, res ferret.Output) (uint64, error) {
 	printer := &ResultPrinter{
 		out: os.Stdout,
 	}
-	if _, err := printer.Write(res.Content); err != nil {
+
+	defer res.Close()
+
+	delivered := false
+	err := res.Consume(ctx, func(_ context.Context, chunk []byte) error {
+		delivered = true
+		n, err := printer.Write(chunk)
+		if err == nil && n != len(chunk) {
+			return io.ErrShortWrite
+		}
+
+		return err
+	})
+	if !delivered {
 		return printer.size, err
 	}
 
-	_, err := os.Stdout.Write([]byte("\n"))
-	return printer.size, err
+	_, newlineErr := os.Stdout.Write([]byte("\n"))
+
+	return printer.size, errors.Join(err, newlineErr)
 }
 
 func analyzeQuery(ctx context.Context, query source.Source) error {

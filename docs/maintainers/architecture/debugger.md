@@ -162,7 +162,12 @@ be deterministic and must not mutate the live paused value.
 
 Debug session services apply the same before-run, after-run, encoding,
 filesystem, network, logging, and close-hook behavior as normal sessions.
-Completion materializes output through the embedding layer.
+Completion materializes detached `*encoding.Content` through the embedding layer.
+Completion events retain that content, never a consumable handle. Available content
+may accompany encoding, result-cleanup, or after-run-hook failures. Bytes survive
+result and session cleanup; independent retained snapshots, where supplied, must
+own independent mutable data. Ordinary output consumption does not alter stepping,
+breakpoint, or debugger cancellation behavior.
 
 The embedding services receive their own host-resource manager from session
 construction. It borrows Engine services and owns a session filesystem override,

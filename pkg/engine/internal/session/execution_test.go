@@ -30,7 +30,7 @@ func TestExecutionRunsSequentiallyWithIsolatedEnvironment(t *testing.T) {
 		}
 
 		output, encodeErr, closeErr := execution.MaterializeAndClose(result)
-		if encodeErr != nil || closeErr != nil || output == nil || string(output.Content) != "42" {
+		if encodeErr != nil || closeErr != nil || output == nil || string(output.Data) != "42" {
 			t.Fatalf("output=%v encoding=%v cleanup=%v", output, encodeErr, closeErr)
 		}
 
@@ -71,7 +71,7 @@ func TestExecutionMaterializeAndCloseSeparatesErrors(t *testing.T) {
 				if output != nil || !errors.Is(encodeErr, encoding.ErrCodecNotFound) {
 					t.Fatalf("output=%v encoding=%v", output, encodeErr)
 				}
-			} else if output == nil || string(output.Content) != "1" || encodeErr != nil {
+			} else if output == nil || string(output.Data) != "1" || encodeErr != nil {
 				t.Fatalf("output=%v encoding=%v", output, encodeErr)
 			}
 

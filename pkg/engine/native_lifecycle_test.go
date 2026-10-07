@@ -391,11 +391,11 @@ func createNativeLifecycleSession(plan *Plan, ctx context.Context, debug bool, o
 
 func runNativeLifecycleSession(t *testing.T, session io.Closer) {
 	t.Helper()
-	var output *encoding.Output
+	var output *encoding.Content
 	var err error
 	switch session := session.(type) {
 	case *Session:
-		output, err = session.Run(t.Context())
+		output, err = collectSession(session, t.Context())
 	case *debugger.Session:
 		if _, err := session.Start(t.Context()); err != nil {
 			t.Fatal(err)
@@ -413,7 +413,7 @@ func runNativeLifecycleSession(t *testing.T, session io.Closer) {
 		t.Fatalf("unexpected session: %T", session)
 	}
 
-	if err != nil || output == nil || string(output.Content) != "1" {
+	if err != nil || output == nil || string(output.Data) != "1" {
 		t.Fatalf("returned session is unusable: output=%v err=%v", output, err)
 	}
 }

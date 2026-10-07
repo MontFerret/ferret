@@ -30,10 +30,10 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 			}
 
 			t.Cleanup(func() { _ = p.Close() })
-			var outputs []*api.Output
+			var outputs []*api.Content
 			for range 2 {
 				opts := []api.SessionOption{api.WithParam("value", 42), api.WithOutputContentType(" application/custom ")}
-				var out *api.Output
+				var out *api.Content
 				if debug {
 					s, err := p.NewDebugSession(t.Context(), opts...)
 					if err != nil {
@@ -58,7 +58,7 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 					}
 
 					var runErr error
-					out, runErr = s.Run(t.Context())
+					out, runErr = collectSession(s, t.Context())
 					if !errors.Is(runErr, failure) {
 						t.Fatalf("run error=%v", runErr)
 					}
@@ -66,7 +66,7 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 					_ = s.Close()
 				}
 
-				if out == nil || out.ContentType != "application/custom" || string(out.Content) != "42" {
+				if out == nil || out.Metadata.ContentType != "application/custom" || string(out.Data) != "42" {
 					t.Fatalf("output=%+v", out)
 				}
 
@@ -75,8 +75,8 @@ func TestConfiguredOutputAndCleanupFailuresRemainAvailable(t *testing.T) {
 
 			_ = p.Close()
 			_ = r.Close()
-			outputs[0].Content[0] = '9'
-			if string(outputs[1].Content) != "42" {
+			outputs[0].Data[0] = '9'
+			if string(outputs[1].Data) != "42" {
 				t.Fatal("output aliases another execution")
 			}
 		})
@@ -118,12 +118,12 @@ func TestMissingOutputCodecFailsAtEncodingAndPreservesCleanup(t *testing.T) {
 			}
 
 			src := api.NewAnonymousSource("RETURN MAKE_OUTPUT()")
-			var out *api.Output
+			var out *api.Content
 			var operationErr error
 			var p api.Plan
 			var child io.Closer
 			if mode == "run" {
-				out, operationErr = r.Run(t.Context(), src, option)
+				out, operationErr = collectRuntime(r, t.Context(), src, option)
 			} else {
 				var err error
 				p, err = r.CompileDebug(t.Context(), src)
@@ -140,7 +140,7 @@ func TestMissingOutputCodecFailsAtEncodingAndPreservesCleanup(t *testing.T) {
 
 					child = s
 					t.Cleanup(func() { _ = s.Close() })
-					out, operationErr = s.Run(t.Context())
+					out, operationErr = collectSession(s, t.Context())
 				} else {
 					s, err := p.NewDebugSession(t.Context(), option)
 					if err != nil {

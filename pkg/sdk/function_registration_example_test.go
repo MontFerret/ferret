@@ -61,11 +61,17 @@ func ExampleRegisterFunctions() {
 		`return example::pick(1, 2)`,
 		`return example::pick(1, 2, 3, 4, 5)`,
 	} {
-		output, runErr := engine.Run(context.Background(), source.NewAnonymous(query))
+		handle, runErr := engine.Run(context.Background(), source.NewAnonymous(query))
 		if runErr != nil {
 			panic(runErr)
 		}
-		fmt.Println(string(output.Content))
+
+		output, err := handle.Collect(context.Background())
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(string(output.Data))
 	}
 
 	fmt.Println("duplicate rejected:", duplicateRejected)

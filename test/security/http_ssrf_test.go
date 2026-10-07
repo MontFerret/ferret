@@ -43,7 +43,7 @@ RETURN TO_STRING(IO::NET::HTTP::GET(@url))
 
 	for _, endpoint := range endpoints {
 		t.Run(endpoint.name, func(t *testing.T) {
-			_, err := engine.Run(
+			_, err := collectEngine(engine,
 				context.Background(),
 				query,
 				ferret.WithSessionParam("url", baseURL+endpoint.path),
@@ -108,7 +108,7 @@ RETURN TO_STRING(IO::NET::HTTP::GET(@url))
 
 	for _, endpoint := range endpoints {
 		t.Run(endpoint.name, func(t *testing.T) {
-			result, err := engine.Run(
+			result, err := collectEngine(engine,
 				context.Background(),
 				query,
 				ferret.WithSessionParam("url", baseURL+endpoint.path),
@@ -123,8 +123,8 @@ RETURN TO_STRING(IO::NET::HTTP::GET(@url))
 			}
 
 			var body string
-			if err := json.Unmarshal(result.Content, &body); err != nil {
-				t.Fatalf("decode FQL result %q: %v", result.Content, err)
+			if err := json.Unmarshal(result.Data, &body); err != nil {
+				t.Fatalf("decode FQL result %q: %v", result.Data, err)
 			}
 
 			if body != endpoint.body {

@@ -67,7 +67,7 @@ func TestExecutionPreservesOutputPresence(t *testing.T) {
 					t.Fatalf("output=%+v err=%v, want output present=%t", output, err, tc.wantOutput)
 				}
 
-				if output != nil && (output.ContentType != contentType || string(output.Content) != tc.content) {
+				if output != nil && (output.Metadata.ContentType != contentType || string(output.Data) != tc.content) {
 					t.Fatalf("output=%+v, want content type=%q content=%q", output, contentType, tc.content)
 				}
 
@@ -105,7 +105,7 @@ func TestRuntimeCompilationFailureReturnsNoOutput(t *testing.T) {
 
 	t.Cleanup(func() { _ = portable.Close() })
 	var executor api.Runtime = portable
-	output, err := executor.Run(t.Context(), api.NewSource("invalid.fql", "RETURN"))
+	output, err := collectRuntime(executor, t.Context(), api.NewSource("invalid.fql", "RETURN"))
 	if output != nil || err == nil {
 		t.Fatalf("output=%+v err=%v", output, err)
 	}
@@ -136,11 +136,11 @@ func TestCanceledExecutionReturnsNoOutput(t *testing.T) {
 	}
 }
 
-func runOutput(t *testing.T, portable api.Runtime, mode string, ctx context.Context, src api.Source, opts ...api.SessionOption) (*api.Output, error) {
+func runOutput(t *testing.T, portable api.Runtime, mode string, ctx context.Context, src api.Source, opts ...api.SessionOption) (*api.Content, error) {
 	t.Helper()
 
 	if mode == "runtime" {
-		return portable.Run(ctx, src, opts...)
+		return collectRuntime(portable, ctx, src, opts...)
 	}
 
 	plan, err := portable.Compile(t.Context(), src)
@@ -156,5 +156,5 @@ func runOutput(t *testing.T, portable api.Runtime, mode string, ctx context.Cont
 
 	t.Cleanup(func() { _ = session.Close() })
 
-	return session.Run(ctx)
+	return collectSession(session, ctx)
 }

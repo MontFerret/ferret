@@ -73,12 +73,12 @@ func BenchmarkSessionRun(b *testing.B) {
 			b.ResetTimer()
 
 			for b.Loop() {
-				output, err := session.Run(b.Context())
+				output, err := collectSession(session, b.Context())
 				if !errors.Is(err, hookErr) {
 					b.Fatal(err)
 				}
 
-				if hookErr == nil && (output == nil || string(output.Content) != "42") {
+				if hookErr == nil && (output == nil || string(output.Data) != "42") {
 					b.Fatalf("unexpected output: %+v", output)
 				}
 			}

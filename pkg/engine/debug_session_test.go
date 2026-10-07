@@ -94,7 +94,7 @@ func TestDebugSessionBreakpointsLocalsEvaluateAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Data) != "3" {
 		t.Fatalf("unexpected completion event: %#v", event)
 	}
 	if _, err := session.Continue(context.Background()); err == nil || !errors.Is(err, &debugger.StateError{}) {
@@ -240,12 +240,12 @@ func TestDebugPlanRunsNormally(t *testing.T) {
 	}
 	defer session.Close()
 
-	output, err := session.Run(context.Background())
+	output, err := collectSession(session, context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(output.Content) != "3" {
-		t.Fatalf("unexpected output: %s", output.Content)
+	if string(output.Data) != "3" {
+		t.Fatalf("unexpected output: %s", output.Data)
 	}
 }
 
@@ -425,7 +425,7 @@ func TestDebugSessionResumePreservesBeforeRunContextValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != `"hook-value"` {
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Data) != `"hook-value"` {
 		t.Fatalf("unexpected completion event: %#v", event)
 	}
 }
@@ -576,7 +576,7 @@ RETURN x`
 		t.Fatal(err)
 	}
 
-	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "3" {
+	if event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Data) != "3" {
 		t.Fatalf("expected StepOut from main to complete, got %#v", event)
 	}
 }
@@ -638,7 +638,7 @@ func TestDebugCompletionPreservesOutputOnAfterHookFailure(t *testing.T) {
 	}
 
 	event, err := session.Continue(t.Context())
-	if !errors.Is(err, failure) || event == nil || event.Output == nil || string(event.Output.Content) != "42" || event.Reason != debugger.ReasonCompleted {
+	if !errors.Is(err, failure) || event == nil || event.Output == nil || string(event.Output.Data) != "42" || event.Reason != debugger.ReasonCompleted {
 		t.Fatalf("event=%+v err=%v", event, err)
 	}
 }

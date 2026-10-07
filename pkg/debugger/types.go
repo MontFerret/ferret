@@ -47,7 +47,7 @@ type (
 		BeforeRun(context.Context) (context.Context, error)
 		AfterRun(context.Context, error) error
 		ExtendContext(context.Context) context.Context
-		Materialize(*vm.Result) (*encoding.Output, error)
+		Materialize(*vm.Result) (*encoding.Content, error)
 		Close() error
 	}
 

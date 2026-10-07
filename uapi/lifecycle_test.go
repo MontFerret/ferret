@@ -47,7 +47,7 @@ func TestCancellationAndHookFailureRetainBothCauses(t *testing.T) {
 			case "compile":
 				_, err = runtime.Compile(ctx, src)
 			case "run":
-				_, err = runtime.Run(ctx, src)
+				_, err = collectRuntime(runtime, ctx, src)
 			case "debug":
 				plan, compileErr := runtime.CompileDebug(ctx, src)
 				if compileErr != nil {
@@ -96,8 +96,8 @@ func TestRuntimeRunPreservesOutputAndAllCleanupErrors(t *testing.T) {
 	runtime := Wrap(engine, "test-core-version")
 	t.Cleanup(func() { _ = runtime.Close() })
 
-	output, err := runtime.Run(t.Context(), api.NewAnonymousSource("RETURN 42"))
-	if output == nil || string(output.Content) != "42" || !errors.Is(err, sessionErr) || !errors.Is(err, planErr) || sessions.Load() != 1 || plans.Load() != 1 {
+	output, err := collectRuntime(runtime, t.Context(), api.NewAnonymousSource("RETURN 42"))
+	if output == nil || string(output.Data) != "42" || !errors.Is(err, sessionErr) || !errors.Is(err, planErr) || sessions.Load() != 1 || plans.Load() != 1 {
 		t.Fatalf("output=%+v err=%v cleanup=%d/%d", output, err, sessions.Load(), plans.Load())
 	}
 }
@@ -121,8 +121,8 @@ func TestPlanSupportsConcurrentIndependentSessions(t *testing.T) {
 				return
 			}
 
-			output, runErr := session.Run(t.Context())
-			if err := errors.Join(runErr, session.Close()); err != nil || output == nil || string(output.Content) != string(rune('0'+i)) {
+			output, runErr := collectSession(session, t.Context())
+			if err := errors.Join(runErr, session.Close()); err != nil || output == nil || string(output.Data) != string(rune('0'+i)) {
 				t.Errorf("session %d output=%+v err=%v", i, output, err)
 			}
 		})
@@ -166,8 +166,8 @@ func TestSessionRootsAndSiblingCleanupRemainIndependent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output, err := first.Run(t.Context())
-	if err != nil || output == nil || string(output.Content) != `"first"` {
+	output, err := collectSession(first, t.Context())
+	if err != nil || output == nil || string(output.Data) != `"first"` {
 		t.Fatalf("first output=%+v error=%v", output, err)
 	}
 
@@ -176,7 +176,7 @@ func TestSessionRootsAndSiblingCleanupRemainIndependent(t *testing.T) {
 	}
 
 	event, err := second.Continue(t.Context())
-	if err != nil || event == nil || event.Output == nil || string(event.Output.Content) != `"second"` {
+	if err != nil || event == nil || event.Output == nil || string(event.Output.Data) != `"second"` {
 		t.Fatalf("second event=%+v error=%v", event, err)
 	}
 }
@@ -198,7 +198,7 @@ func TestCancellationDuringRunHookSurvivesContextReplacement(t *testing.T) {
 	runtime := Wrap(engine, "test-core-version")
 	t.Cleanup(func() { _ = runtime.Close() })
 
-	output, err := runtime.Run(ctx, api.NewAnonymousSource("RETURN 42"))
+	output, err := collectRuntime(runtime, ctx, api.NewAnonymousSource("RETURN 42"))
 	if !errors.Is(err, context.Canceled) || output != nil {
 		t.Fatalf("hook cancellation output=%+v error=%v", output, err)
 	}

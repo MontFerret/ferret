@@ -98,7 +98,7 @@ func TestNativeNilAndCanceledContextsRejectAdmission(t *testing.T) {
 		},
 		func(ctx context.Context) error { _, err := plan.NewSession(ctx); return err },
 		func(ctx context.Context) error { _, err := plan.NewDebugSession(ctx); return err },
-		func(ctx context.Context) error { _, err := ordinary.Run(ctx); return err },
+		func(ctx context.Context) error { _, err := collectSession(ordinary, ctx); return err },
 		func(ctx context.Context) error { _, err := debug.Start(ctx); return err },
 		func(ctx context.Context) error { _, err := debug.Continue(ctx); return err },
 		func(ctx context.Context) error { _, err := debug.StepIn(ctx); return err },

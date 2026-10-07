@@ -97,7 +97,7 @@ func TestMalformedUTF8DebuggerPreservesPerByteDecoding(t *testing.T) {
 			}
 
 			var got string
-			if err := json.Unmarshal(event.Output.Content, &got); err != nil {
+			if err := json.Unmarshal(event.Output.Data, &got); err != nil {
 				t.Fatal(err)
 			}
 

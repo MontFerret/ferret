@@ -33,7 +33,7 @@ func TestSessionRunReturnsBeforeHookError(t *testing.T) {
 	plan := mustCompilePlan(t, eng, coverageValidQuery)
 	session := mustNewSession(t, plan)
 
-	result, err := session.Run(context.Background())
+	result, err := collectSession(session, context.Background())
 	if err == nil {
 		t.Fatal("expected session run to fail on before run hook error")
 	}
@@ -68,12 +68,12 @@ func TestSessionRunReturnsAfterHookErrorOnSuccess(t *testing.T) {
 	plan := mustCompilePlan(t, eng, coverageValidQuery)
 	session := mustNewSession(t, plan)
 
-	result, err := session.Run(context.Background())
+	result, err := collectSession(session, context.Background())
 	if err == nil {
 		t.Fatal("expected session run to fail when after run hook fails")
 	}
 
-	if result == nil || result.ContentType != "application/json" || string(result.Content) != "1" {
+	if result == nil || result.Metadata.ContentType != "application/json" || string(result.Data) != "1" {
 		t.Fatalf("expected successful encoded output with after run failure, got %+v", result)
 	}
 
@@ -102,7 +102,7 @@ func TestSessionRunReturnsVMError(t *testing.T) {
 	plan := mustCompilePlan(t, eng, "RETURN SESSION_FAIL_FN()")
 	session := mustNewSession(t, plan)
 
-	result, err := session.Run(context.Background())
+	result, err := collectSession(session, context.Background())
 	if err == nil {
 		t.Fatal("expected session run to fail when VM returns error")
 	}
@@ -141,7 +141,7 @@ func TestSessionRunJoinsVMAndAfterHookErrors(t *testing.T) {
 	plan := mustCompilePlan(t, eng, "RETURN SESSION_FAIL_FN_JOIN()")
 	session := mustNewSession(t, plan)
 
-	result, err := session.Run(context.Background())
+	result, err := collectSession(session, context.Background())
 	if err == nil {
 		t.Fatal("expected session run to fail when VM and after hook fail")
 	}
@@ -245,7 +245,7 @@ func TestSessionCloseRejectsRunsBeforeCloseHooks(t *testing.T) {
 	hooks := 0
 	engine := mustNewEngine(t, WithSessionCloseHook(func() error {
 		hooks++
-		output, err := session.Run(t.Context())
+		output, err := collectSession(session, t.Context())
 		if output != nil || !errors.Is(err, runtime.ErrInvalidOperation) {
 			t.Errorf("close hook observed an open session: output=%v error=%v", output, err)
 		}
@@ -375,7 +375,7 @@ func TestSessionParams(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(
+	out, err := collectEngine(eng,
 		context.Background(),
 		source.NewAnonymous("RETURN @param1 + @param2"),
 		WithSessionParams(map[string]any{
@@ -389,7 +389,7 @@ func TestSessionParams(t *testing.T) {
 
 	var result int
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatalf("expected result to be an integer, got: %v", err)
 	}
 
@@ -411,7 +411,7 @@ func TestSessionParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionParam("param2", 2))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionParam("param2", 2))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -419,7 +419,7 @@ func TestSessionParam(t *testing.T) {
 
 	var result int
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatalf("expected result to be an integer, got: %v", err)
 	}
 
@@ -457,7 +457,7 @@ func TestSessionRuntimeParams(t *testing.T) {
 		t.Fatalf("expected runtime.NewParamsFrom to succeed, got: %v", err)
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParams(sessionParams))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -465,7 +465,7 @@ func TestSessionRuntimeParams(t *testing.T) {
 
 	var result int
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatalf("expected result to be an integer, got: %v", err)
 	}
 
@@ -487,7 +487,7 @@ func TestSessionRuntimeParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1 + @param2"), WithSessionRuntimeParam("param2", runtime.NewInt(2)))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -495,7 +495,7 @@ func TestSessionRuntimeParam(t *testing.T) {
 
 	var result int
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatalf("expected result to be an integer, got: %v", err)
 	}
 
@@ -520,7 +520,7 @@ func TestAfterRunFailureReleasesProducedResource(t *testing.T) {
 	session := mustNewSession(t, plan)
 	t.Cleanup(func() { _ = session.Close() })
 
-	_, err := session.Run(t.Context())
+	_, err := collectSession(session, t.Context())
 	if !errors.Is(err, hookErr) || !errors.Is(err, cleanupErr) || resource.closed != 1 {
 		t.Fatalf("err=%v resource closes=%d", err, resource.closed)
 	}

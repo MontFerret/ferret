@@ -21,8 +21,13 @@ if err != nil {
 defer portable.Close()
 
 output, err := portable.Run(ctx, api.NewAnonymousSource("RETURN @value"))
-if output != nil {
-    fmt.Printf("%s: %s\n", output.ContentType, output.Content)
+if err != nil {
+    return err
+}
+defer output.Close()
+content, err := output.Collect(ctx)
+if content != nil {
+    fmt.Printf("%s: %s\n", content.Metadata.ContentType, content.Data)
 }
 if err != nil {
     return err
@@ -92,13 +97,20 @@ map values retain Native conversion semantics, including nil becoming `none`.
 Nil and empty maps are no-ops when applied. Runtime-specific extension options
 must reject incompatible targets; their errors are propagated.
 
-Source conversion is `source.New(src.Name, src.Content)`. Coordinates and debugger
-values already share portable types. Native and Universal execution return the
-same `*api.Output` type, so the adapter preserves the Native pointer directly.
-Nil output means no output was produced. Non-nil output with a nil error indicates
-success, including empty output; a non-nil output may also accompany hook or
-cleanup errors. A zero-valued `Output` is not an absence sentinel. Inspect output
-independently of the error. Output belongs to the caller and survives cleanup.
+Source conversion is `source.New(src.Name, src.Content)`. Coordinates, debugger
+values, metadata, and detached content share portable types. Native execution
+returns `encoding.Output`, an alias of `api.Output`; the adapter delegates through
+a small output wrapper that projects errors from `Consume`, `Collect`, and `Close`.
+It passes the original consumer through synchronously and preserves content without
+conversion or copying. The wrapper owns no lifecycle state or native resources.
+
+A usable handle is returned with nil Run error after VM admission. Preparation
+failures return nil output and an immediate error. Terminal execution, encoding,
+hook, and owned cleanup errors are observed through consumption. Nil collected
+`*Content` means absent; non-nil content, even with nil data, means present.
+Available content may accompany a terminal error. Metadata is immutable and
+available after closure. Keep the invocation context alive until output settlement.
+
 Debugger commands return Native
 snapshots with diagnostic projection applied to command and event errors.
 Pause, breakpoint operations, and inspection receive the original caller context,
@@ -180,7 +192,8 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
-Universal API `v1.0.0-alpha.20` adds context-aware `Plan.Params` and
+Universal API `v1.0.0-alpha.21` adds consumable output and detached content to the
+context-aware `Plan.Params` and
 `Runtime.Version` metadata contracts. It also includes context parameters for
 debugger operations, error returns from `Session.Breakpoints`, and
 `debugger.Session.ReplaceBreakpoints` with `BreakpointRequest`.
@@ -192,7 +205,10 @@ ferretd integration and release described in the
 This published contract permits borrowed runtime no-op close, Native parent-close
 behavior, deferred option validation at the point of use (including output encoding), and
 portable translation before operation-context checks. `Runtime.Run` and
-`Session.Run` return `(*Output, error)` so output presence survives adaptation.
+`Session.Run` return `(Output, error)`. The native output owns one-shot consumption,
+context coordination, and cancel-and-wait closure. `Collect` transfers owned bytes;
+`Consume` borrows them during synchronous callbacks. `Close` returns cleanup errors,
+not execution success. See the [migration notes](consumable-output-migration.md).
 
 Validate the root module and both tool modules with `GOWORK=off` to check their
 independent module metadata against published dependencies. When root dependency

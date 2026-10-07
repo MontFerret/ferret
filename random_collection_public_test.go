@@ -35,8 +35,8 @@ func TestRandomFQLCollectionContracts(t *testing.T) {
 			want:  `[[1,2,3,4],[1,2,4,3]]`,
 		},
 	} {
-		out, err := eng.Run(t.Context(), ferret.NewAnonymousSource(test.query), ferret.WithSessionRandomSeed(0))
-		if err != nil || out == nil || string(out.Content) != test.want {
+		out, err := collectEngine(eng, t.Context(), ferret.NewAnonymousSource(test.query), ferret.WithSessionRandomSeed(0))
+		if err != nil || out == nil || string(out.Data) != test.want {
 			t.Fatalf("%s: output %v, error %v; want %s", test.query, out, err, test.want)
 		}
 	}
@@ -44,7 +44,7 @@ func TestRandomFQLCollectionContracts(t *testing.T) {
 	for _, name := range []string{"choice", "shuffle"} {
 		for _, input := range []string{"none", "1", `"text"`, "{}"} {
 			query := "RETURN random::" + name + "(" + input + ")"
-			_, err := eng.Run(t.Context(), ferret.NewAnonymousSource(query), ferret.WithSessionRandomSeed(0))
+			_, err := collectEngine(eng, t.Context(), ferret.NewAnonymousSource(query), ferret.WithSessionRandomSeed(0))
 			if !errors.Is(err, runtime.ErrInvalidType) {
 				t.Fatalf("%s: error %v, want invalid type", query, err)
 			}

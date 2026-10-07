@@ -1,6 +1,8 @@
 package session
 
 import (
+	"errors"
+
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -8,13 +10,14 @@ import (
 
 // Materialize encodes a VM result and adopts resources discovered by the encoder.
 // The caller remains responsible for closing the result, including on failure.
-func Materialize(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Output, error) {
+func Materialize(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Content, error) {
 	codec, err := registry.Codec(contentType)
 	if err != nil {
 		return nil, err
 	}
 
-	return vm.Materialize[*encoding.Output](res, func(value runtime.Value) (vm.Materialized[*encoding.Output], error) {
+	var encodeErr error
+	content, materializeErr := vm.Materialize[*encoding.Content](res, func(value runtime.Value) (vm.Materialized[*encoding.Content], error) {
 		enc := codec.EncodeWith().PreHook(func(value runtime.Value) error {
 			res.AdoptValue(value)
 
@@ -22,15 +25,30 @@ func Materialize(registry *encoding.Registry, contentType string, res *vm.Result
 		}).Encoder()
 
 		data, err := enc.Encode(value)
-		if err != nil {
-			return vm.Materialized[*encoding.Output]{}, err
+		encodeErr = err
+		if err != nil && data == nil {
+			return vm.Materialized[*encoding.Content]{}, nil
 		}
 
-		return vm.Materialized[*encoding.Output]{
-			Value: &encoding.Output{
-				ContentType: codec.ContentType(),
-				Content:     data,
+		// Encode owns detachment. Keep its failure separate because vm.Materialize
+		// intentionally discards a materializer's value when it returns an error.
+		metadata := encoding.Metadata{ContentType: codec.ContentType()}
+		if err == nil {
+			metadata.Length = int64(len(data))
+			metadata.LengthKnown = true
+		}
+
+		return vm.Materialized[*encoding.Content]{
+			Value: &encoding.Content{
+				Metadata: metadata,
+				Data:     data,
 			},
 		}, nil
 	})
+
+	if materializeErr != nil {
+		return content, errors.Join(materializeErr, encodeErr)
+	}
+
+	return content, encodeErr
 }
