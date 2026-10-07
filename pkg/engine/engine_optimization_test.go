@@ -59,11 +59,11 @@ func TestWithOptimizationLevelConfiguresEngineCompiler(t *testing.T) {
 				}
 			})
 
-			output, err := session.Run(t.Context())
+			output, err := collectSession(session, t.Context())
 			if err != nil {
 				t.Fatalf("Run() error = %v", err)
 			}
-			if got := string(output.Content); got != "1" {
+			if got := string(output.Data); got != "1" {
 				t.Fatalf("Run() output = %q, want %q", got, "1")
 			}
 		})

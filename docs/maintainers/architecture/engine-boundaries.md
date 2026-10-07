@@ -66,8 +66,8 @@ functions rather than assignable function variables.
 
 * Source: `Source`, `Position`, `Span`, `Range`, `Location`, `NewSource`,
   `NewAnonymousSource` forward to `pkg/source`.
-* Runtime and output: `Value`, `Params` alias `pkg/runtime`; `Output` aliases
-  `pkg/encoding`.
+* Runtime and output: `Value`, `Params` alias `pkg/runtime`; `Output`, `Content`,
+  `Metadata`, and `Consumer` alias `pkg/encoding`. Output sentinels retain API identity.
 * Module contracts: `Module`, `EngineInitHook`, `EngineCloseHook`,
   `BeforeCompileHook`, `AfterCompileHook`, `PlanCloseHook`, `BeforeRunHook`,
   `AfterRunHook`, `SessionCloseHook` alias `pkg/module`.
@@ -101,7 +101,7 @@ closed-plan guard.
 
 Native callers must replace removed `engine.*` names with the owners above;
 there are no compatibility aliases. For example, compilation takes
-`source.Source`, execution returns `*encoding.Output`, `Plan.NewDebugSession`
+`source.Source`, execution returns `encoding.Output`, `Plan.NewDebugSession`
 returns `*debugger.Session`, and serialization accepts `artifact.Option`.
 Option constructors remain in `pkg/engine`, accepting `module` hook types,
 `runtime` values/parameters, `logging.LogLevel`, and `debugger.FormatOptions`
@@ -152,7 +152,7 @@ directly. Root callers keep their existing names and assignability.
 * `Execution` privately owns the ordinary VM, environment, host-resource manager,
   permit release, logger, filesystem/network references, and encoding settings.
   `Run` invokes the VM with its context services; `MaterializeAndClose` returns
-  output and separate encoding/cleanup errors; `Close` runs close hooks, closes
+  detached content and separate encoding/cleanup errors; `Close` runs close hooks, closes
   resources, returns the permit and VM, and retains the once-only cleanup result.
   Native `Session` retains the execution pointer, run hooks, and closed flag;
   it owns run admission, hook pairing, and output/error decisions. No operational

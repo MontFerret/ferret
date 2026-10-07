@@ -116,7 +116,7 @@ func TestRunHooksSettleAbortedAdmission(t *testing.T) {
 						}
 
 						event, runErr = session.Continue(c)
-						if runErr == nil && (event.Reason != debugger.ReasonCompleted || string(event.Output.Content) != "42") {
+						if runErr == nil && (event.Reason != debugger.ReasonCompleted || string(event.Output.Data) != "42") {
 							t.Fatalf("retry did not complete: %+v", event)
 						}
 
@@ -130,7 +130,7 @@ func TestRunHooksSettleAbortedAdmission(t *testing.T) {
 
 					closeSession = session.Close
 					run = func(c context.Context) error {
-						_, runErr := session.Run(c)
+						_, runErr := collectSession(session, c)
 
 						return runErr
 					}

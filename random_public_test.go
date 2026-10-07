@@ -49,8 +49,8 @@ func TestRandomSeededSessions(t *testing.T) {
 			for range 3 {
 				want := expectedRandomSequence(t, control)
 				for _, session := range sessions {
-					output, err := session.Run(rnd.WithContext(t.Context(), poison))
-					if err != nil || output == nil || string(output.Content) != want {
+					output, err := collectSession(session, rnd.WithContext(t.Context(), poison))
+					if err != nil || output == nil || string(output.Data) != want {
 						t.Fatalf("level %v seed %d: output %v, error %v; want %s", level, seed, output, err, want)
 					}
 				}
@@ -121,7 +121,7 @@ RETURN [first, second, chosen, third, shuffled, fourth, fifth, sixth, seventh]`)
 			}
 		}
 
-		if want := expectedRandomSequence(t, rnd.NewSeed(42)); event.Output == nil || string(event.Output.Content) != want {
+		if want := expectedRandomSequence(t, rnd.NewSeed(42)); event.Output == nil || string(event.Output.Data) != want {
 			t.Fatalf("debug output %v, want %s", event.Output, want)
 		}
 	}
@@ -159,7 +159,7 @@ func TestDefaultSessionsOwnDistinctSources(t *testing.T) {
 		}
 		t.Cleanup(func() { _ = session.Close() })
 		for range 2 {
-			if _, err := session.Run(t.Context()); err != nil {
+			if _, err := collectSession(session, t.Context()); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -233,8 +233,8 @@ RETURN [first, ok, random::float()]`), ferret.WithPlanOptimizationLevel(level))
 			control.Float64()
 			control.Float64()
 			want, _ := json.Marshal([]any{first, true, control.Float64()})
-			out, err := session.Run(t.Context())
-			if err != nil || out == nil || string(out.Content) != string(want) || attempts != 3 {
+			out, err := collectSession(session, t.Context())
+			if err != nil || out == nil || string(out.Data) != string(want) || attempts != 3 {
 				t.Fatalf("jitter output %v, error %v, attempts %d; want %s", out, err, attempts, want)
 			}
 		}
@@ -248,7 +248,7 @@ func TestRandomFQLArity(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = eng.Close() })
 	for _, call := range []string{"random::float(1)", "random::float(1, 2, 3)", "random::int()", "random::int(1)", "random::int(1, 2, 3)", "random::bool(1)", "random::choice()", "random::choice([], [])", "random::shuffle()", "random::shuffle([], [])", "rand(1, 2, 3)"} {
-		if _, err := eng.Run(t.Context(), ferret.NewAnonymousSource("RETURN "+call), ferret.WithSessionRandomSeed(42)); err == nil {
+		if _, err := collectEngine(eng, t.Context(), ferret.NewAnonymousSource("RETURN "+call), ferret.WithSessionRandomSeed(42)); err == nil {
 			t.Fatalf("accepted unsupported arity %s", call)
 		}
 	}
@@ -306,12 +306,12 @@ func TestRandomFQLNumericContracts(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Cleanup(func() { _ = session.Close() })
-			out, err := session.Run(t.Context())
+			out, err := collectSession(session, t.Context())
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Fatalf("level %v %s(%v,%v): %v, want %v", level, test.name, test.min, test.max, err, test.wantErr)
 				}
-			} else if err != nil || out == nil || string(out.Content) != "true" {
+			} else if err != nil || out == nil || string(out.Data) != "true" {
 				t.Fatalf("level %v %s(%v,%v): output %v, error %v", level, test.name, test.min, test.max, out, err)
 			}
 			if err := session.Close(); err != nil {

@@ -22,12 +22,18 @@ func ExampleWrap() {
 	var portable api.Runtime = uapi.Wrap(native, "dev")
 	defer portable.Close()
 
-	output, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN @value + 1"), api.WithParam("value", 41))
+	handle, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN @value + 1"), api.WithParam("value", 41))
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(string(output.Content))
+	defer handle.Close()
+	output, err := handle.Collect(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(output.Data))
 	// Output: 42
 }
 
@@ -39,12 +45,18 @@ func ExampleNew() {
 
 	defer portable.Close()
 
-	output, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN @value + 1"))
+	handle, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN @value + 1"))
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(string(output.Content))
+	defer handle.Close()
+	output, err := handle.Collect(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(output.Data))
 	// Output: 42
 }
 
@@ -59,9 +71,15 @@ func ExampleRuntime_Run() {
 
 	defer portable.Close()
 
-	output, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN 42"))
+	handle, err := portable.Run(context.Background(), api.NewAnonymousSource("RETURN 42"))
+	if err != nil {
+		panic(err)
+	}
+
+	defer handle.Close()
+	output, err := handle.Collect(context.Background())
 	if output != nil {
-		fmt.Printf("output: %s\n", output.Content)
+		fmt.Printf("output: %s\n", output.Data)
 	}
 
 	if err != nil {

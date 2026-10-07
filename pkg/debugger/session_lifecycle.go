@@ -164,7 +164,7 @@ func (s *sessionLifecycle) pause() error {
 	return nil
 }
 
-func (s *sessionLifecycle) complete(result *vm.Result) (*encoding.Output, error) {
+func (s *sessionLifecycle) complete(result *vm.Result) (*encoding.Content, error) {
 	output, outputErr := s.services.Materialize(result)
 	closeErr := result.Close()
 	hookErr := s.runAfterHooks(nil)

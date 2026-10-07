@@ -72,7 +72,7 @@ func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
 			t.Fatalf("NewSession(%s): %v", value, err)
 		}
 
-		output, runErr := session.Run(context.Background())
+		output, runErr := collectSession(session, context.Background())
 
 		closeErr := session.Close()
 		if err := errors.Join(runErr, closeErr); err != nil {
@@ -80,7 +80,7 @@ func TestRuntimeTranslatesSourceOptionsAndReusesPlan(t *testing.T) {
 		}
 
 		want := "[\"" + value + "\",\"rooted\"]"
-		if output == nil || output.ContentType != "application/json" || string(output.Content) != want {
+		if output == nil || output.Metadata.ContentType != "application/json" || string(output.Data) != want {
 			t.Fatalf("output(%s) = %+v, want %s", value, output, want)
 		}
 	}
@@ -94,7 +94,7 @@ func TestRuntimeRunUsesUniversalSessionOptions(t *testing.T) {
 		t.Fatalf("WriteFile: %v", err)
 	}
 
-	output, err := runtime.Run(
+	output, err := collectRuntime(runtime,
 		context.Background(),
 		api.NewSource(
 			filepath.Join(root, "query.fql"),
@@ -108,7 +108,7 @@ func TestRuntimeRunUsesUniversalSessionOptions(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 
-	if output == nil || output.ContentType != "application/json" || string(output.Content) != `["direct","rooted"]` {
+	if output == nil || output.Metadata.ContentType != "application/json" || string(output.Data) != `["direct","rooted"]` {
 		t.Fatalf("output = %+v", output)
 	}
 }
@@ -130,8 +130,8 @@ func TestRuntimeOutputsAreIndependentAndDebugSessionsWork(t *testing.T) {
 		t.Fatalf("NewSession first: %v", err)
 	}
 
-	firstOutput, err := first.Run(ctx)
-	if err != nil || firstOutput == nil || len(firstOutput.Content) == 0 {
+	firstOutput, err := collectSession(first, ctx)
+	if err != nil || firstOutput == nil || len(firstOutput.Data) == 0 {
 		t.Fatalf("Run first: output=%+v err=%v", firstOutput, err)
 	}
 
@@ -139,14 +139,14 @@ func TestRuntimeOutputsAreIndependentAndDebugSessionsWork(t *testing.T) {
 		t.Fatalf("Close first: %v", err)
 	}
 
-	firstOutput.Content[0] = '9'
+	firstOutput.Data[0] = '9'
 
 	second, err := compiled.NewSession(ctx)
 	if err != nil {
 		t.Fatalf("NewSession second: %v", err)
 	}
 
-	secondOutput, err := second.Run(ctx)
+	secondOutput, err := collectSession(second, ctx)
 	if err != nil || secondOutput == nil {
 		t.Fatalf("Run second: output=%+v err=%v", secondOutput, err)
 	}
@@ -155,8 +155,8 @@ func TestRuntimeOutputsAreIndependentAndDebugSessionsWork(t *testing.T) {
 		t.Fatalf("Close second: %v", err)
 	}
 
-	if string(secondOutput.Content) != "1" {
-		t.Fatalf("second output = %q, want independent 1", secondOutput.Content)
+	if string(secondOutput.Data) != "1" {
+		t.Fatalf("second output = %q, want independent 1", secondOutput.Data)
 	}
 
 	debugPlan, err := runtime.CompileDebug(
@@ -192,7 +192,7 @@ func TestRuntimeOutputsAreIndependentAndDebugSessionsWork(t *testing.T) {
 	}
 
 	if completed.Reason != apidebugger.ReasonCompleted || completed.Output == nil ||
-		string(completed.Output.Content) != "1" {
+		string(completed.Output.Data) != "1" {
 		t.Fatalf("completed event = %+v", completed)
 	}
 }

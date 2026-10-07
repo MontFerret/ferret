@@ -155,7 +155,7 @@ func TestCallerCancellationWakesNativeCapacityWaiters(t *testing.T) {
 					t.Fatalf("canceled waiter: finished=%t session=%v error=%v", finished, child, createErr)
 				}
 
-				if out, err := holder.Run(t.Context()); err != nil || out == nil || string(out.Content) != "42" {
+				if out, err := collectSession(holder, t.Context()); err != nil || out == nil || string(out.Data) != "42" {
 					t.Fatalf("independent session: output=%+v err=%v", out, err)
 				}
 
@@ -201,8 +201,8 @@ func callRejectedOptionOperation(t *testing.T, r api.Runtime, p api.Plan, operat
 	case "debug session":
 		child, err = p.NewDebugSession(ctx, sessionOptions...)
 	case "run":
-		var output *api.Output
-		output, err = r.Run(ctx, src, sessionOptions...)
+		var output *api.Content
+		output, err = collectRuntime(r, ctx, src, sessionOptions...)
 		if output != nil {
 			t.Fatalf("rejected Run returned output=%+v error=%v", output, err)
 		}

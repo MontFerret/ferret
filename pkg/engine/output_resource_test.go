@@ -6,13 +6,23 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type trackingJSONCloser struct {
-	closeErr  error
-	encodeErr error
-	name      string
-	payload   string
-	events    []string
-	closed    int
+type (
+	trackingJSONCloser struct {
+		closeErr  error
+		encodeErr error
+		name      string
+		payload   string
+		events    []string
+		closed    int
+	}
+
+	panickingJSONCloser struct {
+		*trackingJSONCloser
+	}
+)
+
+func (c *panickingJSONCloser) MarshalJSON() ([]byte, error) {
+	panic("encoder panic")
 }
 
 func newTrackingJSONCloser(name, payload string) *trackingJSONCloser {

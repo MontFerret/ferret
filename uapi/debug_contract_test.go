@@ -143,7 +143,7 @@ RETURN [value, result]`))
 			}
 
 			completed, err := session.Continue(t.Context())
-			if err != nil || completed.Reason != apidebugger.ReasonCompleted || completed.Output == nil || string(completed.Output.Content) != "[[1,2],3]" {
+			if err != nil || completed.Reason != apidebugger.ReasonCompleted || completed.Output == nil || string(completed.Output.Data) != "[[1,2],3]" {
 				t.Fatalf("completion=%+v err=%v", completed, err)
 			}
 		})

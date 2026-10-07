@@ -412,7 +412,7 @@ func TestEngineRunReturnsCompileErrorWithoutPlanClose(t *testing.T) {
 		return nil
 	}))
 
-	result, err := eng.Run(context.Background(), source.NewAnonymous(coverageInvalidQuery))
+	result, err := collectEngine(eng, context.Background(), source.NewAnonymous(coverageInvalidQuery))
 	if err == nil {
 		t.Fatal("expected run to fail when compile fails")
 	}
@@ -438,12 +438,12 @@ func TestEngineLoadCreatesExecutablePlan(t *testing.T) {
 	}
 
 	session := mustNewSession(t, plan)
-	out, err := session.Run(context.Background())
+	out, err := collectSession(session, context.Background())
 	if err != nil {
 		t.Fatalf("expected loaded plan to run, got %v", err)
 	}
 
-	if got, want := string(out.Content), "2"; got != want {
+	if got, want := string(out.Data), "2"; got != want {
 		t.Fatalf("unexpected output: got %q, want %q", got, want)
 	}
 }
@@ -620,7 +620,7 @@ func TestEngineParams(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -628,7 +628,7 @@ func TestEngineParams(t *testing.T) {
 
 	var result any
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatal("expected output to be valid JSON")
 	}
 
@@ -655,7 +655,7 @@ func TestEngineParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -663,7 +663,7 @@ func TestEngineParam(t *testing.T) {
 
 	var result any
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatal("expected output to be valid JSON")
 	}
 
@@ -698,7 +698,7 @@ func TestEngineRuntimeParams(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -706,7 +706,7 @@ func TestEngineRuntimeParams(t *testing.T) {
 
 	var result any
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatal("expected output to be valid JSON")
 	}
 
@@ -733,7 +733,7 @@ func TestEngineRuntimeParam(t *testing.T) {
 		t.Fatal("expected engine to be non-nil on successful construction")
 	}
 
-	out, err := eng.Run(context.Background(), source.NewAnonymous("RETURN @param1"))
+	out, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN @param1"))
 
 	if err != nil {
 		t.Fatalf("expected run to succeed, got: %v", err)
@@ -741,7 +741,7 @@ func TestEngineRuntimeParam(t *testing.T) {
 
 	var result any
 
-	if err := json.Unmarshal(out.Content, &result); err != nil {
+	if err := json.Unmarshal(out.Data, &result); err != nil {
 		t.Fatal("expected output to be valid JSON")
 	}
 

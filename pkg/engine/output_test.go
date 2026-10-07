@@ -42,16 +42,16 @@ func TestSessionRunReturnsDefaultJSONOutput(t *testing.T) {
 	plan := mustCompilePlan(t, eng, "RETURN 1")
 	session := mustNewSession(t, plan)
 
-	out, err := session.Run(context.Background())
+	out, err := collectSession(session, context.Background())
 	if err != nil {
 		t.Fatalf("expected session run to succeed, got %v", err)
 	}
 
-	if out.ContentType != encodingjson.ContentType {
-		t.Fatalf("unexpected content type: got %q, want %q", out.ContentType, encodingjson.ContentType)
+	if out.Metadata.ContentType != encodingjson.ContentType {
+		t.Fatalf("unexpected content type: got %q, want %q", out.Metadata.ContentType, encodingjson.ContentType)
 	}
 
-	if got := strings.TrimSpace(string(out.Content)); got != "1" {
+	if got := strings.TrimSpace(string(out.Data)); got != "1" {
 		t.Fatalf("unexpected output payload: got %q", got)
 	}
 }
@@ -66,16 +66,16 @@ func TestSessionRunUsesRequestedOutputCodec(t *testing.T) {
 	plan := mustCompilePlan(t, eng, "RETURN 1")
 	session := mustNewSession(t, plan, WithOutputContentType(customContentType))
 
-	out, err := session.Run(context.Background())
+	out, err := collectSession(session, context.Background())
 	if err != nil {
 		t.Fatalf("expected session run to succeed, got %v", err)
 	}
 
-	if out.ContentType != customContentType {
-		t.Fatalf("unexpected content type: got %q, want %q", out.ContentType, customContentType)
+	if out.Metadata.ContentType != customContentType {
+		t.Fatalf("unexpected content type: got %q, want %q", out.Metadata.ContentType, customContentType)
 	}
 
-	if got := strings.TrimSpace(string(out.Content)); got != "1" {
+	if got := strings.TrimSpace(string(out.Data)); got != "1" {
 		t.Fatalf("unexpected output payload: got %q", got)
 	}
 }
@@ -91,7 +91,7 @@ func TestSessionRunClosesResultWhenRequestedCodecIsMissing(t *testing.T) {
 	plan := mustCompilePlan(t, eng, "RETURN MAKE()")
 	session := mustNewSession(t, plan, WithOutputContentType("application/x-missing"))
 
-	out, err := session.Run(context.Background())
+	out, err := collectSession(session, context.Background())
 	if out != nil {
 		t.Fatal("expected output to be nil when codec resolution fails")
 	}
@@ -122,7 +122,7 @@ func TestSessionRunReturnsOutputWhenResultCleanupFails(t *testing.T) {
 	plan := mustCompilePlan(t, eng, "RETURN MAKE()")
 	session := mustNewSession(t, plan)
 
-	out, err := session.Run(context.Background())
+	out, err := collectSession(session, context.Background())
 	if out == nil {
 		t.Fatal("expected output to be returned when cleanup fails after materialization")
 	}
@@ -131,7 +131,7 @@ func TestSessionRunReturnsOutputWhenResultCleanupFails(t *testing.T) {
 		t.Fatalf("expected cleanup failure to be returned, got %v", err)
 	}
 
-	if got := strings.TrimSpace(string(out.Content)); got != "1" {
+	if got := strings.TrimSpace(string(out.Data)); got != "1" {
 		t.Fatalf("unexpected output payload: got %q", got)
 	}
 }
@@ -147,13 +147,13 @@ func TestSessionRunClosesNestedLiveValuesDiscoveredDuringEncoding(t *testing.T) 
 	plan := mustCompilePlan(t, eng, "RETURN MAKE()")
 	session := mustNewSession(t, plan)
 
-	out, err := session.Run(context.Background())
+	out, err := collectSession(session, context.Background())
 	if err != nil {
 		t.Fatalf("expected session run to succeed, got %v", err)
 	}
 
 	var decoded []string
-	if err := stdjson.Unmarshal(out.Content, &decoded); err != nil {
+	if err := stdjson.Unmarshal(out.Data, &decoded); err != nil {
 		t.Fatalf("failed to decode output: %v", err)
 	}
 

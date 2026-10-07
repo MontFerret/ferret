@@ -14,10 +14,13 @@ type session struct {
 
 var _ api.Session = (*session)(nil)
 
-func (s *session) Run(ctx context.Context) (*api.Output, error) {
+func (s *session) Run(ctx context.Context) (api.Output, error) {
 	output, err := s.native.Run(ctx)
+	if err != nil {
+		return nil, wrapDiagnosticError(err)
+	}
 
-	return output, wrapDiagnosticError(err)
+	return &outputAdapter{native: output}, nil
 }
 
 func (s *session) Close() error {

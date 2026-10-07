@@ -32,26 +32,26 @@ func TestSessionFSRootOverridesEngineFSRoot(t *testing.T) {
 	defer func() { _ = plan.Close() }()
 
 	inherited := mustNewSession(t, plan)
-	inheritedOutput, err := inherited.Run(context.Background())
+	inheritedOutput, err := collectSession(inherited, context.Background())
 	if err != nil {
 		t.Fatalf("run inherited filesystem session: %v", err)
 	}
 	if err := inherited.Close(); err != nil {
 		t.Fatalf("close inherited filesystem session: %v", err)
 	}
-	if got := string(inheritedOutput.Content); got != `"engine"` {
+	if got := string(inheritedOutput.Data); got != `"engine"` {
 		t.Fatalf("inherited filesystem output = %s, want %q", got, "engine")
 	}
 
 	overridden := mustNewSession(t, plan, WithSessionFSRoot(sessionRoot))
-	overriddenOutput, err := overridden.Run(context.Background())
+	overriddenOutput, err := collectSession(overridden, context.Background())
 	if err != nil {
 		t.Fatalf("run overridden filesystem session: %v", err)
 	}
 	if err := overridden.Close(); err != nil {
 		t.Fatalf("close overridden filesystem session: %v", err)
 	}
-	if got := string(overriddenOutput.Content); got != `"session"` {
+	if got := string(overriddenOutput.Data); got != `"session"` {
 		t.Fatalf("overridden filesystem output = %s, want %q", got, "session")
 	}
 }
@@ -67,7 +67,7 @@ func TestSessionFSRootWritesOutsideEngineFSRoot(t *testing.T) {
 	defer func() { _ = plan.Close() }()
 
 	session := mustNewSession(t, plan, WithSessionFSRoot(sessionRoot))
-	if _, err := session.Run(context.Background()); err != nil {
+	if _, err := collectSession(session, context.Background()); err != nil {
 		t.Fatalf("run session with overridden filesystem: %v", err)
 	}
 	if err := session.Close(); err != nil {
@@ -98,7 +98,7 @@ func TestSessionFSRootPreservesEngineReadOnlyPolicy(t *testing.T) {
 	session := mustNewSession(t, plan, WithSessionFSRoot(sessionRoot))
 	defer func() { _ = session.Close() }()
 
-	if _, err := session.Run(context.Background()); !errors.Is(err, ferretfs.ErrReadOnly) {
+	if _, err := collectSession(session, context.Background()); !errors.Is(err, ferretfs.ErrReadOnly) {
 		t.Fatalf("run error = %v, want %v", err, ferretfs.ErrReadOnly)
 	}
 	if _, err := os.Stat(filepath.Join(sessionRoot, "created.txt")); !os.IsNotExist(err) {
@@ -138,10 +138,10 @@ func TestConcurrentSessionsUseIndependentFSRoots(t *testing.T) {
 		wait.Add(1)
 		go func(index int, current *Session) {
 			defer wait.Done()
-			output, err := current.Run(context.Background())
+			output, err := collectSession(current, context.Background())
 			errs[index] = err
 			if output != nil {
-				outputs[index] = string(output.Content)
+				outputs[index] = string(output.Data)
 			}
 		}(i, session)
 	}
@@ -176,7 +176,7 @@ func TestSessionClosesOwnedFSRootWithoutClosingBorrowedRoot(t *testing.T) {
 	}
 
 	owned := mustNewSession(t, plan, WithSessionFSRoot(t.TempDir()))
-	if _, err := owned.Run(t.Context()); err != nil {
+	if _, err := collectSession(owned, t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	if err := owned.Close(); err != nil {
@@ -221,7 +221,7 @@ func TestDebugSessionUsesAndClosesOwnedFSRoot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if event.Output == nil || string(event.Output.Content) != "\"debug\"" {
+	if event.Output == nil || string(event.Output.Data) != "\"debug\"" {
 		t.Fatalf("debug output = %#v, want debug", event.Output)
 	}
 

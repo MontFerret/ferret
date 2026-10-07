@@ -105,7 +105,13 @@ func (inst *Instance) Exec(ctx context.Context, query string, opts ...compatrunt
 		return nil, err
 	}
 
-	return out.Content, nil
+	defer out.Close()
+	content, err := out.Collect(ctx)
+	if content == nil {
+		return nil, err
+	}
+
+	return content.Data, err
 }
 
 // MustExec compiles and executes the query, panicking on error.

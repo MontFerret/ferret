@@ -15,7 +15,8 @@ source.Source
     -> bytecode.Program
     -> VM execution
     -> runtime.Value
-    -> encoding.Output
+    -> encoding.Content
+    -> consumable encoding.Output
 ```
 
 `pkg/source` owns indexed source text and identity. Portable positions, spans,
@@ -86,12 +87,13 @@ Root-level `uapi` is the official public integration with
 `github.com/MontFerret/api`, alongside the primary Native `ferret` entry point.
 Its constructors are not re-exported through the root façade.
 It imports `pkg/engine` and the portable API and
-translates options, source representations, output pointers, and diagnostics.
+translates options, source representations, output handles, and diagnostics.
 Native engine types and options remain independent
 of the portable runtime interfaces. `New` creates and owns a Native engine;
 `Wrap` borrows one. Runtime close delegates to Native for owned engines and is a
 no-op for borrowed engines. Plan and session close calls delegate to Native.
-The adapter owns no execution admission, cancellation, or descendant tracking.
+The adapter projects terminal output errors through delegation and owns no execution
+admission, cancellation, buffering, or descendant tracking.
 Its local `Plan.Params(ctx)` and `Runtime.Version(ctx)` metadata methods check
 caller contexts directly because there is no context-aware Native operation to
 delegate to. Native `Plan.Params()` remains context-free; `Runtime.Version`
@@ -189,7 +191,8 @@ See [Modules, SDK, and standard library](modules.md) and
 | Opcode or program shape | `pkg/bytecode` | compiler emission, VM, artifact validation, debugger, asm |
 | Runtime value semantics | `pkg/runtime` | VM, encoding, stdlib, debugger consumers |
 | Execution or cleanup | `pkg/vm` | runtime ownership, embedding lifecycle, benchmarks |
-| Output materialization | `pkg/encoding` | VM results and runtime resource ownership |
+| Encoded representation | `pkg/encoding` | runtime values and caller-owned returned bytes |
+| Output materialization and consumption | `pkg/engine` | encoder contracts, VM results, debugger completion, and UAPI |
 | Source formatting | `pkg/formatter` | parser grammar and formatter fixtures |
 | File or network policy | `pkg/fs` or `pkg/net` | native engine host/session context and stdlib adapters |
 | Embedding API | root façade and `pkg/engine` | modules, VM, runtime, and public API tests |

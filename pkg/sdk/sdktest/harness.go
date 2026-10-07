@@ -42,11 +42,13 @@ func (h *Harness) Engine() *ferret.Engine {
 	return h.engine
 }
 
-// Run compiles and executes query with a fresh session.
+// Run eagerly compiles and executes query with a fresh session, returning a
+// caller-owned output. Keep ctx alive and Consume or Collect to observe terminal
+// errors; Close an abandoned output.
 func (h *Harness) Run(
 	ctx context.Context,
 	query string,
 	options ...ferret.SessionOption,
-) (*encoding.Output, error) {
+) (encoding.Output, error) {
 	return h.engine.Run(ctx, source.NewAnonymous(query), options...)
 }

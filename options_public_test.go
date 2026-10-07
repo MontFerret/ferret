@@ -152,11 +152,11 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 		}
 	})
 
-	output, err := session.Run(context.Background())
+	output, err := collectSession(session, context.Background())
 	if err != nil {
 		t.Fatalf("run session: %v", err)
 	}
-	if got := string(output.Content); got != "8" {
+	if got := string(output.Data); got != "8" {
 		t.Fatalf("session output = %q, want %q", got, "8")
 	}
 
@@ -203,11 +203,11 @@ func TestPublicOptionTypesRemainUsable(t *testing.T) {
 		}
 	})
 
-	output, err = loadedSession.Run(context.Background())
+	output, err = collectSession(loadedSession, context.Background())
 	if err != nil {
 		t.Fatalf("run loaded session: %v", err)
 	}
-	if got := string(output.Content); got != "8" {
+	if got := string(output.Data); got != "8" {
 		t.Fatalf("loaded session output = %q, want %q", got, "8")
 	}
 }

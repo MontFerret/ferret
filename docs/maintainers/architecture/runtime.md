@@ -169,7 +169,7 @@ fails. Materializers may return additional closers or explicitly adopt values
 discovered during traversal. The result remains responsible for those resources
 until `Close`.
 
-The native engine uses this mechanism to produce `encoding.Output`, also exposed
+The native engine uses this mechanism to produce detached `encoding.Content`, also exposed
 through the root embedding façade.
 Encoders can discover nested resources during traversal, so encoding failures and
 missing-codec failures must still close all resources already owned or adopted.
@@ -248,12 +248,10 @@ shutdown. Managers have no independent synchronization or resource lookup API.
 VM resources, query-value cleanup, and limiter permits retain their separate
 lifecycle mechanisms.
 
-`Engine.Run` owns its temporary session and plan, closes them in that order,
-and joins execution and cleanup errors while retaining available encoded output.
-Successful cleanup preserves the original runtime diagnostic. Compilation also
-preserves the original diagnostic when hooks and cancellation checks add no
-failure, so `FormatError` retains its source locations and hints.
-Actual additional failures are joined without changing aggregate error rendering.
+`Engine.Run` owns its temporary session and plan and closes them in that order
+before publishing the eager byte-backed output. Cleanup failures remain in the
+output's consumption outcome and its repeated Close result. Preparation failures
+roll back immediately and join cleanup errors with the admission error.
 A caller that creates children directly closes sessions before plans, and plans
 before the engine. Parents have no descendant registries. Ordinary execution
 owners cancel and settle `Run` before closing their session; debug closure
@@ -319,17 +317,29 @@ overrides do not mutate the engine default. Unsupported levels are rejected.
 `CompileDebug` accepts omission or None. Compiler instances remain immutable and
 safe for shared use.
 
-Encoded `Output` is an alias of `api/result.Output`; native source indexing,
-runtime values, compiler metadata, and diagnostic rendering remain native.
-`Session.Run` retains successful encoded output even when an after-run hook or
-result cleanup fails. Ordinary after-run hooks still precede encoding and receive
-the execution or context-validation error. Ferret encodes the successful VM
-result and closes it exactly once through `Execution.MaterializeAndClose`.
-That operation returns encoding and cleanup errors separately so native
-`Session.Run` preserves their ordering alongside hook failures. The caller owns
-the returned encoded data, which has no `Close` method and remains available
-after session cleanup. Failed execution or encoding returns no output. A lone
-execution diagnostic is returned unchanged.
+`Output`, `Content`, `Metadata`, and `Consumer` alias `api/result` types. Native
+`Session` owns preparation, VM admission, hooks, and outcome assembly. VM entry
+is the boundary after which terminal failures belong to output consumption.
+After-run hooks still precede encoding and receive the primary execution error.
+`Execution.MaterializeAndClose` returns detached content and separate encoding and
+result-cleanup errors, releasing the VM result before Run returns.
+
+The private native output owns detached bytes and consumption coordination, never
+a VM, temporary session, plan, or permit. Consume borrows its buffer synchronously;
+Collect transfers it directly. A lifecycle mutex orders admission, callback
+admission, explicit closure, and outcome commitment. Close cancels before waiting
+for callbacks and finalization, and returns only recorded cleanup failures.
+Metadata remains immutable and locally available after closure. Output.Close does
+not close a caller-created session. Settle an output before sequential reuse.
+
+Encoding transfers caller-owned bytes. Custom encoders must detach reusable or
+borrowed storage inside Encode while access is exclusive. Successful encoding
+records the actual media type and exact known length, including present-empty
+content. Non-nil returned bytes with an encoding error remain available with
+unknown total length; nil bytes with that error mean no content. A native
+materializer records encoding failures separately without changing vm.Materialize.
+See [consumable-output migration](consumable-output-migration.md) for context,
+closure, presence, and serialization contracts.
 
 Diagnostic aggregates expose `Unwrap() []error`, and runtime errors unwrap to
 their underlying diagnostic, which in turn retains its cause.

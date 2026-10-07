@@ -45,8 +45,8 @@ func TestSessionOptionsMergeAndConvertWhenNativeAppliesThem(t *testing.T) {
 
 	t.Cleanup(func() { _ = s.Close() })
 	params["first"] = 100
-	out, err := s.Run(t.Context())
-	if err != nil || out == nil || string(out.Content) != "[8,3,99,null]" || out.ContentType != "application/json" || !reflect.DeepEqual(order, []int{1, 2}) {
+	out, err := collectSession(s, t.Context())
+	if err != nil || out == nil || string(out.Data) != "[8,3,99,null]" || out.Metadata.ContentType != "application/json" || !reflect.DeepEqual(order, []int{1, 2}) {
 		t.Fatalf("output=%+v err=%v order=%v", out, err, order)
 	}
 }
@@ -60,7 +60,7 @@ func TestCallbackFailuresAggregateBeforeNativeCalls(t *testing.T) {
 	}))
 	first, second := errors.New("first"), errors.New("unsupported runtime extension")
 	var order []int
-	_, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1"),
+	_, err := collectRuntime(r, t.Context(), api.NewAnonymousSource("RETURN 1"),
 		func(api.SessionOptions) error {
 			order = append(order, 1)
 
@@ -220,7 +220,7 @@ func TestRuntimeRunValidatesNativeOptionsAfterCompileAndClosesPlan(t *testing.T)
 			return nil
 		}),
 	)
-	out, err := r.Run(t.Context(), api.NewAnonymousSource("RETURN 1"), func(opts api.SessionOptions) error {
+	out, err := collectRuntime(r, t.Context(), api.NewAnonymousSource("RETURN 1"), func(opts api.SessionOptions) error {
 		order = append(order, "options")
 
 		return opts.SetOutputContentType(" ")

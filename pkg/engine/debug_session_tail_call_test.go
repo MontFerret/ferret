@@ -109,7 +109,7 @@ func TestDebugSessionTailCallFramesAcrossLoopHits(t *testing.T) {
 	}
 
 	event, err := session.Continue(t.Context())
-	if err != nil || event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Content) != "[6,12,18]" {
+	if err != nil || event.Reason != debugger.ReasonCompleted || event.Output == nil || string(event.Output.Data) != "[6,12,18]" {
 		t.Fatalf("completion = %+v: %v", event, err)
 	}
 }

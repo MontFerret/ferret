@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -78,14 +79,22 @@ func TestEngineRunPreservesRuntimeDiagnosticFormatting(t *testing.T) {
 			}
 
 			t.Cleanup(func() { _ = session.Close() })
-			_, directErr := session.Run(t.Context())
-			_, runErr := engine.Run(t.Context(), src, WithSessionParam("zero", 0))
+			_, directErr := collectSession(session, t.Context())
+			_, runErr := collectEngine(engine, t.Context(), src, WithSessionParam("zero", 0))
 			if directErr == nil || runErr == nil {
 				t.Fatalf("expected runtime failures: direct=%v engine=%v", directErr, runErr)
 			}
 
 			if diagnostics.Format(runErr) != diagnostics.Format(directErr) {
 				t.Fatalf("want:\n%s\ngot:\n%s", diagnostics.Format(directErr), diagnostics.Format(runErr))
+			}
+
+			if _, ok := runErr.(diagnostics.Formattable); !ok {
+				t.Fatalf("lone runtime diagnostic lost native formatting: %T", runErr)
+			}
+
+			if formatted := diagnostics.Format(runErr); !strings.Contains(formatted, "runtime.fql:1") || !strings.Contains(formatted, query) {
+				t.Fatalf("lost source diagnostic: %s", formatted)
 			}
 		})
 	}
@@ -172,13 +181,13 @@ func TestEngineRunPreservesOutputAndAllCleanupFailures(t *testing.T) {
 				}),
 			)
 			t.Cleanup(func() { _ = engine.Close() })
-			output, err := engine.Run(t.Context(), source.NewAnonymous(query), WithSessionParam("zero", 0))
+			output, err := collectEngine(engine, t.Context(), source.NewAnonymous(query), WithSessionParam("zero", 0))
 			if !errors.Is(err, hookErr) || !errors.Is(err, sessionErr) || !errors.Is(err, planErr) {
 				t.Fatalf("lost cleanup cause: %v", err)
 			}
 
 			if query == "RETURN 42" {
-				if output == nil || string(output.Content) != "42" {
+				if output == nil || string(output.Data) != "42" {
 					t.Fatalf("lost successful output: %+v", output)
 				}
 			} else {

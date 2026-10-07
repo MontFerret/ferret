@@ -546,12 +546,12 @@ func TestWithFunctionsRegistrarPreservesQualifiedHostFunctionNames(t *testing.T)
 		"return TOOLS::RISK::CALCULATE_RISK()",
 		"return Tools::Risk::Calculate_Risk()",
 	} {
-		output, err := eng.Run(t.Context(), source.NewAnonymous(query))
+		output, err := collectEngine(eng, t.Context(), source.NewAnonymous(query))
 		if err != nil {
 			t.Fatalf("run %q: %v", query, err)
 		}
 
-		if got := string(output.Content); got != `"ok"` {
+		if got := string(output.Data); got != `"ok"` {
 			t.Fatalf("run %q = %s, want %q", query, got, `"ok"`)
 		}
 	}
@@ -583,7 +583,7 @@ func TestUnknownHostFunctionDiagnosticPreservesSourceSpelling(t *testing.T) {
 	defer func() { _ = eng.Close() }()
 
 	const name = "TOOLS::MiSsInG"
-	_, err := eng.Run(t.Context(), source.NewAnonymous("return "+name+"()"))
+	_, err := collectEngine(eng, t.Context(), source.NewAnonymous("return "+name+"()"))
 	if err == nil {
 		t.Fatal("expected unknown host function to fail")
 	}
@@ -612,7 +612,7 @@ func TestResolvedHostFunctionDiagnosticUsesRegisteredQualifiedName(t *testing.T)
 	)
 	defer func() { _ = eng.Close() }()
 
-	_, err := eng.Run(t.Context(), source.NewAnonymous("return Db::Postgres::Query()"))
+	_, err := collectEngine(eng, t.Context(), source.NewAnonymous("return Db::Postgres::Query()"))
 	if err == nil {
 		t.Fatal("expected invalid host function arity to fail")
 	}

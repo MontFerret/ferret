@@ -39,8 +39,8 @@ func (f *fakeSessionServices) ExtendContext(ctx context.Context) context.Context
 	return ctx
 }
 
-func (f *fakeSessionServices) Materialize(*vm.Result) (*encoding.Output, error) {
-	return &encoding.Output{}, nil
+func (f *fakeSessionServices) Materialize(*vm.Result) (*encoding.Content, error) {
+	return &encoding.Content{}, nil
 }
 
 func (f *fakeSessionServices) Close() error {

@@ -37,11 +37,11 @@ func TestTimedWaitForRunsWithoutStdlib(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := engine.Run(context.Background(), source.NewAnonymous(tc.query))
+			output, err := collectEngine(engine, context.Background(), source.NewAnonymous(tc.query))
 			if err != nil {
 				t.Fatalf("run failed: %v", err)
 			}
-			if got := string(output.Content); got != tc.want {
+			if got := string(output.Data); got != tc.want {
 				t.Fatalf("unexpected output: got %q, want %q", got, tc.want)
 			}
 		})
@@ -55,7 +55,7 @@ func TestTimedWaitForWithoutStdlibHonorsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := engine.Run(
+	_, err := collectEngine(engine,
 		ctx,
 		source.NewAnonymous(`LET ready = false RETURN WAITFOR ready TIMEOUT 10s EVERY 10s`),
 	)
@@ -75,11 +75,11 @@ func TestTimedWaitForWithoutStdlibSupportsRepeatedSessionRuns(t *testing.T) {
 	t.Cleanup(func() { _ = session.Close() })
 
 	for run := 0; run < 2; run++ {
-		output, err := session.Run(context.Background())
+		output, err := collectSession(session, context.Background())
 		if err != nil {
 			t.Fatalf("run %d failed: %v", run+1, err)
 		}
-		if got := string(output.Content); got != "false" {
+		if got := string(output.Data); got != "false" {
 			t.Fatalf("run %d returned %q, want false", run+1, got)
 		}
 	}
@@ -89,7 +89,7 @@ func TestExplicitNowStillRequiresStdlib(t *testing.T) {
 	engine := mustNewEngine(t, WithoutStdlib())
 	t.Cleanup(func() { _ = engine.Close() })
 
-	_, err := engine.Run(context.Background(), source.NewAnonymous(`RETURN NOW()`))
+	_, err := collectEngine(engine, context.Background(), source.NewAnonymous(`RETURN NOW()`))
 	if err == nil || !strings.Contains(err.Error(), "unresolved function") {
 		t.Fatalf("expected unresolved NOW function, got %v", err)
 	}

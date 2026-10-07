@@ -426,7 +426,7 @@ func TestRunClosesPlanWhenSessionCreationFails(t *testing.T) {
 		t.Fatalf("failed to create engine: %v", err)
 	}
 
-	_, err = eng.Run(
+	_, err = collectEngine(eng,
 		context.Background(),
 		source.NewAnonymous("RETURN 1"),
 		WithEnvironmentOptions(
@@ -464,12 +464,12 @@ func TestRunReturnsDeferredCleanupErrorsWithOutput(t *testing.T) {
 		t.Fatalf("failed to create engine: %v", err)
 	}
 
-	result, err := eng.Run(context.Background(), source.NewAnonymous("RETURN 1"))
+	result, err := collectEngine(eng, context.Background(), source.NewAnonymous("RETURN 1"))
 	if !errors.Is(err, sessionCloseErr) || !errors.Is(err, planCloseErr) {
 		t.Fatalf("expected both cleanup causes, got: %v", err)
 	}
 
-	if got := strings.TrimSpace(string(result.Content)); got != "1" {
+	if got := strings.TrimSpace(string(result.Data)); got != "1" {
 		t.Fatalf("expected run result to stay successful, got: %s", got)
 	}
 

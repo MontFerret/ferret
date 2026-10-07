@@ -121,33 +121,19 @@ func (e *Engine) Load(data []byte) (*Plan, error) {
 	return e.newPlan(prog)
 }
 
-// Run compiles source, executes it in a fresh session, and returns encoded output and an error.
-// Similar to Session.Run, it may return a non-nil *encoding.Output together with a non-nil error
-// (for example, if execution produced output but an after-run hook or cleanup failed).
-func (e *Engine) Run(ctx context.Context, src source.Source, opts ...SessionOption) (output *encoding.Output, resultErr error) {
-	plan, err := e.Compile(ctx, src)
+// Run compiles, executes, and encodes eagerly in a temporary session. It returns
+// a caller-owned output handle with nil error after execution admission; terminal
+// failures and available content are observed through Consume or Collect.
+// Temporary resources are released before return; their cleanup errors remain
+// observable through consumption and repeated Output.Close. Keep ctx alive until
+// the output is settled, and Close an output abandoned without consumption.
+func (e *Engine) Run(ctx context.Context, src source.Source, opts ...SessionOption) (encoding.Output, error) {
+	outcome, err := e.run(ctx, src, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	defer func() {
-		if closeErr := plan.Close(); closeErr != nil {
-			resultErr = errors.Join(resultErr, closeErr)
-		}
-	}()
-
-	session, err := plan.NewSession(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		if closeErr := session.Close(); closeErr != nil {
-			resultErr = errors.Join(resultErr, closeErr)
-		}
-	}()
-
-	return session.Run(ctx)
+	return newOutput(ctx, outcome), nil
 }
 
 // Close runs the engine close hooks and releases engine-scoped resources,
@@ -163,4 +149,36 @@ func (e *Engine) Close() error {
 	})
 
 	return e.closeErr
+}
+
+func (e *Engine) run(ctx context.Context, src source.Source, opts ...SessionOption) (outcome runOutcome, err error) {
+	plan, err := e.Compile(ctx, src)
+	if err != nil {
+		return outcome, err
+	}
+
+	defer func() {
+		closeErr := plan.Close()
+		if err != nil {
+			err = joinOutputErrors(err, closeErr)
+		} else {
+			outcome.cleanupErr = errors.Join(outcome.cleanupErr, closeErr)
+		}
+	}()
+
+	session, err := plan.NewSession(ctx, opts...)
+	if err != nil {
+		return outcome, err
+	}
+
+	defer func() {
+		closeErr := session.Close()
+		if err != nil {
+			err = joinOutputErrors(err, closeErr)
+		} else {
+			outcome.cleanupErr = errors.Join(outcome.cleanupErr, closeErr)
+		}
+	}()
+
+	return session.execute(ctx)
 }
