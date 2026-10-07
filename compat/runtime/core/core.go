@@ -10,6 +10,7 @@ import (
 	"io"
 	"strconv"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -120,7 +121,7 @@ func (a *valueAdapter) Copy() Value {
 }
 
 func (a *valueAdapter) MarshalJSON() ([]byte, error) {
-	return encodingjson.Default.Encode(a.inner)
+	return ferretencoding.EncodeBytes(context.Background(), encodingjson.Default, a.inner)
 }
 
 // coreValueAsRuntimeValue wraps a compat Value so it satisfies runtime.Value.

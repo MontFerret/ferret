@@ -7,6 +7,7 @@ import (
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/internal/codecutil"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -15,15 +16,19 @@ type encoder struct {
 	post []encoding.PostEncoderHook
 }
 
-func (enc encoder) encodeValue(ctx context.Context, menc *vmmsgpack.Encoder, value runtime.Value) error {
-	if err := enc.runPreHooks(value); err != nil {
+func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Value) error {
+	if err := op.Step(); err != nil {
+		return err
+	}
+
+	if err := enc.runPreHooks(ctx, value); err != nil {
 		return err
 	}
 
 	if value == nil || value == runtime.None {
 		err := menc.EncodeNil()
 
-		if hookErr := enc.runPostHooks(runtime.None, err); hookErr != nil {
+		if hookErr := enc.runPostHooks(ctx, runtime.None, err); hookErr != nil {
 			return errors.Join(err, hookErr)
 		}
 
@@ -33,7 +38,7 @@ func (enc encoder) encodeValue(ctx context.Context, menc *vmmsgpack.Encoder, val
 	var err error
 
 	if supportsCustomEncoding(value) {
-		err = enc.encodeAny(menc, value)
+		err = enc.encodeAny(op, menc, value)
 	} else {
 		switch v := value.(type) {
 		case runtime.Boolean:
@@ -53,38 +58,62 @@ func (enc encoder) encodeValue(ctx context.Context, menc *vmmsgpack.Encoder, val
 		case runtime.DateTime:
 			err = menc.EncodeTime(v.Time)
 		case *runtime.Range:
-			err = enc.encodeRange(ctx, menc, v)
+			err = enc.encodeRange(ctx, op, menc, v)
 		case runtime.Map:
-			err = enc.encodeMap(ctx, menc, v)
+			err = enc.encodeMap(ctx, op, menc, v)
 		case runtime.List:
-			err = enc.encodeList(ctx, menc, v)
+			err = enc.encodeList(ctx, op, menc, v)
 		case runtime.Iterable:
-			list, e := runtime.ToList(ctx, value)
-			if e != nil {
-				err = e
-				break
-			}
+			list := runtime.NewArray(0)
+			err = runtime.ForEach(ctx, v, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+				if err := op.Step(); err != nil {
+					return false, err
+				}
 
-			err = enc.encodeList(ctx, menc, list)
+				if err := list.Append(ctx, item); err != nil {
+					return false, err
+				}
+
+				return true, nil
+			})
+
+			if err == nil {
+				err = enc.encodeList(ctx, op, menc, list)
+			}
 		case runtime.Unwrappable:
-			err = enc.encodeAny(menc, v.Unwrap())
+			err = enc.encodeAny(op, menc, v.Unwrap())
 		default:
-			err = enc.encodeAny(menc, v)
+			err = enc.encodeAny(op, menc, v)
 		}
 	}
 
-	if hookErr := enc.runPostHooks(value, err); hookErr != nil {
+	if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
 		return errors.Join(err, hookErr)
 	}
 
 	return err
 }
 
-func (enc encoder) encodeAny(menc *vmmsgpack.Encoder, value any) error {
-	return menc.Encode(value)
+func (enc encoder) encodeAny(op *codecutil.Operation, menc *vmmsgpack.Encoder, value any) error {
+	if err := op.Check(); err != nil {
+		return err
+	}
+
+	err := menc.Encode(value)
+	// A custom encoder may ignore its writer's error or return another cause.
+	// Preserve the codec-owned writer failure in either case.
+	if writer, ok := menc.Writer().(*codecutil.Writer); ok && writer.Error() != nil && !errors.Is(err, writer.Error()) {
+		err = errors.Join(err, writer.Error())
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return op.Check()
 }
 
-func (enc encoder) encodeMap(ctx context.Context, menc *vmmsgpack.Encoder, value runtime.Map) error {
+func (enc encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Map) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -99,12 +128,12 @@ func (enc encoder) encodeMap(ctx context.Context, menc *vmmsgpack.Encoder, value
 		return err
 	}
 
-	return value.ForEach(ctx, func(_ context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+	return value.ForEach(ctx, func(ctx context.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		if err := menc.EncodeString(key.String()); err != nil {
 			return false, err
 		}
 
-		if err := enc.encodeValue(ctx, menc, val); err != nil {
+		if err := enc.encodeValue(ctx, op, menc, val); err != nil {
 			return false, err
 		}
 
@@ -112,7 +141,7 @@ func (enc encoder) encodeMap(ctx context.Context, menc *vmmsgpack.Encoder, value
 	})
 }
 
-func (enc encoder) encodeList(ctx context.Context, menc *vmmsgpack.Encoder, value runtime.List) error {
+func (enc encoder) encodeList(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.List) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -133,7 +162,7 @@ func (enc encoder) encodeList(ctx context.Context, menc *vmmsgpack.Encoder, valu
 			return err
 		}
 
-		if err := enc.encodeValue(ctx, menc, item); err != nil {
+		if err := enc.encodeValue(ctx, op, menc, item); err != nil {
 			return err
 		}
 	}
@@ -141,7 +170,7 @@ func (enc encoder) encodeList(ctx context.Context, menc *vmmsgpack.Encoder, valu
 	return nil
 }
 
-func (enc encoder) encodeRange(ctx context.Context, menc *vmmsgpack.Encoder, value *runtime.Range) error {
+func (enc encoder) encodeRange(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value *runtime.Range) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -165,7 +194,7 @@ func (enc encoder) encodeRange(ctx context.Context, menc *vmmsgpack.Encoder, val
 			item = start - offset
 		}
 
-		if err := enc.encodeValue(ctx, menc, item); err != nil {
+		if err := enc.encodeValue(ctx, op, menc, item); err != nil {
 			return err
 		}
 	}
@@ -173,13 +202,13 @@ func (enc encoder) encodeRange(ctx context.Context, menc *vmmsgpack.Encoder, val
 	return nil
 }
 
-func (enc encoder) runPreHooks(value runtime.Value) error {
+func (enc encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
 	if len(enc.pre) == 0 {
 		return nil
 	}
 
 	for _, hook := range enc.pre {
-		if err := hook(value); err != nil {
+		if err := hook(ctx, value); err != nil {
 			return err
 		}
 	}
@@ -187,13 +216,13 @@ func (enc encoder) runPreHooks(value runtime.Value) error {
 	return nil
 }
 
-func (enc encoder) runPostHooks(value runtime.Value, err error) error {
+func (enc encoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
 	if len(enc.post) == 0 {
 		return nil
 	}
 
 	for _, hook := range enc.post {
-		if hookErr := hook(value, err); hookErr != nil {
+		if hookErr := hook(ctx, value, err); hookErr != nil {
 			return hookErr
 		}
 	}

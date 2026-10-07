@@ -41,14 +41,14 @@ func newTestContext() context.Context {
 	return ferretencoding.WithRegistry(ctx, ferretencoding.NewRegistry(encodingjson.Default, encodingmsgpack.Default))
 }
 
-func materializeJSONResult(out *vm.Result) ([]byte, error) {
+func materializeJSONResult(ctx context.Context, out *vm.Result) ([]byte, error) {
 	data, materializeErr := vm.Materialize[[]byte](out, func(value runtime.Value) (vm.Materialized[[]byte], error) {
-		enc := encodingjson.Default.EncodeWith().PreHook(func(value runtime.Value) error {
+		enc := encodingjson.Default.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
 			out.AdoptValue(value)
 			return nil
 		}).Encoder()
 
-		data, err := enc.Encode(value)
+		data, err := ferretencoding.EncodeBytes(ctx, enc, value)
 		if err != nil {
 			return vm.Materialized[[]byte]{}, err
 		}
@@ -93,7 +93,7 @@ func RunInstance(instance *vm.VM, env *vm.Environment) ([]byte, error) {
 		return nil, err
 	}
 
-	return materializeJSONResult(out)
+	return materializeJSONResult(ctx, out)
 }
 
 func Exec(p *bytecode.Program, raw bool, opts ...vm.EnvironmentOption) (any, error) {

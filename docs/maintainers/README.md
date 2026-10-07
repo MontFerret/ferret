@@ -12,6 +12,7 @@ user-facing guides are maintained on the [Ferret documentation website](https://
 - [Debugger](architecture/debugger.md) — Debugger layers, session state, and inspection boundaries.
 - [Modules, SDK, and standard library](architecture/modules.md) — Module bootstrap, extension authoring, and built-in function contracts.
 - [Universal API](architecture/universal-api.md) — Native-to-Universal adaptation, options, and lifecycle contracts.
+- [Codec I/O](architecture/codecs.md) — Context-aware reader/writer contracts, hooks, buffering, and materialization.
 - [Consumable output migration](architecture/consumable-output-migration.md) — Error timing, content ownership, consumption, and downstream migration requirements.
 - [Engine boundaries](architecture/engine-boundaries.md) — Native exports, internal ownership, and dependency direction.
 

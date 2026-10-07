@@ -82,8 +82,8 @@ func (s *DebugServices) ExtendContext(ctx context.Context) context.Context {
 }
 
 // Materialize encodes output while leaving result cleanup to the debugger.
-func (s *DebugServices) Materialize(result *vm.Result) (*encoding.Content, error) {
-	return Materialize(s.encoding, s.outputContentType, result)
+func (s *DebugServices) Materialize(ctx context.Context, result *vm.Result) (*encoding.Content, error) {
+	return Materialize(s.ExtendContext(ctx), s.encoding, s.outputContentType, result)
 }
 
 // Close runs close hooks, releases host resources, and finally returns the permit.

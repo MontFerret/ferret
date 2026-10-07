@@ -29,7 +29,7 @@ func TestExecutionRunsSequentiallyWithIsolatedEnvironment(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		output, encodeErr, closeErr := execution.MaterializeAndClose(result)
+		output, encodeErr, closeErr := execution.MaterializeAndClose(t.Context(), result)
 		if encodeErr != nil || closeErr != nil || output == nil || string(output.Data) != "42" {
 			t.Fatalf("output=%v encoding=%v cleanup=%v", output, encodeErr, closeErr)
 		}
@@ -62,7 +62,7 @@ func TestExecutionMaterializeAndCloseSeparatesErrors(t *testing.T) {
 			cleanupErr := errors.New("result cleanup")
 			filesystem := newCountingCloseFileSystem(t, t.TempDir(), cleanupErr)
 			result.AdoptCloser(filesystem)
-			output, encodeErr, closeErr := execution.MaterializeAndClose(result)
+			output, encodeErr, closeErr := execution.MaterializeAndClose(t.Context(), result)
 			if !errors.Is(closeErr, cleanupErr) || filesystem.closeCalls.Load() != 1 {
 				t.Fatalf("cleanup=%v closes=%d", closeErr, filesystem.closeCalls.Load())
 			}
@@ -240,7 +240,7 @@ func TestExecutionCloseAfterPoolClose(t *testing.T) {
 		t.Fatalf("pool closure revoked the borrowed VM: %v", err)
 	}
 
-	if _, encodeErr, closeErr := execution.MaterializeAndClose(result); encodeErr != nil || closeErr != nil {
+	if _, encodeErr, closeErr := execution.MaterializeAndClose(t.Context(), result); encodeErr != nil || closeErr != nil {
 		t.Fatalf("encoding=%v cleanup=%v", encodeErr, closeErr)
 	}
 

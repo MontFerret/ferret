@@ -147,7 +147,7 @@ func RunOutputBenchmarkWith(b *testing.B, c *compiler.Compiler, expression strin
 			panic(err)
 		}
 
-		if _, err := materializeJSONResult(result); err != nil {
+		if _, err := materializeJSONResult(ctx, result); err != nil {
 			panic(err)
 		}
 	}

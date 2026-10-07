@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"testing"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
+
 	ferretmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -52,7 +54,7 @@ func BenchmarkMsgpackCodecEncode(b *testing.B) {
 
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
-			out, err := codec.Encode(tc.value)
+			out, err := ferretencoding.EncodeBytes(b.Context(), codec, tc.value)
 			if err != nil {
 				b.Fatalf("setup encode failed: %v", err)
 			}
@@ -62,7 +64,7 @@ func BenchmarkMsgpackCodecEncode(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				out, err := codec.Encode(tc.value)
+				out, err := ferretencoding.EncodeBytes(b.Context(), codec, tc.value)
 				if err != nil {
 					b.Fatalf("encode failed: %v", err)
 				}
@@ -88,7 +90,7 @@ func BenchmarkMsgpackCodecDecode(b *testing.B) {
 
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
-			data, err := codec.Encode(tc.value)
+			data, err := ferretencoding.EncodeBytes(b.Context(), codec, tc.value)
 			if err != nil {
 				b.Fatalf("setup encode failed: %v", err)
 			}
@@ -98,7 +100,7 @@ func BenchmarkMsgpackCodecDecode(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				value, err := codec.Decode(data)
+				value, err := ferretencoding.DecodeBytes(b.Context(), codec, data)
 				if err != nil {
 					b.Fatalf("decode failed: %v", err)
 				}

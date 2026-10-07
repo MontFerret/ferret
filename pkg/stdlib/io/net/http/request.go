@@ -164,7 +164,7 @@ func newParamsFrom(ctx context.Context, obj runtime.Map) (Params, error) {
 				encoder = selected
 			}
 
-			j, err := encoder.Encode(body)
+			j, err := ferretencoding.EncodeBytes(ctx, encoder, body)
 
 			if err != nil {
 				return Params{}, runtime.Error(err, ".body")

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -153,7 +154,7 @@ func TestJSONCodecEncode(t *testing.T) {
 	assertJSON := func(t *testing.T, value runtime.Value, expected string) {
 		t.Helper()
 
-		out, err := codec.Encode(value)
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, value)
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -182,7 +183,7 @@ func TestJSONCodecEncode(t *testing.T) {
 			t.Fatalf("std json marshal failed: %v", err)
 		}
 
-		out, err := codec.Encode(runtime.NewInt(42))
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, runtime.NewInt(42))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -199,7 +200,7 @@ func TestJSONCodecEncode(t *testing.T) {
 	t.Run("duration", func(t *testing.T) {
 		assertJSON(t, runtime.NewDuration(1500*time.Millisecond), `"1.5s"`)
 
-		decoded, err := codec.Decode([]byte(`"1.5s"`))
+		decoded, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte(`"1.5s"`))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -216,7 +217,7 @@ func TestJSONCodecEncode(t *testing.T) {
 
 		assertJSON(t, value, `"^<item>&[a-z]+>$"`)
 
-		decoded, err := codec.Decode([]byte(`"^<item>&[a-z]+>$"`))
+		decoded, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte(`"^<item>&[a-z]+>$"`))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -248,7 +249,7 @@ func TestJSONCodecEncode(t *testing.T) {
 	})
 
 	t.Run("range rejects overflow", func(t *testing.T) {
-		_, err := codec.Encode(runtime.NewRange(math.MinInt64, -1))
+		_, err := ferretencoding.EncodeBytes(t.Context(), codec, runtime.NewRange(math.MinInt64, -1))
 		if !errors.Is(err, runtime.ErrRange) {
 			t.Fatalf("encode error = %v, want ErrRange", err)
 		}
@@ -261,7 +262,7 @@ func TestJSONCodecEncode(t *testing.T) {
 			t.Fatalf("std json marshal failed: %v", err)
 		}
 
-		out, err := codec.Encode(runtime.NewBinary(data))
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, runtime.NewBinary(data))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -278,7 +279,7 @@ func TestJSONCodecEncode(t *testing.T) {
 			t.Fatalf("std json marshal failed: %v", err)
 		}
 
-		out, err := codec.Encode(runtime.NewDateTime(ts))
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, runtime.NewDateTime(ts))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -296,7 +297,7 @@ func TestJSONCodecEncode(t *testing.T) {
 	t.Run("deeply_nested_array", func(t *testing.T) {
 		depth := 100_000
 
-		out, err := codec.Encode(nestedArray(depth))
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, nestedArray(depth))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -317,7 +318,7 @@ func TestJSONCodecEncode(t *testing.T) {
 			"a": runtime.NewInt(1),
 		})
 
-		out, err := codec.Encode(obj)
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, obj)
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -340,7 +341,7 @@ func TestJSONCodecEncode(t *testing.T) {
 	t.Run("deeply_nested_object", func(t *testing.T) {
 		depth := 40_000
 
-		out, err := codec.Encode(nestedObject(depth))
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, nestedObject(depth))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -371,7 +372,7 @@ func TestJSONCodecEncode(t *testing.T) {
 			t.Fatalf("std json marshal failed: %v", err)
 		}
 
-		out, err := codec.Encode(value)
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, value)
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -391,7 +392,7 @@ func TestJSONCodecEncode(t *testing.T) {
 			"b": runtime.NewString("x"),
 		})
 
-		out, err := codec.Encode(obj)
+		out, err := ferretencoding.EncodeBytes(t.Context(), codec, obj)
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -417,7 +418,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		var order []string
 
 		config := json.Default.EncodeWith()
-		config.PreHook(func(value runtime.Value) error {
+		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			if value != runtime.NewInt(7) {
 				t.Fatalf("expected hook value 7, got %v", value)
 			}
@@ -425,7 +426,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			order = append(order, "pre1")
 			return nil
 		})
-		config.PreHook(func(value runtime.Value) error {
+		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			if value != runtime.NewInt(7) {
 				t.Fatalf("expected hook value 7, got %v", value)
 			}
@@ -433,7 +434,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			order = append(order, "pre2")
 			return nil
 		})
-		config.PostHook(func(value runtime.Value, err error) error {
+		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
 			if value != runtime.NewInt(7) {
 				t.Fatalf("expected hook value 7, got %v", value)
 			}
@@ -446,7 +447,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			return nil
 		})
 
-		out, err := config.Encoder().Encode(runtime.NewInt(7))
+		out, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), runtime.NewInt(7))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -465,12 +466,12 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		var postErr error
 
 		config := json.Default.EncodeWith()
-		config.PostHook(func(_ runtime.Value, err error) error {
+		config.PostHook(func(_ context.Context, _ runtime.Value, err error) error {
 			postErr = err
 			return nil
 		})
 
-		_, err := config.Encoder().Encode(&badValue{Fn: func() {}})
+		_, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), &badValue{Fn: func() {}})
 		if err == nil {
 			t.Fatal("expected encode error")
 		}
@@ -488,11 +489,11 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		var order []string
 
 		config := json.Default.EncodeWith()
-		config.PreHook(func(value runtime.Value) error {
+		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			order = append(order, "pre:"+hookValueLabel(value))
 			return nil
 		})
-		config.PostHook(func(value runtime.Value, err error) error {
+		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
 			if err != nil {
 				t.Fatalf("expected successful encode, got %v", err)
 			}
@@ -501,7 +502,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			return nil
 		})
 
-		out, err := config.Encoder().Encode(runtime.NewObjectWith(map[string]runtime.Value{
+		out, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), runtime.NewObjectWith(map[string]runtime.Value{
 			"items": runtime.NewArrayWith(runtime.NewString("leaf")),
 		}))
 		if err != nil {
@@ -530,12 +531,12 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		var order []string
 
 		config := json.Default.EncodeWith()
-		config.PreHook(func(value runtime.Value) error {
+		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			order = append(order, "pre:"+hookValueLabel(value))
 
 			return nil
 		})
-		config.PostHook(func(value runtime.Value, err error) error {
+		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
 			if err != nil {
 				t.Fatalf("expected successful encode, got %v", err)
 			}
@@ -545,7 +546,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			return nil
 		})
 
-		out, err := config.Encoder().Encode(runtime.NewRange(1, 2))
+		out, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), runtime.NewRange(1, 2))
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -573,7 +574,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		var postErrs []string
 
 		config := json.Default.EncodeWith()
-		config.PostHook(func(value runtime.Value, err error) error {
+		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
 			postOrder = append(postOrder, hookValueLabel(value))
 
 			if err == nil {
@@ -585,7 +586,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			return nil
 		})
 
-		_, err := config.Encoder().Encode(runtime.NewObjectWith(map[string]runtime.Value{
+		_, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), runtime.NewObjectWith(map[string]runtime.Value{
 			"items": runtime.NewArrayWith(&badValue{Fn: func() {}}),
 		}))
 		if err == nil {
@@ -616,14 +617,14 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		postCalls := 0
 
 		config := json.Default.EncodeWith()
-		config.PreHook(func(value runtime.Value) error {
+		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			if value == special {
 				preCalls++
 			}
 
 			return nil
 		})
-		config.PostHook(func(value runtime.Value, err error) error {
+		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
 			if value == special {
 				postCalls++
 			}
@@ -635,7 +636,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			return nil
 		})
 
-		out, err := config.Encoder().Encode(value)
+		out, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), value)
 		if err != nil {
 			t.Fatalf("encode failed: %v", err)
 		}
@@ -657,12 +658,12 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		calls := 0
 
 		config := json.Default.EncodeWith()
-		config.PreHook(func(_ runtime.Value) error {
+		config.PreHook(func(_ context.Context, _ runtime.Value) error {
 			calls++
 			return nil
 		})
 
-		if _, err := config.Encoder().Encode(runtime.NewInt(1)); err != nil {
+		if _, err := ferretencoding.EncodeBytes(t.Context(), config.Encoder(), runtime.NewInt(1)); err != nil {
 			t.Fatalf("configured encode failed: %v", err)
 		}
 
@@ -670,7 +671,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			t.Fatalf("expected configured encoder to invoke hook once, got %d", calls)
 		}
 
-		if _, err := json.Default.Encode(runtime.NewInt(2)); err != nil {
+		if _, err := ferretencoding.EncodeBytes(t.Context(), json.Default, runtime.NewInt(2)); err != nil {
 			t.Fatalf("default encode failed: %v", err)
 		}
 
@@ -685,7 +686,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("none", func(t *testing.T) {
-		value, err := codec.Decode([]byte("null"))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("null"))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -696,7 +697,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("boolean", func(t *testing.T) {
-		value, err := codec.Decode([]byte("true"))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("true"))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -707,7 +708,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("string", func(t *testing.T) {
-		value, err := codec.Decode([]byte(`"hello"`))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte(`"hello"`))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -718,7 +719,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("int", func(t *testing.T) {
-		value, err := codec.Decode([]byte("1"))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("1"))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -729,7 +730,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("float", func(t *testing.T) {
-		value, err := codec.Decode([]byte("1.5"))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("1.5"))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -740,7 +741,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("exponent", func(t *testing.T) {
-		value, err := codec.Decode([]byte("1e2"))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("1e2"))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -759,7 +760,7 @@ func TestJSONCodecDecode(t *testing.T) {
 		overflow := new(big.Int).SetInt64(math.MaxInt64)
 		overflow.Add(overflow, big.NewInt(1))
 
-		value, err := codec.Decode([]byte(overflow.String()))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte(overflow.String()))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -770,7 +771,7 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("nested", func(t *testing.T) {
-		value, err := codec.Decode([]byte(`{"a":1,"b":[true,null,"x"]}`))
+		value, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte(`{"a":1,"b":[true,null,"x"]}`))
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -819,21 +820,21 @@ func TestJSONCodecDecode(t *testing.T) {
 	})
 
 	t.Run("empty_input_error", func(t *testing.T) {
-		_, err := codec.Decode([]byte(""))
+		_, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte(""))
 		if err == nil {
 			t.Fatalf("expected error")
 		}
 	})
 
 	t.Run("invalid_json_error", func(t *testing.T) {
-		_, err := codec.Decode([]byte("{"))
+		_, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("{"))
 		if err == nil {
 			t.Fatalf("expected error")
 		}
 	})
 
 	t.Run("multiple_roots_error", func(t *testing.T) {
-		_, err := codec.Decode([]byte("1 2"))
+		_, err := ferretencoding.DecodeBytes(t.Context(), codec, []byte("1 2"))
 		if err == nil {
 			t.Fatalf("expected error")
 		}
@@ -846,25 +847,25 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 		var order []string
 
 		config := json.Default.DecodeWith()
-		config.PreHook(func(data []byte) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+		config.PreHook(func(ctx context.Context) error {
+			if ctx != t.Context() {
+				t.Fatal("hook lost caller context")
 			}
 
 			order = append(order, "pre1")
 			return nil
 		})
-		config.PreHook(func(data []byte) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+		config.PreHook(func(ctx context.Context) error {
+			if ctx != t.Context() {
+				t.Fatal("hook lost caller context")
 			}
 
 			order = append(order, "pre2")
 			return nil
 		})
-		config.PostHook(func(data []byte, err error) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+		config.PostHook(func(ctx context.Context, _ runtime.Value, err error) error {
+			if ctx != t.Context() {
+				t.Fatal("hook lost caller context")
 			}
 
 			if err != nil {
@@ -875,7 +876,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			return nil
 		})
 
-		value, err := config.Decoder().Decode(input)
+		value, err := ferretencoding.DecodeBytes(t.Context(), config.Decoder(), input)
 		if err != nil {
 			t.Fatalf("decode failed: %v", err)
 		}
@@ -900,16 +901,16 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 		var postErr error
 
 		config := json.Default.DecodeWith()
-		config.PostHook(func(data []byte, err error) error {
-			if string(data) != string(input) {
-				t.Fatalf("expected input %s, got %s", input, data)
+		config.PostHook(func(ctx context.Context, _ runtime.Value, err error) error {
+			if ctx != t.Context() {
+				t.Fatal("hook lost caller context")
 			}
 
 			postErr = err
 			return nil
 		})
 
-		_, err := config.Decoder().Decode(input)
+		_, err := ferretencoding.DecodeBytes(t.Context(), config.Decoder(), input)
 		if err == nil {
 			t.Fatal("expected decode error")
 		}
@@ -927,12 +928,12 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 		calls := 0
 
 		config := json.Default.DecodeWith()
-		config.PreHook(func(_ []byte) error {
+		config.PreHook(func(_ context.Context) error {
 			calls++
 			return nil
 		})
 
-		if _, err := config.Decoder().Decode([]byte("1")); err != nil {
+		if _, err := ferretencoding.DecodeBytes(t.Context(), config.Decoder(), []byte("1")); err != nil {
 			t.Fatalf("configured decode failed: %v", err)
 		}
 
@@ -940,7 +941,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			t.Fatalf("expected configured decoder to invoke hook once, got %d", calls)
 		}
 
-		if _, err := json.Default.Decode([]byte("1")); err != nil {
+		if _, err := ferretencoding.DecodeBytes(t.Context(), json.Default, []byte("1")); err != nil {
 			t.Fatalf("default decode failed: %v", err)
 		}
 

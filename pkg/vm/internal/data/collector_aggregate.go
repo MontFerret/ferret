@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -163,7 +164,7 @@ func (c *AggregateCollector) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	return json.Default.Encode(obj)
+	return ferretencoding.EncodeBytes(context.Background(), json.Default, obj)
 }
 
 func (c *AggregateCollector) String() string {

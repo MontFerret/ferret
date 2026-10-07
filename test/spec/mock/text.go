@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -16,7 +17,7 @@ func NewText(value string) *Text {
 }
 
 func (t *Text) MarshalJSON() ([]byte, error) {
-	return encodingjson.Default.Encode(t.value)
+	return ferretencoding.EncodeBytes(context.Background(), encodingjson.Default, t.value)
 }
 
 func (t *Text) String() string {
