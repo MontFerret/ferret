@@ -375,23 +375,100 @@ func TestOutputLengthMismatchPreservesAvailableContent(t *testing.T) {
 	}
 }
 
-func TestOutputCanceledInvocationPreservesEagerFailuresWithoutClaiming(t *testing.T) {
-	invocation, cancel := context.WithCancelCause(t.Context())
-	cause, operationErr, cleanupErr := errors.New("invocation"), errors.New("execution"), errors.New("cleanup")
-	o := newOutput(invocation, runOutcome{operationErr: operationErr, cleanupErr: cleanupErr})
-	cancel(cause)
-	_, err := o.Collect(t.Context())
-	for _, expected := range []error{context.Canceled, cause, operationErr, cleanupErr} {
-		if !errors.Is(err, expected) {
-			t.Fatalf("lost %v: %v", expected, err)
+func TestOutputCanceledAdmissionPreservesOutcomesWithoutClaiming(t *testing.T) {
+	for _, tc := range []struct {
+		name                string
+		invocationCanceled  bool
+		consumptionCanceled bool
+		shared              bool
+	}{
+		{name: "shared canceled context", invocationCanceled: true, consumptionCanceled: true, shared: true},
+		{name: "separately canceled contexts", invocationCanceled: true, consumptionCanceled: true},
+		{name: "canceled invocation", invocationCanceled: true},
+		{name: "canceled consumption", consumptionCanceled: true},
+	} {
+		for _, method := range []string{"Collect", "Consume"} {
+			t.Run(tc.name+"/"+method, func(t *testing.T) {
+				invocation, cancelInvocation := context.WithCancelCause(t.Context())
+				consumption, cancelConsumption := context.WithCancelCause(t.Context())
+				defer cancelInvocation(nil)
+				defer cancelConsumption(nil)
+				invocationCause, consumptionCause := errors.New("invocation"), errors.New("consumption")
+				operationErr, cleanupErr := errors.New("execution"), errors.New("cleanup")
+				content := &encoding.Content{Data: []byte("42")}
+				o := newOutput(invocation, runOutcome{content: content, operationErr: operationErr, cleanupErr: cleanupErr})
+				defer o.Close()
+				if tc.invocationCanceled {
+					cancelInvocation(invocationCause)
+				}
+
+				if tc.shared {
+					consumption = invocation
+				} else if tc.consumptionCanceled {
+					cancelConsumption(consumptionCause)
+				}
+
+				for _, invalid := range []func() error{
+					func() error { return o.Consume(nil, nil) },
+					func() error { return o.Consume(consumption, nil) },
+					func() error { _, err := o.Collect(nil); return err },
+				} {
+					if err := invalid(); !errors.Is(err, runtime.ErrInvalidArgument) || errors.Is(err, context.Canceled) || errors.Is(err, operationErr) || errors.Is(err, cleanupErr) {
+						t.Fatalf("invalid argument precedence changed: %v", err)
+					}
+				}
+
+				for range 2 {
+					var err error
+					if method == "Collect" {
+						var collected *encoding.Content
+						collected, err = o.Collect(consumption)
+						if collected != nil {
+							t.Fatal("rejected collection transferred content")
+						}
+					} else {
+						err = o.Consume(consumption, func(context.Context, []byte) error { t.Fatal("rejected callback"); return nil })
+					}
+
+					for _, expected := range []struct {
+						cause   error
+						present bool
+					}{
+						{context.Canceled, true},
+						{invocationCause, tc.invocationCanceled},
+						{consumptionCause, tc.consumptionCanceled && !tc.shared},
+						{operationErr, tc.invocationCanceled},
+						{cleanupErr, tc.invocationCanceled},
+					} {
+						if errors.Is(err, expected.cause) != expected.present {
+							t.Errorf("cause %v present=%t: %v", expected.cause, expected.present, err)
+						}
+					}
+
+					if o.state != outputReady || o.content != content || o.operationErr != operationErr || o.cleanupErr != cleanupErr || o.cancel != nil || o.explicitClose {
+						t.Fatal("rejected admission changed output ownership or lifecycle")
+					}
+
+					select {
+					case <-o.done:
+						t.Fatal("rejected admission finalized output")
+					default:
+					}
+				}
+
+				if !tc.invocationCanceled {
+					collected, err := o.Collect(t.Context())
+					if collected != content || !errors.Is(err, operationErr) || !errors.Is(err, cleanupErr) || errors.Is(err, context.Canceled) {
+						t.Fatalf("fresh-context retry lost recorded outcome: %v %v", collected, err)
+					}
+				}
+
+				for range 2 {
+					if err := o.Close(); !errors.Is(err, cleanupErr) || errors.Is(err, operationErr) || errors.Is(err, context.Canceled) {
+						t.Fatalf("close reported more than cleanup: %v", err)
+					}
+				}
+			})
 		}
-	}
-
-	if o.state != outputReady {
-		t.Fatal("rejected invocation claimed output")
-	}
-
-	if err := o.Close(); !errors.Is(err, cleanupErr) {
-		t.Fatal(err)
 	}
 }

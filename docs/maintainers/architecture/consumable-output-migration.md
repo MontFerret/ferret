@@ -52,7 +52,11 @@ invocation cancellation, before claiming the output. Rejections leave active
 consumption unaffected. Valid competitors match ErrOutputInUse; once stopping or
 finalization begins they match ErrOutputClosed. Use errors.Is with these shared
 sentinels. An irrevocably canceled invocation also preserves already-known eager
-failures without claiming the output.
+operation and cleanup failures without claiming the output, whether consumption
+uses the original Run context, a live context, or another canceled context. When
+both contexts are canceled, their causes are preserved. Cancellation of only the
+consumption context leaves the output available for retry within the invocation's
+lifetime.
 
 Keep the original Run context alive through settlement. The consumption context
 may shorten that lifetime, never extend it. Consumers receive an effective

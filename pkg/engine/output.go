@@ -132,14 +132,16 @@ func (o *output) admit(ctx context.Context) (outputConsumption, error) {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
-	if err := outputContextError(ctx); err != nil {
-		return outputConsumption{}, err
-	}
-
-	if err := outputContextError(o.invocation); err != nil {
+	consumptionErr := outputContextError(ctx)
+	invocationErr := outputContextError(o.invocation)
+	if invocationErr != nil {
 		// Its lifetime cannot be revived. Preserve terminal eager failures even
 		// though this rejected call must leave the handle unclaimed.
-		return outputConsumption{}, joinOutputErrors(err, o.operationErr, o.cleanupErr)
+		return outputConsumption{}, joinOutputErrors(consumptionErr, invocationErr, o.operationErr, o.cleanupErr)
+	}
+
+	if consumptionErr != nil {
+		return outputConsumption{}, consumptionErr
 	}
 
 	switch o.state {

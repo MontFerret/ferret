@@ -239,6 +239,106 @@ func TestRealOutputTerminalDiagnosticsAndJoinedCauses(t *testing.T) {
 	}
 }
 
+func TestRealOutputCanceledAdmissionPreservesRecordedDiagnostics(t *testing.T) {
+	for _, portable := range []bool{false, true} {
+		for _, method := range []string{"Collect", "Consume"} {
+			for _, duringRun := range []bool{false, true} {
+				for _, shared := range []bool{false, true} {
+					name := map[bool]string{false: "native", true: "uapi"}[portable] + "/" + method +
+						map[bool]string{false: "/after Run", true: "/during Run"}[duringRun] +
+						map[bool]string{false: "/distinct contexts", true: "/shared context"}[shared]
+					t.Run(name, func(t *testing.T) {
+						invocation, cancelInvocation := context.WithCancelCause(t.Context())
+						consumption, cancelConsumption := context.WithCancelCause(t.Context())
+						defer cancelInvocation(nil)
+						defer cancelConsumption(nil)
+						invocationCause, consumptionCause := errors.New("invocation canceled"), errors.New("consumption canceled")
+						hookCause, cleanupCause := errors.New("after-run failure"), errors.New("temporary-session cleanup failure")
+						src := source.New("output.fql", "RETURN 42")
+						hookErr := diagnostics.NewUnexpectedErrorWith(src, "after hook", hookCause)
+						cleanupErr := diagnostics.NewUnexpectedErrorWith(src, "close hook", cleanupCause)
+						var cleanupCalls atomic.Int32
+						_, run := newOutputExecutor(t, portable,
+							ferret.WithAfterRunHook(func(context.Context, error) error {
+								if duringRun {
+									cancelInvocation(invocationCause)
+								}
+
+								return hookErr
+							}),
+							ferret.WithSessionCloseHook(func() error { cleanupCalls.Add(1); return cleanupErr }),
+						)
+						o, err := run(invocation, src.Content())
+						if err != nil || o == nil {
+							t.Fatalf("recorded failures escaped Run: output=%v err=%v", o, err)
+						}
+
+						defer o.Close()
+						if cleanupCalls.Load() != 1 {
+							t.Fatal("Run did not finish temporary-session cleanup")
+						}
+
+						cancelInvocation(invocationCause)
+						if shared {
+							consumption = invocation
+						} else {
+							cancelConsumption(consumptionCause)
+						}
+
+						if method == "Collect" {
+							var content *api.Content
+							content, err = o.Collect(consumption)
+							if content != nil {
+								t.Fatal("rejected collection returned content")
+							}
+						} else {
+							err = o.Consume(consumption, func(context.Context, []byte) error { t.Fatal("rejected callback"); return nil })
+						}
+
+						for _, cause := range []error{context.Canceled, invocationCause, hookCause, hookErr, cleanupCause, cleanupErr} {
+							if !errors.Is(err, cause) {
+								t.Errorf("lost recorded cause %v: %v", cause, err)
+							}
+						}
+
+						if !shared && !errors.Is(err, consumptionCause) {
+							t.Errorf("lost separate consumption cause: %v", err)
+						}
+
+						if portable {
+							var projected apidiagnostics.Diagnostics
+							if !errors.As(err, &projected) || len(projected) != 2 {
+								t.Fatalf("lost recorded diagnostic projection: %v", err)
+							}
+
+							messages := []string{hookErr.Message, cleanupErr.Message}
+							for index, diagnostic := range projected {
+								if diagnostic.Message != messages[index] {
+									t.Errorf("recorded diagnostic message=%q want=%q", diagnostic.Message, messages[index])
+								}
+
+								if diagnostic.Source.Name != src.Name() || diagnostic.Source.Content != src.Content() {
+									t.Error("recorded diagnostic source lost")
+								}
+							}
+						}
+
+						for range 2 {
+							if err := o.Close(); !errors.Is(err, cleanupCause) || !errors.Is(err, cleanupErr) || errors.Is(err, hookCause) || errors.Is(err, context.Canceled) {
+								t.Fatalf("Close did not preserve cleanup-only outcome: %v", err)
+							}
+						}
+
+						if cleanupCalls.Load() != 1 {
+							t.Fatal("rejected admission or Close repeated session cleanup")
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
 func TestRealOutputContextsAndSessionReuse(t *testing.T) {
 	for _, portable := range []bool{false, true} {
 		t.Run(map[bool]string{false: "native", true: "uapi"}[portable], func(t *testing.T) {
