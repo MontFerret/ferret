@@ -203,13 +203,24 @@ func (enc encoder) encodeList(ctx context.Context, state *encodeState, value run
 	return state.writer.WriteByte(']')
 }
 
-func (enc encoder) encodeIterable(ctx context.Context, state *encodeState, value runtime.Iterable) error {
+func (enc encoder) encodeIterable(ctx context.Context, state *encodeState, value runtime.Iterable) (err error) {
 	if err := state.writer.WriteByte('['); err != nil {
 		return err
 	}
 
+	iter, err := codecutil.NewIterator(ctx, value)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if closeErr := iter.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
+
 	first := true
-	err := runtime.ForEach(ctx, value, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
 		if !first {
 			if err := state.writer.WriteByte(','); err != nil {
 				return false, err
@@ -224,7 +235,6 @@ func (enc encoder) encodeIterable(ctx context.Context, state *encodeState, value
 
 		return true, nil
 	})
-
 	if err != nil {
 		return err
 	}

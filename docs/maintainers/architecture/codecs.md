@@ -50,10 +50,10 @@ unavoidable boundary; stdlib and HTTP adapters use their caller's context.
 
 JSON writes numbers, containers, escaped strings, and Base64 progressively.
 Numeric scratch and bounded 4 KiB payload scratch avoid container materialization
-for generic iterables; runtime.ForEach retains iterator cleanup and joined close
-errors. Custom marshalers and generic Go-value fallbacks may buffer. Its standard
-JSON tokenizer handles fragmented readers and strictly rejects extra roots,
-malformed separators, and truncated containers; integer width is preserved.
+for generic iterables. Custom marshalers and generic Go-value fallbacks may
+buffer. Its standard JSON tokenizer handles fragmented readers and strictly
+rejects extra roots, malformed separators, and truncated containers; integer
+width is preserved.
 
 MessagePack connects the dependency encoder/decoder to borrowed I/O through a
 short-write and cancellation adapter. Instances are reset on every operation and
@@ -61,6 +61,21 @@ release I/O references on every exit. Generic iterables still materialize to
 determine the length required by a MessagePack container header. Decoding in both
 formats returns a fully materialized runtime.Value and may read ahead. This is
 not a constant-memory guarantee or a lazy decoding API.
+
+Both encoders borrow the source value. Their internal iterator handle owns only
+a distinct acquired iterator, traversed with runtime.ForEachIter. An iterator
+that is the source itself, or shares its runtime.Resource identity, remains with
+the source's owner. Comparable identities are checked safely; non-comparable
+resource aliases require runtime.Resource for stable identity. The encoders do
+not change runtime.ForEach's cleanup contract for other callers.
+
+Distinct acquired iterators close once after traversal and child encoding,
+including on failure and cancellation. MessagePack collects the items, encodes
+the collected list after successful traversal, then closes the iterator. A close
+failure therefore cannot skip the child hooks that register yielded resources
+with the VM result. Iterator close errors join encoding errors before the
+parent's post-hooks. The VM result remains responsible for closing adopted source
+and child resources. Direct codec callers retain that responsibility themselves.
 
 Native and UAPI output remain eager and byte-backed. Native materialization
 collects into an owned buffer with the original invocation context; before-run
@@ -79,6 +94,10 @@ fragmented and data-plus-error reads, cancellation, hook context, runtime
 capabilities, and I/O reuse/closure. Codec-specific tests retain formats, deep
 nesting, integer widths, custom marshaler precedence, escaping, and hook order.
 Native/UAPI/debugger tests cover context forwarding and retained Content.
+Engine regressions also cover self-returned iterators and yielded resources when
+iterator closure fails, proving one cleanup owner through result and session
+teardown. Shared codec tests cover resource aliases, depth-first hooks, joined
+cleanup errors, cancellation, and dynamically non-comparable identities.
 
 Compare the existing byte-oriented workloads with:
 
@@ -207,3 +226,64 @@ Website codec/output guidance was synchronized while preserving its existing
 edits. Its complete custom-codec example compiled and ran against this Core
 checkout. The website's final mage build and git diff --check passed, including
 the generated reference, Hugo, Pagefind/search, and Registry route pipeline.
+
+### Iterator ownership fix measurements
+
+The iterator cleanup correction was measured separately against
+87684ac70684 on 2026-10-07, using Go 1.27.1 on Darwin/arm64, Apple M2 Max,
+GOMAXPROCS=12. The generic-iterable benchmark was added before changing production
+code, and the same workloads were run before and after the correction:
+
+```sh
+go test ./pkg/encoding/json ./pkg/encoding/msgpack \
+  -run '^$' -bench 'Benchmark(JSON|Msgpack)CodecEncode$' \
+  -benchmem -benchtime=200ms -count=5
+go test ./pkg/encoding -run '^$' -bench '^BenchmarkCodecIterable$' \
+  -benchmem -benchtime=200ms -count=5
+```
+
+The established encoding workloads retained every allocation count; median
+bytes/op differed by at most 13 bytes. Final timing medians ranged from -4.4% to
++3.3% against the initial baseline. An earlier head
+run was 2.5–10.2% slower; repeating the baseline from an isolated archive and
+repeating the head did not reproduce that increase. Five samples are insufficient
+for benchstat's 95% confidence interval. These timings do not establish a
+general speedup or regression.
+
+The generic workloads yield 1,024 values and use a warmed reusable bytes.Buffer
+or io.Discard. These are median results; bytes/op differ by at most one byte, and
+every allocation count is unchanged:
+
+| Codec / iterator / writer | Before ns/op | Final ns/op | Time delta | Before → final B/op | Allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| JSON / owned / Buffer | 31,965 | 31,667 | -0.9% | 6,148 → 6,148 | 768 |
+| JSON / owned / Discard | 30,625 | 30,387 | -0.8% | 6,147 → 6,147 | 768 |
+| JSON / borrowed / Buffer | 32,275 | 31,585 | -2.1% | 6,148 → 6,148 | 768 |
+| JSON / borrowed / Discard | 29,960 | 30,257 | +1.0% | 6,146 → 6,147 | 768 |
+| MessagePack / owned / Buffer | 30,980 | 30,056 | -3.0% | 66,043 → 66,043 | 782 |
+| MessagePack / owned / Discard | 28,979 | 28,245 | -2.5% | 66,042 → 66,042 | 782 |
+| MessagePack / borrowed / Buffer | 31,153 | 30,060 | -3.5% | 66,043 → 66,043 | 782 |
+| MessagePack / borrowed / Discard | 28,828 | 28,286 | -1.9% | 66,042 → 66,042 | 782 |
+
+Profiling during the second-pass review found two allocations, approximately
+eight bytes, in Go 1.27's general reflect.Value.Comparable check for pointer
+sources. The final pointer-identity path avoids that check; other values retain
+safe dynamic-comparability checks. Tests cover comparable values, pointers with
+non-comparable acquired iterators, and non-comparable resource aliases. The
+fixture's numeric iterator keys still allocate, and MessagePack still buffers
+yielded values to determine its array header length.
+
+The engine regressions failed before the fix with two closes of self-returned
+iterators in both codecs and zero closes of yielded MessagePack resources on an
+iterator-close failure. They pass after the fix, including preservation of
+iterator and result-cleanup error causes through output consumption and teardown.
+The complete second-pass review also corrected fixture organization, spacing,
+and redundant writer declarations reported by Revive.
+
+The fix passed focused codec/engine tests on Go 1.27.1, the full make test target
+on Go 1.26.8 with permitted loopback access, make compile and make compile-32bit,
+make fmt, make lint, and git diff --check. The added comparable-value case was
+also rerun with the race detector. Formatting/lint used the previously described
+Go 1.26.8 tools and temporary ignored-bin exclusion. Linux/386 was compiled but
+not executed. The website encoder guide was updated without altering its
+unrelated existing edits, and its mage build and git diff --check passed.

@@ -60,7 +60,7 @@ func BenchmarkCodecWriter(b *testing.B) {
 									for _, target := range []string{"Buffer", "Discard"} {
 										b.Run(target, func(b *testing.B) {
 											var buffer bytes.Buffer
-											var dst io.Writer = io.Discard
+											dst := io.Writer(io.Discard)
 											if target == "Buffer" {
 												dst = &buffer
 											}

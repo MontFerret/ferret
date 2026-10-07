@@ -64,22 +64,7 @@ func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, men
 		case runtime.List:
 			err = enc.encodeList(ctx, op, menc, v)
 		case runtime.Iterable:
-			list := runtime.NewArray(0)
-			err = runtime.ForEach(ctx, v, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
-				if err := op.Step(); err != nil {
-					return false, err
-				}
-
-				if err := list.Append(ctx, item); err != nil {
-					return false, err
-				}
-
-				return true, nil
-			})
-
-			if err == nil {
-				err = enc.encodeList(ctx, op, menc, list)
-			}
+			err = enc.encodeIterable(ctx, op, menc, v)
 		case runtime.Unwrappable:
 			err = enc.encodeAny(op, menc, v.Unwrap())
 		default:
@@ -168,6 +153,37 @@ func (enc encoder) encodeList(ctx context.Context, op *codecutil.Operation, menc
 	}
 
 	return nil
+}
+
+func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Iterable) (err error) {
+	iter, err := codecutil.NewIterator(ctx, value)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if closeErr := iter.Close(); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+	}()
+
+	list := runtime.NewArray(0)
+	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+		if err := op.Step(); err != nil {
+			return false, err
+		}
+
+		if err := list.Append(ctx, item); err != nil {
+			return false, err
+		}
+
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return enc.encodeList(ctx, op, menc, list)
 }
 
 func (enc encoder) encodeRange(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value *runtime.Range) error {

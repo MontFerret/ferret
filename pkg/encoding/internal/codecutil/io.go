@@ -1,5 +1,6 @@
-// Package codecutil owns the built-in codecs' bounded I/O and cancellation
-// checkpoints. It does not change the public reader/writer contract.
+// Package codecutil owns the built-in codecs' bounded I/O, cancellation
+// checkpoints, and acquired iterator cleanup. It does not change the public
+// reader/writer contract.
 package codecutil
 
 import (
