@@ -37,6 +37,7 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		return err
 	}
 
+	op.CacheValueAdopter()
 	writer := codecutil.Writer{Dst: dst, Op: op}
 
 	enc := vmmsgpack.GetEncoder()

@@ -1,6 +1,6 @@
 // Package codecutil owns the built-in codecs' bounded I/O, cancellation
-// checkpoints, and acquired iterator cleanup. It does not change the public
-// reader/writer contract.
+// checkpoints, borrowed adoption callbacks, and acquired iterator cleanup.
+// It does not change the public reader/writer contract.
 package codecutil
 
 import (
@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/encodingownership"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -58,6 +59,17 @@ func NewOperation(ctx context.Context, input any, name string) (Operation, error
 	op := Operation{ctx: ctx, done: ctx.Done()}
 
 	return op, op.Check()
+}
+
+// CacheValueAdopter binds a borrowed callback once after operation validation.
+// It changes neither the cancellation lifetime nor the context passed to hooks.
+func (op *Operation) CacheValueAdopter() {
+	op.ctx = encodingownership.NewOperationContext(op.ctx)
+}
+
+// ValueAdopter lends the cached callback only for this synchronous operation.
+func (op *Operation) ValueAdopter() func(runtime.Value) {
+	return encodingownership.OperationValueAdopter(op.ctx)
 }
 
 func (op *Operation) Check() error {

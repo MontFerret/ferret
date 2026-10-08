@@ -15,6 +15,9 @@ type (
 	outputIterator struct {
 		closeErr     error
 		duplicateErr error
+		nextErr      error
+		onClose      func()
+		onNext       func(context.Context, int)
 		items        []runtime.Value
 		index        int
 		closes       int
@@ -26,8 +29,21 @@ type (
 
 	outputIteratorLeaf struct {
 		closeErr error
+		onClose  func()
 		text     string
 		closes   int
+		marshals int
+	}
+
+	outputIteratorResource struct {
+		*outputIteratorLeaf
+		id uint64
+	}
+
+	outputIteratorHostList struct {
+		*runtime.Array
+		reads  int
+		closes int
 	}
 )
 
@@ -47,12 +63,20 @@ func (v *outputIterator) Iterate(context.Context) (runtime.Iterator, error) {
 	return v, nil
 }
 
-func (v *outputIterator) Next(context.Context) (runtime.Value, runtime.Value, error) {
+func (v *outputIterator) Next(ctx context.Context) (runtime.Value, runtime.Value, error) {
 	if v.closes != 0 {
 		return runtime.None, runtime.None, errors.New("iterating a closed resource")
 	}
 
+	if v.onNext != nil {
+		v.onNext(ctx, v.index)
+	}
+
 	if v.index >= len(v.items) {
+		if v.nextErr != nil {
+			return runtime.None, runtime.None, v.nextErr
+		}
+
 		return runtime.None, runtime.None, io.EOF
 	}
 
@@ -65,6 +89,10 @@ func (v *outputIterator) Next(context.Context) (runtime.Value, runtime.Value, er
 
 func (v *outputIterator) Close() error {
 	v.closes++
+	if v.onClose != nil {
+		v.onClose()
+	}
+
 	if v.closes > 1 {
 		return v.duplicateErr
 	}
@@ -101,6 +129,7 @@ func (v *outputIteratorLeaf) Copy() runtime.Value {
 }
 
 func (v *outputIteratorLeaf) MarshalJSON() ([]byte, error) {
+	v.marshals++
 	if v.closes != 0 {
 		return nil, errors.New("encoding a closed yielded resource")
 	}
@@ -109,6 +138,7 @@ func (v *outputIteratorLeaf) MarshalJSON() ([]byte, error) {
 }
 
 func (v *outputIteratorLeaf) MarshalMsgpack() ([]byte, error) {
+	v.marshals++
 	if v.closes != 0 {
 		return nil, errors.New("encoding a closed yielded resource")
 	}
@@ -118,6 +148,25 @@ func (v *outputIteratorLeaf) MarshalMsgpack() ([]byte, error) {
 
 func (v *outputIteratorLeaf) Close() error {
 	v.closes++
+	if v.onClose != nil {
+		v.onClose()
+	}
 
 	return v.closeErr
+}
+
+func (v *outputIteratorResource) ResourceID() uint64 {
+	return v.id
+}
+
+func (v *outputIteratorHostList) Length(context.Context) (runtime.Int, error) {
+	v.reads++
+
+	return 0, errors.New("host list was inspected")
+}
+
+func (v *outputIteratorHostList) Close() error {
+	v.closes++
+
+	return nil
 }

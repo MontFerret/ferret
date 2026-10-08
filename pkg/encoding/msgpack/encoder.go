@@ -167,8 +167,15 @@ func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, 
 		}
 	}()
 
+	adopt := op.ValueAdopter()
 	list := runtime.NewArray(0)
 	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+		// Yielding transfers discovery to the result before a checkpoint can stop
+		// collection. This callback is separate from user encoding hooks.
+		if adopt != nil {
+			adopt(item)
+		}
+
 		if err := op.Step(); err != nil {
 			return false, err
 		}

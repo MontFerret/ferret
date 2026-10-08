@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/internal/encodingownership"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
@@ -19,13 +20,15 @@ func Materialize(ctx context.Context, registry *encoding.Registry, contentType s
 
 	var encodeErr error
 	content, materializeErr := vm.Materialize[*encoding.Content](res, func(value runtime.Value) (vm.Materialized[*encoding.Content], error) {
+		adopter := outputValueAdopter{ctx: ctx, result: res}
+		encodeCtx := encodingownership.WithValueAdopter(ctx, adopter.Adopt)
 		enc := codec.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
 			res.AdoptValue(value)
 
 			return nil
 		}).Encoder()
 
-		data, err := encoding.EncodeBytes(ctx, enc, value)
+		data, err := encoding.EncodeBytes(encodeCtx, enc, value)
 		encodeErr = err
 		if err != nil && len(data) == 0 {
 			return vm.Materialized[*encoding.Content]{}, nil

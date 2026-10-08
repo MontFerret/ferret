@@ -73,8 +73,26 @@ Distinct acquired iterators close once after traversal and child encoding,
 including on failure and cancellation. MessagePack collects the items, encodes
 the collected list after successful traversal, then closes the iterator. A close
 failure therefore cannot skip the child hooks that register yielded resources
-with the VM result. Iterator close errors join encoding errors before the
-parent's post-hooks. The VM result remains responsible for closing adopted source
+with the VM result. Native materialization also lends a private, synchronous
+adoption callback through the operation context. MessagePack caches it once
+in its codec operation, invoking it immediately after each successful yield,
+before the collection cancellation checkpoint. It adopts the yielded resource
+and resources already stored in built-in arrays and objects into the same VM
+result as the normal ownership hook. Result resource-identity deduplication
+prevents those routes from closing comparable resources or ResourceID aliases
+twice. Direct codec calls without this callback keep caller-owned cleanup.
+
+Early adoption uses iterative, cycle-safe traversal of concrete runtime.Array
+and runtime.Object storage. It completes independently of cancellation, without
+invoking host collection capabilities, lazy iterables, marshalers, or user
+encoding hooks. Cycle protection resets for each yield so later mutations of a
+repeated container do not hide newly stored resources. Failed collection still
+skips child encoding and its hooks; it never reads more iterator values merely
+to discover ownership. The callback and traversal scratch belong only to the
+materialization operation and are not retained by codecs or their pools.
+
+Iterator close errors join encoding errors before the parent's post-hooks. The
+VM result remains responsible for closing adopted source
 and child resources. Direct codec callers retain that responsibility themselves.
 
 Native and UAPI output remain eager and byte-backed. Native materialization
@@ -96,8 +114,12 @@ nesting, integer widths, custom marshaler precedence, escaping, and hook order.
 Native/UAPI/debugger tests cover context forwarding and retained Content.
 Engine regressions also cover self-returned iterators and yielded resources when
 iterator closure fails, proving one cleanup owner through result and session
-teardown. Shared codec tests cover resource aliases, depth-first hooks, joined
-cleanup errors, cancellation, and dynamically non-comparable identities.
+teardown. Cancellation regressions cover directly yielded resources, stored
+container children, aliases, deep nesting, cycles, mutated containers, and a
+resource yielded exactly at a sampled cancellation checkpoint. Child cleanup
+errors remain separate from traversal and iterator cleanup errors. Shared codec
+tests cover resource aliases, depth-first hooks, joined cleanup errors,
+cancellation, and dynamically non-comparable identities.
 
 Compare the existing byte-oriented workloads with:
 
@@ -287,3 +309,118 @@ also rerun with the race detector. Formatting/lint used the previously described
 Go 1.26.8 tools and temporary ignored-bin exclusion. Linux/386 was compiled but
 not executed. The website encoder guide was updated without altering its
 unrelated existing edits, and its mage build and git diff --check passed.
+
+### Early MessagePack resource adoption measurements
+
+The canceled-collection regression was reproduced against 852e08c76afc before
+changing production code: yielded children received zero closes, including
+children in materialized containers and a resource yielded at the collection
+checkpoint. The fix registers ownership before that checkpoint without running
+child encoding hooks. Tests cover borrowed and owned iterators, traversal,
+deadline and cancellation errors, joined iterator and child cleanup failures,
+aliases, deep and cyclic containers, mutated repeated containers, direct codec
+cleanup responsibility, callback reuse, and successful depth-first hook order.
+
+Measurements on 2026-10-08 used Go 1.27.1, Darwin/arm64, Apple M2 Max, and
+GOMAXPROCS=12, with writable task-scoped caches and temporary directories. The
+native benchmark and its fixtures were added before the production change.
+Identical commands ran serially before and after; an isolated archive of the
+baseline was also measured again with the same native fixtures:
+
+```sh
+go test ./pkg/encoding/json ./pkg/encoding/msgpack \
+  -run '^$' -bench 'Benchmark(JSON|Msgpack)CodecEncode$' \
+  -benchmem -benchtime=200ms -count=5
+go test ./pkg/encoding -run '^$' -bench '^BenchmarkCodecIterable$' \
+  -benchmem -benchtime=200ms -count=5
+go test ./pkg/engine -run '^$' -bench '^BenchmarkSessionMsgpackIterable$' \
+  -benchmem -benchtime=200ms -count=5
+```
+
+The established byte-helper workloads retain all allocation counts and differ
+by at most two median bytes/op against the initial baseline. Timing medians
+range from -4.9% to -2.8% for unchanged JSON and -2.4% to 0.0% for MessagePack.
+Against the repeated baseline, they range from -3.0% to -0.5% and -3.1% to -0.4%,
+respectively. The unchanged JSON control also moved, so these results do not
+establish a general speedup. Five samples do not provide benchstat's 95%
+confidence interval.
+
+Generic iterables yield 1,024 integers to a warmed bytes.Buffer or io.Discard.
+These are median results against the initial baseline; allocation counts are
+unchanged:
+
+| Codec / iterator / writer | Before ns/op | Final ns/op | Time delta | Before → final B/op | Allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| JSON / owned / Buffer | 31,272 | 31,054 | -0.7% | 6,148 → 6,147 | 768 |
+| JSON / owned / Discard | 30,060 | 29,798 | -0.9% | 6,146 → 6,146 | 768 |
+| JSON / borrowed / Buffer | 31,447 | 31,325 | -0.4% | 6,147 → 6,148 | 768 |
+| JSON / borrowed / Discard | 30,313 | 30,087 | -0.7% | 6,147 → 6,146 | 768 |
+| MessagePack / owned / Buffer | 29,497 | 30,002 | +1.7% | 66,043 → 66,043 | 782 |
+| MessagePack / owned / Discard | 27,622 | 28,533 | +3.3% | 66,042 → 66,042 | 782 |
+| MessagePack / borrowed / Buffer | 29,619 | 30,202 | +2.0% | 66,043 → 66,043 | 782 |
+| MessagePack / borrowed / Discard | 27,772 | 28,346 | +2.1% | 66,042 → 66,042 | 782 |
+
+The repeated baseline places MessagePack's generic-iterable increase at
+1.0–2.3%. Review removed a prototype callback field that enlarged boxed codecs
+by 16 bytes, then removed an extra callback argument from recursive encoding
+calls that increased established MessagePack timings by approximately 6%.
+The final implementation caches the callback in the operation context, preserving
+codec and operation struct sizes and the existing recursive call signatures.
+
+The native workload runs a reusable session returning 1,024 scalar values,
+closable custom-marshaler values, or arrays containing objects with those
+resources. Run, Collect, output closure, and iterator/resource reset are timed;
+engine/plan/session construction is excluded. Median results against the initial
+baseline are:
+
+| Yielded values | Before ns/op | Final ns/op | Time delta | Before → final B/op | Before → final allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Scalars | 45,352 | 50,136 | +10.5% | 75,765 → 75,920 | 816 → 820 |
+| Direct resources | 249,739 | 280,179 | +12.2% | 435,480 → 435,626 | 3,924 → 3,928 |
+| Resources inside containers | 394,889 | 518,225 | +31.2% | 550,230 → 550,619 | 5,973 → 5,980 |
+
+Against the repeated baseline, the timing increases are 10.1%, 9.3%, and 28.8%.
+Early adoption adds operation-scoped callback/context state and resource
+registration in addition to the existing ownership hook. Stored-container
+discovery also adds a cycle set and iterative traversal scratch. These costs
+buy ownership settlement when collection or later encoding fails; they are not
+a constant-memory guarantee. MessagePack still buffers all yielded values for
+its array header, and the fixtures still allocate numeric keys and custom
+marshaler buffers.
+
+The mandatory second-pass review corrected per-yield cycle protection so a
+mutated repeated container is rescanned, removed the measured codec/call-shape
+overhead, and added a cancellation-checkpoint case whose cyclic container is
+adopted after the context becomes canceled. Direct encoding tests cover both
+success and failed collection without closing yielded resources. A host-map
+regression verifies one callback lookup per operation even when predicates use
+a different context. No public API, serialization, user-hook order, FQL
+semantics, query execution, or output lifecycle changed.
+
+Final validation completed after those corrections:
+
+```sh
+go test ./pkg/encoding/... ./pkg/internal/encodingownership \
+  ./pkg/engine ./pkg/debugger/... ./uapi/... -count=1
+GOTOOLCHAIN=go1.26.8 go test -race ./pkg/engine ./pkg/encoding/... \
+  ./pkg/internal/encodingownership \
+  -run 'Iterator|MsgpackOutputAdopts|MsgpackEarlyAdoption|CollectedResources|AdoptionCallback|ValueAdopter|DirectEncodingLeaves|CachesAdoption' \
+  -count=1
+GOTOOLCHAIN=go1.26.8 make test
+make compile compile-32bit
+GOTOOLCHAIN=go1.26.8 make fmt
+GOTOOLCHAIN=go1.26.8 make lint
+git diff --check
+```
+
+Focused tests, benchmarks, and compilation used Go 1.27.1; full tests, targeted
+race tests, formatting, and lint used Go 1.26.8. The full target includes unit
+and integration race suites, independent tools, compatibility, the facade,
+and security tests with permitted loopback access. The targeted filter has no
+matching JSON tests; the full target exercises JSON with the race detector.
+Formatting/lint retained the previously described toolchain and temporary
+ignored-bin exclusion. Read-only module-cache stat writes emitted non-fatal
+warnings during compile/lint. Linux/386 compiled successfully but was not
+executed. The website encoder guide was synchronized while preserving its
+unrelated edits; its mage build and git diff --check passed. Parser generation
+was not needed.
