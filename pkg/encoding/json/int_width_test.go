@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -15,12 +16,12 @@ func TestJSONIntegerWidth(t *testing.T) {
 		text := strconv.FormatInt(value, 10)
 		t.Run(text, func(t *testing.T) {
 			for _, document := range []string{text, fmt.Sprintf("{\"value\":[%s]}", text)} {
-				decoded, err := json.Default.Decode([]byte(document))
+				decoded, err := ferretencoding.DecodeBytes(t.Context(), json.Default, []byte(document))
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				encoded, err := json.Default.Encode(decoded)
+				encoded, err := ferretencoding.EncodeBytes(t.Context(), json.Default, decoded)
 				if err != nil || string(encoded) != document {
 					t.Fatalf("round trip = %s, %v; want %s", encoded, err, document)
 				}
@@ -46,7 +47,7 @@ func TestJSONIntegerWidth(t *testing.T) {
 	}
 
 	for _, document := range []string{"1.5", "1e3", "9223372036854775808", "-9223372036854775809"} {
-		decoded, err := json.Default.Decode([]byte(document))
+		decoded, err := ferretencoding.DecodeBytes(t.Context(), json.Default, []byte(document))
 		if _, ok := decoded.(runtime.Float); !ok || err != nil {
 			t.Errorf("%s decoded as %T(%v), %v; want Float", document, decoded, decoded, err)
 		}

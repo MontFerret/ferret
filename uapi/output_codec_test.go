@@ -1,7 +1,8 @@
 package uapi_test
 
 import (
-	"bytes"
+	"context"
+	"io"
 	"sync"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
@@ -22,14 +23,14 @@ type (
 		encoding.EncoderConfigurer
 	}
 
-	// This custom codec intentionally reuses private storage, detaching inside
-	// Encode under exclusive access, including on error and configured paths.
+	// This custom codec writes reusable private storage synchronously while
+	// holding exclusive access, including on error and configured paths.
 	detachedTestCodec struct {
 		err error
 		encodingjson.Codec
-		data     []byte
-		returned []byte
-		mu       sync.Mutex
+		data    []byte
+		written bool
+		mu      sync.Mutex
 	}
 
 	detachedTestEncoder struct {
@@ -43,19 +44,17 @@ type (
 	}
 )
 
-func (c emptyOutputCodec) Encode(value runtime.Value) ([]byte, error) {
-	return emptyOutputEncoder{Encoder: c.Codec}.Encode(value)
+func (c emptyOutputCodec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) error {
+	return emptyOutputEncoder{Encoder: c.Codec}.Encode(ctx, dst, value)
 }
 
 func (c emptyOutputCodec) EncodeWith() encoding.EncoderConfigurer {
 	return &emptyOutputConfigurer{EncoderConfigurer: c.Codec.EncodeWith()}
 }
 
-func (e emptyOutputEncoder) Encode(value runtime.Value) ([]byte, error) {
+func (e emptyOutputEncoder) Encode(ctx context.Context, dst io.Writer, value runtime.Value) error {
 	// Exercise the encoder and its ownership hooks, then produce zero bytes.
-	_, err := e.Encoder.Encode(value)
-
-	return nil, err
+	return e.Encoder.Encode(ctx, io.Discard, value)
 }
 
 func (c *emptyOutputConfigurer) PreHook(hook encoding.PreEncoderHook) encoding.EncoderConfigurer {
@@ -76,8 +75,8 @@ func (c *emptyOutputConfigurer) Encoder() encoding.Encoder {
 
 func (c *detachedTestCodec) ContentType() string { return "application/x-detached-test" }
 
-func (c *detachedTestCodec) Encode(value runtime.Value) ([]byte, error) {
-	return (detachedTestEncoder{codec: c, Encoder: c.Codec}).Encode(value)
+func (c *detachedTestCodec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) error {
+	return (detachedTestEncoder{codec: c, Encoder: c.Codec}).Encode(ctx, dst, value)
 }
 
 func (c *detachedTestCodec) EncodeWith() encoding.EncoderConfigurer {
@@ -100,14 +99,20 @@ func (c *detachedTestConfigurer) Encoder() encoding.Encoder {
 	return detachedTestEncoder{codec: c.codec, Encoder: c.base.Encoder()}
 }
 
-func (e detachedTestEncoder) Encode(value runtime.Value) ([]byte, error) {
-	if _, err := e.Encoder.Encode(value); err != nil {
-		return nil, err
+func (e detachedTestEncoder) Encode(ctx context.Context, dst io.Writer, value runtime.Value) error {
+	if err := e.Encoder.Encode(ctx, io.Discard, value); err != nil {
+		return err
 	}
 
 	e.codec.mu.Lock()
 	defer e.codec.mu.Unlock()
-	e.codec.returned = bytes.Clone(e.codec.data)
-
-	return e.codec.returned, e.codec.err
+	e.codec.written = true
+	n, err := dst.Write(e.codec.data)
+	if err == nil && n != len(e.codec.data) {
+		err = io.ErrShortWrite
+	}
+	if err != nil {
+		return err
+	}
+	return e.codec.err
 }

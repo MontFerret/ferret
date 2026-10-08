@@ -99,7 +99,7 @@ func TestRealOutputEncodingPresenceAndDetachment(t *testing.T) {
 			{name: "nil empty", present: true}, {name: "slice empty", data: []byte{}, present: true},
 			{name: "populated", data: []byte("42"), present: true},
 			{name: "absent failure", err: failure}, {name: "prefix failure", data: []byte("4"), err: failure, present: true},
-			{name: "empty failure", data: []byte{}, err: failure, present: true},
+			{name: "empty failure", data: []byte{}, err: failure},
 		} {
 			t.Run(map[bool]string{false: "native/", true: "uapi/"}[portable]+tc.name, func(t *testing.T) {
 				codec := &detachedTestCodec{data: tc.data, err: tc.err}
@@ -122,12 +122,8 @@ func TestRealOutputEncodingPresenceAndDetachment(t *testing.T) {
 				}
 
 				if content != nil {
-					if len(content.Data) > 0 && &content.Data[0] != &codec.returned[0] {
-						t.Fatal("materialization or adaptation copied owned encoder bytes")
-					}
-
-					if !bytes.Equal(content.Data, tc.data) || (content.Data == nil) != (tc.data == nil) {
-						t.Fatal("encoding changed bytes or empty presence")
+					if !bytes.Equal(content.Data, tc.data) {
+						t.Fatal("encoding changed bytes")
 					}
 
 					if content.Metadata.ContentType != codec.ContentType() || content.Metadata.LengthKnown != (tc.err == nil) {
@@ -458,7 +454,7 @@ func TestCollectedContentSerialization(t *testing.T) {
 	}
 }
 
-func TestRealOutputConsumePreservesEncoderBufferAndError(t *testing.T) {
+func TestRealOutputConsumePreservesWrittenPrefixAndError(t *testing.T) {
 	for _, portable := range []bool{false, true} {
 		t.Run(map[bool]string{false: "native", true: "uapi"}[portable], func(t *testing.T) {
 			failure := errors.New("partial encoding")
@@ -479,8 +475,8 @@ func TestRealOutputConsumePreservesEncoderBufferAndError(t *testing.T) {
 			calls := 0
 			err = out.Consume(t.Context(), func(_ context.Context, data []byte) error {
 				calls++
-				if string(data) != "4" || &data[0] != &codec.returned[0] {
-					t.Fatal("consumption or adaptation changed the encoder buffer")
+				if string(data) != "4" {
+					t.Fatal("consumption or adaptation changed the written prefix")
 				}
 
 				return nil
@@ -498,7 +494,7 @@ func TestDebugCompletionRetainsPartialContentAndErrors(t *testing.T) {
 	native, _ := newOutputExecutor(t, true,
 		ferret.WithEncodingCodec(codec.ContentType(), codec),
 		ferret.WithAfterRunHook(func(_ context.Context, err error) error {
-			if err != nil || codec.returned == nil {
+			if err != nil || !codec.written {
 				t.Error("debugger after hook lost its completion ordering")
 			}
 

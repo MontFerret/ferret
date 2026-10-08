@@ -85,17 +85,18 @@ remain safe from callbacks.
 
 Nil *Content means absent; any non-nil pointer means present, including nil or
 empty Data. Successful encoding records the selected codec's actual media type,
-the exact byte length, and LengthKnown=true. Non-nil encoder bytes returned with
-an error remain available with unknown total length; nil bytes with that error
-mean absence. Collected metadata remains the descriptor established before Run
-returns. Output.Metadata is immutable and available after closure.
+the exact byte length, and LengthKnown=true. A nonempty prefix written
+before an encoding error remains available with unknown total length; a
+zero-byte failure means absence. Collected metadata remains the descriptor
+established before Run returns. Output.Metadata is immutable after closure.
 
-Encoder.Encode transfers ownership of every returned slice, including on error.
-External custom encoders must detach reusable storage and borrowed runtime bytes
-inside Encode while access remains exclusive, before unlocking or recycling.
-Configured encoders have the same requirement. Built-in JSON and MessagePack
-already return buffers independent of their encoder and VM state. Core does not
-blanket-clone data in materialization, consumption, collection, or adaptation.
+Encoder.Encode now borrows a synchronous writer and caller context. Native
+materialization collects writes with EncodeBytes; the collecting buffer owns
+the resulting bytes, including error prefixes. Custom encoders may reuse their
+scratch after each Write returns, but must not retain or close caller I/O.
+Configured encoders share this contract. Core does not blanket-clone collected
+data in materialization, consumption, collection, or adaptation.
+See [codec I/O](codecs.md) for the canonical codec contract.
 
 Debugger services materialize *Content directly and retain their independent
 result cleanup and hook ordering. Completed events can carry content alongside
@@ -160,7 +161,7 @@ allocations. UAPI's extra wrapper accounts for 16 B and one allocation per run.
 The 1 MiB writer's amortized buffer allocation depends on iteration count.
 
 The allocation increase is fixed, rather than an additional payload-sized buffer.
-Tests establish encoder-buffer identity through native and UAPI collection and
+Tests establish detached collected data through native and UAPI collection and
 consumption, and borrowed-byte validity during closure. Unread outputs release
 temporary permits and VMs, and settled handles discard payload and cancellation
 references. Large-payload timing gains vary between runs and are not attributed
@@ -220,8 +221,8 @@ This migration changes Core only. Follow-up integrations must:
   runs; keep invocation contexts alive and observe terminal errors.
 - **Lab, editors, and tooling:** migrate live execution consumers and materialized
   event payloads to the new signatures and JSON shape.
-- **Custom codecs:** honor returned-byte ownership in ordinary and configured
-  encoder implementations, including error returns.
+- **Custom codecs:** adopt context-aware reader/writer methods and hooks; borrow
+  I/O synchronously without retention or closure, preserving errors and prefixes.
 - **Website documentation:** update embedding, configuration, SDK, codec, and
   remote-runtime examples to consumption, new error timing, and detached Content.
 

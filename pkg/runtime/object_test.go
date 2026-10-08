@@ -4,6 +4,7 @@ import (
 	c "context"
 	"testing"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 
 	. "github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -68,7 +69,7 @@ func TestObject(t *testing.T) {
 	Convey(".EncodeJSON", t, func() {
 		Convey("Should serialize an empty object", func() {
 			obj := NewObject()
-			marshaled, err := encodingjson.Default.Encode(obj)
+			marshaled, err := ferretencoding.EncodeBytes(t.Context(), encodingjson.Default, obj)
 
 			So(err, ShouldBeNil)
 
@@ -86,7 +87,7 @@ func TestObject(t *testing.T) {
 				"object":  NewObject(),
 			}
 			obj := NewObjectWith(vals)
-			marshaled, err := encodingjson.Default.Encode(obj)
+			marshaled, err := ferretencoding.EncodeBytes(t.Context(), encodingjson.Default, obj)
 
 			So(err, ShouldBeNil)
 

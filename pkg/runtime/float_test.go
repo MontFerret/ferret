@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
@@ -38,7 +39,7 @@ func TestFloat(t *testing.T) {
 			json1, err := json.Marshal(value)
 			So(err, ShouldBeNil)
 
-			json2, err := encodingjson.Default.Encode(runtime.NewFloat(value))
+			json2, err := ferretencoding.EncodeBytes(t.Context(), encodingjson.Default, runtime.NewFloat(value))
 			So(err, ShouldBeNil)
 
 			So(json1, ShouldResemble, json2)
