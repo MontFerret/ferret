@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"reflect"
 	"strings"
 
 	"github.com/MontFerret/ferret/v2/pkg/internal/encodingownership"
@@ -23,6 +24,13 @@ type (
 		ctx   context.Context
 		done  <-chan struct{}
 		steps uint8
+	}
+
+	// adopterContext keeps the cached callback without enlarging Operation.
+	// Its parent retains the original cancellation and context-value behavior.
+	adopterContext struct {
+		context.Context
+		adopt func(runtime.Value, bool)
 	}
 
 	// Writer detects short writes and stops forwarding after the first failure.
@@ -47,12 +55,24 @@ type (
 	}
 )
 
+// NewOperation validates borrowed I/O once. Cancellation returns the validated
+// operation so encoding can discover its root before abandoning it; invalid
+// arguments return an empty operation with no borrowed callback.
 func NewOperation(ctx context.Context, input any, name string) (Operation, error) {
 	if ctx == nil {
 		return Operation{}, runtime.Error(runtime.ErrInvalidArgument, "codec context is nil")
 	}
 
-	if input == nil {
+	value := reflect.ValueOf(input)
+	isNil := !value.IsValid()
+	if !isNil {
+		switch value.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+			isNil = value.IsNil()
+		}
+	}
+
+	if isNil {
 		return Operation{}, runtime.Errorf(runtime.ErrInvalidArgument, "codec %s is nil", name)
 	}
 
@@ -64,12 +84,18 @@ func NewOperation(ctx context.Context, input any, name string) (Operation, error
 // CacheValueAdopter binds a borrowed callback once after operation validation.
 // It changes neither the cancellation lifetime nor the context passed to hooks.
 func (op *Operation) CacheValueAdopter() {
-	op.ctx = encodingownership.NewOperationContext(op.ctx)
+	if adopt := encodingownership.ValueAdopterFromContext(op.ctx); adopt != nil {
+		op.ctx = &adopterContext{Context: op.ctx, adopt: adopt}
+	}
 }
 
-// ValueAdopter lends the cached callback only for this synchronous operation.
-func (op *Operation) ValueAdopter() func(runtime.Value) {
-	return encodingownership.OperationValueAdopter(op.ctx)
+// Adopt registers a visit, optionally discovering concrete stored descendants.
+// Acquisition boundaries and abandoned containers request discovery; ordinary
+// recursive visits register directly to keep hook-free traversal linear.
+func (op *Operation) Adopt(value runtime.Value, stored bool) {
+	if ctx, ok := op.ctx.(*adopterContext); ok {
+		ctx.adopt(value, stored)
+	}
 }
 
 func (op *Operation) Check() error {

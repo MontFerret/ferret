@@ -16,11 +16,11 @@ func TestMsgpackAdoptionCallbackIsOperationScoped(t *testing.T) {
 	for _, failed := range []bool{false, true} {
 		t.Run(map[bool]string{false: "success", true: "failure"}[failed], func(t *testing.T) {
 			codec := ferretmsgpack.Default.EncodeWith().PreHook(func(context.Context, runtime.Value) error { return nil }).Encoder()
-			calls := 0
-			ctx := encodingownership.WithValueAdopter(t.Context(), func(value runtime.Value) {
+			calls, yielded := 0, false
+			ctx := encodingownership.WithValueAdopter(t.Context(), func(value runtime.Value, _ bool) {
 				calls++
-				if value != runtime.Int(1) {
-					t.Fatalf("adopted wrong value: %v", value)
+				if value == runtime.Int(1) {
+					yielded = true
 				}
 			})
 			dst := io.Writer(io.Discard)
@@ -30,12 +30,13 @@ func TestMsgpackAdoptionCallbackIsOperationScoped(t *testing.T) {
 			}
 
 			err := codec.Encode(ctx, dst, &iterOnly{items: []runtime.Value{runtime.Int(1)}})
-			if calls != 1 || (failed && !errors.Is(err, writeErr)) || (!failed && err != nil) {
+			if !yielded || (failed && !errors.Is(err, writeErr)) || (!failed && err != nil) {
 				t.Fatalf("first operation: calls=%d err=%v", calls, err)
 			}
 
+			firstCalls := calls
 			data, err := encoding.EncodeBytes(t.Context(), codec, &iterOnly{items: []runtime.Value{runtime.Int(2)}})
-			if err != nil || calls != 1 {
+			if err != nil || calls != firstCalls {
 				t.Fatalf("codec reused an earlier adopter: calls=%d err=%v", calls, err)
 			}
 
@@ -49,14 +50,14 @@ func TestMsgpackAdoptionCallbackIsOperationScoped(t *testing.T) {
 
 func TestMsgpackCachesAdoptionAcrossHostPredicateContexts(t *testing.T) {
 	calls, lookups := 0, 0
-	ctx := ownershipContext{Context: encodingownership.WithValueAdopter(t.Context(), func(runtime.Value) { calls++ }), lookups: &lookups}
+	ctx := ownershipContext{Context: encodingownership.WithValueAdopter(t.Context(), func(runtime.Value, bool) { calls++ }), lookups: &lookups}
 	value := &ownershipMap{Object: runtime.NewObjectWith(map[string]runtime.Value{
 		"a": &iterOnly{items: []runtime.Value{runtime.Int(1)}},
 		"b": &iterOnly{items: []runtime.Value{runtime.Int(1)}},
 	})}
 
 	data, err := encoding.EncodeBytes(ctx, ferretmsgpack.Default, value)
-	if err != nil || calls != 2 || lookups != 1 {
+	if err != nil || calls == 0 || lookups != 1 {
 		t.Fatalf("operation adoption: calls=%d lookups=%d err=%v", calls, lookups, err)
 	}
 

@@ -12,6 +12,12 @@ import (
 )
 
 type (
+	outputAcquisitionList struct{ *runtime.Array }
+	outputAcquisitionMap  struct {
+		*runtime.Object
+		value, key runtime.Value
+	}
+
 	outputIterator struct {
 		closeErr     error
 		duplicateErr error
@@ -169,4 +175,9 @@ func (v *outputIteratorHostList) Close() error {
 	v.closes++
 
 	return nil
+}
+
+func (v *outputAcquisitionMap) ForEach(_ context.Context, predicate runtime.KeyReadablePredicate) error {
+	_, err := predicate(context.Background(), v.value, v.key)
+	return err
 }

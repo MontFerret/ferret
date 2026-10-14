@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
 	"github.com/MontFerret/ferret/v2/pkg/internal/encodingownership"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
@@ -20,13 +22,20 @@ func Materialize(ctx context.Context, registry *encoding.Registry, contentType s
 
 	var encodeErr error
 	content, materializeErr := vm.Materialize[*encoding.Content](res, func(value runtime.Value) (vm.Materialized[*encoding.Content], error) {
-		adopter := outputValueAdopter{ctx: ctx, result: res}
+		adopter := outputValueAdopter{result: res}
 		encodeCtx := encodingownership.WithValueAdopter(ctx, adopter.Adopt)
-		enc := codec.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
-			res.AdoptValue(value)
+		enc := encoding.Encoder(codec)
 
-			return nil
-		}).Encoder()
+		switch codec.(type) {
+		case encodingjson.Codec, *encodingjson.Codec, encodingmsgpack.Codec, *encodingmsgpack.Codec:
+			// Built-ins discover acquisitions before hooks and error checkpoints.
+		default:
+			// Preserve ownership-hook compatibility for custom codecs and decorators.
+			enc = codec.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
+				res.AdoptValue(value)
+				return nil
+			}).Encoder()
+		}
 
 		data, err := encoding.EncodeBytes(encodeCtx, enc, value)
 		encodeErr = err

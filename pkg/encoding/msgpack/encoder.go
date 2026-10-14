@@ -17,11 +17,14 @@ type encoder struct {
 }
 
 func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Value) error {
+	op.Adopt(value, len(enc.pre) > 0 || len(enc.post) > 0)
 	if err := op.Step(); err != nil {
+		op.Adopt(value, true)
 		return err
 	}
 
 	if err := enc.runPreHooks(ctx, value); err != nil {
+		op.Adopt(value, true)
 		return err
 	}
 
@@ -72,8 +75,16 @@ func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, men
 		}
 	}
 
+	if len(enc.post) > 0 {
+		op.Adopt(value, true)
+	}
+
 	if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
-		return errors.Join(err, hookErr)
+		err = errors.Join(err, hookErr)
+	}
+
+	if err != nil || len(enc.pre) > 0 || len(enc.post) > 0 {
+		op.Adopt(value, true)
 	}
 
 	return err
@@ -113,8 +124,15 @@ func (enc encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc 
 		return err
 	}
 
+	_, stored := value.(*runtime.Object)
 	return value.ForEach(ctx, func(ctx context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+		op.Adopt(val, !stored)
+		op.Adopt(key, !stored)
+
 		if err := menc.EncodeString(key.String()); err != nil {
+			op.Adopt(val, true)
+			op.Adopt(key, true)
+
 			return false, err
 		}
 
@@ -141,10 +159,17 @@ func (enc encoder) encodeList(ctx context.Context, op *codecutil.Operation, menc
 		return err
 	}
 
+	_, stored := value.(*runtime.Array)
 	for i := runtime.Int(0); i < length; i++ {
 		item, err := value.At(ctx, i)
 		if err != nil {
 			return err
+		}
+
+		// Native storage immediately enters encodeValue, which registers before
+		// its first checkpoint. Host acquisitions also discover stored children.
+		if !stored {
+			op.Adopt(item, true)
 		}
 
 		if err := enc.encodeValue(ctx, op, menc, item); err != nil {
@@ -161,20 +186,23 @@ func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, 
 		return err
 	}
 
+	list := runtime.NewArray(0)
 	defer func() {
 		if closeErr := iter.Close(); closeErr != nil {
 			err = errors.Join(err, closeErr)
 		}
-	}()
 
-	adopt := op.ValueAdopter()
-	list := runtime.NewArray(0)
-	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+		if err != nil || len(enc.pre) > 0 || len(enc.post) > 0 {
+			// Hooks or host traversal can mutate another collected container.
+			// Discover its stored children before leaving the internal buffer.
+			op.Adopt(list, true)
+		}
+	}()
+	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, key runtime.Value) (runtime.Boolean, error) {
 		// Yielding transfers discovery to the result before a checkpoint can stop
 		// collection. This callback is separate from user encoding hooks.
-		if adopt != nil {
-			adopt(item)
-		}
+		op.Adopt(item, true)
+		op.Adopt(key, true)
 
 		if err := op.Step(); err != nil {
 			return false, err
@@ -188,6 +216,10 @@ func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, 
 	})
 	if err != nil {
 		return err
+	}
+
+	if len(enc.pre) > 0 || len(enc.post) > 0 {
+		op.Adopt(list, true)
 	}
 
 	return enc.encodeList(ctx, op, menc, list)

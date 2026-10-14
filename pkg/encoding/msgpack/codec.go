@@ -38,10 +38,12 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 	}
 
 	op.CacheValueAdopter()
-	writer := codecutil.Writer{Dst: dst, Op: op}
+	op.Adopt(value, true)
 
+	writer := codecutil.Writer{Dst: dst, Op: op}
 	enc := vmmsgpack.GetEncoder()
 	enc.Reset(&writer)
+	// PutEncoder clears the writer, releasing the borrowed operation callback.
 	defer vmmsgpack.PutEncoder(enc)
 
 	if err := c.encodeValue(ctx, &writer.Op, enc, value); err != nil {

@@ -8,16 +8,20 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-// outputValueAdopter discovers only resources already present in yielded values.
+// outputValueAdopter discovers resources already present in concrete stored values.
 // Host capabilities and lazy iterables remain with the encoder's normal traversal.
 type outputValueAdopter struct {
-	ctx     context.Context
 	result  *vm.Result
 	seen    map[runtime.Value]struct{}
 	pending []runtime.Value
 }
 
-func (a *outputValueAdopter) Adopt(value runtime.Value) {
+func (a *outputValueAdopter) Adopt(value runtime.Value, stored bool) {
+	if !stored {
+		a.result.AdoptValue(value)
+		return
+	}
+
 	switch value.(type) {
 	case *runtime.Array, *runtime.Object:
 	default:
@@ -26,27 +30,29 @@ func (a *outputValueAdopter) Adopt(value runtime.Value) {
 		return
 	}
 
-	// A host may update and yield the same container again. Cycle protection is
-	// per yield so that later stored children still acquire cleanup ownership.
+	// Hosts and hooks may update the same container between discoveries. Reset
+	// cycle protection so later stored children still acquire cleanup ownership.
 	defer func() { clear(a.seen) }()
 	a.pending = append(a.pending, value)
+
 	for len(a.pending) > 0 {
 		last := len(a.pending) - 1
 		item := a.pending[last]
 		a.pending[last] = nil
 		a.pending = a.pending[:last]
-		a.result.AdoptValue(item)
 		start := len(a.pending)
 
 		// Only these concrete, materialized containers have non-blocking storage
-		// access independent of cancellation. Never inspect a host collection.
+		// access independent of cancellation. Their ForEach methods only return
+		// predicate errors; this always-successful predicate cannot fail. Never
+		// inspect a host collection or a lazy iterable.
 		switch container := item.(type) {
 		case *runtime.Array:
 			if container == nil || a.visited(container) {
 				continue
 			}
 
-			_ = container.ForEach(a.ctx, func(_ context.Context, child runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
+			_ = container.ForEach(context.Background(), func(_ context.Context, child runtime.Value, _ runtime.Int) (runtime.Boolean, error) {
 				a.pending = append(a.pending, child)
 
 				return true, nil
@@ -56,11 +62,13 @@ func (a *outputValueAdopter) Adopt(value runtime.Value) {
 				continue
 			}
 
-			_ = container.ForEach(a.ctx, func(_ context.Context, child, _ runtime.Value) (runtime.Boolean, error) {
+			_ = container.ForEach(context.Background(), func(_ context.Context, child, _ runtime.Value) (runtime.Boolean, error) {
 				a.pending = append(a.pending, child)
 
 				return true, nil
 			})
+		default:
+			a.result.AdoptValue(item)
 		}
 
 		// Keep the discovered children's cleanup order consistent with traversal.

@@ -185,3 +185,14 @@ func TestCodecIteratorSettlesFailureAndCancellation(t *testing.T) {
 		})
 	}
 }
+
+func TestCodecIteratorRetainsJoinedExhaustionFailure(t *testing.T) {
+	nextErr, closeErr := errors.New("next failed"), errors.New("close failed")
+	for _, codec := range []encoding.Codec{ferretjson.Default, ferretmsgpack.Default} {
+		iter := &codecIterator{nextErr: errors.Join(io.EOF, nextErr), closeErr: closeErr}
+		err := codec.Encode(t.Context(), io.Discard, &codecIterable{iter: iter})
+		if !errors.Is(err, nextErr) || !errors.Is(err, io.EOF) || !errors.Is(err, closeErr) || iter.closes != 1 {
+			t.Fatalf("%s: closes=%d err=%v", codec.ContentType(), iter.closes, err)
+		}
+	}
+}

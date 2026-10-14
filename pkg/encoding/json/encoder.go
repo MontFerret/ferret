@@ -30,11 +30,14 @@ type (
 )
 
 func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value runtime.Value) error {
+	state.writer.Op.Adopt(value, len(enc.pre) > 0 || len(enc.post) > 0)
 	if err := state.writer.Op.Step(); err != nil {
+		state.writer.Op.Adopt(value, true)
 		return err
 	}
 
 	if err := enc.runPreHooks(ctx, value); err != nil {
+		state.writer.Op.Adopt(value, true)
 		return err
 	}
 
@@ -43,8 +46,16 @@ func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value ru
 		value = runtime.None
 	}
 
+	if len(enc.post) > 0 {
+		state.writer.Op.Adopt(value, true)
+	}
+
 	if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
-		return errors.Join(err, hookErr)
+		err = errors.Join(err, hookErr)
+	}
+
+	if err != nil || len(enc.pre) > 0 || len(enc.post) > 0 {
+		state.writer.Op.Adopt(value, true)
 	}
 
 	return err
@@ -141,10 +152,17 @@ func (enc encoder) encodeMap(ctx context.Context, state *encodeState, value runt
 		return err
 	}
 
+	_, stored := value.(*runtime.Object)
 	first := true
 	err := value.ForEach(ctx, func(ctx context.Context, val, key runtime.Value) (runtime.Boolean, error) {
+		state.writer.Op.Adopt(val, !stored)
+		state.writer.Op.Adopt(key, !stored)
+
 		if !first {
 			if err := state.writer.WriteByte(','); err != nil {
+				state.writer.Op.Adopt(val, true)
+				state.writer.Op.Adopt(key, true)
+
 				return false, err
 			}
 		}
@@ -152,10 +170,16 @@ func (enc encoder) encodeMap(ctx context.Context, state *encodeState, value runt
 		first = false
 
 		if err := state.writeJSONString(key.String()); err != nil {
+			state.writer.Op.Adopt(val, true)
+			state.writer.Op.Adopt(key, true)
+
 			return false, err
 		}
 
 		if err := state.writer.WriteByte(':'); err != nil {
+			state.writer.Op.Adopt(val, true)
+			state.writer.Op.Adopt(key, true)
+
 			return false, err
 		}
 
@@ -183,16 +207,20 @@ func (enc encoder) encodeList(ctx context.Context, state *encodeState, value run
 		return err
 	}
 
+	_, stored := value.(*runtime.Array)
 	for i := runtime.Int(0); i < length; i++ {
-		if i > 0 {
-			if err := state.writer.WriteByte(','); err != nil {
-				return err
-			}
-		}
-
 		item, err := value.At(ctx, i)
 		if err != nil {
 			return err
+		}
+		state.writer.Op.Adopt(item, !stored)
+
+		if i > 0 {
+			if err := state.writer.WriteByte(','); err != nil {
+				state.writer.Op.Adopt(item, true)
+
+				return err
+			}
 		}
 
 		if err := enc.encodeValue(ctx, state, item); err != nil {
@@ -220,9 +248,15 @@ func (enc encoder) encodeIterable(ctx context.Context, state *encodeState, value
 	}()
 
 	first := true
-	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, _ runtime.Value) (runtime.Boolean, error) {
+	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, key runtime.Value) (runtime.Boolean, error) {
+		state.writer.Op.Adopt(item, true)
+		state.writer.Op.Adopt(key, true)
+
 		if !first {
 			if err := state.writer.WriteByte(','); err != nil {
+				state.writer.Op.Adopt(item, true)
+				state.writer.Op.Adopt(key, true)
+
 				return false, err
 			}
 		}

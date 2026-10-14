@@ -38,6 +38,9 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		return err
 	}
 
+	op.CacheValueAdopter()
+	op.Adopt(value, true)
+
 	state := encodePool.Get().(*encodeState)
 	state.writer = codecutil.Writer{Dst: dst, Op: op}
 

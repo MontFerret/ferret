@@ -383,3 +383,37 @@ func TestJSONChunkedEscapingAndBinary(t *testing.T) {
 		t.Fatal("base64 bytes changed")
 	}
 }
+
+func TestCodecRejectsTypedNilIOBeforeHooks(t *testing.T) {
+	for _, codec := range []encoding.Codec{ferretjson.Default, ferretmsgpack.Default} {
+		t.Run(codec.ContentType(), func(t *testing.T) {
+			calls := 0
+			enc := codec.EncodeWith().PreHook(func(context.Context, runtime.Value) error { calls++; return nil }).Encoder()
+			dec := codec.DecodeWith().PreHook(func(context.Context) error { calls++; return nil }).Decoder()
+			for _, dst := range []io.Writer{(*failingWriter)(nil), nilWriterFunc(nil), nilWriterSlice(nil), nilWriterMap(nil)} {
+				if err := enc.Encode(t.Context(), dst, runtime.Int(1)); !errors.Is(err, runtime.ErrInvalidArgument) {
+					t.Fatalf("%T writer: %v", dst, err)
+				}
+			}
+			for _, src := range []io.Reader{(*chunkReader)(nil), nilReaderFunc(nil)} {
+				if _, err := dec.Decode(t.Context(), src); !errors.Is(err, runtime.ErrInvalidArgument) {
+					t.Fatalf("%T reader: %v", src, err)
+				}
+			}
+			if calls != 0 {
+				t.Fatalf("invalid I/O ran %d hooks", calls)
+			}
+			if err := enc.Encode(t.Context(), nilWriterFunc(func([]byte) (int, error) { return 1, nil }), runtime.Int(1)); err != nil {
+				t.Fatal(err)
+			}
+			data, err := encoding.EncodeBytes(t.Context(), codec, runtime.Int(1))
+			if err != nil {
+				t.Fatal(err)
+			}
+			reader := bytes.NewReader(data)
+			if value, err := dec.Decode(t.Context(), nilReaderFunc(reader.Read)); err != nil || value != runtime.Int(1) {
+				t.Fatalf("valid value reader: value=%v err=%v", value, err)
+			}
+		})
+	}
+}
