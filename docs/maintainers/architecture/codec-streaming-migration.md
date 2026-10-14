@@ -5,6 +5,102 @@ The current contract is documented in [Codec I/O](codecs.md). The historical
 sections below describe intermediate implementations; the final comparison and
 validation section records the follow-up results.
 
+## Cancellation initialization correction (2026-10-14)
+
+Tested PR head `704fe1a603892a3de5de6bb61fa4209f0e9cb4d2` plus the
+uncommitted correction to `codecutil.NewOperation`, the four JSON/MessagePack
+entry points, their codec/session regressions and fixtures, and the lifecycle
+documentation. The Core checkout was clean before this correction. Existing
+website edits were preserved outside the narrow Value Encoders clarification.
+
+Operation construction now validates arguments and initializes state without
+checking cancellation. Encoders bind the adopter, report the stored root, and
+check cancellation directly before acquiring serialization state or entering
+hooks. Decoders check directly after validation, before hooks or reads. Invalid
+arguments still take precedence over cancellation. The private callback cache,
+stored-graph walker, iterator handle, result lifecycle, public API, successful
+formats, and FQL semantics are unchanged.
+
+Before the production correction, the strengthened root test failed independently
+for JSON and MessagePack: canceled and expired contexts skipped discovery;
+cancellation inside discovery allowed three writes (10 JSON bytes or 8
+MessagePack bytes), and configured encoders ran two pre-hooks and two post-hooks.
+The real materialization regression also failed for both codecs: result cleanup
+closed neither stored descendant and lost the sentinel close error.
+
+```sh
+go test ./pkg/encoding -run '^TestCodecRootDiscoverySurvivesCancellation$' -count=1
+go test ./pkg/encoding \
+  -run '^TestCodec(RootDiscoverySurvivesCancellation|CanceledEncodeDoesNotEvaluateHostValues|RejectsTypedNilIOBeforeHooks|DecoderCancellationPreventsHooksAndReads)$' \
+  -count=1
+go test ./pkg/engine/internal/session \
+  -run '^TestMaterializeCanceledRootRetainsDiscoveredResources$' -count=1
+```
+
+The new validation and decoder cases passed before the fix. Afterward, all new
+regressions passed, including default/configured codecs, expired deadlines,
+cancellation during discovery, callback/writer independence, typed-nil validation
+precedence, ordinary and byte-scanner readers, and suppressed host capabilities
+and custom marshalers. The session regression attaches nested stored descendants
+only after live VM execution, uses the actual Materialize adopter, and proves
+absent content, no premature closure, preserved cleanup errors, comparable-alias
+deduplication, repeated cleanup, and no host/lazy traversal.
+
+Validation used task-scoped writable GOCACHE, GOTMPDIR, TMPDIR, and
+STATICCHECK_CACHE on Darwin/arm64. Go 1.27.1 passed the focused, full root-module,
+and focused race suites:
+
+```sh
+go test ./pkg/encoding ./pkg/engine/internal/session \
+  -run '^Test(Codec(RootDiscoverySurvivesCancellation|CanceledEncodeDoesNotEvaluateHostValues|RejectsTypedNilIOBeforeHooks|DecoderCancellationPreventsHooksAndReads)|MaterializeCanceledRootRetainsDiscoveredResources)$' \
+  -count=1
+go test ./pkg/encoding -run '^TestCodecRootDiscoverySurvivesCancellation$' -count=1
+go test ./pkg/encoding/... ./pkg/engine/... ./pkg/vm/... ./pkg/debugger/... ./uapi/... -count=1
+go test ./... -count=1
+go test -race ./pkg/encoding/... ./pkg/engine/... ./pkg/vm/... -count=1
+```
+
+The first full-suite attempt failed only because sandbox restrictions denied
+httptest loopback listeners in `pkg/net/http` and `test/security`. The unchanged
+full-suite rerun passed with permitted loopback access.
+
+The repository target also passed with permitted loopback access on Go 1.26.8,
+including package and integration race suites, both independent API-tool modules,
+compatibility, the public facade, and security tests. Test caching was disabled:
+
+```sh
+GOTOOLCHAIN=go1.26.8 GOFLAGS=-count=1 make test
+```
+
+Formatting and lint used Go 1.26.8 and the Makefile-pinned tools:
+
+```sh
+GOTOOLCHAIN=go1.26.8 make fmt
+GOTOOLCHAIN=go1.26.8 make lint
+GOTOOLCHAIN=go1.26.8 revive -config revive.toml -formatter stylish \
+  -exclude ./pkg/parser/fql/... -exclude ./vendor/... -exclude './*_test.go' \
+  -exclude ./bin/... ./...
+git diff --check
+```
+
+Formatting passed without additional tracked-file changes. The unmodified lint
+target passed all Staticcheck stages, then Revive reported 216 findings solely
+in generated parser files under the pre-existing ignored
+`bin/website-output-docs/core-snapshot`. Revive passed with that ignored `bin/`
+tree excluded as shown above; no repository lint configuration or snapshot was
+changed. The complete implementation, new scanner fixture, and documentation
+received a second-pass review with no actionable findings.
+
+The website Value Encoders guide received only the initialization clarification.
+Its `mage build` passed with CI-pinned Hugo 0.159.1 extended on PATH, Go 1.27.1,
+and a task-scoped MAGEFILE_CACHE. The rendered page contained the revised
+validation/discovery/cancellation ordering; website `git diff --check` passed.
+SHA-256 comparison confirmed all other 310 tracked/unignored paths unchanged,
+and the edited page retained all pre-existing edits outside the correction.
+The build emitted the existing `.Site.Data` deprecation warning. No performance
+benchmarks were added or run for this correction; historical measurements below
+remain unchanged.
+
 ## Validation and performance
 
 Shared reader/writer tests cover prefix failures, short and zero-progress writes,

@@ -40,9 +40,18 @@ descendant failures. Joined errors preserve operation and hook causes.
 
 Contexts reach hooks and runtime capabilities. Built-ins reject nil contexts and
 nil or typed-nil readers/writers with errors wrapping runtime.ErrInvalidArgument.
-They check cancellation at entry, bounded I/O boundaries, every 256 traversal
-values/tokens, and between
-large payload chunks. They avoid ctx.Err calls on every item. Arbitrary blocking
+Argument validation precedes ownership discovery and cancellation, so invalid
+I/O remains an invalid-argument failure even with a canceled context.
+
+After validation, encoding binds the optional ownership callback and completes
+stored-root discovery before checking cancellation directly. This check also
+observes cancellation during discovery and returns before user hooks,
+serialization, or writes begin. Decoding checks cancellation directly after
+validation, before hooks or reads; it has no source-root discovery phase.
+
+Once an operation starts, built-ins check cancellation at bounded I/O boundaries,
+every 256 traversal values/tokens, and between large payload chunks. They avoid
+ctx.Err calls on every item. Arbitrary blocking
 I/O and context-free custom marshalers cannot be forcibly interrupted.
 Context-free Go MarshalJSON protocols use background context only at that
 unavoidable boundary; stdlib and HTTP adapters use their caller's context.

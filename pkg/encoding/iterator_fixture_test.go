@@ -9,7 +9,8 @@ import (
 
 type (
 	codecIterable struct {
-		iter runtime.Iterator
+		iter      runtime.Iterator
+		onIterate func()
 	}
 
 	codecIterator struct {
@@ -50,6 +51,10 @@ func (v *codecIterable) Copy() runtime.Value {
 }
 
 func (v *codecIterable) Iterate(context.Context) (runtime.Iterator, error) {
+	if v.onIterate != nil {
+		v.onIterate()
+	}
+
 	return v.iter, nil
 }
 

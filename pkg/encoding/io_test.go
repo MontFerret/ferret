@@ -8,10 +8,12 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	ferretjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	ferretmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
+	"github.com/MontFerret/ferret/v2/pkg/internal/encodingownership"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -387,32 +389,172 @@ func TestJSONChunkedEscapingAndBinary(t *testing.T) {
 func TestCodecRejectsTypedNilIOBeforeHooks(t *testing.T) {
 	for _, codec := range []encoding.Codec{ferretjson.Default, ferretmsgpack.Default} {
 		t.Run(codec.ContentType(), func(t *testing.T) {
-			calls := 0
-			enc := codec.EncodeWith().PreHook(func(context.Context, runtime.Value) error { calls++; return nil }).Encoder()
-			dec := codec.DecodeWith().PreHook(func(context.Context) error { calls++; return nil }).Decoder()
-			for _, dst := range []io.Writer{(*failingWriter)(nil), nilWriterFunc(nil), nilWriterSlice(nil), nilWriterMap(nil)} {
-				if err := enc.Encode(t.Context(), dst, runtime.Int(1)); !errors.Is(err, runtime.ErrInvalidArgument) {
-					t.Fatalf("%T writer: %v", dst, err)
-				}
+			for _, state := range []string{"nil_context", "live", "canceled"} {
+				t.Run(state, func(t *testing.T) {
+					ctx, cancel := context.WithCancel(t.Context())
+					defer cancel()
+
+					if state == "canceled" {
+						cancel()
+					}
+
+					adoptions, pre, post := 0, 0, 0
+					ctx = encodingownership.WithValueAdopter(ctx, func(runtime.Value, bool) { adoptions++ })
+					enc := codec.EncodeWith().PreHook(func(context.Context, runtime.Value) error {
+						pre++
+
+						return nil
+					}).PostHook(func(context.Context, runtime.Value, error) error {
+						post++
+
+						return nil
+					}).Encoder()
+					dec := codec.DecodeWith().PreHook(func(context.Context) error {
+						pre++
+
+						return nil
+					}).PostHook(func(context.Context, runtime.Value, error) error {
+						post++
+
+						return nil
+					}).Decoder()
+
+					if state == "nil_context" {
+						writer := &failingWriter{limit: 100}
+						if err := enc.Encode(nil, writer, runtime.Int(1)); !errors.Is(err, runtime.ErrInvalidArgument) {
+							t.Errorf("nil encoding context: %v", err)
+						}
+
+						reader := &countedScanner{Reader: bytes.NewReader([]byte("1"))}
+						if value, err := dec.Decode(nil, reader); value != runtime.None || !errors.Is(err, runtime.ErrInvalidArgument) {
+							t.Errorf("nil decoding context: value=%v err=%v", value, err)
+						}
+
+						if writer.calls != 0 || writer.closed || reader.reads != 0 || reader.readBytes != 0 || reader.unreadBytes != 0 || reader.closed {
+							t.Error("nil context touched borrowed I/O")
+						}
+					} else {
+						for _, test := range []struct {
+							dst  io.Writer
+							name string
+						}{
+							{name: "nil"},
+							{name: "pointer", dst: (*failingWriter)(nil)},
+							{name: "function", dst: nilWriterFunc(nil)},
+							{name: "slice", dst: nilWriterSlice(nil)},
+							{name: "map", dst: nilWriterMap(nil)},
+						} {
+							t.Run("writer/"+test.name, func(t *testing.T) {
+								err := enc.Encode(ctx, test.dst, runtime.Int(1))
+								if !errors.Is(err, runtime.ErrInvalidArgument) || errors.Is(err, context.Canceled) {
+									t.Fatalf("invalid writer: %v", err)
+								}
+							})
+						}
+
+						for _, test := range []struct {
+							src  io.Reader
+							name string
+						}{
+							{name: "nil"},
+							{name: "pointer", src: (*chunkReader)(nil)},
+							{name: "function", src: nilReaderFunc(nil)},
+						} {
+							t.Run("reader/"+test.name, func(t *testing.T) {
+								value, err := dec.Decode(ctx, test.src)
+								if value != runtime.None || !errors.Is(err, runtime.ErrInvalidArgument) || errors.Is(err, context.Canceled) {
+									t.Fatalf("invalid reader: value=%v err=%v", value, err)
+								}
+							})
+						}
+					}
+
+					if adoptions != 0 || pre != 0 || post != 0 {
+						t.Fatalf("invalid arguments caused side effects: adoptions=%d pre=%d post=%d", adoptions, pre, post)
+					}
+				})
 			}
-			for _, src := range []io.Reader{(*chunkReader)(nil), nilReaderFunc(nil)} {
-				if _, err := dec.Decode(t.Context(), src); !errors.Is(err, runtime.ErrInvalidArgument) {
-					t.Fatalf("%T reader: %v", src, err)
-				}
-			}
-			if calls != 0 {
-				t.Fatalf("invalid I/O ran %d hooks", calls)
-			}
-			if err := enc.Encode(t.Context(), nilWriterFunc(func([]byte) (int, error) { return 1, nil }), runtime.Int(1)); err != nil {
-				t.Fatal(err)
-			}
+
 			data, err := encoding.EncodeBytes(t.Context(), codec, runtime.Int(1))
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			writer := &failingWriter{limit: 100}
+			if err := codec.Encode(t.Context(), nilWriterFunc(writer.Write), runtime.Int(1)); err != nil || !bytes.Equal(writer.Bytes(), data) {
+				t.Fatalf("valid value writer: %v", err)
+			}
+
 			reader := bytes.NewReader(data)
-			if value, err := dec.Decode(t.Context(), nilReaderFunc(reader.Read)); err != nil || value != runtime.Int(1) {
+			if value, err := codec.Decode(t.Context(), nilReaderFunc(reader.Read)); err != nil || value != runtime.Int(1) {
 				t.Fatalf("valid value reader: value=%v err=%v", value, err)
+			}
+		})
+	}
+}
+
+func TestCodecDecoderCancellationPreventsHooksAndReads(t *testing.T) {
+	for _, codec := range []encoding.Codec{ferretjson.Default, ferretmsgpack.Default} {
+		t.Run(codec.ContentType(), func(t *testing.T) {
+			data, err := encoding.EncodeBytes(t.Context(), codec, runtime.Int(1))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, mode := range []string{"default", "configured"} {
+				t.Run(mode, func(t *testing.T) {
+					for _, cancellation := range []string{"canceled", "expired_deadline"} {
+						t.Run(cancellation, func(t *testing.T) {
+							for _, input := range []string{"reader", "byte_scanner"} {
+								t.Run(input, func(t *testing.T) {
+									ctx, cancel := context.WithCancel(t.Context())
+									defer cancel()
+
+									want := error(context.Canceled)
+									if cancellation == "expired_deadline" {
+										var expire context.CancelFunc
+										ctx, expire = context.WithDeadline(ctx, time.Unix(0, 0))
+										defer expire()
+
+										want = context.DeadlineExceeded
+									} else {
+										cancel()
+									}
+
+									pre, post := 0, 0
+									dec := encoding.Decoder(codec)
+									if mode == "configured" {
+										dec = codec.DecodeWith().PreHook(func(context.Context) error {
+											pre++
+
+											return nil
+										}).PostHook(func(context.Context, runtime.Value, error) error {
+											post++
+
+											return nil
+										}).Decoder()
+									}
+
+									reader := &chunkReader{data: bytes.Clone(data), chunk: 1}
+									scanner := &countedScanner{Reader: bytes.NewReader(data)}
+									src := io.Reader(reader)
+									if input == "byte_scanner" {
+										src = scanner
+									}
+
+									value, err := dec.Decode(ctx, src)
+									if value != runtime.None || !errors.Is(err, want) {
+										t.Errorf("canceled decode: value=%v err=%v, want %v", value, err, want)
+									}
+
+									if pre != 0 || post != 0 || reader.calls != 0 || reader.closed || scanner.reads != 0 || scanner.readBytes != 0 || scanner.unreadBytes != 0 || scanner.closed || scanner.Len() != len(data) {
+										t.Fatalf("canceled decode started work: pre=%d post=%d reads=%d scanner reads=%d byte reads=%d unreads=%d reader closed=%v scanner closed=%v", pre, post, reader.calls, scanner.reads, scanner.readBytes, scanner.unreadBytes, reader.closed, scanner.closed)
+									}
+								})
+							}
+						})
+					}
+				})
 			}
 		})
 	}

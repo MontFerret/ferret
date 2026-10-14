@@ -38,8 +38,13 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		return err
 	}
 
+	// Register stored ownership before cancellation can abandon the root.
 	op.CacheValueAdopter()
 	op.Adopt(value, true)
+
+	if err := op.Check(); err != nil {
+		return err
+	}
 
 	state := encodePool.Get().(*encodeState)
 	state.writer = codecutil.Writer{Dst: dst, Op: op}
@@ -65,6 +70,10 @@ func (c Codec) EncodeWith() encoding.EncoderConfigurer {
 func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error) {
 	op, err := codecutil.NewOperation(ctx, src, "reader")
 	if err != nil {
+		return runtime.None, err
+	}
+
+	if err := op.Check(); err != nil {
 		return runtime.None, err
 	}
 

@@ -55,9 +55,9 @@ type (
 	}
 )
 
-// NewOperation validates borrowed I/O once. Cancellation returns the validated
-// operation so encoding can discover its root before abandoning it; invalid
-// arguments return an empty operation with no borrowed callback.
+// NewOperation validates arguments and initializes borrowed operation state.
+// Callers check cancellation explicitly: encoders first bind the adopter and
+// discover the stored root; decoders check before hooks or reads.
 func NewOperation(ctx context.Context, input any, name string) (Operation, error) {
 	if ctx == nil {
 		return Operation{}, runtime.Error(runtime.ErrInvalidArgument, "codec context is nil")
@@ -76,9 +76,7 @@ func NewOperation(ctx context.Context, input any, name string) (Operation, error
 		return Operation{}, runtime.Errorf(runtime.ErrInvalidArgument, "codec %s is nil", name)
 	}
 
-	op := Operation{ctx: ctx, done: ctx.Done()}
-
-	return op, op.Check()
+	return Operation{ctx: ctx, done: ctx.Done()}, nil
 }
 
 // CacheValueAdopter binds a borrowed callback once after operation validation.
