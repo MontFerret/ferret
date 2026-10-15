@@ -50,6 +50,8 @@ jobs:
             tools/apipublish/go.sum
 
       - name: Install Go dependencies
+        env:
+          GOTOOLCHAIN: auto
         run: make install-tools && make install
 
       - name: Set up Java (for ANTLR)
@@ -92,6 +94,7 @@ jobs:
       - name: Generate parser/lexer (uses ANTLR 4.13.2)
         env:
           ANTLR_JAR: ~/.antlr/antlr-4.13.2-complete.jar
+          GOTOOLCHAIN: auto
         run: |
           command -v antlr
           # Prefer your project’s generation target if present.
@@ -110,6 +113,8 @@ jobs:
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4
+        env:
+          GOTOOLCHAIN: auto
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

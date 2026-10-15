@@ -32,10 +32,15 @@ require Go 1.26 for their `golang.org/x/tools` dependency.
 
 With the default `GOTOOLCHAIN=auto`, tool installation and commands in independent
 modules can select a newer toolchain without changing the compiler selected
-for root-module tests. `make test-unit` and `make test-32bit` print the
-API-reference module path and selected Go version before testing it. Static
-analysis binaries must be built with a Go version that can type-check every
-analyzed module; the Static Analysis CI job uses Go 1.26.
+for root-module tests. `actions/setup-go@v6` sets `GOTOOLCHAIN=local`, so CI steps
+that can require a newer tooling compiler explicitly set `GOTOOLCHAIN=auto`.
+Root-module commands still use the selected matrix compiler because the root
+module's Go requirement remains 1.25.
+
+`make test-unit` and `make test-32bit` print the API-reference module path and
+selected Go version before testing it. Static analysis binaries must be built
+with a Go version that can type-check every analyzed module; the Static Analysis
+CI job uses Go 1.26.
 
 ## Make targets
 

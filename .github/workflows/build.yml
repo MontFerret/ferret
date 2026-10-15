@@ -65,9 +65,13 @@ jobs:
           antlr
 
       - name: Get dependencies
+        env:
+          GOTOOLCHAIN: auto
         run: make install && make install-tools
 
       - name: Generate
+        env:
+          GOTOOLCHAIN: auto
         run: |
           export PATH=$PATH:$HOME/antlr-bin
           make generate
@@ -103,6 +107,8 @@ jobs:
         run: make compile-32bit
 
       - name: Run all tests on Linux/386
+        env:
+          GOTOOLCHAIN: auto
         run: make test-32bit
 
   security:
@@ -139,4 +145,6 @@ jobs:
             tools/apipublish/go.sum
 
       - name: Run race tests
+        env:
+          GOTOOLCHAIN: auto
         run: make test-unit && make test-integration
