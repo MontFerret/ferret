@@ -89,8 +89,8 @@ func closerResourceKey(closer io.Closer) (ResourceKey, bool) {
 		return ResourceKey{ID: res.ResourceID()}, true
 	}
 
-	typ := reflect.TypeOf(closer)
-	if typ == nil || !typ.Comparable() {
+	value := reflect.ValueOf(closer)
+	if value.Kind() != reflect.Pointer && !value.Comparable() {
 		return ResourceKey{}, false
 	}
 

@@ -7,8 +7,6 @@ import (
 	"math"
 	"testing"
 
-	vmmsgpack "github.com/vmihailenco/msgpack/v5"
-
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -42,7 +40,7 @@ func TestMessagePackCollectionLength(t *testing.T) {
 		} {
 			var buffer bytes.Buffer
 			// Nil embedded collections ensure traversal would panic if it were reached.
-			err := (encoder{}).encodeValue(t.Context(), vmmsgpack.NewEncoder(&buffer), value)
+			err := Default.Encode(t.Context(), &buffer, value)
 			if !errors.Is(err, runtime.ErrRange) || buffer.Len() != 0 {
 				t.Errorf("%T length %d: wrote %d bytes, error %v", value, length, buffer.Len(), err)
 			}

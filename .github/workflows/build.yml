@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.25
+          go-version: 1.26
           cache-dependency-path: |
             go.sum
             tools/apiref/go.sum
@@ -32,7 +32,7 @@ jobs:
 
 
   build:
-    name: Build
+    name: Build (root Go ${{ matrix.goVer }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -41,7 +41,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Set up Go ${{ matrix.goVer }}
+      - name: Set up root Go ${{ matrix.goVer }}
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.goVer }}
@@ -65,9 +65,13 @@ jobs:
           antlr
 
       - name: Get dependencies
+        env:
+          GOTOOLCHAIN: auto
         run: make install && make install-tools
 
       - name: Generate
+        env:
+          GOTOOLCHAIN: auto
         run: |
           export PATH=$PATH:$HOME/antlr-bin
           make generate
@@ -79,7 +83,7 @@ jobs:
         run: make cover
 
   build-32bit:
-    name: Build and Test (Linux/386, Go ${{ matrix.goVer }})
+    name: Build and Test (Linux/386, root Go ${{ matrix.goVer }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -90,7 +94,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v4
 
-      - name: Set up Go ${{ matrix.goVer }}
+      - name: Set up root Go ${{ matrix.goVer }}
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.goVer }}
@@ -103,6 +107,8 @@ jobs:
         run: make compile-32bit
 
       - name: Run all tests on Linux/386
+        env:
+          GOTOOLCHAIN: auto
         run: make test-32bit
 
   security:
@@ -139,4 +145,6 @@ jobs:
             tools/apipublish/go.sum
 
       - name: Run race tests
+        env:
+          GOTOOLCHAIN: auto
         run: make test-unit && make test-integration

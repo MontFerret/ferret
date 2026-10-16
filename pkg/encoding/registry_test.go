@@ -32,12 +32,12 @@ func TestNewRegistryHasExplicitJSONCodec(t *testing.T) {
 		"foo": runtime.NewString("bar"),
 	})
 
-	data, err := codec.Encode(input)
+	data, err := ferretencoding.EncodeBytes(t.Context(), codec, input)
 	if err != nil {
 		t.Fatalf("encode failed: %v", err)
 	}
 
-	decoded, err := codec.Decode(data)
+	decoded, err := ferretencoding.DecodeBytes(t.Context(), codec, data)
 	if err != nil {
 		t.Fatalf("decode failed: %v", err)
 	}
@@ -60,12 +60,12 @@ func TestNewRegistryHasExplicitMsgpackCodec(t *testing.T) {
 		"foo": runtime.NewString("bar"),
 	})
 
-	data, err := codec.Encode(input)
+	data, err := ferretencoding.EncodeBytes(t.Context(), codec, input)
 	if err != nil {
 		t.Fatalf("encode failed: %v", err)
 	}
 
-	decoded, err := codec.Decode(data)
+	decoded, err := ferretencoding.DecodeBytes(t.Context(), codec, data)
 	if err != nil {
 		t.Fatalf("decode failed: %v", err)
 	}

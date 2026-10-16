@@ -163,6 +163,10 @@ be deterministic and must not mutate the live paused value.
 Debug session services apply the same before-run, after-run, encoding,
 filesystem, network, logging, and close-hook behavior as normal sessions.
 Completion materializes detached `*encoding.Content` through the embedding layer.
+`SessionServices.Materialize(ctx, result)` receives the active execution context
+for Start or the active command context for resume completion, before command
+cancellation registrations are released. The codec receives that context through
+the embedding context services. See [codec I/O](codecs.md).
 Completion events retain that content, never a consumable handle. Available content
 may accompany encoding, result-cleanup, or after-run-hook failures. Bytes survive
 result and session cleanup; independent retained snapshots, where supplied, must

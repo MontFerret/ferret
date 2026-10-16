@@ -1,16 +1,20 @@
 package session
 
 import (
+	"context"
 	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
+	"github.com/MontFerret/ferret/v2/pkg/internal/encodingownership"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 // Materialize encodes a VM result and adopts resources discovered by the encoder.
 // The caller remains responsible for closing the result, including on failure.
-func Materialize(registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Content, error) {
+func Materialize(ctx context.Context, registry *encoding.Registry, contentType string, res *vm.Result) (*encoding.Content, error) {
 	codec, err := registry.Codec(contentType)
 	if err != nil {
 		return nil, err
@@ -18,19 +22,29 @@ func Materialize(registry *encoding.Registry, contentType string, res *vm.Result
 
 	var encodeErr error
 	content, materializeErr := vm.Materialize[*encoding.Content](res, func(value runtime.Value) (vm.Materialized[*encoding.Content], error) {
-		enc := codec.EncodeWith().PreHook(func(value runtime.Value) error {
-			res.AdoptValue(value)
+		adopter := outputValueAdopter{result: res}
+		encodeCtx := encodingownership.WithValueAdopter(ctx, adopter.Adopt)
+		enc := encoding.Encoder(codec)
 
-			return nil
-		}).Encoder()
+		switch codec.(type) {
+		case encodingjson.Codec, *encodingjson.Codec, encodingmsgpack.Codec, *encodingmsgpack.Codec:
+			// Built-ins discover acquisitions before hooks and error checkpoints.
+		default:
+			// Preserve ownership-hook compatibility for custom codecs and decorators.
+			enc = codec.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
+				res.AdoptValue(value)
 
-		data, err := enc.Encode(value)
+				return nil
+			}).Encoder()
+		}
+
+		data, err := encoding.EncodeBytes(encodeCtx, enc, value)
 		encodeErr = err
-		if err != nil && data == nil {
+		if err != nil && len(data) == 0 {
 			return vm.Materialized[*encoding.Content]{}, nil
 		}
 
-		// Encode owns detachment. Keep its failure separate because vm.Materialize
+		// The collecting buffer owns its bytes. Keep the failure separate because vm.Materialize
 		// intentionally discards a materializer's value when it returns an error.
 		metadata := encoding.Metadata{ContentType: codec.ContentType()}
 		if err == nil {

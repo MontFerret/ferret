@@ -43,11 +43,11 @@ func ForEach(ctx context.Context, input Iterable, predicate Predicate) error {
 func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error {
 	for {
 		val, key, err := iter.Next(ctx)
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-
 		if err != nil {
+			if iteratorEOF(err) {
+				return nil
+			}
+
 			return err
 		}
 
@@ -59,5 +59,33 @@ func ForEachIter(ctx context.Context, iter Iterator, predicate Predicate) error 
 		if !res {
 			return nil
 		}
+	}
+}
+
+// iteratorEOF accepts wrapped exhaustion only when every underlying cause is EOF.
+// errors.Is alone would discard a failure joined with normal exhaustion.
+func iteratorEOF(err error) bool {
+	if err == io.EOF {
+		return true
+	}
+
+	switch cause := err.(type) {
+	case interface{ Unwrap() []error }:
+		children := cause.Unwrap()
+		if len(children) == 0 {
+			return false
+		}
+
+		for _, child := range children {
+			if !iteratorEOF(child) {
+				return false
+			}
+		}
+
+		return true
+	case interface{ Unwrap() error }:
+		return iteratorEOF(cause.Unwrap())
+	default:
+		return errors.Is(err, io.EOF)
 	}
 }

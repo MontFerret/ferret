@@ -13,6 +13,7 @@ import (
 	"time"
 	"unsafe"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 
@@ -407,11 +408,11 @@ func TestHelpers(t *testing.T) {
 
 				So(err, ShouldBeNil)
 
-				val, err := encodingjson.Default.Decode(json1)
+				val, err := ferretencoding.DecodeBytes(t.Context(), encodingjson.Default, json1)
 
 				So(err, ShouldBeNil)
 
-				json2, err := encodingjson.Default.Encode(val)
+				json2, err := ferretencoding.EncodeBytes(t.Context(), encodingjson.Default, val)
 
 				So(err, ShouldBeNil)
 				So(json2, ShouldResemble, json1)

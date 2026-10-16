@@ -122,7 +122,9 @@ func (s *Session) execute(c context.Context) (runOutcome, error) {
 		return runOutcome{operationErr: joinOutputErrors(err, hookErr)}, nil
 	}
 
-	content, encodeErr, closeErr := s.execution.MaterializeAndClose(out)
+	// Before-run replacement contexts remain execution-only. Encoding belongs to
+	// the original invocation lifetime, just like the resulting output handle.
+	content, encodeErr, closeErr := s.execution.MaterializeAndClose(c, out)
 	out = nil
 
 	return runOutcome{content: content, operationErr: joinOutputErrors(hookErr, encodeErr), cleanupErr: closeErr}, nil

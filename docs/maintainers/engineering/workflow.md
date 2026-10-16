@@ -26,7 +26,21 @@ workflow files rather than duplicating their installation scripts elsewhere.
 
 The API reference and publisher tools are independent Go modules under
 `tools/apiref` and `tools/apipublish`. Root targets that cover them use `go -C`
-and their own module files.
+and their own module files. The root module and API publisher require Go 1.25;
+the API-reference module and pinned `fieldalignment` and `goimports` tools
+require Go 1.26 for their `golang.org/x/tools` dependency.
+
+With the default `GOTOOLCHAIN=auto`, tool installation and commands in independent
+modules can select a newer toolchain without changing the compiler selected
+for root-module tests. `actions/setup-go@v6` sets `GOTOOLCHAIN=local`, so CI steps
+that can require a newer tooling compiler explicitly set `GOTOOLCHAIN=auto`.
+Root-module commands still use the selected matrix compiler because the root
+module's Go requirement remains 1.25.
+
+`make test-unit` and `make test-32bit` print the API-reference module path and
+selected Go version before testing it. Static analysis binaries must be built
+with a Go version that can type-check every analyzed module; the Static Analysis
+CI job uses Go 1.26.
 
 ## Make targets
 
@@ -114,9 +128,9 @@ composition of `make test`.
 
 ## Linux/386 validation
 
-The main CI workflow has a separate Linux/386 matrix matching the Go versions
-in the 64-bit build matrix. Each job runs `make compile-32bit`, followed by
-`make test-32bit`. Matrix fail-fast is disabled so a failure on one Go version
+The main CI workflow has a separate Linux/386 matrix matching the root-module
+Go versions in the 64-bit build matrix. Each job runs `make compile-32bit`, followed
+by `make test-32bit`. Matrix fail-fast is disabled so a failure on one Go version
 does not cancel the others.
 
 The compile target works from other supported Go build hosts. It uses

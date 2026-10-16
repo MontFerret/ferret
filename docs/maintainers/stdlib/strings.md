@@ -106,7 +106,10 @@ Query escaping uses query-form semantics: space becomes `+`, and a literal plus
 becomes `%2B`. Base64 encoding accepts String UTF-8 bytes or Binary and emits
 standard padded Base64; decoding returns Binary, preserving arbitrary bytes.
 HTML helpers escape/unescape HTML character references. JSON stringify accepts
-Any; JSON parse requires String and preserves the existing codec's behavior.
+Any; JSON parse requires String. Both delegate the caller context to the
+context-aware JSON codec. Parsing requires a single complete JSON document and
+rejects malformed separators, truncated containers, and extra roots. See
+[codec I/O](../architecture/codecs.md) for cancellation and buffering boundaries.
 
 Hash functions accept String or Binary raw bytes and return lowercase hex.
 `crypto::random_token` accepts lengths from 1 through 65536 inclusive. It uses

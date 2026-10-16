@@ -332,12 +332,15 @@ for callbacks and finalization, and returns only recorded cleanup failures.
 Metadata remains immutable and locally available after closure. Output.Close does
 not close a caller-created session. Settle an output before sequential reuse.
 
-Encoding transfers caller-owned bytes. Custom encoders must detach reusable or
-borrowed storage inside Encode while access is exclusive. Successful encoding
-records the actual media type and exact known length, including present-empty
-content. Non-nil returned bytes with an encoding error remain available with
-unknown total length; nil bytes with that error mean no content. A native
-materializer records encoding failures separately without changing vm.Materialize.
+Encoding borrows synchronous caller-owned I/O. Native materialization uses
+`encoding.EncodeBytes` with the original invocation context, collects writes
+into its own buffer, and transfers that buffer to Content. Custom encoders must
+not retain or close the supplied writer. Successful encoding records the actual
+media type and exact known length, including present-empty content. A nonempty
+prefix written before an encoding error remains available with unknown total
+length; a zero-byte failure means no content. Encoding failures remain separate
+from vm.Materialize's ownership conversion.
+See [codec I/O](codecs.md) for hooks, cancellation, buffering, and I/O ownership.
 See [consumable-output migration](consumable-output-migration.md) for context,
 closure, presence, and serialization contracts.
 

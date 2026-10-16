@@ -2,18 +2,16 @@ package json
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
-	"github.com/goccy/go-json"
-
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/internal/codecutil"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
-
-type frameKind uint8
 
 const (
 	frameObject frameKind = iota + 1
@@ -21,6 +19,8 @@ const (
 )
 
 type (
+	frameKind uint8
+
 	decoder struct {
 		pre  []encoding.PreDecoderHook
 		post []encoding.PostDecoderHook
@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func (dec decoder) decodeValue(ctx context.Context, jdec *json.Decoder) (runtime.Value, error) {
+func (dec decoder) decodeValue(ctx context.Context, op *codecutil.Operation, jdec *json.Decoder) (runtime.Value, error) {
 	var stack []decodeFrame
 	var root runtime.Value
 
@@ -74,13 +74,25 @@ func (dec decoder) decodeValue(ctx context.Context, jdec *json.Decoder) (runtime
 	}
 
 	for {
+		if err := op.Step(); err != nil {
+			return runtime.None, err
+		}
+
 		token, err := jdec.Token()
 		if err == io.EOF {
+			if len(stack) > 0 {
+				return runtime.None, io.ErrUnexpectedEOF
+			}
+
 			break
 		}
 
 		if err != nil {
 			return runtime.None, err
+		}
+
+		if root != nil {
+			return runtime.None, fmt.Errorf("json: multiple root values")
 		}
 
 		switch v := token.(type) {
@@ -135,7 +147,6 @@ func (dec decoder) decodeValue(ctx context.Context, jdec *json.Decoder) (runtime
 
 			if !strings.ContainsAny(raw, ".eE") {
 				parsed, err := strconv.ParseInt(raw, 10, 64)
-
 				if err == nil {
 					if err := attach(runtime.NewInt64(parsed)); err != nil {
 						return runtime.None, err
@@ -177,13 +188,13 @@ func (dec decoder) decodeValue(ctx context.Context, jdec *json.Decoder) (runtime
 	return root, nil
 }
 
-func (dec decoder) runPreHooks(data []byte) error {
+func (dec decoder) runPreHooks(ctx context.Context) error {
 	if len(dec.pre) == 0 {
 		return nil
 	}
 
 	for _, hook := range dec.pre {
-		if err := hook(data); err != nil {
+		if err := hook(ctx); err != nil {
 			return err
 		}
 	}
@@ -191,13 +202,13 @@ func (dec decoder) runPreHooks(data []byte) error {
 	return nil
 }
 
-func (dec decoder) runPostHooks(data []byte, err error) error {
+func (dec decoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
 	if len(dec.post) == 0 {
 		return nil
 	}
 
 	for _, hook := range dec.post {
-		if hookErr := hook(data, err); hookErr != nil {
+		if hookErr := hook(ctx, value, err); hookErr != nil {
 			return hookErr
 		}
 	}

@@ -6,12 +6,13 @@ import (
 	"hash/fnv"
 	"sort"
 
+	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 func (t *FastObject) MarshalJSON() ([]byte, error) {
-	return json.Default.Encode(t.toMap())
+	return ferretencoding.EncodeBytes(context.Background(), json.Default, t.toMap())
 }
 
 func (t *FastObject) String() string {

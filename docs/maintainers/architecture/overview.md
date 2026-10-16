@@ -191,7 +191,7 @@ See [Modules, SDK, and standard library](modules.md) and
 | Opcode or program shape | `pkg/bytecode` | compiler emission, VM, artifact validation, debugger, asm |
 | Runtime value semantics | `pkg/runtime` | VM, encoding, stdlib, debugger consumers |
 | Execution or cleanup | `pkg/vm` | runtime ownership, embedding lifecycle, benchmarks |
-| Encoded representation | `pkg/encoding` | runtime values and caller-owned returned bytes |
+| Encoded representation | `pkg/encoding` | runtime values and borrowed synchronous reader/writer I/O |
 | Output materialization and consumption | `pkg/engine` | encoder contracts, VM results, debugger completion, and UAPI |
 | Source formatting | `pkg/formatter` | parser grammar and formatter fixtures |
 | File or network policy | `pkg/fs` or `pkg/net` | native engine host/session context and stdlib adapters |
@@ -317,6 +317,7 @@ the shared [correctness principles](../engineering/principles.md#correctness-bef
 ## Related guides
 
 * [Runtime and lifecycle](runtime.md)
+* [Codec I/O](codecs.md)
 * [Debugger architecture](debugger.md)
 * [Modules, SDK, and standard library](modules.md)
 * [Development workflow](../engineering/workflow.md)

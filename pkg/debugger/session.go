@@ -82,7 +82,7 @@ func (s *Session) Start(ctx context.Context) (*Event, error) {
 		return nil, err
 	}
 
-	return s.convertEvent(event)
+	return s.convertEvent(s.lifecycle.executionCtx, event)
 }
 
 // Continue resumes execution until a breakpoint, pause request, error, or completion.
@@ -346,10 +346,10 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 		return nil, err
 	}
 
-	return s.convertEvent(event)
+	return s.convertEvent(command.ctx, event)
 }
 
-func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
+func (s *Session) convertEvent(ctx context.Context, event *vm.DebugExecutionEvent) (*Event, error) {
 	if event == nil {
 		return nil, runtime.Error(runtime.ErrUnexpected, "debug execution returned no event")
 	}
@@ -388,7 +388,7 @@ func (s *Session) convertEvent(event *vm.DebugExecutionEvent) (*Event, error) {
 	case vm.DebugStopCompleted:
 		s.inspector.resetValueReferences()
 		out.Reason = ReasonCompleted
-		output, err := s.lifecycle.complete(event.Result)
+		output, err := s.lifecycle.complete(ctx, event.Result)
 		out.Output = output
 
 		return out, err

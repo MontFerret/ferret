@@ -18,7 +18,7 @@ BENCH_FILTER ?= .
 BENCH_COUNT ?= 1
 BENCH_TIMEOUT ?= 30m
 STATICCHECK_VERSION = v0.7.0
-GO_TOOLS_VERSION = v0.49.0
+GO_TOOLS_VERSION = v0.50.0
 GO_PERF_VERSION = v0.0.0-20260813145340-fd4a688df892
 REVIVE_VERSION = v1.15.0
 STATICCHECK_FLAGS = -tests=false -checks=all,-U1000,-ST1000,-ST1001,-ST1020,-ST1022,-S1002
@@ -49,11 +49,13 @@ test: test-unit test-integration test-security
 
 test-32bit:
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go test -count=1 ./... && \
+	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIREF} env GOMOD GOVERSION && \
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIREF} test -count=1 ./... && \
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIPUBLISH} test -count=1 ./...
 
 test-unit:
 	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_UAPI}/... ${DIR_SCRIPTS}/... && \
+	CGO_ENABLED=1 go -C ${DIR_TOOL_APIREF} env GOMOD GOVERSION && \
 	CGO_ENABLED=1 go -C ${DIR_TOOL_APIREF} test -race ./... && \
 	CGO_ENABLED=1 go -C ${DIR_TOOL_APIPUBLISH} test -race ./... && \
 	CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .

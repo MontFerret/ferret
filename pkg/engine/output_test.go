@@ -12,31 +12,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type aliasCodec struct {
-	base        ferretencoding.Codec
-	contentType string
-}
-
-func (c aliasCodec) ContentType() string {
-	return c.contentType
-}
-
-func (c aliasCodec) Encode(value runtime.Value) ([]byte, error) {
-	return c.base.Encode(value)
-}
-
-func (c aliasCodec) EncodeWith() ferretencoding.EncoderConfigurer {
-	return c.base.EncodeWith()
-}
-
-func (c aliasCodec) Decode(data []byte) (runtime.Value, error) {
-	return c.base.Decode(data)
-}
-
-func (c aliasCodec) DecodeWith() ferretencoding.DecoderConfigurer {
-	return c.base.DecodeWith()
-}
-
 func TestSessionRunReturnsDefaultJSONOutput(t *testing.T) {
 	eng := mustNewEngine(t)
 	plan := mustCompilePlan(t, eng, "RETURN 1")

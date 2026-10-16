@@ -8,6 +8,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	"github.com/MontFerret/ferret/v2/pkg/encoding/internal/codecutil"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -16,7 +17,11 @@ type decoder struct {
 	post []encoding.PostDecoderHook
 }
 
-func (dec decoder) decodeValue(ctx context.Context, d *vmmsgpack.Decoder) (runtime.Value, error) {
+func (dec decoder) decodeValue(ctx context.Context, op *codecutil.Operation, d *vmmsgpack.Decoder) (runtime.Value, error) {
+	if err := op.Step(); err != nil {
+		return runtime.None, err
+	}
+
 	code, err := d.PeekCode()
 	if err != nil {
 		return runtime.None, err
@@ -72,9 +77,9 @@ func (dec decoder) decodeValue(ctx context.Context, d *vmmsgpack.Decoder) (runti
 
 		return unsignedIntValue(value)
 	case isArrayCode(code):
-		return dec.decodeArray(ctx, d)
+		return dec.decodeArray(ctx, op, d)
 	case isMapCode(code):
-		return dec.decodeMap(ctx, d)
+		return dec.decodeMap(ctx, op, d)
 	case msgpcode.IsExt(code):
 		value, err := d.DecodeTime()
 		if err != nil {
@@ -87,7 +92,7 @@ func (dec decoder) decodeValue(ctx context.Context, d *vmmsgpack.Decoder) (runti
 	}
 }
 
-func (dec decoder) decodeArray(ctx context.Context, d *vmmsgpack.Decoder) (runtime.Value, error) {
+func (dec decoder) decodeArray(ctx context.Context, op *codecutil.Operation, d *vmmsgpack.Decoder) (runtime.Value, error) {
 	size, err := d.DecodeArrayLen()
 	if err != nil {
 		return runtime.None, err
@@ -99,7 +104,7 @@ func (dec decoder) decodeArray(ctx context.Context, d *vmmsgpack.Decoder) (runti
 
 	arr := runtime.NewArray(size)
 	for i := 0; i < size; i++ {
-		value, err := dec.decodeValue(ctx, d)
+		value, err := dec.decodeValue(ctx, op, d)
 		if err != nil {
 			return runtime.None, err
 		}
@@ -112,7 +117,7 @@ func (dec decoder) decodeArray(ctx context.Context, d *vmmsgpack.Decoder) (runti
 	return arr, nil
 }
 
-func (dec decoder) decodeMap(ctx context.Context, d *vmmsgpack.Decoder) (runtime.Value, error) {
+func (dec decoder) decodeMap(ctx context.Context, op *codecutil.Operation, d *vmmsgpack.Decoder) (runtime.Value, error) {
 	size, err := d.DecodeMapLen()
 	if err != nil {
 		return runtime.None, err
@@ -136,7 +141,7 @@ func (dec decoder) decodeMap(ctx context.Context, d *vmmsgpack.Decoder) (runtime
 				return runtime.None, err
 			}
 		} else {
-			keyValue, err := dec.decodeValue(ctx, d)
+			keyValue, err := dec.decodeValue(ctx, op, d)
 			if err != nil {
 				return runtime.None, err
 			}
@@ -144,7 +149,7 @@ func (dec decoder) decodeMap(ctx context.Context, d *vmmsgpack.Decoder) (runtime
 			key = keyValue.String()
 		}
 
-		value, err := dec.decodeValue(ctx, d)
+		value, err := dec.decodeValue(ctx, op, d)
 		if err != nil {
 			return runtime.None, err
 		}
@@ -157,13 +162,13 @@ func (dec decoder) decodeMap(ctx context.Context, d *vmmsgpack.Decoder) (runtime
 	return obj, nil
 }
 
-func (dec decoder) runPreHooks(data []byte) error {
+func (dec decoder) runPreHooks(ctx context.Context) error {
 	if len(dec.pre) == 0 {
 		return nil
 	}
 
 	for _, hook := range dec.pre {
-		if err := hook(data); err != nil {
+		if err := hook(ctx); err != nil {
 			return err
 		}
 	}
@@ -171,13 +176,13 @@ func (dec decoder) runPreHooks(data []byte) error {
 	return nil
 }
 
-func (dec decoder) runPostHooks(data []byte, err error) error {
+func (dec decoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
 	if len(dec.post) == 0 {
 		return nil
 	}
 
 	for _, hook := range dec.post {
-		if hookErr := hook(data, err); hookErr != nil {
+		if hookErr := hook(ctx, value, err); hookErr != nil {
 			return hookErr
 		}
 	}

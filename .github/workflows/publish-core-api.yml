@@ -69,6 +69,7 @@ jobs:
       - name: Generate Ferret Core API artifacts
         env:
           API_VERSION: ${{ steps.release.outputs.version }}
+          GOTOOLCHAIN: auto
         run: >-
           go -C tools/apiref run .
           -version "$API_VERSION"
