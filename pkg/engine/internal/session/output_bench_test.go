@@ -21,6 +21,7 @@ func BenchmarkCodecAdoption(b *testing.B) {
 				if depth > 0 {
 					name = "containers_depth_8"
 				}
+
 				b.Run(name, func(b *testing.B) {
 					items := make([]runtime.Value, 1024)
 					for i := range items {
@@ -28,8 +29,10 @@ func BenchmarkCodecAdoption(b *testing.B) {
 						for range depth {
 							value = runtime.NewArrayWith(value)
 						}
+
 						items[i] = value
 					}
+
 					value := &adoptionBenchIterable{items: items}
 					for _, control := range []string{"absent", "noop", "result"} {
 						b.Run(control, func(b *testing.B) {
@@ -37,6 +40,7 @@ func BenchmarkCodecAdoption(b *testing.B) {
 							if control == "noop" {
 								ctx = encodingownership.WithValueAdopter(ctx, func(runtime.Value, bool) {})
 							}
+
 							b.ReportAllocs()
 							b.ResetTimer()
 							for range b.N {
@@ -46,9 +50,11 @@ func BenchmarkCodecAdoption(b *testing.B) {
 									adopter := outputValueAdopter{result: &result}
 									opCtx = encodingownership.WithValueAdopter(ctx, adopter.Adopt)
 								}
+
 								if err := codec.Encode(opCtx, io.Discard, value); err != nil {
 									b.Fatal(err)
 								}
+
 								if err := result.Close(); err != nil {
 									b.Fatal(err)
 								}

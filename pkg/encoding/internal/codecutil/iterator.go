@@ -30,8 +30,8 @@ func NewIterator(ctx context.Context, source runtime.Iterable) (Iterator, error)
 	return handle, nil
 }
 
-// Close releases an owned iterator once. Codecs call it after child encoding so
-// iterator cleanup failures cannot skip those children's ownership hooks.
+// Close releases an owned iterator once. Codecs call it after child encoding and
+// join cleanup failures before running the parent's post-hooks.
 func (iter *Iterator) Close() error {
 	closer := iter.closer
 	iter.closer = nil

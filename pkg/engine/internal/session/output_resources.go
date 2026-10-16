@@ -19,6 +19,7 @@ type outputValueAdopter struct {
 func (a *outputValueAdopter) Adopt(value runtime.Value, stored bool) {
 	if !stored {
 		a.result.AdoptValue(value)
+
 		return
 	}
 

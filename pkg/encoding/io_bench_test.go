@@ -20,9 +20,11 @@ func BenchmarkCodecWriter(b *testing.B) {
 	for i := range values {
 		values[i] = runtime.NewInt(i)
 	}
+
 	for i := 0; i < 4096; i++ {
 		props[strconv.Itoa(i)] = runtime.NewInt(i)
 	}
+
 	// The payloads are constructed before timing; Discard never accumulates the
 	// encoded document, while Buffer measures a reusable caller-owned destination.
 	workloads := []struct {
@@ -35,6 +37,7 @@ func BenchmarkCodecWriter(b *testing.B) {
 		{name: "string_1MiB", value: runtime.NewString(strings.Repeat("a", 1<<20))},
 		{name: "binary_1MiB", value: runtime.NewBinary(bytes.Repeat([]byte{255}, 1<<20))},
 	}
+
 	for _, codec := range []encoding.Codec{ferretjson.Default, ferretmsgpack.Default} {
 		b.Run(codec.ContentType(), func(b *testing.B) {
 			for _, workload := range workloads {
@@ -46,6 +49,7 @@ func BenchmarkCodecWriter(b *testing.B) {
 							name = "configured"
 							enc = codec.EncodeWith().PreHook(func(context.Context, runtime.Value) error { return nil }).Encoder()
 						}
+
 						b.Run(name, func(b *testing.B) {
 							for _, cancellable := range []bool{false, true} {
 								name := "background"
@@ -56,6 +60,7 @@ func BenchmarkCodecWriter(b *testing.B) {
 									ctx, cancel = context.WithCancel(ctx)
 									b.Cleanup(cancel)
 								}
+
 								b.Run(name, func(b *testing.B) {
 									for _, target := range []string{"Buffer", "Discard"} {
 										b.Run(target, func(b *testing.B) {
@@ -64,11 +69,14 @@ func BenchmarkCodecWriter(b *testing.B) {
 											if target == "Buffer" {
 												dst = &buffer
 											}
+
 											if err := enc.Encode(ctx, dst, workload.value); err != nil {
 												b.Fatal(err)
 											}
+
 											b.ReportAllocs()
 											b.ResetTimer()
+
 											for i := 0; i < b.N; i++ {
 												buffer.Reset()
 												if err := enc.Encode(ctx, dst, workload.value); err != nil {

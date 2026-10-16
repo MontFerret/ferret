@@ -13,14 +13,14 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-type frameKind uint8
-
 const (
 	frameObject frameKind = iota + 1
 	frameArray
 )
 
 type (
+	frameKind uint8
+
 	decoder struct {
 		pre  []encoding.PreDecoderHook
 		post []encoding.PostDecoderHook
@@ -147,7 +147,6 @@ func (dec decoder) decodeValue(ctx context.Context, op *codecutil.Operation, jde
 
 			if !strings.ContainsAny(raw, ".eE") {
 				parsed, err := strconv.ParseInt(raw, 10, 64)
-
 				if err == nil {
 					if err := attach(runtime.NewInt64(parsed)); err != nil {
 						return runtime.None, err

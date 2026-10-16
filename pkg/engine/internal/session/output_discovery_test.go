@@ -121,14 +121,17 @@ func TestCodecDiscoversStoredMutationBeforeKeyWriteFailure(t *testing.T) {
 			if err := codec.Encode(ctx, &abandonmentWriter{failure: failure}, value); !errors.Is(err, failure) {
 				t.Fatalf("lost writer failure: %v", err)
 			}
+
 			if first.closes != 0 || added.closes != 0 {
 				t.Fatal("codec closed children")
 			}
+
 			for range 2 {
 				if err := result.Close(); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			if first.closes != 1 || added.closes != 1 {
 				t.Fatalf("mutation cleanup: first=%d added=%d", first.closes, added.closes)
 			}

@@ -111,8 +111,10 @@ func (e detachedTestEncoder) Encode(ctx context.Context, dst io.Writer, value ru
 	if err == nil && n != len(e.codec.data) {
 		err = io.ErrShortWrite
 	}
+
 	if err != nil {
 		return err
 	}
+
 	return e.codec.err
 }

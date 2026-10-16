@@ -31,11 +31,13 @@ func (e hookOwnershipEncoder) Encode(ctx context.Context, dst io.Writer, value r
 
 func (c *hookOwnershipConfigurer) PreHook(hook encoding.PreEncoderHook) encoding.EncoderConfigurer {
 	c.EncoderConfigurer.PreHook(hook)
+
 	return c
 }
 
 func (c *hookOwnershipConfigurer) PostHook(hook encoding.PostEncoderHook) encoding.EncoderConfigurer {
 	c.EncoderConfigurer.PostHook(hook)
+
 	return c
 }
 

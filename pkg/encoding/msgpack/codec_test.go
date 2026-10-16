@@ -548,6 +548,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre1")
+
 			return nil
 		})
 		config.PreHook(func(_ context.Context, value runtime.Value) error {
@@ -556,6 +557,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre2")
+
 			return nil
 		})
 		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
@@ -568,6 +570,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "post")
+
 			return nil
 		})
 
@@ -595,6 +598,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 		config := ferretmsgpack.Default.EncodeWith()
 		config.PostHook(func(_ context.Context, _ runtime.Value, err error) error {
 			postErr = err
+
 			return nil
 		})
 
@@ -618,6 +622,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 		config := ferretmsgpack.Default.EncodeWith()
 		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			order = append(order, "pre:"+hookValueLabel(value))
+
 			return nil
 		})
 		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
@@ -626,6 +631,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "post:"+hookValueLabel(value))
+
 			return nil
 		})
 
@@ -797,6 +803,7 @@ func TestMsgpackCodecEncodeHooks(t *testing.T) {
 		config := ferretmsgpack.Default.EncodeWith()
 		config.PreHook(func(_ context.Context, _ runtime.Value) error {
 			calls++
+
 			return nil
 		})
 
@@ -1110,6 +1117,7 @@ func TestMsgpackCodecDecodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre1")
+
 			return nil
 		})
 		config.PreHook(func(ctx context.Context) error {
@@ -1118,6 +1126,7 @@ func TestMsgpackCodecDecodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre2")
+
 			return nil
 		})
 		config.PostHook(func(ctx context.Context, _ runtime.Value, err error) error {
@@ -1130,6 +1139,7 @@ func TestMsgpackCodecDecodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "post")
+
 			return nil
 		})
 
@@ -1161,6 +1171,7 @@ func TestMsgpackCodecDecodeHooks(t *testing.T) {
 			}
 
 			postErr = err
+
 			return nil
 		})
 
@@ -1184,6 +1195,7 @@ func TestMsgpackCodecDecodeHooks(t *testing.T) {
 		config := ferretmsgpack.Default.DecodeWith()
 		config.PreHook(func(_ context.Context) error {
 			calls++
+
 			return nil
 		})
 

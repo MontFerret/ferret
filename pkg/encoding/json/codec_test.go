@@ -424,6 +424,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre1")
+
 			return nil
 		})
 		config.PreHook(func(_ context.Context, value runtime.Value) error {
@@ -432,6 +433,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre2")
+
 			return nil
 		})
 		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
@@ -444,6 +446,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "post")
+
 			return nil
 		})
 
@@ -468,6 +471,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		config := json.Default.EncodeWith()
 		config.PostHook(func(_ context.Context, _ runtime.Value, err error) error {
 			postErr = err
+
 			return nil
 		})
 
@@ -491,6 +495,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		config := json.Default.EncodeWith()
 		config.PreHook(func(_ context.Context, value runtime.Value) error {
 			order = append(order, "pre:"+hookValueLabel(value))
+
 			return nil
 		})
 		config.PostHook(func(_ context.Context, value runtime.Value, err error) error {
@@ -499,6 +504,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "post:"+hookValueLabel(value))
+
 			return nil
 		})
 
@@ -660,6 +666,7 @@ func TestJSONCodecEncodeHooks(t *testing.T) {
 		config := json.Default.EncodeWith()
 		config.PreHook(func(_ context.Context, _ runtime.Value) error {
 			calls++
+
 			return nil
 		})
 
@@ -853,6 +860,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre1")
+
 			return nil
 		})
 		config.PreHook(func(ctx context.Context) error {
@@ -861,6 +869,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "pre2")
+
 			return nil
 		})
 		config.PostHook(func(ctx context.Context, _ runtime.Value, err error) error {
@@ -873,6 +882,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			}
 
 			order = append(order, "post")
+
 			return nil
 		})
 
@@ -907,6 +917,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 			}
 
 			postErr = err
+
 			return nil
 		})
 
@@ -930,6 +941,7 @@ func TestJSONCodecDecodeHooks(t *testing.T) {
 		config := json.Default.DecodeWith()
 		config.PreHook(func(_ context.Context) error {
 			calls++
+
 			return nil
 		})
 

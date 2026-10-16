@@ -68,17 +68,20 @@ func iteratorEOF(err error) bool {
 	if err == io.EOF {
 		return true
 	}
+
 	switch cause := err.(type) {
 	case interface{ Unwrap() []error }:
 		children := cause.Unwrap()
 		if len(children) == 0 {
 			return false
 		}
+
 		for _, child := range children {
 			if !iteratorEOF(child) {
 				return false
 			}
 		}
+
 		return true
 	case interface{ Unwrap() error }:
 		return iteratorEOF(cause.Unwrap())

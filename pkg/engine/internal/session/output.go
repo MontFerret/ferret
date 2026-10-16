@@ -33,6 +33,7 @@ func Materialize(ctx context.Context, registry *encoding.Registry, contentType s
 			// Preserve ownership-hook compatibility for custom codecs and decorators.
 			enc = codec.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
 				res.AdoptValue(value)
+
 				return nil
 			}).Encoder()
 		}

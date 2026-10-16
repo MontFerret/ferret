@@ -179,5 +179,6 @@ func (v *outputIteratorHostList) Close() error {
 
 func (v *outputAcquisitionMap) ForEach(_ context.Context, predicate runtime.KeyReadablePredicate) error {
 	_, err := predicate(context.Background(), v.value, v.key)
+
 	return err
 }

@@ -21,7 +21,9 @@ func TestSessionCustomCodecRetainsOwnershipHook(t *testing.T) {
 				if leaf.closes != 0 {
 					t.Fatal("premature cleanup")
 				}
+
 				visits = append(visits, value)
+
 				return nil
 			}).Encoder().(encoding.Codec)
 			codec := hookOwnershipCodec{Codec: configured}
@@ -37,17 +39,21 @@ func TestSessionCustomCodecRetainsOwnershipHook(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if _, err := handle.Collect(t.Context()); err != nil {
 				t.Fatal(err)
 			}
+
 			if len(visits) != 2 || visits[0] != root || visits[1] != leaf || leaf.closes != 1 {
 				t.Fatalf("hook order or result cleanup changed: visits=%v closes=%d", visits, leaf.closes)
 			}
+
 			for range 2 {
 				if err := handle.Close(); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			if leaf.closes != 1 {
 				t.Fatalf("custom ownership hook lost: closes=%d", leaf.closes)
 			}
@@ -67,12 +73,15 @@ func TestSessionBuiltinAdoptsStoredChildrenBeforeRootHook(t *testing.T) {
 					if first.closes != 0 {
 						t.Fatal("premature close")
 					}
+
 					if value == root {
 						if err := root.Append(t.Context(), added); err != nil {
 							t.Fatal(err)
 						}
+
 						return failure
 					}
+
 					return nil
 				}).Encoder().(encoding.Codec)
 				if pointer {
@@ -83,6 +92,7 @@ func TestSessionBuiltinAdoptsStoredChildrenBeforeRootHook(t *testing.T) {
 						codec = &c
 					}
 				}
+
 				eng := mustNewEngine(t, WithEncodingCodec(codec.ContentType(), codec), WithFunctionsRegistrar(func(ns runtime.Namespace) {
 					ns.Function().A0().Add("MAKE", func(context.Context) (runtime.Value, error) { return root, nil })
 				}))
@@ -92,9 +102,11 @@ func TestSessionBuiltinAdoptsStoredChildrenBeforeRootHook(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				if _, err = handle.Collect(t.Context()); !errors.Is(err, failure) {
 					t.Fatalf("lost hook failure: %v", err)
 				}
+
 				for range 2 {
 					for _, close := range []func() error{handle.Close, session.Close, plan.Close, eng.Close} {
 						if err := close(); err != nil {
@@ -102,6 +114,7 @@ func TestSessionBuiltinAdoptsStoredChildrenBeforeRootHook(t *testing.T) {
 						}
 					}
 				}
+
 				if first.closes != 1 || added.closes != 1 || first.marshals != 0 || added.marshals != 0 {
 					t.Fatalf("abandoned resources: first=%+v added=%+v", first, added)
 				}
@@ -122,10 +135,12 @@ func TestSessionCodecAdoptsCanceledCyclicYield(t *testing.T) {
 			if err := cyclic.Append(t.Context(), object); err != nil {
 				t.Fatal(err)
 			}
+
 			items := make([]runtime.Value, 255)
 			for i := range items {
 				items[i] = runtime.Int(i)
 			}
+
 			items[254] = cyclic
 			iter := &outputIterator{items: items, onNext: func(_ context.Context, index int) {
 				if index == 254 {
@@ -144,15 +159,18 @@ func TestSessionCodecAdoptsCanceledCyclicYield(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			_, err = handle.Collect(t.Context())
 			if !errors.Is(err, context.Canceled) {
 				t.Fatalf("lost cancellation: %v", err)
 			}
+
 			for range 2 {
 				if err := handle.Close(); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			if first.closes != 1 || second.closes != 1 || iter.closes != 1 || first.marshals != 0 || second.marshals != 0 {
 				t.Fatalf("cleanup: leaves=(%d,%d) iterator=%d marshals=(%d,%d)", first.closes, second.closes, iter.closes, first.marshals, second.marshals)
 			}
@@ -171,6 +189,7 @@ func TestSessionCodecAdoptsHookMutationsAndDeepStoredResources(t *testing.T) {
 				for range 32768 {
 					nested = runtime.NewArrayWith(nested)
 				}
+
 				root := runtime.NewArrayWith(nested)
 				failure := errors.New("hook failed")
 				var codec encoding.Codec
@@ -179,6 +198,7 @@ func TestSessionCodecAdoptsHookMutationsAndDeepStoredResources(t *testing.T) {
 						if value == root {
 							return failure
 						}
+
 						return nil
 					}).Encoder().(encoding.Codec)
 				} else {
@@ -188,11 +208,14 @@ func TestSessionCodecAdoptsHookMutationsAndDeepStoredResources(t *testing.T) {
 							if appendErr := root.Append(t.Context(), added); appendErr != nil {
 								t.Fatal(appendErr)
 							}
+
 							return failure
 						}
+
 						return nil
 					}).Encoder().(encoding.Codec)
 				}
+
 				eng := mustNewEngine(t, WithEncodingCodec(codec.ContentType(), codec), WithFunctionsRegistrar(func(ns runtime.Namespace) {
 					ns.Function().A0().Add("MAKE", func(context.Context) (runtime.Value, error) { return root, nil })
 				}))
@@ -205,14 +228,17 @@ func TestSessionCodecAdoptsHookMutationsAndDeepStoredResources(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				if _, err := handle.Collect(t.Context()); !errors.Is(err, failure) {
 					t.Fatalf("lost hook error: %v", err)
 				}
+
 				for range 2 {
 					if err := handle.Close(); err != nil {
 						t.Fatal(err)
 					}
 				}
+
 				if first.closes != 1 || host.reads != 0 || (phase == "pre" && host.closes != 1) || (phase == "post" && added.closes != 1) {
 					t.Fatalf("cleanup: first=%d added=%d host=(reads=%d closes=%d)", first.closes, added.closes, host.reads, host.closes)
 				}
@@ -238,17 +264,21 @@ func TestSessionCodecAdoptsHostAcquisitionsBeforeChildHook(t *testing.T) {
 				case "iterator":
 					value = &outputIterable{iter: iter}
 				}
+
 				failure := errors.New("child hook failed")
 				codec := base.EncodeWith().PreHook(func(ctx context.Context, item runtime.Value) error {
 					if leaf.closes != 0 || key.closes != 0 {
 						t.Fatal("premature child cleanup")
 					}
+
 					if item == acquired {
 						if shape == "map" && ctx != context.Background() {
 							t.Fatal("host predicate context replaced")
 						}
+
 						return failure
 					}
+
 					return nil
 				}).Encoder().(encoding.Codec)
 				eng := mustNewEngine(t, WithEncodingCodec(codec.ContentType(), codec), WithFunctionsRegistrar(func(ns runtime.Namespace) {
@@ -263,21 +293,26 @@ func TestSessionCodecAdoptsHostAcquisitionsBeforeChildHook(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+
 				if _, err := handle.Collect(t.Context()); !errors.Is(err, failure) {
 					t.Fatalf("lost child error: %v", err)
 				}
+
 				for range 2 {
 					if err := handle.Close(); err != nil {
 						t.Fatal(err)
 					}
 				}
+
 				wantKey, wantIterator := 0, 0
 				if shape == "map" {
 					wantKey = 1
 				}
+
 				if shape == "iterator" {
 					wantIterator = 1
 				}
+
 				if leaf.closes != 1 || key.closes != wantKey || iter.closes != wantIterator || leaf.marshals != 0 {
 					t.Fatalf("cleanup: leaf=%d key=%d iterator=%d marshals=%d", leaf.closes, key.closes, iter.closes, leaf.marshals)
 				}
@@ -298,12 +333,15 @@ func TestSessionMsgpackAdoptsMutatedBufferedContainerOnFailure(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+
 			iter := &outputIterator{items: []runtime.Value{runtime.Int(0), container}}
 			codec := encodingmsgpack.Default.EncodeWith().PreHook(func(_ context.Context, value runtime.Value) error {
 				if phase == "hook" && value == runtime.Int(0) {
 					mutate()
+
 					return failure
 				}
+
 				return nil
 			}).Encoder().(encoding.Codec)
 			if phase == "next" {
@@ -314,10 +352,12 @@ func TestSessionMsgpackAdoptsMutatedBufferedContainerOnFailure(t *testing.T) {
 					}
 				}
 			}
+
 			if phase == "close" {
 				iter.closeErr = failure
 				iter.onClose = mutate
 			}
+
 			eng := mustNewEngine(t, WithEncodingCodec(codec.ContentType(), codec), WithFunctionsRegistrar(func(ns runtime.Namespace) {
 				ns.Function().A0().Add("MAKE", func(context.Context) (runtime.Value, error) { return &outputIterable{iter: iter}, nil })
 			}))
@@ -330,14 +370,17 @@ func TestSessionMsgpackAdoptsMutatedBufferedContainerOnFailure(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if _, err := handle.Collect(t.Context()); !errors.Is(err, failure) {
 				t.Fatalf("lost failure: %v", err)
 			}
+
 			for range 2 {
 				if err := handle.Close(); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			if first.closes != 1 || added.closes != 1 || iter.closes != 1 {
 				t.Fatalf("buffer cleanup: first=%d added=%d iterator=%d", first.closes, added.closes, iter.closes)
 			}
@@ -355,6 +398,7 @@ func TestSessionCodecAdoptsResourcesAppendedBySuccessfulChildHook(t *testing.T) 
 				if value == first {
 					return root.Append(t.Context(), added)
 				}
+
 				return nil
 			}).Encoder().(encoding.Codec)
 			eng := mustNewEngine(t, WithEncodingCodec(codec.ContentType(), codec), WithFunctionsRegistrar(func(ns runtime.Namespace) {
@@ -369,19 +413,23 @@ func TestSessionCodecAdoptsResourcesAppendedBySuccessfulChildHook(t *testing.T) 
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			content, err := handle.Collect(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			decoded, err := encoding.DecodeBytes(t.Context(), base, content.Data)
 			if err != nil || decoded.String() != `["first"]` {
 				t.Fatalf("list snapshot changed: %v, %v", decoded, err)
 			}
+
 			for range 2 {
 				if err := handle.Close(); err != nil {
 					t.Fatal(err)
 				}
 			}
+
 			if first.closes != 1 || added.closes != 1 || added.marshals != 0 {
 				t.Fatalf("mutation cleanup: first=%d added=%d marshals=%d", first.closes, added.closes, added.marshals)
 			}

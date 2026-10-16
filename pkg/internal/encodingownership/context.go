@@ -12,8 +12,9 @@ type valueAdopterKey struct{}
 
 // WithValueAdopter lends adopt to codecs for this materialization only. Codecs
 // must not retain it or call it after returning. It registers ownership without
-// encoding, closing resources, or observing cancellation. The second argument
-// requests discovery of concrete stored descendants rather than direct registration.
+// encoding, closing resources, or observing cancellation. The callback's second
+// argument requests discovery of concrete stored descendants rather than direct
+// registration.
 func WithValueAdopter(ctx context.Context, adopt func(runtime.Value, bool)) context.Context {
 	if ctx == nil {
 		return nil

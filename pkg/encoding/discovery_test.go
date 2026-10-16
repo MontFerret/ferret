@@ -31,6 +31,7 @@ func TestCodecAcquisitionAdoptsBeforeFailure(t *testing.T) {
 							cancel()
 						}
 					}
+
 					var value runtime.Value
 					switch shape {
 					case "iterator":
@@ -40,13 +41,16 @@ func TestCodecAcquisitionAdoptsBeforeFailure(t *testing.T) {
 					case "map":
 						value = &discoveryMap{Object: runtime.NewObjectWith(map[string]runtime.Value{"key": leaf}), value: leaf, key: key, acquire: acquire}
 					}
+
 					foundLeaf, foundKey := false, false
 					lookups, callbacks := 0, 0
 					ctx = discoveryContext{Context: encodingownership.WithValueAdopter(ctx, func(item runtime.Value, stored bool) {
 						callbacks++
+
 						if stored && item == leaf {
 							foundLeaf = true
 						}
+
 						if stored && item == key {
 							foundKey = true
 						}
@@ -58,25 +62,31 @@ func TestCodecAcquisitionAdoptsBeforeFailure(t *testing.T) {
 							if item == leaf {
 								return sentinel
 							}
+
 							return nil
 						}).Encoder()
 					}
+
 					dst := io.Writer(io.Discard)
 					if failure == "writer" {
 						limit := 2
 						if shape == "map" {
 							limit = 1
 						}
+
 						dst = &failingWriter{limit: limit, failure: sentinel}
 					}
+
 					err := enc.Encode(ctx, dst, value)
 					cause := sentinel
 					if failure == "cancel" {
 						cause = context.Canceled
 					}
+
 					if !errors.Is(err, cause) || !foundLeaf || (shape == "map" && !foundKey) || lookups != 1 {
 						t.Fatalf("discovery before %s: leaf=%v key=%v lookups=%d err=%v", failure, foundLeaf, foundKey, lookups, err)
 					}
+
 					firstCallbacks := callbacks
 					if err := codec.Encode(t.Context(), io.Discard, runtime.Int(1)); err != nil || callbacks != firstCallbacks {
 						t.Fatalf("callback retained: calls=%d->%d err=%v", firstCallbacks, callbacks, err)
@@ -114,8 +124,10 @@ func TestCodecRootDiscoverySurvivesCancellation(t *testing.T) {
 							callbacks, pre, post := 0, 0, 0
 							ctx = encodingownership.WithValueAdopter(ctx, func(item runtime.Value, stored bool) {
 								callbacks++
+
 								if item == value && stored {
 									found = true
+
 									if cancellation == "during_discovery" {
 										cancel()
 									}

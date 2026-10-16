@@ -201,17 +201,21 @@ func TestCloserSetDynamicallyNonComparableIdentity(t *testing.T) {
 	calls := 0
 	var set CloserSet
 	value := interfaceCloser{marker: []int{1}, closes: &calls}
+
 	for range 2 {
 		if !set.Add(value) {
 			t.Fatal("non-comparable value rejected")
 		}
 	}
+
 	if err := set.CloseAll(); err != nil {
 		t.Fatal(err)
 	}
+
 	if calls != 2 {
 		t.Fatalf("cleanup count: %d", calls)
 	}
+
 	value.marker = 1
 	if !set.Add(value) || set.Add(value) {
 		t.Fatal("safe value identity lost deduplication")

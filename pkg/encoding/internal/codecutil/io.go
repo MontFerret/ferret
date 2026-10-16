@@ -26,13 +26,6 @@ type (
 		steps uint8
 	}
 
-	// adopterContext keeps the cached callback without enlarging Operation.
-	// Its parent retains the original cancellation and context-value behavior.
-	adopterContext struct {
-		context.Context
-		adopt func(runtime.Value, bool)
-	}
-
 	// Writer detects short writes and stops forwarding after the first failure.
 	Writer struct {
 		Dst     io.Writer
@@ -47,6 +40,13 @@ type (
 		Src io.Reader
 		err error
 		Op  Operation
+	}
+
+	// adopterContext keeps the cached callback without enlarging Operation.
+	// Its parent retains the original cancellation and context-value behavior.
+	adopterContext struct {
+		context.Context
+		adopt func(runtime.Value, bool)
 	}
 
 	scannerReader struct {

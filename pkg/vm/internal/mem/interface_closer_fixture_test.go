@@ -5,4 +5,8 @@ type interfaceCloser struct {
 	closes *int
 }
 
-func (c interfaceCloser) Close() error { *c.closes++; return nil }
+func (c interfaceCloser) Close() error {
+	*c.closes++
+
+	return nil
+}

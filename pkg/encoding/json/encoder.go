@@ -31,17 +31,21 @@ type (
 
 func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value runtime.Value) error {
 	state.writer.Op.Adopt(value, len(enc.pre) > 0 || len(enc.post) > 0)
+
 	if err := state.writer.Op.Step(); err != nil {
 		state.writer.Op.Adopt(value, true)
+
 		return err
 	}
 
 	if err := enc.runPreHooks(ctx, value); err != nil {
 		state.writer.Op.Adopt(value, true)
+
 		return err
 	}
 
 	err := enc.encodeBody(ctx, state, value)
+
 	if value == nil {
 		value = runtime.None
 	}
@@ -189,7 +193,6 @@ func (enc encoder) encodeMap(ctx context.Context, state *encodeState, value runt
 
 		return true, nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -213,6 +216,7 @@ func (enc encoder) encodeList(ctx context.Context, state *encodeState, value run
 		if err != nil {
 			return err
 		}
+
 		state.writer.Op.Adopt(item, !stored)
 
 		if i > 0 {
@@ -322,6 +326,7 @@ func (enc encoder) encodeRange(ctx context.Context, state *encodeState, value *r
 
 func (state *encodeState) write(data []byte) error {
 	_, err := state.writer.Write(data)
+
 	return err
 }
 

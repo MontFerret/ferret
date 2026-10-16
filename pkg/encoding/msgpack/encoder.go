@@ -18,13 +18,16 @@ type encoder struct {
 
 func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Value) error {
 	op.Adopt(value, len(enc.pre) > 0 || len(enc.post) > 0)
+
 	if err := op.Step(); err != nil {
 		op.Adopt(value, true)
+
 		return err
 	}
 
 	if err := enc.runPreHooks(ctx, value); err != nil {
 		op.Adopt(value, true)
+
 		return err
 	}
 
@@ -125,6 +128,7 @@ func (enc encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc 
 	}
 
 	_, stored := value.(*runtime.Object)
+
 	return value.ForEach(ctx, func(ctx context.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		op.Adopt(val, !stored)
 		op.Adopt(key, !stored)
@@ -198,6 +202,7 @@ func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, 
 			op.Adopt(list, true)
 		}
 	}()
+
 	err = runtime.ForEachIter(ctx, iter.Iterator, func(ctx context.Context, item, key runtime.Value) (runtime.Boolean, error) {
 		// Yielding transfers discovery to the result before a checkpoint can stop
 		// collection. This callback is separate from user encoding hooks.
