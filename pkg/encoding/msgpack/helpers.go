@@ -4,20 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 	"github.com/vmihailenco/msgpack/v5/msgpcode"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
-
-func supportsCustomEncoding(value runtime.Value) bool {
-	switch value.(type) {
-	case vmmsgpack.CustomEncoder, vmmsgpack.Marshaler:
-		return true
-	default:
-		return false
-	}
-}
 
 func isSignedIntCode(code byte) bool {
 	return code >= msgpcode.NegFixedNumLow ||

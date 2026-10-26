@@ -12,8 +12,8 @@ import (
 )
 
 type contentTypeCodec struct {
-	contentType string
 	ferretjson.Codec
+	contentType string
 }
 
 func (c contentTypeCodec) ContentType() string {

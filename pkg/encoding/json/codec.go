@@ -17,16 +17,27 @@ const (
 	ContentType = "application/json"
 )
 
-// Codec encodes and decodes runtime values as JSON.
-type Codec struct {
-	encoder
-	decoder
-}
+type (
+	// Codec encodes and decodes runtime values as JSON.
+	Codec struct {
+		config *codecConfig
+	}
 
-// Default is the default JSON codec.
-var Default = Codec{}
+	// Published configuration is immutable and shared by copies of a codec.
+	codecConfig struct {
+		encoder
+		decoder
+	}
+)
 
-var encodePool = sync.Pool{New: func() any { return &encodeState{} }}
+var (
+	// Default is the default JSON codec.
+	Default = Codec{}
+
+	defaultEncoder encoder
+
+	encodePool = sync.Pool{New: func() any { return &encodeState{} }}
+)
 
 func (Codec) ContentType() string {
 	return ContentType
@@ -54,7 +65,12 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		encodePool.Put(state)
 	}()
 
-	if err := c.encodeValue(ctx, state, value); err != nil {
+	enc := &defaultEncoder
+	if c.config != nil {
+		enc = &c.config.encoder
+	}
+
+	if err := enc.encodeValue(ctx, state, value); err != nil {
 		return err
 	}
 
@@ -77,7 +93,12 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 		return runtime.None, err
 	}
 
-	if err := c.decoder.runPreHooks(ctx); err != nil {
+	configured := decoder{}
+	if c.config != nil {
+		configured = c.config.decoder
+	}
+
+	if err := configured.runPreHooks(ctx); err != nil {
 		return runtime.None, err
 	}
 
@@ -85,7 +106,7 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 	dec := json.NewDecoder(reader.Input())
 	dec.UseNumber()
 
-	value, err := c.decodeValue(ctx, &reader.Op, dec)
+	value, err := configured.decodeValue(ctx, &reader.Op, dec)
 	if readErr := reader.Error(); readErr != nil && !errors.Is(err, readErr) {
 		err = errors.Join(err, readErr)
 	}
@@ -98,7 +119,7 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 		value = runtime.None
 	}
 
-	if hookErr := c.decoder.runPostHooks(ctx, value, err); hookErr != nil {
+	if hookErr := configured.runPostHooks(ctx, value, err); hookErr != nil {
 		return runtime.None, errors.Join(err, hookErr)
 	}
 

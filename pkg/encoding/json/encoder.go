@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -29,7 +30,7 @@ type (
 	}
 )
 
-func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value runtime.Value) error {
+func (enc *encoder) encodeValue(ctx context.Context, state *encodeState, value runtime.Value) error {
 	state.writer.Op.Adopt(value, len(enc.pre) > 0 || len(enc.post) > 0)
 
 	if err := state.writer.Op.Step(); err != nil {
@@ -38,13 +39,56 @@ func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value ru
 		return err
 	}
 
-	if err := enc.runPreHooks(ctx, value); err != nil {
-		state.writer.Op.Adopt(value, true)
+	if len(enc.pre) > 0 {
+		if err := enc.runPreHooks(ctx, value); err != nil {
+			state.writer.Op.Adopt(value, true)
 
-		return err
+			return err
+		}
 	}
 
-	err := enc.encodeBody(ctx, state, value)
+	var err error
+
+	if value == nil || value == runtime.None {
+		err = state.writeText("null")
+	} else if marshaler, ok := value.(json.Marshaler); ok {
+		err = state.writeMarshaler(marshaler)
+	} else {
+		switch v := value.(type) {
+		case runtime.Boolean:
+			if v {
+				err = state.writeText("true")
+			} else {
+				err = state.writeText("false")
+			}
+		case runtime.Int:
+			err = state.write(strconv.AppendInt(state.numberBuffer(), int64(v), 10))
+		case runtime.Float:
+			err = state.write(strconv.AppendFloat(state.numberBuffer(), float64(v), 'g', -1, 64))
+		case runtime.Duration:
+			err = state.writeJSONString(v.String())
+		case runtime.String:
+			err = state.writeJSONString(string(v))
+		case *runtime.Regexp:
+			err = state.writeJSONString(v.String())
+		case runtime.Binary:
+			err = state.writeBinary(v)
+		case runtime.DateTime:
+			err = state.writeJSONString(v.Time.Format(time.RFC3339Nano))
+		case *runtime.Range:
+			err = enc.encodeRange(ctx, state, v)
+		case runtime.Map:
+			err = enc.encodeMap(ctx, state, v)
+		case runtime.List:
+			err = enc.encodeList(ctx, state, v)
+		case runtime.Iterable:
+			err = enc.encodeIterable(ctx, state, v)
+		case runtime.Unwrappable:
+			err = enc.encodeAny(state, v.Unwrap())
+		default:
+			err = enc.encodeAny(state, v)
+		}
+	}
 
 	if value == nil {
 		value = runtime.None
@@ -52,10 +96,10 @@ func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value ru
 
 	if len(enc.post) > 0 {
 		state.writer.Op.Adopt(value, true)
-	}
 
-	if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
-		err = errors.Join(err, hookErr)
+		if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
+			err = errors.Join(err, hookErr)
+		}
 	}
 
 	if err != nil || len(enc.pre) > 0 || len(enc.post) > 0 {
@@ -65,65 +109,7 @@ func (enc encoder) encodeValue(ctx context.Context, state *encodeState, value ru
 	return err
 }
 
-func (enc encoder) encodeBody(ctx context.Context, state *encodeState, value runtime.Value) error {
-	if value == nil || value == runtime.None {
-		return state.writeText("null")
-	}
-
-	if marshaler, ok := value.(json.Marshaler); ok {
-		if err := state.writer.Op.Check(); err != nil {
-			return err
-		}
-
-		out, err := marshaler.MarshalJSON()
-		if err != nil {
-			return err
-		}
-
-		if err := state.writer.Op.Check(); err != nil {
-			return err
-		}
-
-		return state.write(out)
-	}
-
-	switch v := value.(type) {
-	case runtime.Boolean:
-		if v {
-			return state.writeText("true")
-		}
-
-		return state.writeText("false")
-	case runtime.Int:
-		return state.write(strconv.AppendInt(state.number[:0], int64(v), 10))
-	case runtime.Float:
-		return state.write(strconv.AppendFloat(state.number[:0], float64(v), 'g', -1, 64))
-	case runtime.Duration:
-		return state.writeJSONString(v.String())
-	case runtime.String:
-		return state.writeJSONString(string(v))
-	case *runtime.Regexp:
-		return state.writeJSONString(v.String())
-	case runtime.Binary:
-		return state.writeBinary(v)
-	case runtime.DateTime:
-		return state.writeJSONString(v.Time.Format(time.RFC3339Nano))
-	case *runtime.Range:
-		return enc.encodeRange(ctx, state, v)
-	case runtime.Map:
-		return enc.encodeMap(ctx, state, v)
-	case runtime.List:
-		return enc.encodeList(ctx, state, v)
-	case runtime.Iterable:
-		return enc.encodeIterable(ctx, state, v)
-	case runtime.Unwrappable:
-		return enc.encodeAny(state, v.Unwrap())
-	default:
-		return enc.encodeAny(state, v)
-	}
-}
-
-func (enc encoder) encodeAny(state *encodeState, value any) error {
+func (enc *encoder) encodeAny(state *encodeState, value any) error {
 	switch v := value.(type) {
 	case json.RawMessage:
 		return state.write(v)
@@ -151,7 +137,7 @@ func (enc encoder) encodeAny(state *encodeState, value any) error {
 	return state.write(out)
 }
 
-func (enc encoder) encodeMap(ctx context.Context, state *encodeState, value runtime.Map) error {
+func (enc *encoder) encodeMap(ctx context.Context, state *encodeState, value runtime.Map) error {
 	if err := state.writer.WriteByte('{'); err != nil {
 		return err
 	}
@@ -200,7 +186,7 @@ func (enc encoder) encodeMap(ctx context.Context, state *encodeState, value runt
 	return state.writer.WriteByte('}')
 }
 
-func (enc encoder) encodeList(ctx context.Context, state *encodeState, value runtime.List) error {
+func (enc *encoder) encodeList(ctx context.Context, state *encodeState, value runtime.List) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -235,7 +221,7 @@ func (enc encoder) encodeList(ctx context.Context, state *encodeState, value run
 	return state.writer.WriteByte(']')
 }
 
-func (enc encoder) encodeIterable(ctx context.Context, state *encodeState, value runtime.Iterable) (err error) {
+func (enc *encoder) encodeIterable(ctx context.Context, state *encodeState, value runtime.Iterable) (err error) {
 	if err := state.writer.WriteByte('['); err != nil {
 		return err
 	}
@@ -280,7 +266,7 @@ func (enc encoder) encodeIterable(ctx context.Context, state *encodeState, value
 	return state.writer.WriteByte(']')
 }
 
-func (enc encoder) encodeRange(ctx context.Context, state *encodeState, value *runtime.Range) error {
+func (enc *encoder) encodeRange(ctx context.Context, state *encodeState, value *runtime.Range) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -292,8 +278,17 @@ func (enc encoder) encodeRange(ctx context.Context, state *encodeState, value *r
 
 	start := value.Start()
 	ascending := start <= value.End()
+	hooked := len(enc.pre) > 0 || len(enc.post) > 0
+	_, buffered := state.writer.Dst.(*bytes.Buffer)
+	chunked := buffered && !hooked
+	var chunk []byte
+	if chunked {
+		// Concrete buffers have no write callbacks or errors whose timing could change.
+		chunk = state.scratchFor(codecutil.ChunkSize)
+	}
+
 	for offset := runtime.Int(0); offset < length; offset++ {
-		if offset > 0 {
+		if offset > 0 && !chunked {
 			if err := state.writer.WriteByte(','); err != nil {
 				return err
 			}
@@ -304,19 +299,42 @@ func (enc encoder) encodeRange(ctx context.Context, state *encodeState, value *r
 			item = start - offset
 		}
 
-		if len(enc.pre) == 0 && len(enc.post) == 0 {
+		if !hooked {
 			if err := state.writer.Op.Step(); err != nil {
 				return err
 			}
 
-			if err := state.write(strconv.AppendInt(state.number[:0], int64(item), 10)); err != nil {
+			output := state.number[:0]
+			if chunked {
+				output = chunk
+				if offset > 0 {
+					output = append(output, ',')
+				}
+			}
+
+			output = strconv.AppendInt(output, int64(item), 10)
+			if chunked && len(output) <= codecutil.ChunkSize-len(state.number) {
+				chunk = output
+
+				continue
+			}
+
+			if err := state.write(output); err != nil {
 				return err
 			}
+
+			chunk = chunk[:0]
 
 			continue
 		}
 
 		if err := enc.encodeValue(ctx, state, item); err != nil {
+			return err
+		}
+	}
+
+	if len(chunk) > 0 {
+		if err := state.write(chunk); err != nil {
 			return err
 		}
 	}
@@ -331,7 +349,35 @@ func (state *encodeState) write(data []byte) error {
 }
 
 func (state *encodeState) writeText(text string) error {
-	return state.write([]byte(text))
+	return state.write(append(state.number[:0], text...))
+}
+
+func (state *encodeState) writeMarshaler(marshaler json.Marshaler) error {
+	if err := state.writer.Op.Check(); err != nil {
+		return err
+	}
+
+	out, err := marshaler.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	if err := state.writer.Op.Check(); err != nil {
+		return err
+	}
+
+	return state.write(out)
+}
+
+func (state *encodeState) numberBuffer() []byte {
+	if buffer, ok := state.writer.Dst.(*bytes.Buffer); ok {
+		available := buffer.AvailableBuffer()
+		if cap(available) >= len(state.number) {
+			return available
+		}
+	}
+
+	return state.number[:0]
 }
 
 func (state *encodeState) scratchFor(size int) []byte {
@@ -416,7 +462,7 @@ func (state *encodeState) writeBinary(data []byte) error {
 	return state.writer.WriteByte('"')
 }
 
-func (enc encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
+func (enc *encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
 	for _, hook := range enc.pre {
 		if err := hook(ctx, value); err != nil {
 			return err
@@ -426,7 +472,7 @@ func (enc encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
 	return nil
 }
 
-func (enc encoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
+func (enc *encoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
 	for _, hook := range enc.post {
 		if hookErr := hook(ctx, value, err); hookErr != nil {
 			return hookErr

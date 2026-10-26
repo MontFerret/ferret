@@ -33,7 +33,16 @@ func (e *encoderConfigurer) PostHook(hook encoding.PostEncoderHook) encoding.Enc
 }
 
 func (e *encoderConfigurer) Encoder() encoding.Encoder {
-	enc := e.codec.encoder
+	if len(e.pre) == 0 && len(e.post) == 0 {
+		return e.codec
+	}
+
+	config := codecConfig{}
+	if e.codec.config != nil {
+		config = *e.codec.config
+	}
+
+	enc := &config.encoder
 
 	if len(e.pre) > 0 {
 		enc.pre = append([]encoding.PreEncoderHook(nil), enc.pre...)
@@ -45,10 +54,7 @@ func (e *encoderConfigurer) Encoder() encoding.Encoder {
 		enc.post = append(enc.post, e.post...)
 	}
 
-	c := e.codec
-	c.encoder = enc
-
-	return c
+	return Codec{config: &config}
 }
 
 func (d *decoderConfigurer) PreHook(hook encoding.PreDecoderHook) encoding.DecoderConfigurer {
@@ -68,7 +74,16 @@ func (d *decoderConfigurer) PostHook(hook encoding.PostDecoderHook) encoding.Dec
 }
 
 func (d *decoderConfigurer) Decoder() encoding.Decoder {
-	dec := d.codec.decoder
+	if len(d.pre) == 0 && len(d.post) == 0 {
+		return d.codec
+	}
+
+	config := codecConfig{}
+	if d.codec.config != nil {
+		config = *d.codec.config
+	}
+
+	dec := &config.decoder
 
 	if len(d.pre) > 0 {
 		dec.pre = append([]encoding.PreDecoderHook(nil), dec.pre...)
@@ -80,8 +95,5 @@ func (d *decoderConfigurer) Decoder() encoding.Decoder {
 		dec.post = append(dec.post, d.post...)
 	}
 
-	c := d.codec
-	c.decoder = dec
-
-	return c
+	return Codec{config: &config}
 }

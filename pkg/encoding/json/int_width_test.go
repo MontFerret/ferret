@@ -1,6 +1,8 @@
 package json_test
 
 import (
+	"bytes"
+	stdjson "encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -10,6 +12,47 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
+
+func TestJSONNumericBufferCapacity(t *testing.T) {
+	const prefix = "prefix:"
+
+	items := make([]int, 4096)
+	for i := range items {
+		items[i] = i
+	}
+
+	rangeJSON, err := stdjson.Marshal(items)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		value runtime.Value
+		name  string
+		want  string
+	}{
+		{
+			name:  "mixed",
+			value: runtime.NewArrayWith(runtime.Int(math.MinInt64), runtime.Int(math.MaxInt64), runtime.Float(1.25), runtime.Float(1e100), runtime.True, runtime.None),
+			want:  "[-9223372036854775808,9223372036854775807,1.25,1e+100,true,null]",
+		},
+		{name: "range_ascending", value: runtime.NewRange(math.MinInt64, math.MinInt64+1), want: "[-9223372036854775808,-9223372036854775807]"},
+		{name: "range_descending", value: runtime.NewRange(math.MaxInt64, math.MaxInt64-1), want: "[9223372036854775807,9223372036854775806]"},
+		{name: "range_chunks", value: runtime.NewRange(0, 4095), want: string(rangeJSON)},
+	} {
+		for _, spare := range []int{0, 1, 16, 31, 32, 33, 64, 4096} {
+			t.Run(tc.name+"/"+strconv.Itoa(spare), func(t *testing.T) {
+				data := make([]byte, len(prefix), len(prefix)+spare)
+				copy(data, prefix)
+				dst := bytes.NewBuffer(data)
+				want := prefix + tc.want
+				if err := json.Default.Encode(t.Context(), dst, tc.value); err != nil || dst.String() != want {
+					t.Fatalf("encode = %s, %v; want %s", dst.Bytes(), err, want)
+				}
+			})
+		}
+	}
+}
 
 func TestJSONIntegerWidth(t *testing.T) {
 	for _, value := range []int64{math.MinInt64, math.MinInt32 - 1, math.MinInt32, math.MaxInt32, math.MaxInt32 + 1, 1<<53 + 1, math.MaxInt64} {

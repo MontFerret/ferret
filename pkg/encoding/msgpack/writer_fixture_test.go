@@ -1,6 +1,16 @@
 package msgpack_test
 
-import vmmsgpack "github.com/vmihailenco/msgpack/v5"
+import (
+	"bytes"
+	"context"
+	"fmt"
+
+	vmmsgpack "github.com/vmihailenco/msgpack/v5"
+
+	"github.com/MontFerret/ferret/v2/pkg/encoding"
+	ferretmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
+)
 
 type (
 	ignoringWriterValue struct {
@@ -10,6 +20,20 @@ type (
 
 	errorWriter struct {
 		failure error
+	}
+
+	reentrantArrayEncoder struct {
+		*runtime.Array
+		ctx context.Context
+	}
+
+	payloadBoundaryWriter struct {
+		failure error
+		cancel  context.CancelFunc
+		bytes.Buffer
+		stopAt          int
+		writesAfterStop int
+		stopped         bool
 	}
 )
 
@@ -22,4 +46,48 @@ func (v *ignoringWriterValue) EncodeMsgpack(enc *vmmsgpack.Encoder) error {
 
 func (w errorWriter) Write([]byte) (int, error) {
 	return 0, w.failure
+}
+
+func (v *reentrantArrayEncoder) EncodeMsgpack(enc *vmmsgpack.Encoder) error {
+	if err := enc.EncodeArrayLen(2); err != nil {
+		return err
+	}
+
+	if err := enc.EncodeInt(1); err != nil {
+		return err
+	}
+
+	data, err := encoding.EncodeBytes(v.ctx, ferretmsgpack.Default, runtime.Int(7))
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(data, []byte{7}) {
+		return fmt.Errorf("nested encoding: %x", data)
+	}
+
+	return enc.EncodeInt(2)
+}
+
+func (w *payloadBoundaryWriter) Write(data []byte) (int, error) {
+	if w.stopped {
+		w.writesAfterStop++
+
+		return 0, w.failure
+	}
+
+	size := min(len(data), max(0, w.stopAt-w.Len()))
+	n, _ := w.Buffer.Write(data[:size])
+	if size < len(data) {
+		w.stopped = true
+
+		return n, w.failure
+	}
+
+	if w.cancel != nil && w.Len() == w.stopAt {
+		w.stopped = true
+		w.cancel()
+	}
+
+	return n, nil
 }

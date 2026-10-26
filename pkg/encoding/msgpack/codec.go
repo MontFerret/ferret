@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
 
@@ -18,14 +19,28 @@ const (
 	ContentType = "application/vnd.msgpack"
 )
 
-// Codec encodes and decodes runtime values as MessagePack.
-type Codec struct {
-	encoder
-	decoder
-}
+type (
+	// Codec encodes and decodes runtime values as MessagePack.
+	Codec struct {
+		config *codecConfig
+	}
 
-// Default is the default MessagePack codec.
-var Default = Codec{}
+	encodeState struct {
+		encoder *vmmsgpack.Encoder
+		writer  codecutil.Writer
+	}
+)
+
+var (
+	// Default is the default MessagePack codec.
+	Default = Codec{}
+
+	defaultEncoder encoder
+
+	encodePool = sync.Pool{New: func() any {
+		return &encodeState{encoder: vmmsgpack.NewEncoder(nil)}
+	}}
+)
 
 func (Codec) ContentType() string {
 	return ContentType
@@ -45,21 +60,25 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		return err
 	}
 
-	writer := codecutil.Writer{Dst: dst, Op: op}
-	enc := vmmsgpack.GetEncoder()
-	enc.Reset(&writer)
-	// PutEncoder clears the writer, releasing the borrowed operation callback.
-	defer vmmsgpack.PutEncoder(enc)
+	state := encodePool.Get().(*encodeState)
+	state.writer = codecutil.Writer{Dst: dst, Op: op}
+	state.encoder.Reset(&state.writer)
+	defer func() {
+		// Clear borrowed I/O, contexts, callbacks, and custom encoder settings.
+		state.encoder.Reset(nil)
+		state.writer = codecutil.Writer{}
+		encodePool.Put(state)
+	}()
 
-	if err := c.encodeValue(ctx, &writer.Op, enc, value); err != nil {
+	if err := c.encoderConfig().encodeValue(ctx, &state.writer.Op, state.encoder, value); err != nil {
 		return err
 	}
 
-	if err := writer.Error(); err != nil {
+	if err := state.writer.Error(); err != nil {
 		return err
 	}
 
-	return writer.Op.Check()
+	return state.writer.Op.Check()
 }
 
 func (c Codec) EncodeWith() encoding.EncoderConfigurer {
@@ -78,7 +97,8 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 		return runtime.None, err
 	}
 
-	if err := c.decoder.runPreHooks(ctx); err != nil {
+	decoder := c.decoderConfig()
+	if err := decoder.runPreHooks(ctx); err != nil {
 		return runtime.None, err
 	}
 
@@ -87,7 +107,7 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 	dec.Reset(reader.Input())
 	defer vmmsgpack.PutDecoder(dec)
 
-	value, err := c.decodeValue(ctx, &reader.Op, dec)
+	value, err := decoder.decodeValue(ctx, &reader.Op, dec)
 
 	if err == nil {
 		if _, peekErr := dec.PeekCode(); peekErr == nil {
@@ -109,7 +129,7 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 		value = runtime.None
 	}
 
-	if hookErr := c.decoder.runPostHooks(ctx, value, err); hookErr != nil {
+	if hookErr := decoder.runPostHooks(ctx, value, err); hookErr != nil {
 		return runtime.None, errors.Join(err, hookErr)
 	}
 
@@ -124,4 +144,20 @@ func (c Codec) DecodeWith() encoding.DecoderConfigurer {
 	return &decoderConfigurer{
 		codec: c,
 	}
+}
+
+func (c Codec) encoderConfig() *encoder {
+	if c.config == nil {
+		return &defaultEncoder
+	}
+
+	return &c.config.encoder
+}
+
+func (c Codec) decoderConfig() decoder {
+	if c.config == nil {
+		return decoder{}
+	}
+
+	return c.config.decoder
 }

@@ -16,7 +16,7 @@ type encoder struct {
 	post []encoding.PostEncoderHook
 }
 
-func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Value) error {
+func (enc *encoder) encodeValue(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Value) error {
 	op.Adopt(value, len(enc.pre) > 0 || len(enc.post) > 0)
 
 	if err := op.Step(); err != nil {
@@ -25,17 +25,21 @@ func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, men
 		return err
 	}
 
-	if err := enc.runPreHooks(ctx, value); err != nil {
-		op.Adopt(value, true)
+	if len(enc.pre) > 0 {
+		if err := enc.runPreHooks(ctx, value); err != nil {
+			op.Adopt(value, true)
 
-		return err
+			return err
+		}
 	}
 
 	if value == nil || value == runtime.None {
 		err := menc.EncodeNil()
 
-		if hookErr := enc.runPostHooks(ctx, runtime.None, err); hookErr != nil {
-			return errors.Join(err, hookErr)
+		if len(enc.post) > 0 {
+			if hookErr := enc.runPostHooks(ctx, runtime.None, err); hookErr != nil {
+				return errors.Join(err, hookErr)
+			}
 		}
 
 		return err
@@ -43,47 +47,45 @@ func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, men
 
 	var err error
 
-	if supportsCustomEncoding(value) {
+	switch v := value.(type) {
+	case runtime.Boolean:
+		err = menc.EncodeBool(bool(v))
+	case runtime.Int:
+		err = menc.EncodeInt(int64(v))
+	case runtime.Float:
+		err = menc.EncodeFloat64(float64(v))
+	case runtime.Duration:
+		err = menc.EncodeString(v.String())
+	case runtime.String:
+		err = menc.EncodeString(string(v))
+	case *runtime.Regexp:
+		err = menc.EncodeString(v.String())
+	case runtime.Binary:
+		err = menc.EncodeBytes(v)
+	case runtime.DateTime:
+		err = menc.EncodeTime(v.Time)
+	case *runtime.Range:
+		err = enc.encodeRange(ctx, op, menc, v)
+	case vmmsgpack.CustomEncoder, vmmsgpack.Marshaler:
 		err = enc.encodeAny(op, menc, value)
-	} else {
-		switch v := value.(type) {
-		case runtime.Boolean:
-			err = menc.EncodeBool(bool(v))
-		case runtime.Int:
-			err = menc.EncodeInt(int64(v))
-		case runtime.Float:
-			err = menc.EncodeFloat64(float64(v))
-		case runtime.Duration:
-			err = menc.EncodeString(v.String())
-		case runtime.String:
-			err = menc.EncodeString(string(v))
-		case *runtime.Regexp:
-			err = menc.EncodeString(v.String())
-		case runtime.Binary:
-			err = menc.EncodeBytes(v)
-		case runtime.DateTime:
-			err = menc.EncodeTime(v.Time)
-		case *runtime.Range:
-			err = enc.encodeRange(ctx, op, menc, v)
-		case runtime.Map:
-			err = enc.encodeMap(ctx, op, menc, v)
-		case runtime.List:
-			err = enc.encodeList(ctx, op, menc, v)
-		case runtime.Iterable:
-			err = enc.encodeIterable(ctx, op, menc, v)
-		case runtime.Unwrappable:
-			err = enc.encodeAny(op, menc, v.Unwrap())
-		default:
-			err = enc.encodeAny(op, menc, v)
-		}
+	case runtime.Map:
+		err = enc.encodeMap(ctx, op, menc, v)
+	case runtime.List:
+		err = enc.encodeList(ctx, op, menc, v)
+	case runtime.Iterable:
+		err = enc.encodeIterable(ctx, op, menc, v)
+	case runtime.Unwrappable:
+		err = enc.encodeAny(op, menc, v.Unwrap())
+	default:
+		err = enc.encodeAny(op, menc, v)
 	}
 
 	if len(enc.post) > 0 {
 		op.Adopt(value, true)
-	}
 
-	if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
-		err = errors.Join(err, hookErr)
+		if hookErr := enc.runPostHooks(ctx, value, err); hookErr != nil {
+			err = errors.Join(err, hookErr)
+		}
 	}
 
 	if err != nil || len(enc.pre) > 0 || len(enc.post) > 0 {
@@ -93,7 +95,7 @@ func (enc encoder) encodeValue(ctx context.Context, op *codecutil.Operation, men
 	return err
 }
 
-func (enc encoder) encodeAny(op *codecutil.Operation, menc *vmmsgpack.Encoder, value any) error {
+func (enc *encoder) encodeAny(op *codecutil.Operation, menc *vmmsgpack.Encoder, value any) error {
 	if err := op.Check(); err != nil {
 		return err
 	}
@@ -112,7 +114,7 @@ func (enc encoder) encodeAny(op *codecutil.Operation, menc *vmmsgpack.Encoder, v
 	return op.Check()
 }
 
-func (enc encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Map) error {
+func (enc *encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Map) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -148,7 +150,7 @@ func (enc encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc 
 	})
 }
 
-func (enc encoder) encodeList(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.List) error {
+func (enc *encoder) encodeList(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.List) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -184,7 +186,7 @@ func (enc encoder) encodeList(ctx context.Context, op *codecutil.Operation, menc
 	return nil
 }
 
-func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Iterable) (err error) {
+func (enc *encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Iterable) (err error) {
 	iter, err := codecutil.NewIterator(ctx, value)
 	if err != nil {
 		return err
@@ -230,7 +232,7 @@ func (enc encoder) encodeIterable(ctx context.Context, op *codecutil.Operation, 
 	return enc.encodeList(ctx, op, menc, list)
 }
 
-func (enc encoder) encodeRange(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value *runtime.Range) error {
+func (enc *encoder) encodeRange(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value *runtime.Range) error {
 	length, err := value.Length(ctx)
 	if err != nil {
 		return err
@@ -247,11 +249,24 @@ func (enc encoder) encodeRange(ctx context.Context, op *codecutil.Operation, men
 
 	start := value.Start()
 	ascending := start <= value.End()
+	direct := len(enc.pre) == 0 && len(enc.post) == 0 && !op.HasValueAdopter()
 
 	for offset := runtime.Int(0); offset < length; offset++ {
 		item := start + offset
 		if !ascending {
 			item = start - offset
+		}
+
+		if direct {
+			if err := op.Step(); err != nil {
+				return err
+			}
+
+			if err := menc.EncodeInt(int64(item)); err != nil {
+				return err
+			}
+
+			continue
 		}
 
 		if err := enc.encodeValue(ctx, op, menc, item); err != nil {
@@ -262,11 +277,7 @@ func (enc encoder) encodeRange(ctx context.Context, op *codecutil.Operation, men
 	return nil
 }
 
-func (enc encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
-	if len(enc.pre) == 0 {
-		return nil
-	}
-
+func (enc *encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
 	for _, hook := range enc.pre {
 		if err := hook(ctx, value); err != nil {
 			return err
@@ -276,11 +287,7 @@ func (enc encoder) runPreHooks(ctx context.Context, value runtime.Value) error {
 	return nil
 }
 
-func (enc encoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
-	if len(enc.post) == 0 {
-		return nil
-	}
-
+func (enc *encoder) runPostHooks(ctx context.Context, value runtime.Value, err error) error {
 	for _, hook := range enc.post {
 		if hookErr := hook(ctx, value, err); hookErr != nil {
 			return hookErr

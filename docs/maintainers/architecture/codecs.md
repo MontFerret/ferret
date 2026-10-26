@@ -58,6 +58,12 @@ unavoidable boundary; stdlib and HTTP adapters use their caller's context.
 
 ## Implementations and materialization
 
+Built-in codec values share immutable hook configuration through a private
+pointer. The zero value needs no configuration allocation. Configurers publish
+independent snapshots, and each operation borrows its configuration once;
+recursive encoding does not copy hook slices at every value. This also avoids
+allocating a copy of the codec when passing a concrete value to `EncodeBytes`.
+
 JSON writes numbers, containers, escaped strings, and Base64 progressively.
 Numeric scratch and bounded 4 KiB payload scratch avoid container materialization
 for generic iterables. Custom marshalers and generic Go-value fallbacks may
@@ -65,9 +71,21 @@ buffer. Its standard JSON tokenizer handles fragmented readers and strictly
 rejects extra roots, malformed separators, and truncated containers; integer
 width is preserved.
 
+Exact `*bytes.Buffer` destinations use direct checked writes and available
+capacity for numeric formatting. Hook-free native JSON ranges collect at most
+4 KiB of numeric output between checked buffer writes, while retaining traversal
+cancellation checks. Arbitrary writers, including wrappers around a buffer,
+retain immediate checked writes so hooks and iterators observe failures during
+traversal. JSON literals use reusable scratch without per-value allocations.
+
 MessagePack connects the dependency encoder/decoder to borrowed I/O through a
-short-write and cancellation adapter. Instances are reset on every operation and
-release I/O references on every exit. Generic iterables still materialize to
+short-write and cancellation adapter. Its pooled encoding state owns both the
+dependency encoder and checked writer. Instances are reset on every operation
+and release I/O, contexts, discovery callbacks, and custom encoder settings on
+every exit. Output bytes belong to the collecting caller, not the pool.
+Hook-free MessagePack ranges without a discovery callback encode native integers
+directly, retaining sampled cancellation; other ranges use the ordinary visitor.
+Generic iterables still materialize to
 determine the length required by a MessagePack container header. Decoding in both
 formats returns a fully materialized runtime.Value and may read ahead. This is
 not a constant-memory guarantee or a lazy decoding API.
@@ -136,3 +154,7 @@ native materialization benchmarks are recorded in the linked
 [codec streaming migration report](codec-streaming-migration.md). The report
 separates collecting buffers, cancellation, hooks, callback registration, and
 stored discovery costs from the durable contracts above.
+
+The [encoder performance recovery report](codec-encoder-performance.md) compares
+the pre-migration revision, merged migration, and subsequent encoder
+optimizations, including remaining overhead and allocation controls.
