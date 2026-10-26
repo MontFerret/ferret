@@ -1,6 +1,7 @@
 package msgpack
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -27,7 +28,7 @@ type (
 
 	encodeState struct {
 		encoder *vmmsgpack.Encoder
-		writer  codecutil.Writer
+		writer  codecutil.BufferWriter
 	}
 )
 
@@ -60,17 +61,35 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		return err
 	}
 
+	configured := c.encoderConfig()
+	switch value.(type) {
+	case runtime.String, runtime.Duration, *runtime.Regexp:
+		if buffer, ok := dst.(*bytes.Buffer); ok {
+			if handled, err := configured.encodeShortString(&op, buffer, value); handled {
+				return err
+			}
+		}
+	}
+
 	state := encodePool.Get().(*encodeState)
-	state.writer = codecutil.Writer{Dst: dst, Op: op}
-	state.encoder.Reset(&state.writer)
+	state.writer.Dst = dst
+	state.writer.Op = op
+	writer := io.Writer(&state.writer.Writer)
+	if buffer, ok := dst.(*bytes.Buffer); ok {
+		state.writer.Buffer = buffer
+		writer = &state.writer
+	}
+
+	// The private pool resets all dependency settings before returning a state.
+	state.encoder.ResetWriter(writer)
 	defer func() {
 		// Clear borrowed I/O, contexts, callbacks, and custom encoder settings.
 		state.encoder.Reset(nil)
-		state.writer = codecutil.Writer{}
+		state.writer = codecutil.BufferWriter{}
 		encodePool.Put(state)
 	}()
 
-	if err := c.encoderConfig().encodeValue(ctx, &state.writer.Op, state.encoder, value); err != nil {
+	if err := configured.encodeValue(ctx, &state.writer.Op, state.encoder, value); err != nil {
 		return err
 	}
 

@@ -35,6 +35,13 @@ type (
 		byte    [1]byte
 	}
 
+	// BufferWriter borrows an exact bytes.Buffer and shares all cancellation,
+	// error, and byte-accounting state with its embedded base writer.
+	BufferWriter struct {
+		Buffer *bytes.Buffer
+		Writer
+	}
+
 	// Reader observes non-EOF errors even when a decoder accepts accompanying data.
 	Reader struct {
 		Src io.Reader
@@ -179,6 +186,40 @@ func (w *Writer) WriteByte(value byte) error {
 
 func (w *Writer) Error() error {
 	return w.err
+}
+
+func (w *BufferWriter) Write(p []byte) (int, error) {
+	if w.err != nil {
+		return 0, w.err
+	}
+
+	if len(p) > ChunkSize {
+		return w.writeChunks(p)
+	}
+
+	if w.advance(len(p)) {
+		w.err = w.Op.Check()
+		if w.err != nil {
+			return 0, w.err
+		}
+	}
+
+	return w.Buffer.Write(p)
+}
+
+func (w *BufferWriter) WriteByte(value byte) error {
+	if w.err != nil {
+		return w.err
+	}
+
+	if w.advance(1) {
+		w.err = w.Op.Check()
+		if w.err != nil {
+			return w.err
+		}
+	}
+
+	return w.Buffer.WriteByte(value)
 }
 
 func (r *Reader) Read(p []byte) (int, error) {

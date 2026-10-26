@@ -124,14 +124,25 @@ func TestCodecConcurrentAndReentrantEncoding(t *testing.T) {
 						t.Fatal(err)
 					}
 
+					scalar := runtime.String("shared scalar")
+					scalarGolden, err := encoding.EncodeBytes(t.Context(), codec, scalar)
+					if err != nil {
+						t.Fatal(err)
+					}
+
 					results := make(chan error, 8)
 					for range 8 {
 						go func() {
-							for range 32 {
+							for i := range 32 {
+								current, want, visits := runtime.Value(value), golden, 4
+								if i%2 == 0 {
+									current, want, visits = scalar, scalarGolden, 1
+								}
+
 								call := &invocation{}
 								call.ctx = context.WithValue(t.Context(), contextKey{}, call)
-								data, err := encoding.EncodeBytes(call.ctx, enc, value)
-								if err != nil || !bytes.Equal(data, golden) || (configured && (call.pre != 4 || call.post != 4)) {
+								data, err := encoding.EncodeBytes(call.ctx, enc, current)
+								if err != nil || !bytes.Equal(data, want) || (configured && (call.pre != visits || call.post != visits)) {
 									results <- fmt.Errorf("concurrent encode: data=%x pre=%d post=%d err=%v", data, call.pre, call.post, err)
 
 									return

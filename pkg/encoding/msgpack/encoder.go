@@ -1,10 +1,12 @@
 package msgpack
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
 	vmmsgpack "github.com/vmihailenco/msgpack/v5"
+	"github.com/vmihailenco/msgpack/v5/msgpcode"
 
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/encoding/internal/codecutil"
@@ -103,8 +105,16 @@ func (enc *encoder) encodeAny(op *codecutil.Operation, menc *vmmsgpack.Encoder, 
 	err := menc.Encode(value)
 	// A custom encoder may ignore its writer's error or return another cause.
 	// Preserve the codec-owned writer failure in either case.
-	if writer, ok := menc.Writer().(*codecutil.Writer); ok && writer.Error() != nil && !errors.Is(err, writer.Error()) {
-		err = errors.Join(err, writer.Error())
+	var writeErr error
+	switch writer := menc.Writer().(type) {
+	case *codecutil.Writer:
+		writeErr = writer.Error()
+	case *codecutil.BufferWriter:
+		writeErr = writer.Error()
+	}
+
+	if writeErr != nil && !errors.Is(err, writeErr) {
+		err = errors.Join(err, writeErr)
 	}
 
 	if err != nil {
@@ -112,6 +122,43 @@ func (enc *encoder) encodeAny(op *codecutil.Operation, menc *vmmsgpack.Encoder, 
 	}
 
 	return op.Check()
+}
+
+func (enc *encoder) encodeShortString(op *codecutil.Operation, dst *bytes.Buffer, value runtime.Value) (bool, error) {
+	if len(enc.pre) != 0 || len(enc.post) != 0 || op.HasValueAdopter() {
+		return false, nil
+	}
+
+	var text string
+	switch value := value.(type) {
+	case runtime.String:
+		text = string(value)
+	case runtime.Duration:
+		text = value.String()
+	case *runtime.Regexp:
+		if value == nil {
+			return false, nil
+		}
+
+		text = value.String()
+	default:
+		return false, nil
+	}
+
+	if len(text) >= 32 {
+		return false, nil
+	}
+
+	if err := op.Step(); err != nil {
+		return true, err
+	}
+
+	// The complete fixstr value fits below one payload checkpoint. The exact
+	// buffer cannot fail or invoke caller code, and no hooks or adopter are active.
+	_ = dst.WriteByte(msgpcode.FixedStrLow | byte(len(text)))
+	_, _ = dst.WriteString(text)
+
+	return true, op.Check()
 }
 
 func (enc *encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc *vmmsgpack.Encoder, value runtime.Map) error {
@@ -130,16 +177,38 @@ func (enc *encoder) encodeMap(ctx context.Context, op *codecutil.Operation, menc
 	}
 
 	_, stored := value.(*runtime.Object)
+	directInts := !op.HasValueAdopter() && len(enc.pre) == 0 && len(enc.post) == 0
 
 	return value.ForEach(ctx, func(ctx context.Context, val, key runtime.Value) (runtime.Boolean, error) {
 		op.Adopt(val, !stored)
 		op.Adopt(key, !stored)
 
-		if err := menc.EncodeString(key.String()); err != nil {
+		var text string
+		if native, ok := key.(runtime.String); ok {
+			text = string(native)
+		} else {
+			text = key.String()
+		}
+
+		if err := menc.EncodeString(text); err != nil {
 			op.Adopt(val, true)
 			op.Adopt(key, true)
 
 			return false, err
+		}
+
+		if directInts {
+			if integer, ok := val.(runtime.Int); ok {
+				if err := op.Step(); err != nil {
+					return false, err
+				}
+
+				if err := menc.EncodeInt(int64(integer)); err != nil {
+					return false, err
+				}
+
+				return true, nil
+			}
 		}
 
 		if err := enc.encodeValue(ctx, op, menc, val); err != nil {

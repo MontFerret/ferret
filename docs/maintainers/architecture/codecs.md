@@ -64,6 +64,16 @@ independent snapshots, and each operation borrows its configuration once;
 recursive encoding does not copy hook slices at every value. This also avoids
 allocating a copy of the codec when passing a concrete value to `EncodeBytes`.
 
+After validation, root discovery, and the initial cancellation check, exact
+`bytes.Buffer` destinations can encode a native String, Duration, or non-nil Regexp root
+without borrowing traversal state. This requires no encoder hooks or adoption
+callback. JSON accepts unescaped ASCII text up to 4,089 bytes; MessagePack accepts
+strings shorter than 32 bytes using its fixstr representation. Both retain the
+traversal step and final cancellation check. Other values and destinations use
+normal traversal. JSON retains already-formatted native root text when its
+shortcut declines it and uses the normal pooled string writer, avoiding repeated
+duration formatting. The collecting helper has no separate codec dispatch API.
+
 JSON writes numbers, containers, escaped strings, and Base64 progressively.
 Numeric scratch and bounded 4 KiB payload scratch avoid container materialization
 for generic iterables. Custom marshalers and generic Go-value fallbacks may
@@ -77,14 +87,24 @@ capacity for numeric formatting. Hook-free native JSON ranges collect at most
 cancellation checks. Arbitrary writers, including wrappers around a buffer,
 retain immediate checked writes so hooks and iterators observe failures during
 traversal. JSON literals use reusable scratch without per-value allocations.
+String encoding copies unescaped ASCII runs within the same payload checkpoints;
+escaping, Unicode output, and invalid-UTF-8 replacement retain their existing
+behavior.
 
 MessagePack connects the dependency encoder/decoder to borrowed I/O through a
 short-write and cancellation adapter. Its pooled encoding state owns both the
 dependency encoder and checked writer. Instances are reset on every operation
 and release I/O, contexts, discovery callbacks, and custom encoder settings on
 every exit. Output bytes belong to the collecting caller, not the pool.
+An exact-buffer adapter is selected once per operation and shares the base
+writer's cancellation counters and sticky error. Normal strings and map keys
+still use the dependency encoder, including settings changed by custom encoding
+earlier in that operation. Wrappers around buffers retain generic checked I/O.
 Hook-free MessagePack ranges without a discovery callback encode native integers
-directly, retaining sampled cancellation; other ranges use the ordinary visitor.
+directly, retaining sampled cancellation; the same rule applies to exact integer
+map values after key encoding. Native string keys avoid an interface method call,
+while host-defined keys retain their String method. Other values and configured
+operations use the ordinary visitor.
 Generic iterables still materialize to
 determine the length required by a MessagePack container header. Decoding in both
 formats returns a fully materialized runtime.Value and may read ahead. This is

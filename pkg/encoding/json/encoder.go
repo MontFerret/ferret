@@ -395,8 +395,10 @@ func (state *encodeState) writeJSONString(text string) error {
 	}
 
 	scratch := append(state.scratchFor(size), '"')
+	// Reserve run scanning for strings large enough to amortize its setup.
+	asciiRuns := len(text) >= 64
 
-	for _, r := range text {
+	for offset := 0; offset < len(text); {
 		// Reserve the longest escape and the closing quote within one chunk.
 		if len(scratch) > codecutil.ChunkSize-7 {
 			if err := state.writer.Op.Check(); err != nil {
@@ -409,6 +411,24 @@ func (state *encodeState) writeJSONString(text string) error {
 
 			scratch = scratch[:0]
 		}
+
+		if asciiRuns {
+			length := min(len(text)-offset, codecutil.ChunkSize-6-len(scratch))
+			end := jsonASCIIEnd(text, offset, offset+length)
+			if end > offset {
+				scratch = append(scratch, text[offset:end]...)
+				offset = end
+
+				continue
+			}
+		}
+
+		r, size := rune(text[offset]), 1
+		if r >= utf8.RuneSelf {
+			r, size = utf8.DecodeRuneInString(text[offset:])
+		}
+
+		offset += size
 
 		switch r {
 		case '\\', '"':

@@ -27,6 +27,30 @@ type (
 		ctx context.Context
 	}
 
+	opaqueBufferWriter struct {
+		bytes.Buffer
+	}
+
+	stringSettingsValue struct {
+		marshalerValue
+		dictionary bool
+	}
+
+	cancelingWriterValue struct {
+		marshalerValue
+		cancel  context.CancelFunc
+		failure error
+	}
+
+	customIntegerValue struct {
+		runtime.Int
+	}
+
+	mapCancelWriter struct {
+		cancel context.CancelFunc
+		bytes.Buffer
+	}
+
 	payloadBoundaryWriter struct {
 		failure error
 		cancel  context.CancelFunc
@@ -67,6 +91,39 @@ func (v *reentrantArrayEncoder) EncodeMsgpack(enc *vmmsgpack.Encoder) error {
 	}
 
 	return enc.EncodeInt(2)
+}
+
+func (v *stringSettingsValue) EncodeMsgpack(enc *vmmsgpack.Encoder) error {
+	if v.dictionary {
+		enc.ResetDict(enc.Writer(), map[string]int{"repeat": 0})
+	} else {
+		enc.UseInternedStrings(true)
+	}
+
+	return enc.EncodeNil()
+}
+
+func (v *cancelingWriterValue) EncodeMsgpack(enc *vmmsgpack.Encoder) error {
+	v.cancel()
+	_, _ = enc.Writer().Write(make([]byte, 4096))
+	_, _ = enc.Writer().Write([]byte{1})
+
+	return v.failure
+}
+
+func (v *customIntegerValue) EncodeMsgpack(enc *vmmsgpack.Encoder) error {
+	return enc.EncodeString("custom integer")
+}
+
+func (w *mapCancelWriter) Write(data []byte) (int, error) {
+	n, err := w.Buffer.Write(data)
+	if w.cancel != nil {
+		cancel := w.cancel
+		w.cancel = nil
+		cancel()
+	}
+
+	return n, err
 }
 
 func (w *payloadBoundaryWriter) Write(data []byte) (int, error) {
