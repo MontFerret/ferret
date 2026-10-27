@@ -58,6 +58,22 @@ unavoidable boundary; stdlib and HTTP adapters use their caller's context.
 
 ## Implementations and materialization
 
+Built-in codec values share immutable hook configuration through a private
+pointer. The zero value needs no configuration allocation. Configurers publish
+independent snapshots, and each operation borrows its configuration once;
+recursive encoding does not copy hook slices at every value. This also avoids
+allocating a copy of the codec when passing a concrete value to `EncodeBytes`.
+
+After validation, root discovery, and the initial cancellation check, exact
+`bytes.Buffer` destinations can encode a native String, Duration, or non-nil Regexp root
+without borrowing traversal state. This requires no encoder hooks or adoption
+callback. JSON accepts unescaped ASCII text up to 4,089 bytes; MessagePack accepts
+strings shorter than 32 bytes using its fixstr representation. Both retain the
+traversal step and final cancellation check. Other values and destinations use
+normal traversal. JSON retains already-formatted native root text when its
+shortcut declines it and uses the normal pooled string writer, avoiding repeated
+duration formatting. The collecting helper has no separate codec dispatch API.
+
 JSON writes numbers, containers, escaped strings, and Base64 progressively.
 Numeric scratch and bounded 4 KiB payload scratch avoid container materialization
 for generic iterables. Custom marshalers and generic Go-value fallbacks may
@@ -65,9 +81,31 @@ buffer. Its standard JSON tokenizer handles fragmented readers and strictly
 rejects extra roots, malformed separators, and truncated containers; integer
 width is preserved.
 
+Exact `*bytes.Buffer` destinations use direct checked writes and available
+capacity for numeric formatting. Hook-free native JSON ranges collect at most
+4 KiB of numeric output between checked buffer writes, while retaining traversal
+cancellation checks. Arbitrary writers, including wrappers around a buffer,
+retain immediate checked writes so hooks and iterators observe failures during
+traversal. JSON literals use reusable scratch without per-value allocations.
+String encoding copies unescaped ASCII runs within the same payload checkpoints;
+escaping, Unicode output, and invalid-UTF-8 replacement retain their existing
+behavior.
+
 MessagePack connects the dependency encoder/decoder to borrowed I/O through a
-short-write and cancellation adapter. Instances are reset on every operation and
-release I/O references on every exit. Generic iterables still materialize to
+short-write and cancellation adapter. Its pooled encoding state owns both the
+dependency encoder and checked writer. Instances are reset on every operation
+and release I/O, contexts, discovery callbacks, and custom encoder settings on
+every exit. Output bytes belong to the collecting caller, not the pool.
+An exact-buffer adapter is selected once per operation and shares the base
+writer's cancellation counters and sticky error. Normal strings and map keys
+still use the dependency encoder, including settings changed by custom encoding
+earlier in that operation. Wrappers around buffers retain generic checked I/O.
+Hook-free MessagePack ranges without a discovery callback encode native integers
+directly, retaining sampled cancellation; the same rule applies to exact integer
+map values after key encoding. Native string keys avoid an interface method call,
+while host-defined keys retain their String method. Other values and configured
+operations use the ordinary visitor.
+Generic iterables still materialize to
 determine the length required by a MessagePack container header. Decoding in both
 formats returns a fully materialized runtime.Value and may read ahead. This is
 not a constant-memory guarantee or a lazy decoding API.
@@ -136,3 +174,7 @@ native materialization benchmarks are recorded in the linked
 [codec streaming migration report](codec-streaming-migration.md). The report
 separates collecting buffers, cancellation, hooks, callback registration, and
 stored discovery costs from the durable contracts above.
+
+The [encoder performance recovery report](codec-encoder-performance.md) compares
+the pre-migration revision, merged migration, and subsequent encoder
+optimizations, including remaining overhead and allocation controls.

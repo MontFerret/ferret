@@ -35,6 +35,13 @@ type (
 		byte    [1]byte
 	}
 
+	// BufferWriter borrows an exact bytes.Buffer and shares all cancellation,
+	// error, and byte-accounting state with its embedded base writer.
+	BufferWriter struct {
+		Buffer *bytes.Buffer
+		Writer
+	}
+
 	// Reader observes non-EOF errors even when a decoder accepts accompanying data.
 	Reader struct {
 		Src io.Reader
@@ -87,6 +94,13 @@ func (op *Operation) CacheValueAdopter() {
 	}
 }
 
+// HasValueAdopter reports whether native values must pass through the visitor.
+func (op *Operation) HasValueAdopter() bool {
+	_, ok := op.ctx.(*adopterContext)
+
+	return ok
+}
+
 // Adopt registers a visit, optionally discovering concrete stored descendants.
 // Acquisition boundaries and abandoned containers request discovery; ordinary
 // recursive visits register directly to keep hook-free traversal linear.
@@ -110,13 +124,9 @@ func (op *Operation) Check() error {
 }
 
 func (op *Operation) Step() error {
-	if op.done == nil {
-		return nil
-	}
-
 	op.steps++
 	if op.steps == 0 {
-		return op.Check()
+		return op.checkTraversal()
 	}
 
 	return nil
@@ -128,8 +138,15 @@ func (w *Writer) Write(p []byte) (int, error) {
 	}
 
 	if len(p) <= ChunkSize {
-		if err := w.checkWrite(len(p)); err != nil {
-			return 0, err
+		if w.advance(len(p)) {
+			w.err = w.Op.Check()
+			if w.err != nil {
+				return 0, w.err
+			}
+		}
+
+		if buffer, ok := w.Dst.(*bytes.Buffer); ok {
+			return buffer.Write(p)
 		}
 
 		n, err := w.Dst.Write(p)
@@ -142,21 +159,7 @@ func (w *Writer) Write(p []byte) (int, error) {
 		return n, err
 	}
 
-	written := 0
-
-	for len(p) > 0 {
-		size := min(len(p), ChunkSize)
-		n, err := w.Write(p[:size])
-		written += n
-
-		if err != nil {
-			return written, err
-		}
-
-		p = p[size:]
-	}
-
-	return written, nil
+	return w.writeChunks(p)
 }
 
 func (w *Writer) WriteByte(value byte) error {
@@ -165,8 +168,11 @@ func (w *Writer) WriteByte(value byte) error {
 	}
 
 	if buffer, ok := w.Dst.(*bytes.Buffer); ok {
-		if err := w.checkWrite(1); err != nil {
-			return err
+		if w.advance(1) {
+			w.err = w.Op.Check()
+			if w.err != nil {
+				return w.err
+			}
 		}
 
 		return buffer.WriteByte(value)
@@ -180,6 +186,40 @@ func (w *Writer) WriteByte(value byte) error {
 
 func (w *Writer) Error() error {
 	return w.err
+}
+
+func (w *BufferWriter) Write(p []byte) (int, error) {
+	if w.err != nil {
+		return 0, w.err
+	}
+
+	if len(p) > ChunkSize {
+		return w.writeChunks(p)
+	}
+
+	if w.advance(len(p)) {
+		w.err = w.Op.Check()
+		if w.err != nil {
+			return 0, w.err
+		}
+	}
+
+	return w.Buffer.Write(p)
+}
+
+func (w *BufferWriter) WriteByte(value byte) error {
+	if w.err != nil {
+		return w.err
+	}
+
+	if w.advance(1) {
+		w.err = w.Op.Check()
+		if w.err != nil {
+			return w.err
+		}
+	}
+
+	return w.Buffer.WriteByte(value)
 }
 
 func (r *Reader) Read(p []byte) (int, error) {
@@ -239,18 +279,56 @@ func (r *Reader) recordError(err error) {
 	}
 }
 
-func (w *Writer) checkWrite(size int) error {
+// advance keeps the common byte-accounting path separate from cancellation.
+func (w *Writer) advance(size int) bool {
 	if w.Op.done == nil {
-		return nil
+		return false
 	}
 
 	w.pending += size
 	if w.pending < ChunkSize {
-		return nil
+		return false
 	}
 
 	w.pending = 0
-	w.err = w.Op.Check()
 
-	return w.err
+	return true
+}
+
+// Large payloads use the caller's writer directly between checkpoints, avoiding
+// recursive small-write dispatch and buffer type checks for every chunk.
+func (w *Writer) writeChunks(p []byte) (int, error) {
+	written := 0
+
+	for len(p) > 0 {
+		size := min(len(p), ChunkSize)
+		if w.advance(size) {
+			w.err = w.Op.Check()
+			if w.err != nil {
+				return written, w.err
+			}
+		}
+
+		n, err := w.Dst.Write(p[:size])
+		written += n
+		if err == nil && n != size {
+			err = io.ErrShortWrite
+		}
+
+		w.err = err
+		if err != nil {
+			return written, err
+		}
+
+		p = p[size:]
+	}
+
+	return written, nil
+}
+
+// Keep the sampled check out of line so Step can inline into traversal loops.
+//
+//go:noinline
+func (op *Operation) checkTraversal() error {
+	return op.Check()
 }

@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -17,16 +18,27 @@ const (
 	ContentType = "application/json"
 )
 
-// Codec encodes and decodes runtime values as JSON.
-type Codec struct {
-	encoder
-	decoder
-}
+type (
+	// Codec encodes and decodes runtime values as JSON.
+	Codec struct {
+		config *codecConfig
+	}
 
-// Default is the default JSON codec.
-var Default = Codec{}
+	// Published configuration is immutable and shared by copies of a codec.
+	codecConfig struct {
+		encoder
+		decoder
+	}
+)
 
-var encodePool = sync.Pool{New: func() any { return &encodeState{} }}
+var (
+	// Default is the default JSON codec.
+	Default = Codec{}
+
+	defaultEncoder encoder
+
+	encodePool = sync.Pool{New: func() any { return &encodeState{} }}
+)
 
 func (Codec) ContentType() string {
 	return ContentType
@@ -46,6 +58,53 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		return err
 	}
 
+	enc := &defaultEncoder
+	if c.config != nil {
+		enc = &c.config.encoder
+	}
+
+	// Preserve native text for the ordinary string writer when the shortcut
+	// declines it, so values such as microsecond durations are formatted once.
+	var rootText string
+	var rootBuffer *bytes.Buffer
+	switch v := value.(type) {
+	case runtime.String:
+		rootBuffer = enc.bufferForRootString(&op, dst)
+		if rootBuffer != nil {
+			rootText = string(v)
+		}
+	case runtime.Duration:
+		rootBuffer = enc.bufferForRootString(&op, dst)
+		if rootBuffer != nil {
+			rootText = v.String()
+		}
+	case *runtime.Regexp:
+		if v != nil {
+			rootBuffer = enc.bufferForRootString(&op, dst)
+			if rootBuffer != nil {
+				rootText = v.String()
+			}
+		}
+	}
+
+	rootString := rootBuffer != nil
+	// Complete eligibility scanning before changing the buffer. This bound
+	// stays below the ordinary string writer's first payload checkpoint.
+	if rootString && len(rootText) <= codecutil.ChunkSize-7 && jsonASCIIEnd(rootText, 0, len(rootText)) == len(rootText) {
+		if err := op.Step(); err != nil {
+			return err
+		}
+
+		rootBuffer.Grow(len(rootText) + 2)
+		out := rootBuffer.AvailableBuffer()[:len(rootText)+2]
+		out[0] = '"'
+		copy(out[1:], rootText)
+		out[len(out)-1] = '"'
+		_, _ = rootBuffer.Write(out)
+
+		return op.Check()
+	}
+
 	state := encodePool.Get().(*encodeState)
 	state.writer = codecutil.Writer{Dst: dst, Op: op}
 
@@ -54,7 +113,15 @@ func (c Codec) Encode(ctx context.Context, dst io.Writer, value runtime.Value) e
 		encodePool.Put(state)
 	}()
 
-	if err := c.encodeValue(ctx, state, value); err != nil {
+	if rootString {
+		if err := state.writer.Op.Step(); err != nil {
+			return err
+		}
+
+		if err := state.writeJSONString(rootText); err != nil {
+			return err
+		}
+	} else if err := enc.encodeValue(ctx, state, value); err != nil {
 		return err
 	}
 
@@ -77,7 +144,12 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 		return runtime.None, err
 	}
 
-	if err := c.decoder.runPreHooks(ctx); err != nil {
+	configured := decoder{}
+	if c.config != nil {
+		configured = c.config.decoder
+	}
+
+	if err := configured.runPreHooks(ctx); err != nil {
 		return runtime.None, err
 	}
 
@@ -85,7 +157,7 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 	dec := json.NewDecoder(reader.Input())
 	dec.UseNumber()
 
-	value, err := c.decodeValue(ctx, &reader.Op, dec)
+	value, err := configured.decodeValue(ctx, &reader.Op, dec)
 	if readErr := reader.Error(); readErr != nil && !errors.Is(err, readErr) {
 		err = errors.Join(err, readErr)
 	}
@@ -98,7 +170,7 @@ func (c Codec) Decode(ctx context.Context, src io.Reader) (runtime.Value, error)
 		value = runtime.None
 	}
 
-	if hookErr := c.decoder.runPostHooks(ctx, value, err); hookErr != nil {
+	if hookErr := configured.runPostHooks(ctx, value, err); hookErr != nil {
 		return runtime.None, errors.Join(err, hookErr)
 	}
 
@@ -113,4 +185,14 @@ func (c Codec) DecodeWith() encoding.DecoderConfigurer {
 	return &decoderConfigurer{
 		codec: c,
 	}
+}
+
+func (enc *encoder) bufferForRootString(op *codecutil.Operation, dst io.Writer) *bytes.Buffer {
+	if len(enc.pre) > 0 || len(enc.post) > 0 || op.HasValueAdopter() {
+		return nil
+	}
+
+	buffer, _ := dst.(*bytes.Buffer)
+
+	return buffer
 }
