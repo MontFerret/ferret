@@ -11,6 +11,7 @@ import (
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/formatter/internal"
+	"github.com/MontFerret/ferret/v2/pkg/internal/sourceoffset"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	parserd "github.com/MontFerret/ferret/v2/pkg/parser/diagnostics"
 )
@@ -42,12 +43,18 @@ func New(setters ...Option) (*Formatter, error) {
 	}, nil
 }
 
-func (fmt *Formatter) Format(out io.Writer, src source.Source) error {
+// Format writes canonical FQL without resolving host functions or executing it.
+// Diagnostic spans use zero-based, half-open UTF-8 byte offsets into src.
+// Recovered panics return diagnostics.UnexpectedError; ordinary writer errors
+// retain their identity. Any error may leave partial output, which must not be
+// used as a successfully formatted program. The formatter remains reusable.
+func (fmt *Formatter) Format(out io.Writer, src source.Source) (err error) {
 	if src.Empty() {
 		return parserd.NewEmptyQueryError(src)
 	}
 
 	errorHandler := parserd.NewErrorHandler(src, 10)
+	var offsets sourceoffset.Offsets
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -57,7 +64,6 @@ func (fmt *Formatter) Format(out io.Writer, src source.Source) error {
 			n := goruntime.Stack(buf, false)
 			stackTrace := string(buf[:n])
 
-			// Find out exactly what the error was and add the e
 			switch x := r.(type) {
 			case string:
 				e = diagnostics.NewUnexpectedError(src, x+"\n"+stackTrace)
@@ -67,9 +73,22 @@ func (fmt *Formatter) Format(out io.Writer, src source.Source) error {
 				e = diagnostics.NewUnexpectedError(src, "unhandled panic\n"+stackTrace)
 			}
 
-			errorHandler.Add(e)
+			// An internal failure must survive even if syntax diagnostics already
+			// exhausted the handler's ordinary error limit.
+			errorHandler.Errors().Add(e)
+			err = errorHandler.Unwrap()
+		}
+
+		// Only handler-owned annotations use parser coordinates. Writer errors
+		// and panic causes may carry their own locations and must remain intact.
+		for _, diagnostic := range errorHandler.Errors().Errors() {
+			for i := range diagnostic.Spans {
+				diagnostic.Spans[i].Span = offsets.Span(diagnostic.Spans[i].Span)
+			}
 		}
 	}()
+
+	offsets = sourceoffset.New(src.Content())
 
 	tokenHistory := parserd.NewTokenHistory(64)
 	p := parser.New(src.Content(), func(stream antlr.TokenStream) antlr.TokenStream {
@@ -85,7 +104,7 @@ func (fmt *Formatter) Format(out io.Writer, src source.Source) error {
 		return errorHandler.Unwrap()
 	}
 
-	l := internal.NewVisitor(src, out, &fmt.config)
+	l := internal.NewVisitor(src, out, &fmt.config, offsets)
 	p.Visit(l)
 
 	if errorHandler.HasErrors() {

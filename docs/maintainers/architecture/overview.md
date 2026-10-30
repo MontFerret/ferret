@@ -228,7 +228,11 @@ Published diagnostic spans are zero-based, half-open byte offsets and must obey
 uses a zero-width insertion point at the relevant token boundary, including
 `[N,N)` at EOF. Existing offending syntax uses its actual source range. Native
 positions retain one-based lines and byte columns. Parser producers keep ANTLR
-character offsets until the compiler converts them to the original source bytes.
+character offsets until the compiler or formatter converts its owned diagnostic
+annotations to the original source bytes at publication. The shared internal
+`sourceoffset` package supplies the rune-boundary mapping, including EOF, with an
+allocation-free ASCII identity map. Conversion does not change parser tokens or
+invent annotations for errors without locations.
 Producers own coordinate correctness; source lookup and Universal API projection
 must not repair invalid spans. Caret visibility and snippet layout belong to
 diagnostic rendering, not span construction.
@@ -261,6 +265,15 @@ whitespace or comments, while preserving the compiler's coordinate conversion.
 Formatter changes must preserve executable meaning and should be covered by
 focused fixtures or integration tests. A syntax change should update formatter
 handling in the same change when the new construct can be emitted or reformatted.
+
+Formatter source slicing converts half-open rune boundaries to bytes through one
+mapping per call; inclusive token stops become exclusive ends before conversion.
+Formatting does not resolve host functions or execute programs. Recovered panics
+return structured `diagnostics.UnexpectedError` diagnostics, while ordinary
+writer errors retain their identity. Either failure may leave partial writer
+output, which callers must discard as a formatted program. The formatter remains
+reusable after failures. Service-specific error redaction and editor UTF-16
+conversion belong to adapters, outside the native formatter.
 
 Low-level textual program representations belong in `pkg/asm`. They follow the
 bytecode model and debugger metadata rather than defining independent opcode or

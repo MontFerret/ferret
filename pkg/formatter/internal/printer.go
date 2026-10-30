@@ -61,6 +61,9 @@ func (p *printer) write(s string) {
 
 	if p.atLineStart {
 		p.writeIndent()
+		if p.err != nil {
+			return
+		}
 	}
 
 	_, err := io.WriteString(p.out, s)

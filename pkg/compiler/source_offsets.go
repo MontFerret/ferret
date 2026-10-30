@@ -1,35 +1,19 @@
 package compiler
 
 import (
-	"unicode/utf8"
-
 	"github.com/MontFerret/ferret/v2/pkg/bytecode"
+	"github.com/MontFerret/ferret/v2/pkg/internal/sourceoffset"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 // ANTLR uses rune offsets internally. Published spans use byte offsets, as do
 // source indexing and debugger locations. A nil table is the ASCII identity map.
-func sourceByteOffsets(src source.Source) []int {
-	text := src.Content()
-	count := utf8.RuneCountInString(text)
-	if count == len(text) {
-		return nil
-	}
-
-	offsets := make([]int, 0, count+1)
-	for offset := range text {
-		offsets = append(offsets, offset)
-	}
-
-	return append(offsets, len(text))
+func sourceByteOffsets(src source.Source) sourceoffset.Offsets {
+	return sourceoffset.New(src.Content())
 }
 
-func sourceByteSpan(offsets []int, span source.Span) source.Span {
-	if offsets == nil || span.Start < 0 || span.End < 0 || span.Start >= len(offsets) || span.End >= len(offsets) {
-		return span
-	}
-
-	return source.Span{Start: offsets[span.Start], End: offsets[span.End]}
+func sourceByteSpan(offsets sourceoffset.Offsets, span source.Span) source.Span {
+	return offsets.Span(span)
 }
 
 func normalizeProgramSpans(program *bytecode.Program) {

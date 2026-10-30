@@ -65,7 +65,7 @@ func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 }
 
 // Insertion points do not consume source characters, including at EOF. Keep
-// ANTLR offsets here; the compiler publishes diagnostics in byte coordinates.
+// ANTLR offsets here; compiler and formatter publication converts them to bytes.
 func insertionSpanAfterToken(tok antlr.Token, src source.Source) source.Span {
 	span := spanFromTokenSafe(tok, src)
 	span.Start = span.End

@@ -3,6 +3,7 @@ package internal
 import (
 	"io"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/sourceoffset"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -12,10 +13,10 @@ type Visitor struct {
 	engine *engine
 }
 
-func NewVisitor(src source.Source, out io.Writer, config *Config) *Visitor {
+func NewVisitor(src source.Source, out io.Writer, config *Config, offsets sourceoffset.Offsets) *Visitor {
 	return &Visitor{
 		BaseFqlParserVisitor: new(fql.BaseFqlParserVisitor),
-		engine:               newEngine(src, out, config),
+		engine:               newEngine(src, out, config, offsets),
 	}
 }
 
