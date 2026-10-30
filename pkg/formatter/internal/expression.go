@@ -1220,12 +1220,11 @@ func (f *expressionFormatter) requiresGrammarBoundaryParentheses(
 			continue
 		case *fql.RecoveryRetryDelayValueContext:
 			return inner != nil && expressionRootPrecedence(inner) <= precedenceUnary
-		case *fql.RecoveryReturnExprContext:
-			return recoveryEndsLeftRangeOperand(parent, ctx.GetStop())
 		case *fql.QueryPayloadContext, *fql.MemberExpressionSourceContext, *fql.DispatchTargetContext:
 			return inner != nil
 		default:
-			return false
+			rule, _ := parent.(antlr.ParserRuleContext)
+			return recoveryEndsLeftRangeOperand(rule, ctx.GetStop())
 		}
 	}
 

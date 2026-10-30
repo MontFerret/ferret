@@ -143,12 +143,17 @@ func canRemoveExpressionParentheses(inner *fql.ExpressionContext, outer expressi
 	}
 }
 
-// A closing parenthesis shared by the recovery value and the left endpoint
-// keeps the following range outside the recovery action.
-func recoveryEndsLeftRangeOperand(recovery *fql.RecoveryReturnExprContext, close antlr.Token) bool {
-	for node := antlr.ParserRuleContext(recovery); node != nil && node.GetStop() == close; {
+// Nested expressions can supply the closing parenthesis of both a recovery
+// value and the left range operand. A later token supplies its own boundary.
+func recoveryEndsLeftRangeOperand(node antlr.ParserRuleContext, close antlr.Token) bool {
+	inRecovery := false
+	for node != nil && node.GetStop() == close {
+		if _, ok := node.(*fql.RecoveryReturnExprContext); ok {
+			inRecovery = true
+		}
+
 		parent, _ := node.GetParent().(antlr.ParserRuleContext)
-		if operator, ok := parent.(*fql.RangeOperatorContext); ok && operator.GetLeft() == node {
+		if operator, ok := parent.(*fql.RangeOperatorContext); ok && inRecovery && operator.GetLeft() == node {
 			return true
 		}
 

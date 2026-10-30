@@ -102,6 +102,24 @@ func TestFormatterGrammarBoundaries(t *testing.T) {
 			result: "[1,2,3]",
 		},
 		{
+			name:   "waitfor value ends at recovery range boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 + (2) .. 3",
+			want:   function + "return f() on error return waitfor value 1 + (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "waitfor regrouping keeps the boundary on the second pass",
+			input:  function + "return f() on error return (WAITFOR VALUE 1) + (2) .. 3",
+			want:   function + "return f() on error return waitfor value 1 + (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "waitfor timeout supplies a later recovery range boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 + (2) TIMEOUT 1ms .. 3",
+			want:   function + "return f() on error return waitfor value 1 + 2 timeout 1ms..3",
+			result: "[1,2,3]",
+		},
+		{
 			name:   "recovery value at right endpoint",
 			input:  function + "return 1 .. f() on error return (3)",
 			want:   function + "return 1..f() on error return 3",
@@ -209,6 +227,59 @@ func TestFormatterGrammarBoundaries(t *testing.T) {
 			t.Fatalf("STEP ran %d times, want one call per execution", calls)
 		}
 	})
+}
+
+func TestFormatterWaitForRecoveryRangeFallback(t *testing.T) {
+	const input = "return BAD() on error return WAITFOR VALUE +(2)..3"
+	const want = "return BAD() on error return waitfor value +(2)..3"
+	const result = "[2,3]"
+
+	calls := 0
+	fail := vm.WithFunction("BAD", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+		calls++
+		return runtime.None, errors.New("bad")
+	})
+	checkCalls := func(want int) {
+		t.Helper()
+		if calls != want {
+			t.Fatalf("BAD() was called %d times, want %d", calls, want)
+		}
+	}
+
+	original, err := spec.Compile(input)
+	if err != nil {
+		t.Fatalf("compile original: %v", err)
+	}
+
+	checkCalls(0)
+	formatted := formatSource(t, input)
+	checkCalls(0)
+	if formatted != want {
+		t.Errorf("formatted output:\n%s\nwant:\n%s", formatted, want)
+	}
+
+	recompiled, err := spec.Compile(formatted)
+	if err != nil {
+		t.Fatalf("compile formatted: %v", err)
+	}
+
+	before, err := spec.Run(original, fail)
+	if err != nil || string(before) != result {
+		t.Errorf("run original: got %s, want %s, error %v", before, result, err)
+	}
+	checkCalls(1)
+
+	after, err := spec.Run(recompiled, fail)
+	if err != nil || string(after) != result {
+		t.Errorf("run formatted: got %s, want %s, error %v", after, result, err)
+	}
+	checkCalls(2)
+
+	second := formatSource(t, formatted)
+	checkCalls(2)
+	if second != formatted {
+		t.Errorf("second format changed output:\n%s\nfirst:\n%s", second, formatted)
+	}
 }
 
 func TestFormatterCommentLineBreaks(t *testing.T) {
