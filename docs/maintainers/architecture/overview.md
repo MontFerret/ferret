@@ -261,6 +261,11 @@ whitespace or comments, while preserving the compiler's coordinate conversion.
 Formatter changes must preserve executable meaning and should be covered by
 focused fixtures or integration tests. A syntax change should update formatter
 handling in the same change when the new construct can be emitted or reformatted.
+Formatted programs must parse with the same meaning and format identically on
+a second pass. Keep ordinary ranges compact (`lo..hi`), but put spaces on both
+sides of `..` when an adjacent operand would join it to a dot (`. .. 10`,
+`1 .. .name`). In `return (DISTINCT.values)`, keep a pair of parentheses so
+the parser reads `DISTINCT` as the start of the value.
 
 Low-level textual program representations belong in `pkg/asm`. They follow the
 bytecode model and debugger metadata rather than defining independent opcode or

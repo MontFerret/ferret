@@ -100,18 +100,17 @@ func (f *memberFormatter) formatMemberExpressionSource(ctx *fql.MemberExpression
 		f.expression.formatFunctionCall(ctx.FunctionCall().(*fql.FunctionCallContext))
 	case ctx.OpenParen() != nil:
 		if expr, ok := ctx.Expression().(*fql.ExpressionContext); ok {
+			before, after := f.expression.parenthesisTrivia(ctx.OpenParen(), expr, ctx.CloseParen())
+			format := f.expression.formatExpression
 			if f.expression.canFormatAsMemberSource(expr) {
-				f.expression.formatAsMemberSource(expr)
-
-				return
+				format = f.expression.formatAsMemberSource
+				if !f.trivia.containsComment(before) && !f.trivia.containsComment(after) &&
+					f.expression.formatWithoutParentheses(ctx.OpenParen(), expr, format) {
+					return
+				}
 			}
 
-			f.expression.formatRequiredParenthesizedExpressionWith(
-				f.p,
-				ctx.OpenParen(),
-				expr,
-				ctx.CloseParen(),
-			)
+			f.expression.formatParenthesesWith(f.p, before, after, func() { format(expr) })
 
 			return
 		}
