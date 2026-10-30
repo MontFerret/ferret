@@ -158,6 +158,20 @@ func TestErrorHandler_HasErrorOnLine(t *testing.T) {
 	}
 }
 
+func TestErrorHandlerUnicodeLine(t *testing.T) {
+	src := source.NewAnonymous("// 😀\n@")
+	handler := NewErrorHandler(src, 10)
+	span := diagnostics.NewMainErrorSpan(source.Span{Start: 5, End: 6}, "offending token")
+	handler.Add(&diagnostics.Diagnostic{Source: src, Spans: []diagnostics.ErrorSpan{span}})
+
+	if handler.HasErrorOnLine(1) || !handler.HasErrorOnLine(2) {
+		t.Fatal("expected only line 2 to be marked for '@'")
+	}
+	if got := handler.Errors().First().Spans[0]; got != span {
+		t.Fatalf("stored annotation = %+v, want parser coordinates %+v", got, span)
+	}
+}
+
 func TestErrorHandler_ExceedThreshold(t *testing.T) {
 	src := source.New("test.fql", "LET x = 1")
 	handler := NewErrorHandler(src, 2) // Low threshold for testing

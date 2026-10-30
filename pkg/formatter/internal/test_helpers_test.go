@@ -1,13 +1,20 @@
 package internal
 
 import (
+	"io"
 	"testing"
 
 	"github.com/antlr4-go/antlr/v4"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/sourceoffset"
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
+
+func newTestEngine(src source.Source, out io.Writer, config *Config) *engine {
+	return newEngine(src, out, config, sourceoffset.New(src.Content()))
+}
 
 func defaultTestConfig() *Config {
 	config := DefaultConfig()

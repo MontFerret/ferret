@@ -17,7 +17,7 @@ func TestListFormatter_TemplateLiteralNewlineForcesMultiline(t *testing.T) {
 	var buf bytes.Buffer
 	opts := defaultTestConfig()
 	opts.PrintWidth = 200
-	e := newEngine(source.NewAnonymous(input), &buf, opts)
+	e := newTestEngine(source.NewAnonymous(input), &buf, opts)
 
 	e.list.formatArrayLiteral(array)
 	out := buf.String()

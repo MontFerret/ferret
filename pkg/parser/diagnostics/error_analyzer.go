@@ -1,6 +1,8 @@
 package diagnostics
 
 import (
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -8,15 +10,17 @@ import (
 type SyntaxErrorMatcher func(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool
 
 func AnalyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
-	return analyzeSyntaxError(src, err, offending, matchLiteralErrors)
+	return analyzeSyntaxError(src, err, offending, nil, matchLiteralErrors)
 }
 
-func analyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode, literals SyntaxErrorMatcher) bool {
+func analyzeSyntaxError(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode, stream antlr.TokenStream, literals SyntaxErrorMatcher) bool {
 	matchers := []SyntaxErrorMatcher{
 		matchCoalesceErrors,
 		matchArrayOperatorErrors,
 		matchErrorPolicyErrors,
-		matchQueryErrors,
+		func(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+			return matchQueryErrors(src, err, offending, stream)
+		},
 		matchWaitForErrors,
 		matchWhileLoopErrors,
 		matchDispatchErrors,
