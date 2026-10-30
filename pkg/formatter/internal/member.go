@@ -110,7 +110,7 @@ func (f *memberFormatter) formatMemberExpressionSource(ctx *fql.MemberExpression
 				}
 			}
 
-			f.expression.formatParenthesesWith(f.p, before, after, func() { format(expr) })
+			f.expression.formatParenthesesWith(f.p, before, after, false, func() { format(expr) })
 
 			return
 		}

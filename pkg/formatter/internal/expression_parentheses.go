@@ -143,6 +143,21 @@ func canRemoveExpressionParentheses(inner *fql.ExpressionContext, outer expressi
 	}
 }
 
+// A closing parenthesis shared by the recovery value and the left endpoint
+// keeps the following range outside the recovery action.
+func recoveryEndsLeftRangeOperand(recovery *fql.RecoveryReturnExprContext, close antlr.Token) bool {
+	for node := antlr.ParserRuleContext(recovery); node != nil && node.GetStop() == close; {
+		parent, _ := node.GetParent().(antlr.ParserRuleContext)
+		if operator, ok := parent.(*fql.RangeOperatorContext); ok && operator.GetLeft() == node {
+			return true
+		}
+
+		node = parent
+	}
+
+	return false
+}
+
 func binaryExpressionOperation(precedence expressionPrecedence, side expressionOperandSide) expressionOperation {
 	return expressionOperation{
 		precedence:    precedence,

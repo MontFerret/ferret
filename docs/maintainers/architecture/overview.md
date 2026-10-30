@@ -274,6 +274,10 @@ a second pass. Keep ordinary ranges compact (`lo..hi`), but put spaces on both
 sides of `..` when an adjacent operand would join it to a dot (`. .. 10`,
 `1 .. .name`). In `return (DISTINCT.values)`, keep a pair of parentheses so
 the parser reads `DISTINCT` as the start of the value.
+In `f() on error return (1)..3`, the closing parenthesis keeps the range
+outside the recovery action. When a retained parenthesized comment requires
+a line break, reject enclosing single-line layouts so the next token stays
+outside a line comment and multiline block comments keep their lines.
 
 Formatter source slicing converts half-open rune boundaries to bytes through one
 mapping per call; inclusive token stops become exclusive ends before conversion.

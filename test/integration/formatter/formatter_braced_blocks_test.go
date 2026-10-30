@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
@@ -85,11 +86,11 @@ func TestFormatterBracedBlocksAndForStyle(t *testing.T) {
 	}
 }
 
-func formatSource(t *testing.T, input string) string {
+func formatSource(t *testing.T, input string, options ...formatter.Option) string {
 	t.Helper()
 
 	var output strings.Builder
-	if err := mustNewFormatter(t).Format(&output, source.NewAnonymous(input)); err != nil {
+	if err := mustNewFormatter(t, options...).Format(&output, source.NewAnonymous(input)); err != nil {
 		t.Fatalf("format source: %v", err)
 	}
 

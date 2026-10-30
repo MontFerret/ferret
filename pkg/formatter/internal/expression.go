@@ -268,10 +268,10 @@ func (f *expressionFormatter) formatExpressionAtomOperand(ctx *fql.ExpressionAto
 		f.formatParam(ctx.Param().(*fql.ParamContext))
 	case ctx.DispatchExpression() != nil:
 		f.statement.formatDispatchExpression(ctx.DispatchExpression().(*fql.DispatchExpressionContext))
-	case ctx.WaitForExpression() != nil:
-		f.statement.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
 	case ctx.OpenParen() != nil:
 		f.formatParenthesizedExpression(ctx, outer)
+	case ctx.WaitForExpression() != nil:
+		f.statement.formatWaitForExpression(ctx.WaitForExpression().(*fql.WaitForExpressionContext))
 	}
 }
 
@@ -948,50 +948,11 @@ func (f *expressionFormatter) formatCommentedParenthesizedExpression(ctx *fql.Ex
 		return
 	}
 
-	before := f.trivia.sliceBetween(f.trivia.tokenStop(ctx.OpenParen())+1, f.trivia.startIndex(inner))
-	after := f.trivia.sliceBetween(f.trivia.stopIndex(inner)+1, f.trivia.tokenStart(ctx.CloseParen()))
-	multiline := ctx.ForExpression() != nil || strings.Contains(before, "\n") || strings.Contains(after, "\n") ||
-		strings.Contains(before, "//") || strings.Contains(after, "//")
-
-	f.p.write("(")
-
-	if !multiline {
-		if comment := strings.TrimSpace(before); comment != "" {
-			f.p.write(comment)
-			f.p.space()
-		}
-
+	before, after := f.parenthesisTrivia(ctx.OpenParen(), inner, ctx.CloseParen())
+	multiline := ctx.ForExpression() != nil || strings.ContainsAny(before, fqlLineTerminators) || strings.ContainsAny(after, fqlLineTerminators)
+	f.formatParenthesesWith(f.p, before, after, multiline, func() {
 		f.formatParenthesizedExpressionInner(ctx)
-
-		if comment := strings.TrimSpace(after); comment != "" {
-			f.p.space()
-			f.p.write(comment)
-		}
-
-		f.p.write(")")
-
-		return
-	}
-
-	f.p.withIndent(func() {
-		f.p.newline()
-
-		if f.trivia.containsComment(before) {
-			f.trivia.emitTrivia(before, true, false)
-		}
-
-		f.formatParenthesizedExpressionInner(ctx)
-
-		if f.trivia.containsComment(after) {
-			f.trivia.emitTrivia(after, true, true)
-		}
-
-		if !f.p.atLineStart {
-			f.p.newline()
-		}
 	})
-
-	f.p.write(")")
 }
 
 func (f *expressionFormatter) formatParenthesizedExpressionInner(ctx *fql.ExpressionAtomContext) {
@@ -1034,20 +995,23 @@ func (f *expressionFormatter) formatRequiredParenthesizedExpressionWith(
 	}
 
 	before, after := f.parenthesisTrivia(open, expr, close)
-	f.formatParenthesesWith(p, before, after, func() { f.formatExpressionWith(p, expr) })
+	f.formatParenthesesWith(p, before, after, false, func() { f.formatExpressionWith(p, expr) })
 }
 
-func (f *expressionFormatter) parenthesisTrivia(open antlr.TerminalNode, expr *fql.ExpressionContext, close antlr.TerminalNode) (string, string) {
+func (f *expressionFormatter) parenthesisTrivia(open antlr.TerminalNode, expr antlr.ParserRuleContext, close antlr.TerminalNode) (string, string) {
 	before := f.trivia.sliceBetween(f.trivia.tokenStop(open)+1, f.trivia.startIndex(expr))
 	after := f.trivia.sliceBetween(f.trivia.stopIndex(expr)+1, f.trivia.tokenStart(close))
 
 	return before, after
 }
 
-func (f *expressionFormatter) formatParenthesesWith(p *printer, before, after string, formatInner func()) {
+func (f *expressionFormatter) formatParenthesesWith(p *printer, before, after string, multiline bool, formatInner func()) {
 	hasComments := f.trivia.containsComment(before) || f.trivia.containsComment(after)
-	multiline := hasComments && (strings.Contains(before, "\n") || strings.Contains(after, "\n") ||
-		strings.Contains(before, "//") || strings.Contains(after, "//"))
+	if hasComments && (strings.ContainsAny(before, fqlLineTerminators) || strings.ContainsAny(after, fqlLineTerminators)) {
+		// Flattening this group would consume syntax or change the comment's lines.
+		p.sawHardNewline = true
+		multiline = true
+	}
 
 	p.write("(")
 
@@ -1073,19 +1037,13 @@ func (f *expressionFormatter) formatParenthesesWith(p *printer, before, after st
 		p.newline()
 
 		if f.trivia.containsComment(before) {
-			original := f.p
-			f.p = p
-			f.trivia.emitTrivia(before, true, false)
-			f.p = original
+			f.trivia.emitParenthesisComments(p, before, false)
 		}
 
 		formatInner()
 
 		if f.trivia.containsComment(after) {
-			original := f.p
-			f.p = p
-			f.trivia.emitTrivia(after, true, true)
-			f.p = original
+			f.trivia.emitParenthesisComments(p, after, true)
 		}
 
 		if !p.atLineStart {
@@ -1213,17 +1171,13 @@ func (f *expressionFormatter) canRemoveParenthesizedExpression(ctx *fql.Expressi
 		return false
 	}
 
-	if ctx.WaitForExpression() != nil {
-		return outer.precedence == precedenceNone || precedencePrimary > outer.precedence
-	}
-
-	expr, ok := ctx.Expression().(*fql.ExpressionContext)
-	if !ok || expr == nil {
-		return false
-	}
-
+	expr, _ := ctx.Expression().(*fql.ExpressionContext)
 	if f.requiresGrammarBoundaryParentheses(ctx, expr) {
 		return false
+	}
+
+	if ctx.WaitForExpression() != nil {
+		return outer.precedence == precedenceNone || precedencePrimary > outer.precedence
 	}
 
 	return canRemoveExpressionParentheses(expr, outer)
@@ -1260,14 +1214,16 @@ func (f *expressionFormatter) requiresGrammarBoundaryParentheses(
 
 	for node != nil {
 		parent := node.GetParent()
-		switch parent.(type) {
+		switch parent := parent.(type) {
 		case *fql.ExpressionAtomContext, *fql.PredicateContext, *fql.ExpressionContext:
 			node = parent
 			continue
 		case *fql.RecoveryRetryDelayValueContext:
-			return expressionRootPrecedence(inner) <= precedenceUnary
+			return inner != nil && expressionRootPrecedence(inner) <= precedenceUnary
+		case *fql.RecoveryReturnExprContext:
+			return recoveryEndsLeftRangeOperand(parent, ctx.GetStop())
 		case *fql.QueryPayloadContext, *fql.MemberExpressionSourceContext, *fql.DispatchTargetContext:
-			return true
+			return inner != nil
 		default:
 			return false
 		}
