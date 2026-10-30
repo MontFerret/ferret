@@ -39,7 +39,7 @@ func TestFormatterWriterFailures(t *testing.T) {
 	}
 
 	limitErr := errors.New("output limit")
-	panicErr := &diagnostics.Diagnostic{
+	writerDiagnostic := &diagnostics.Diagnostic{
 		Kind:    diagnostics.TypeError,
 		Message: "external writer diagnostic",
 		Spans:   []diagnostics.ErrorSpan{{Span: source.Span{Start: 3, End: 4}}},
@@ -49,13 +49,20 @@ func TestFormatterWriterFailures(t *testing.T) {
 		t.Run(input, func(t *testing.T) {
 			src := source.New("failure.fql", input)
 
+			t.Run("returned diagnostic", func(t *testing.T) {
+				err := f.Format(&failingWriter{failure: writerDiagnostic}, src)
+				if err != writerDiagnostic || writerDiagnostic.Spans[0].Span != (source.Span{Start: 3, End: 4}) {
+					t.Fatalf("external writer diagnostic changed: %v, spans %+v", err, writerDiagnostic.Spans)
+				}
+			})
+
 			for _, test := range []struct {
 				panicValue any
 				name       string
 			}{
 				{name: "ordinary"},
 				{name: "string panic", panicValue: "injected panic"},
-				{name: "error panic", panicValue: panicErr},
+				{name: "error panic", panicValue: writerDiagnostic},
 				{name: "value panic", panicValue: 42},
 			} {
 				for _, limit := range []int{0, 2, 7} {
@@ -68,7 +75,7 @@ func TestFormatterWriterFailures(t *testing.T) {
 
 						var diagnostic *diagnostics.Diagnostic
 						if test.panicValue == nil {
-							if !errors.Is(err, limitErr) || errors.As(err, &diagnostic) {
+							if err != limitErr || errors.As(err, &diagnostic) {
 								t.Fatalf("ordinary writer error changed identity: %v", err)
 							}
 						} else {
@@ -76,7 +83,7 @@ func TestFormatterWriterFailures(t *testing.T) {
 								t.Fatalf("panic diagnostic = %+v, error = %v", diagnostic, err)
 							}
 
-							if test.panicValue == panicErr && (!errors.Is(err, panicErr) || panicErr.Spans[0].Span != (source.Span{Start: 3, End: 4})) {
+							if test.panicValue == writerDiagnostic && (!errors.Is(err, writerDiagnostic) || writerDiagnostic.Spans[0].Span != (source.Span{Start: 3, End: 4})) {
 								t.Fatal("panic cause was replaced or normalized")
 							}
 						}

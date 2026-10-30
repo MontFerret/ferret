@@ -227,12 +227,16 @@ Published diagnostic spans are zero-based, half-open byte offsets and must obey
 `0 <= Start <= End <= len(Source.Content())` for every annotation. Missing syntax
 uses a zero-width insertion point at the relevant token boundary, including
 `[N,N)` at EOF. Existing offending syntax uses its actual source range. Native
-positions retain one-based lines and byte columns. Parser producers keep ANTLR
-character offsets until the compiler or formatter converts its owned diagnostic
-annotations to the original source bytes at publication. The shared internal
-`sourceoffset` package supplies the rune-boundary mapping, including EOF, with an
-allocation-free ASCII identity map. Conversion does not change parser tokens or
-invent annotations for errors without locations.
+positions retain one-based lines and byte columns. Parser producers use ANTLR
+rune offsets, including when inspecting a suffix of the original input. A
+producer that locates text with a byte-indexed search converts the selected
+match to rune boundaries before storing the annotation. The compiler (including
+analysis) and formatter convert their owned annotations to bytes once, at
+publication. The shared internal `sourceoffset` package maps rune boundaries,
+including EOF, with an allocation-free ASCII identity map. During recovery,
+line lookup extends its map only through the furthest annotation seen.
+Conversion does not change parser tokens or invent annotations for errors
+without locations.
 Producers own coordinate correctness; source lookup and Universal API projection
 must not repair invalid spans. Caret visibility and snippet layout belong to
 diagnostic rendering, not span construction.

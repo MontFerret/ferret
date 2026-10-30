@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -16,7 +17,7 @@ var invalidWhileLoopBindingPatterns = []*regexp.Regexp{
 
 type whileLoopBindingMatch struct {
 	binding     string
-	bindingSpan source.Span
+	bindingByte int
 	headerStart int
 	skipDo      bool
 }
@@ -68,12 +69,9 @@ func findInvalidWhileLoopBindingSpan(src source.Source) (source.Span, bool) {
 
 			matches = append(matches, whileLoopBindingMatch{
 				headerStart: indexes[0],
-				bindingSpan: source.Span{
-					Start: indexes[2],
-					End:   indexes[3],
-				},
-				binding: content[indexes[2]:indexes[3]],
-				skipDo:  i == 0,
+				bindingByte: indexes[2],
+				binding:     content[indexes[2]:indexes[3]],
+				skipDo:      i == 0,
 			})
 		}
 	}
@@ -83,7 +81,7 @@ func findInvalidWhileLoopBindingSpan(src source.Source) (source.Span, bool) {
 			return matches[i].headerStart < matches[j].headerStart
 		}
 
-		return matches[i].bindingSpan.Start < matches[j].bindingSpan.Start
+		return matches[i].bindingByte < matches[j].bindingByte
 	})
 
 	for _, match := range matches {
@@ -95,7 +93,8 @@ func findInvalidWhileLoopBindingSpan(src source.Source) (source.Span, bool) {
 			continue
 		}
 
-		return match.bindingSpan, true
+		start := utf8.RuneCountInString(content[:match.bindingByte])
+		return source.Span{Start: start, End: start + utf8.RuneCountInString(match.binding)}, true
 	}
 
 	return source.Span{}, false

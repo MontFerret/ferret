@@ -10,6 +10,7 @@ func TestOffsets(t *testing.T) {
 	for _, text := range []string{"", "ASCII\r\n", "é", "😀", "é中😀\r\nend", "e\u0301", "é\xff😀"} {
 		t.Run(text, func(t *testing.T) {
 			offsets := New(text)
+			var prefix Prefix
 			var boundaries []int
 			for offset := range text {
 				boundaries = append(boundaries, offset)
@@ -35,6 +36,12 @@ func TestOffsets(t *testing.T) {
 					if got != want {
 						t.Fatalf("Span(%d,%d) = %+v, want %+v", start, end, got, want)
 					}
+					if got := prefix.Span(text, source.Span{Start: start, End: end}); got != want {
+						t.Fatalf("prefix Span(%d,%d) = %+v, want %+v", start, end, got, want)
+					}
+					if start == 0 && prefix.bytes != boundaries[end] {
+						t.Fatalf("prefix scanned %d bytes for boundary %d, want %d", prefix.bytes, end, boundaries[end])
+					}
 				}
 			}
 
@@ -44,6 +51,9 @@ func TestOffsets(t *testing.T) {
 			} {
 				if got := offsets.Span(span); got != span {
 					t.Fatalf("unconvertible span = %+v, want unchanged %+v", got, span)
+				}
+				if got := prefix.Span(text, span); got != span {
+					t.Fatalf("unconvertible prefix span = %+v, want unchanged %+v", got, span)
 				}
 			}
 

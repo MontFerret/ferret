@@ -3,6 +3,7 @@ package diagnostics
 import (
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/antlr4-go/antlr/v4"
 
@@ -50,8 +51,12 @@ func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 		end = start
 	}
 
-	// clamp to source length
-	maxLen := len(src.Content())
+	var maxLen int
+	if input := tok.GetInputStream(); input != nil {
+		maxLen = input.Size()
+	} else {
+		maxLen = utf8.RuneCountInString(src.Content())
+	}
 
 	if end > maxLen {
 		end = maxLen
@@ -62,6 +67,22 @@ func spanFromTokenSafe(tok antlr.Token, src source.Source) source.Span {
 	}
 
 	return source.Span{Start: start, End: end}
+}
+
+// Lex a suffix without moving the original parser's cursor. The new tokens
+// have local rune coordinates relative to start.
+func lexerAtRune(src source.Source, tok antlr.Token, start int) *fql.FqlLexer {
+	input := tok.GetInputStream()
+	if input == nil {
+		input = antlr.NewInputStream(src.Content())
+	}
+
+	if start < 0 || start >= input.Size() {
+		return nil
+	}
+
+	text := input.GetText(start, input.Size()-1)
+	return fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(text)))
 }
 
 // Insertion points do not consume source characters, including at EOF. Keep

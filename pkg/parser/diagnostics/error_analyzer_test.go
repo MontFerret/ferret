@@ -10,6 +10,26 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 )
 
+func TestQueryDialectWithHistoryEndingAtUsing(t *testing.T) {
+	src := source.NewAnonymous("// 😀\nRETURN QUERY `.x` IN @doc USING \"css\" /* USING */")
+	history := NewTokenHistory(64)
+	for _, tok := range lexDefaultTokens(src.Content()) {
+		history.Add(tok)
+		if tok.GetText() == "USING" {
+			break
+		}
+	}
+
+	d := NewError(src, SyntaxError, "mismatched input 'USING' expecting <EOF>")
+	if !AnalyzeSyntaxError(src, d, history.Last()) {
+		t.Fatal("missing dialect diagnostic")
+	}
+	want := diagnostics.NewMainErrorSpan(source.Span{Start: 37, End: 42}, "invalid dialect")
+	if len(d.Spans) != 1 || d.Spans[0] != want {
+		t.Fatalf("parser annotations = %+v, want %+v", d.Spans, want)
+	}
+}
+
 func TestAnalyzeSyntaxError(t *testing.T) {
 	Convey("AnalyzeSyntaxError", t, func() {
 		Convey("Should return boolean for basic syntax error", func() {

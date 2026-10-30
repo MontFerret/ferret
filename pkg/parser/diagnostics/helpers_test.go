@@ -397,12 +397,16 @@ func TestSpanFromTokenSafePreservesEmptyTokens(t *testing.T) {
 }
 
 func TestSpanFromTokenSafeUnavailableCoordinates(t *testing.T) {
-	for _, text := range []string{"", "RETURN"} {
+	for _, text := range []string{"", "RETURN", "// 😀"} {
+		eof := utf8.RuneCountInString(text)
 		for _, bounds := range [][2]int{{-1, -1}, {0, -1}, {99, 98}, {99, 100}, {2, 0}} {
 			token := antlr.NewCommonToken(&antlr.TokenSourceCharStreamPair{}, 0, antlr.TokenDefaultChannel, bounds[0], bounds[1])
 			span := spanFromTokenSafe(token, source.NewAnonymous(text))
-			if span.Start < 0 || span.Start > span.End || span.End > len(text) {
+			if span.Start < 0 || span.Start > span.End || span.End > eof {
 				t.Fatalf("%q / %v: invalid fallback span %+v", text, bounds, span)
+			}
+			if bounds[0] > eof && span != (source.Span{Start: eof, End: eof}) {
+				t.Fatalf("%q / %v: span = %+v, want insertion at %d", text, bounds, span, eof)
 			}
 		}
 	}
