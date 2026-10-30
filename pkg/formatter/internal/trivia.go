@@ -12,28 +12,31 @@ type triviaEmitter struct {
 
 func (t *triviaEmitter) startIndex(ctx antlr.ParserRuleContext) int {
 	if ctx == nil {
-		return 0
+		return -1
 	}
 
 	if tok := ctx.GetStart(); tok != nil {
 		return tok.GetStart()
 	}
 
-	return 0
+	return -1
 }
 
 func (t *triviaEmitter) stopIndex(ctx antlr.ParserRuleContext) int {
 	if ctx == nil {
-		return 0
+		return -2
 	}
 
-	if tok := ctx.GetStop(); tok != nil {
+	if tok := ctx.GetStop(); tok != nil && tok.GetStart() >= 0 {
 		return tok.GetStop()
 	}
 
-	return 0
+	// Adding one to an absent inclusive stop must still give an invalid boundary.
+	return -2
 }
 
+// sliceBetween accepts half-open rune boundaries. All token arithmetic stays in
+// parser coordinates until this single boundary with the UTF-8 source string.
 func (t *triviaEmitter) sliceBetween(start, end int) string {
 	if t.src.Empty() {
 		return ""
@@ -41,43 +44,35 @@ func (t *triviaEmitter) sliceBetween(start, end int) string {
 
 	text := t.src.Content()
 
-	if start < 0 {
-		start = 0
-	}
-
-	if end > len(text) {
-		end = len(text)
-	}
-
-	if end <= start {
+	if start < 0 || end <= start || end > t.offsets.Len(len(text)) {
 		return ""
 	}
 
-	return text[start:end]
+	return text[t.offsets.Byte(start):t.offsets.Byte(end)]
 }
 
 func (t *triviaEmitter) tokenStart(node antlr.TerminalNode) int {
 	if node == nil {
-		return 0
+		return -1
 	}
 
 	if sym := node.GetSymbol(); sym != nil {
 		return sym.GetStart()
 	}
 
-	return 0
+	return -1
 }
 
 func (t *triviaEmitter) tokenStop(node antlr.TerminalNode) int {
 	if node == nil {
-		return 0
+		return -2
 	}
 
-	if sym := node.GetSymbol(); sym != nil {
+	if sym := node.GetSymbol(); sym != nil && sym.GetStart() >= 0 {
 		return sym.GetStop()
 	}
 
-	return 0
+	return -2
 }
 
 func (t *triviaEmitter) blockLeadingTrivia(headerStop int, open antlr.TerminalNode, bodyStart int) string {
@@ -370,7 +365,7 @@ func (t *triviaEmitter) emitTrailing(prev antlr.ParserRuleContext) {
 	}
 
 	start := t.stopIndex(prev) + 1
-	text := t.sliceBetween(start, len(t.src.Content()))
+	text := t.sliceBetween(start, t.offsets.Len(t.src.Length()))
 
 	if t.isInlineComment(text) {
 		if !t.p.atLineStart {

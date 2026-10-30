@@ -269,13 +269,12 @@ func waitForEventOperandStatementBoundary(token antlr.Token) bool {
 }
 
 func waitForEventMissingInSpan(src source.Source, event, first antlr.Token) source.Span {
-	content := src.Content()
 	start := first.GetStart()
-	if start < 0 || start >= len(content) {
+	lexer := lexerAtRune(src, first, start)
+	if lexer == nil {
 		return spanFromTokenSafe(event, src)
 	}
 
-	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(content[start:])))
 	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	parser := fql.NewFqlParser(tokens)
 	parser.RemoveErrorListeners()
@@ -331,6 +330,7 @@ func waitForEmptyGroupInSource(src source.Source, offending antlr.Token) (string
 			if tokenType == fql.FqlLexerAny || tokenType == fql.FqlLexerAll {
 				break
 			}
+
 			modeParts = append(modeParts, strings.ToUpper(tokens[cursor].GetText()))
 			cursor++
 		}
@@ -567,7 +567,6 @@ func waitForEventEverySpanAfter(src source.Source, offending *TokenNode) (source
 		return source.Span{}, false
 	}
 
-	content := src.Content()
 	start := tok.GetStop() + 1
 	if start < 0 {
 		start = tok.GetStart()
@@ -577,11 +576,11 @@ func waitForEventEverySpanAfter(src source.Source, offending *TokenNode) (source
 		start = 0
 	}
 
-	if start >= len(content) {
+	lexer := lexerAtRune(src, tok, start)
+	if lexer == nil {
 		return source.Span{}, false
 	}
 
-	lexer := fql.NewFqlLexer(antlr.NewInputStream(asciiUpper(content[start:])))
 	for i := 0; i < 16; {
 		next := lexer.NextToken()
 		if next == nil || next.GetTokenType() == antlr.TokenEOF {

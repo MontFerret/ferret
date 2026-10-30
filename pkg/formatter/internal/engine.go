@@ -4,14 +4,16 @@ import (
 	"io"
 	"strings"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/sourceoffset"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type (
 	context struct {
-		config *Config
-		p      *printer
-		src    source.Source
+		config  *Config
+		p       *printer
+		offsets sourceoffset.Offsets
+		src     source.Source
 	}
 
 	engine struct {
@@ -29,11 +31,12 @@ type (
 	}
 )
 
-func newEngine(src source.Source, out io.Writer, config *Config) *engine {
+func newEngine(src source.Source, out io.Writer, config *Config, offsets sourceoffset.Offsets) *engine {
 	ctx := &context{
-		config: config,
-		p:      newPrinter(out, config),
-		src:    src,
+		config:  config,
+		p:       newPrinter(out, config),
+		src:     src,
+		offsets: offsets,
 	}
 
 	e := &engine{context: ctx}

@@ -124,10 +124,16 @@ func (d *ErrorListener) parseError(msg string, offending antlr.Token, recognizer
 
 	node := analyzedTokenNode(d.history, offending)
 
-	analyzeSyntaxError(d.src, err, node, func(src source.Source, diagnostic *diagnostics.Diagnostic, token *TokenNode) bool {
-		if p, ok := recognizer.(antlr.Parser); ok {
+	var stream antlr.TokenStream
+	p, _ := recognizer.(antlr.Parser)
+	if p != nil {
+		stream = p.GetTokenStream()
+	}
+
+	analyzeSyntaxError(d.src, err, node, stream, func(src source.Source, diagnostic *diagnostics.Diagnostic, token *TokenNode) bool {
+		if p != nil {
 			if d.arrayLiterals == nil {
-				d.arrayLiterals = newArrayLiteralAnalysis(p.GetTokenStream())
+				d.arrayLiterals = newArrayLiteralAnalysis(stream)
 			}
 
 			if d.arrayLiterals != nil && d.arrayLiterals.match(src, diagnostic, p.GetParserRuleContext()) {

@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
-func matchQueryErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode) bool {
+func matchQueryErrors(src source.Source, err *diagnostics.Diagnostic, offending *TokenNode, stream antlr.TokenStream) bool {
 	if err == nil || offending == nil {
 		return false
 	}
@@ -102,7 +104,7 @@ func matchQueryErrors(src source.Source, err *diagnostics.Diagnostic, offending 
 		return true
 	}
 
-	if span, ok := queryInvalidDialectLiteralSpan(src, offending); ok {
+	if span, ok := queryInvalidDialectLiteralSpan(src, offending, stream); ok {
 		err.Message = "Dialect after USING must be an identifier"
 		err.Hint = "Provide a dialect identifier such as css or xpath."
 		err.Spans = []diagnostics.ErrorSpan{
@@ -202,47 +204,77 @@ func matchQueryErrors(src source.Source, err *diagnostics.Diagnostic, offending 
 	return false
 }
 
-func queryInvalidDialectLiteralSpan(src source.Source, offending *TokenNode) (source.Span, bool) {
-	if src.Empty() || offending == nil || !hasPrevToken(offending, "USING", 64) {
+func queryInvalidDialectLiteralSpan(src source.Source, offending *TokenNode, stream antlr.TokenStream) (source.Span, bool) {
+	using := findPrevToken(offending, "USING", 64)
+	if using == nil || src.Empty() {
 		return source.Span{}, false
 	}
 
-	content := src.Content()
-	using := strings.LastIndex(strings.ToUpper(content), "USING")
-	if using < 0 {
-		return source.Span{}, false
-	}
-
-	start := using + len("USING")
-	for start < len(content) {
-		switch content[start] {
-		case ' ', '\t', '\n', '\r':
-			start++
-			continue
+	if tok := nextBufferedToken(stream, using.Token()); tok != nil {
+		switch tok.GetTokenType() {
+		case fql.FqlLexerStringLiteral:
+			return SpanFromToken(tok), true
+		case fql.FqlLexerBacktickOpen, fql.FqlLexerUnknownIdentifier:
+			// The quoted fragment can extend beyond this token.
+		default:
+			return source.Span{}, false
 		}
-		break
+	} else if next := using.Next(); isStringLiteral(next) {
+		return spanFromTokenSafe(next.Token(), src), true
 	}
 
-	if start >= len(content) {
+	// A partial history or a template can require inspecting the source.
+	base := using.Token().GetStop() + 1
+	lexer := lexerAtRune(src, using.Token(), base)
+	if lexer == nil {
 		return source.Span{}, false
 	}
 
-	switch content[start] {
-	case '"', '\'', '`':
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	first := tokens.LT(1)
+	last := first
+
+	switch first.GetTokenType() {
+	case fql.FqlLexerStringLiteral:
+	case fql.FqlLexerBacktickOpen:
+		p := fql.NewFqlParser(tokens)
+		p.RemoveErrorListeners()
+		last = p.TemplateLiteral().GetStop()
 	default:
-		return source.Span{}, false
-	}
-
-	end := start + 1
-	for end < len(content) {
-		switch content[end] {
-		case ' ', '\t', '\n', '\r':
-			return source.Span{Start: start, End: end}, true
+		// An unclosed single or double quote is lexed separately. Keep
+		// the contiguous fragment as the invalid dialect in that case.
+		if first.GetText() != "'" && first.GetText() != `"` {
+			return source.Span{}, false
 		}
-		end++
+
+		for {
+			tokens.Consume()
+			next := tokens.LT(1)
+			if next.GetTokenType() == antlr.TokenEOF || next.GetStart() != last.GetStop()+1 {
+				break
+			}
+
+			last = next
+		}
 	}
 
-	return source.Span{Start: start, End: end}, true
+	return source.Span{Start: base + first.GetStart(), End: base + last.GetStop() + 1}, true
+}
+
+// Lookahead can buffer a token without consuming it into history. Reading
+// only buffered tokens leaves both the lexer and parser cursors untouched.
+func nextBufferedToken(stream antlr.TokenStream, after antlr.Token) antlr.Token {
+	if stream == nil || after.GetTokenIndex() < 0 {
+		return nil
+	}
+
+	for i := after.GetTokenIndex() + 1; i < stream.Size(); i++ {
+		if tok := stream.Get(i); tok.GetChannel() == antlr.TokenDefaultChannel {
+			return tok
+		}
+	}
+
+	return nil
 }
 
 func queryInvalidDialectStringNode(offending *TokenNode) *TokenNode {

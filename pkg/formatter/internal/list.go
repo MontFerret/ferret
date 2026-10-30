@@ -13,15 +13,7 @@ type listFormatter struct {
 }
 
 func (l *listFormatter) tokenStop(node antlr.TerminalNode) int {
-	if node == nil {
-		return 0
-	}
-
-	if sym := node.GetSymbol(); sym != nil {
-		return sym.GetStop()
-	}
-
-	return 0
+	return l.trivia.tokenStop(node)
 }
 
 func (l *listFormatter) arrayHasComments(ctx *fql.ArrayLiteralContext) bool {

@@ -5,14 +5,15 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/MontFerret/ferret/v2/pkg/source"
-
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	"github.com/MontFerret/ferret/v2/pkg/internal/sourceoffset"
+	"github.com/MontFerret/ferret/v2/pkg/source"
 )
 
 type ErrorHandler struct {
 	errors          *diagnostics.Diagnostics[*diagnostics.Diagnostic]
 	linesWithErrors map[int]bool
+	lineOffsets     sourceoffset.Prefix
 	src             source.Source
 	threshold       int
 }
@@ -23,10 +24,9 @@ func NewErrorHandler(src source.Source, threshold int) *ErrorHandler {
 	}
 
 	return &ErrorHandler{
-		src:             src,
-		errors:          diagnostics.NewDiagnostics[*diagnostics.Diagnostic](5),
-		linesWithErrors: make(map[int]bool),
-		threshold:       threshold,
+		src:       src,
+		errors:    diagnostics.NewDiagnostics[*diagnostics.Diagnostic](5),
+		threshold: threshold,
 	}
 }
 
@@ -64,9 +64,13 @@ func (h *ErrorHandler) Add(err *diagnostics.Diagnostic) {
 		err.Source = h.src
 	}
 
-	for _, span := range err.Spans {
-		if !err.Source.Empty() {
-			pos := err.Source.PositionAt(span.Span)
+	if len(err.Spans) != 0 && !h.src.Empty() {
+		if h.linesWithErrors == nil {
+			h.linesWithErrors = make(map[int]bool)
+		}
+
+		for _, span := range err.Spans {
+			pos := h.src.PositionAt(h.lineOffsets.Span(h.src.Content(), span.Span))
 			h.linesWithErrors[pos.Line] = true
 		}
 	}
