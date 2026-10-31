@@ -6,6 +6,10 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 )
 
+const fqlLineTerminators = "\r\n\u2028\u2029"
+
+var commentLineEndings = strings.NewReplacer("\r\n", "\n", "\r", "\n", "\u2028", "\n", "\u2029", "\n")
+
 type triviaEmitter struct {
 	*engine
 }
@@ -205,6 +209,19 @@ func (t *triviaEmitter) emitClauseBoundary(start, end int) {
 }
 
 func (t *triviaEmitter) emitTrivia(text string, trimLeading bool, hasPrevLine bool) {
+	t.emitTriviaWith(t.p, text, trimLeading, hasPrevLine, false)
+}
+
+func (t *triviaEmitter) emitParenthesisComments(p *printer, text string, hasPrevLine bool) {
+	if strings.ContainsAny(text, "\r\u2028\u2029") {
+		text = commentLineEndings.Replace(text)
+	}
+
+	// Interior blank lines can be part of a multiline comment token.
+	t.emitTriviaWith(p, text, true, hasPrevLine, true)
+}
+
+func (t *triviaEmitter) emitTriviaWith(p *printer, text string, trimLeading, hasPrevLine, keepInteriorLines bool) {
 	if text == "" {
 		return
 	}
@@ -214,39 +231,43 @@ func (t *triviaEmitter) emitTrivia(text string, trimLeading bool, hasPrevLine bo
 	seenNonEmpty := false
 
 	for _, line := range lines {
-		formatted, ok := t.formatTriviaLine(t.p, line)
+		formatted, ok := t.formatTriviaLine(p, line)
 
 		if ok {
 			if seenNonEmpty {
-				if emptyCount >= 1 {
-					t.p.newline()
+				if !keepInteriorLines {
+					emptyCount = min(emptyCount, 1)
 				}
 
-				t.p.newline()
+				for range emptyCount {
+					p.newline()
+				}
+
+				p.newline()
 			} else if hasPrevLine {
 				if emptyCount >= 2 {
-					t.p.newline()
+					p.newline()
 				}
 
-				t.p.newline()
+				p.newline()
 			} else if !trimLeading {
 				if emptyCount >= 2 {
-					t.p.newline()
+					p.newline()
 				}
 
 				if emptyCount >= 1 {
-					t.p.newline()
+					p.newline()
 				}
 			}
 
 			emptyCount = 0
 			seenNonEmpty = true
 
-			if !t.p.atLineStart {
-				t.p.space()
+			if !p.atLineStart {
+				p.space()
 			}
 
-			t.p.write(formatted)
+			p.write(formatted)
 
 			continue
 		}
@@ -260,11 +281,11 @@ func (t *triviaEmitter) emitTrivia(text string, trimLeading bool, hasPrevLine bo
 
 	if seenNonEmpty || hasPrevLine {
 		if emptyCount >= 2 {
-			t.p.newline()
+			p.newline()
 		}
 
 		if emptyCount >= 1 || (seenNonEmpty && emptyCount == 0) {
-			t.p.newline()
+			p.newline()
 		}
 	}
 }

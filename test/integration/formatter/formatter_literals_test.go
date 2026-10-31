@@ -12,40 +12,40 @@ func TestFormatterLiterals(t *testing.T) {
 LET    foo =      10
  return foo
 `, `let foo = 10
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo =      
 10
  return foo
 `, `let foo = 10
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =      "bar"
  return foo
 `, `let foo = "bar"
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =    
      "bar"
  return foo
 `, `let foo = "bar"
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =      [     ]
  return foo
 `, `let foo = []
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =      [     
 ]
  return foo
 `, `let foo = []
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =     
@@ -53,13 +53,13 @@ LET    foo        =
 ]
  return foo
 `, `let foo = []
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =   {        }
  return foo
 `, `let foo = {}
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =   {        
@@ -67,7 +67,7 @@ LET    foo        =   {
 }
  return foo
 `, `let foo = {}
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo        =   
@@ -77,6 +77,6 @@ LET    foo        =
 }
  return foo
 `, `let foo = {}
-return foo`),
+return foo`+"\n\n"),
 	})
 }

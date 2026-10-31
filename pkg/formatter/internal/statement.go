@@ -140,7 +140,7 @@ func (f *statementFormatter) formatReturnExpression(ctx *fql.ReturnExpressionCon
 	f.p.space()
 
 	if value := ctx.ReturnValue(); value != nil {
-		f.formatReturnValue(value.(*fql.ReturnValueContext))
+		f.formatReturnValue(value.(*fql.ReturnValueContext), ctx.Distinct() != nil)
 	}
 }
 
@@ -312,11 +312,11 @@ func (f *statementFormatter) formatFunctionReturn(ctx *fql.FunctionReturnContext
 	f.p.space()
 
 	if value := ctx.ReturnValue(); value != nil {
-		f.formatReturnValue(value.(*fql.ReturnValueContext))
+		f.formatReturnValue(value.(*fql.ReturnValueContext), ctx.Distinct() != nil)
 	}
 }
 
-func (f *statementFormatter) formatReturnValue(ctx *fql.ReturnValueContext) {
+func (f *statementFormatter) formatReturnValue(ctx *fql.ReturnValueContext, distinct bool) {
 	if ctx == nil {
 		return
 	}
@@ -335,7 +335,7 @@ func (f *statementFormatter) formatReturnValue(ctx *fql.ReturnValueContext) {
 			return
 		}
 
-		f.expression.formatExpression(exprCtx)
+		f.expression.formatReturnedExpression(exprCtx, distinct)
 	}
 }
 
@@ -704,7 +704,7 @@ func (f *statementFormatter) formatWaitForEventGroupEntry(ctx *fql.WaitForEventG
 	for _, filter := range ctx.AllEventFilterClause() {
 		filterCtx := filter.(*fql.EventFilterClauseContext)
 		f.p.withIndent(func() {
-			f.trivia.emitBetween(previous, filterCtx)
+			f.trivia.emitClauseBoundary(f.trivia.stopIndex(previous)+1, f.trivia.startIndex(filterCtx))
 			f.clause.formatEventFilterClause(filterCtx)
 		})
 		previous = filterCtx

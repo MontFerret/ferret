@@ -269,6 +269,20 @@ whitespace or comments, while preserving the compiler's coordinate conversion.
 Formatter changes must preserve executable meaning and should be covered by
 focused fixtures or integration tests. A syntax change should update formatter
 handling in the same change when the new construct can be emitted or reformatted.
+Formatted programs must parse with the same meaning and format identically on
+a second pass. Keep ordinary ranges compact (`lo..hi`), but put spaces on both
+sides of `..` when an adjacent operand would join it to a dot (`. .. 10`,
+`1 .. .name`). In `return (DISTINCT.values)`, keep a pair of parentheses so
+the parser reads `DISTINCT` as the start of the value.
+In `f() on error return (1)..3`, the closing parenthesis keeps the range
+outside the recovery action. The same rule applies inside a nested `waitfor`
+when the closing parenthesis ends both the recovery value and the left range
+operand. With a later `timeout` clause, redundant grouping in the `waitfor`
+value can still simplify.
+
+When a retained parenthesized comment requires a line break, reject enclosing
+single-line layouts so the next token stays outside a line comment and
+multiline block comments keep their lines.
 
 Formatter source slicing converts half-open rune boundaries to bytes through one
 mapping per call; inclusive token stops become exclusive ends before conversion.

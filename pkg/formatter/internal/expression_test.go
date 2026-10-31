@@ -74,11 +74,15 @@ func TestExpressionFormatter_RangeOperandImplicitCurrentExpression(t *testing.T)
 	}{
 		{
 			input: "return [1][* return . .. 10]",
-			want:  "...10",
+			want:  ". .. 10",
 		},
 		{
 			input: "return [1][* return 1 .. .]",
-			want:  "1...",
+			want:  "1 .. .",
+		},
+		{
+			input: "return [1][* return . .. .]",
+			want:  ". .. .",
 		},
 	}
 

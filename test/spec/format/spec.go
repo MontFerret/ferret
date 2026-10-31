@@ -1,10 +1,9 @@
 package format
 
 import (
-	"strings"
-
 	"github.com/MontFerret/ferret/v2/pkg/formatter"
 	"github.com/MontFerret/ferret/v2/test/spec"
+	"github.com/MontFerret/ferret/v2/test/spec/assert"
 )
 
 type Spec struct {
@@ -52,18 +51,7 @@ func (s Spec) String() string {
 	return s.Base.String()
 }
 
+// S expects the exact formatted output, including spaces, line endings, and trailing newlines.
 func S(expression, expected string, desc ...string) Spec {
-	normalized := expected
-
-	if strings.HasSuffix(normalized, "\n") {
-		if !strings.HasSuffix(normalized, "\n\n") {
-			// ends with a single newline; add one more to make it two
-			normalized += "\n"
-		}
-	} else {
-		// no trailing newline; add two
-		normalized += "\n\n"
-	}
-
-	return NewSpec(expression, desc...)
+	return NewSpec(expression, desc...).Expect().Output(assert.ShouldEqual, expected)
 }

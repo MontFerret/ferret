@@ -143,6 +143,26 @@ func canRemoveExpressionParentheses(inner *fql.ExpressionContext, outer expressi
 	}
 }
 
+// Nested expressions can supply the closing parenthesis of both a recovery
+// value and the left range operand. A later token supplies its own boundary.
+func recoveryEndsLeftRangeOperand(node antlr.ParserRuleContext, close antlr.Token) bool {
+	inRecovery := false
+	for node != nil && node.GetStop() == close {
+		if _, ok := node.(*fql.RecoveryReturnExprContext); ok {
+			inRecovery = true
+		}
+
+		parent, _ := node.GetParent().(antlr.ParserRuleContext)
+		if operator, ok := parent.(*fql.RangeOperatorContext); ok && inRecovery && operator.GetLeft() == node {
+			return true
+		}
+
+		node = parent
+	}
+
+	return false
+}
+
 func binaryExpressionOperation(precedence expressionPrecedence, side expressionOperandSide) expressionOperation {
 	return expressionOperation{
 		precedence:    precedence,

@@ -12,21 +12,21 @@ func TestFormatterObjectLiterals(t *testing.T) {
 LET    foo =     { a: 1, b: 2,  c: 3,    d: 4 }
  return foo
 `, `let foo = { a: 1, b: 2, c: 3, d: 4 }
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo =      { a: { e: 5 },     
 b: 2, c: 3, d: 4 }
  return foo
 `, `let foo = { a: { e: 5 }, b: 2, c: 3, d: 4 }
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo =      { a: { e: 5 },     
 b: 2, c: 3, d: [ 1, 2,3, 4, 5] }
  return foo
 `, `let foo = { a: { e: 5 }, b: 2, c: 3, d: [1, 2, 3, 4, 5] }
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo =      { a: { e: 5 }, 
@@ -43,7 +43,7 @@ LET    foo =      { a: { e: 5 },
         g: []
     }
 }
-return foo`),
+return foo`+"\n\n"),
 
 		S(`
 LET    foo =     { 
@@ -62,6 +62,6 @@ c: 3,
     c: 3,
     d: 4
 }
-return foo`),
+return foo`+"\n\n"),
 	})
 }
