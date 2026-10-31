@@ -55,6 +55,52 @@ func TestFormatterWaitForGroupComments(t *testing.T) {
 		input string
 		want  string
 	}{
+		"event source inline comment": {
+			input: `return waitfor event all {
+"ready" in source // event source
+when .ready
+}`,
+			want: `return waitfor event all {
+    "ready" in source // event source
+        when .ready
+}`,
+		},
+		"event options and repeated filter inline comments": {
+			input: `return waitfor event any {
+"ready" in source options { buffer: 1 } // subscription options
+when .ready // first filter
+when .valid
+}`,
+			want: `return waitfor event any {
+    "ready" in source options { buffer: 1 } // subscription options
+        when .ready // first filter
+        when .valid
+}`,
+		},
+		"event filter standalone comment": {
+			input: `return waitfor event all {
+"ready" in source
+// filter only matching events
+when .ready
+}`,
+			want: `return waitfor event all {
+    "ready" in source
+        // filter only matching events
+        when .ready
+}`,
+		},
+		"event filter blank line after inline comment": {
+			input: `return waitfor event all {
+"ready" in source // event source
+
+when .ready
+}`,
+			want: `return waitfor event all {
+    "ready" in source // event source
+
+        when .ready
+}`,
+		},
 		"event tail comments": {
 			input: `return waitfor event any {
 "ready" in source

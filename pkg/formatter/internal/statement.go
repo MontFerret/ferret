@@ -704,7 +704,7 @@ func (f *statementFormatter) formatWaitForEventGroupEntry(ctx *fql.WaitForEventG
 	for _, filter := range ctx.AllEventFilterClause() {
 		filterCtx := filter.(*fql.EventFilterClauseContext)
 		f.p.withIndent(func() {
-			f.trivia.emitBetween(previous, filterCtx)
+			f.trivia.emitClauseBoundary(f.trivia.stopIndex(previous)+1, f.trivia.startIndex(filterCtx))
 			f.clause.formatEventFilterClause(filterCtx)
 		})
 		previous = filterCtx
