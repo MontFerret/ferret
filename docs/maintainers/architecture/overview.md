@@ -277,8 +277,13 @@ the parser reads `DISTINCT` as the start of the value.
 In `f() on error return (1)..3`, the closing parenthesis keeps the range
 outside the recovery action. The same rule applies inside a nested `waitfor`
 when the closing parenthesis ends both the recovery value and the left range
-operand. With a later `timeout` clause, redundant grouping in the `waitfor`
-value can still simplify.
+operand. This boundary requirement composes with precedence requirements:
+either can require retaining parentheses. For example, in
+`f() on error return waitfor value 1 on error retry 1 delay (2)..3`, the delay's
+closing parenthesis keeps the range outside the enclosing recovery action even
+though `2` needs no precedence grouping. A later `timeout` or `backoff` clause
+supplies its own boundary, so otherwise redundant grouping in the `waitfor`
+value or retry delay can still simplify.
 
 When a retained parenthesized comment requires a line break, reject enclosing
 single-line layouts so the next token stays outside a line comment and

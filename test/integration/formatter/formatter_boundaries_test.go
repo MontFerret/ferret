@@ -229,6 +229,40 @@ func TestFormatterGrammarBoundaries(t *testing.T) {
 	})
 }
 
+func TestFormatterRetryDelayRangeBoundaries(t *testing.T) {
+	const function = "func f() => 1\n"
+
+	toDuration := vm.WithFunction("TO_DURATION", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.ToDuration(ctx, args[0])
+	})
+	tests := []grammarBoundaryCase{
+		{
+			name:   "delay ends at recovery range boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 on error retry 1 delay (2)..3",
+			want:   function + "return f() on error return waitfor value 1 on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "backoff supplies a later recovery range boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 on error retry 1 delay (2) backoff constant..3",
+			want:   function + "return f() on error return waitfor value 1 on error retry 1 delay 2 backoff constant..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "nested delay grouping keeps one boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 on error retry 1 delay ((2))..3",
+			want:   function + "return f() on error return waitfor value 1 on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.check(t, nil, toDuration)
+		})
+	}
+}
+
 func TestFormatterWaitForRecoveryRangeFallback(t *testing.T) {
 	const input = "return BAD() on error return WAITFOR VALUE +(2)..3"
 	const want = "return BAD() on error return waitfor value +(2)..3"
