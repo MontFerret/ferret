@@ -16,7 +16,7 @@ return normalizePrice(1)
 `, `func normalizePrice(value) {
     return value
 }
-return normalizePrice(1)`),
+return normalizePrice(1)`+"\n\n"),
 		S(`
 func unique( values ){
 return distinct values
@@ -25,7 +25,7 @@ return unique([1, 1])
 `, `func unique(values) {
     return distinct values
 }
-return unique([1, 1])`),
+return unique([1, 1])`+"\n\n"),
 		S(`
 func read( DISTINCT ){
 return ( DISTINCT.values )
@@ -34,6 +34,6 @@ return ( DISTINCT.values )
 `, `func read(DISTINCT) {
     return (DISTINCT.values)
 }
-return (DISTINCT.values)`),
+return (DISTINCT.values)`+"\n\n"),
 	})
 }

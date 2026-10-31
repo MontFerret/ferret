@@ -30,18 +30,18 @@ func (r *Runner) Run(t *testing.T, specs []Spec) {
 			exp := s.Base.Input.Expression
 
 			err := r.Formatter.Format(&out, source.New("Test case", exp))
+			if err != nil && s.Base.DebugOutput {
+				spec.PrintError(t, err)
+			}
+
+			if s.Output.Error.Defined() {
+				s.Output.Error.Assert(t, err)
+			} else if err != nil {
+				t.Fatalf("unexpected formatting error:\n%s", diagnostics.Format(err))
+			}
 
 			if err != nil {
-				if s.Base.DebugOutput {
-					spec.PrintError(t, err)
-				}
-
-				if s.Output.Error.Defined() {
-					s.Output.Error.Assert(t, err)
-					return
-				}
-
-				t.Fatalf("unexpected formatting error:\n%s", diagnostics.Format(err))
+				return
 			}
 
 			if s.Base.DebugOutput {

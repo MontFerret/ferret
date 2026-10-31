@@ -25,8 +25,8 @@ func TestFormatterCoalesceChainContinuation(t *testing.T) {
     ?? "Anonymous"
 return name`),
 		S(`return primaryValue??(secondaryValue??tertiaryValue)`, `return primaryValue
-    ?? (secondaryValue
-        ?? tertiaryValue)`),
+    ?? secondaryValue
+    ?? tertiaryValue`),
 	})
 }
 
