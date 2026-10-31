@@ -13,7 +13,7 @@ require (
 	github.com/smarty/assertions v1.16.0
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	github.com/ziflex/go-options v1.6.1
+	github.com/ziflex/go-options v1.7.0
 )
 
 require (
