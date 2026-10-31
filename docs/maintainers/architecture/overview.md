@@ -275,15 +275,20 @@ sides of `..` when an adjacent operand would join it to a dot (`. .. 10`,
 `1 .. .name`). In `return (DISTINCT.values)`, keep a pair of parentheses so
 the parser reads `DISTINCT` as the start of the value.
 In `f() on error return (1)..3`, the closing parenthesis keeps the range
-outside the recovery action. The same rule applies inside a nested `waitfor`
-when the closing parenthesis ends both the recovery value and the left range
-operand. This boundary requirement composes with precedence requirements:
-either can require retaining parentheses. For example, in
+outside the recovery action. The same rule applies to direct retry delays such
+as `f() on error retry 1 delay (2)..3`, including unary `+(2)` delays, and inside
+a nested `waitfor` when the closing parenthesis ends both the recovery value
+and the left range operand. This boundary requirement composes with precedence
+requirements: either can require retaining parentheses. For example, in
 `f() on error return waitfor value 1 on error retry 1 delay (2)..3`, the delay's
 closing parenthesis keeps the range outside the enclosing recovery action even
-though `2` needs no precedence grouping. A later `timeout` or `backoff` clause
-supplies its own boundary, so otherwise redundant grouping in the `waitfor`
-value or retry delay can still simplify.
+though `2` needs no precedence grouping. The closing token must remain the end
+of every rule along the ancestor walk to the left range operand. A later token,
+including a `timeout` or `backoff` clause, supplies its own boundary, so otherwise
+redundant grouping in the `waitfor` value or retry delay can still simplify.
+Scalar expressions without an outer range and right range operands keep their
+ordinary simplification. Boundary preservation applies whether or not the
+recovery action executes; formatting never compiles or executes the program.
 
 When a retained parenthesized comment requires a line break, reject enclosing
 single-line layouts so the next token stays outside a line comment and
