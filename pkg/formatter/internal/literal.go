@@ -1,6 +1,10 @@
 package internal
 
-import "github.com/MontFerret/ferret/v2/pkg/parser/fql"
+import (
+	"strings"
+
+	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
+)
 
 type literalFormatter struct {
 	*engine
@@ -84,7 +88,16 @@ func (f *literalFormatter) formatStringLiteralNodeWith(p *printer, ctx fql.IStri
 	}
 
 	if tok := ctx.StringLiteral(); tok != nil {
-		p.write(formatStringLiteral(tok.GetText(), f.config.SingleQuote))
+		literal := formatStringLiteral(tok.GetText(), f.config.SingleQuote)
+		if !strings.Contains(literal, "\n") {
+			p.write(literal)
+
+			return
+		}
+
+		// Indent only before the token; newlines inside it belong to its value.
+		p.writeIndent()
+		p.writeRaw(literal)
 	}
 }
 

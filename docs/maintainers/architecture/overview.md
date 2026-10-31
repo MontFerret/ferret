@@ -284,6 +284,24 @@ When a retained parenthesized comment requires a line break, reject enclosing
 single-line layouts so the next token stays outside a line comment and
 multiline block comments keep their lines.
 
+Quote style is a preference subject to preserving exact compiled string bytes.
+Preserve ordinary literal bodies verbatim: the compiler decodes `\n` and `\t`,
+but retains other backslash pairs and doubled delimiters. Change only the outer
+delimiters when the body contains no preferred quote and has no unpaired trailing
+backslash; otherwise retain the original token. Handle Unicode delimiter widths
+without splitting UTF-8. In particular, retain the accepted acute-delimited
+trailing-backslash spelling because the compiler includes its closing acute
+accent in the value. This is an existing language behavior, not an escaping rule
+for the formatter to repair.
+
+Emit multiline literal contents through the raw-text printer so embedded
+newlines survive without added indentation, and hard newlines reject enclosing
+single-line layouts. Single-line literals use the ordinary writer, which also
+preserves their control characters. Keep template chunks distinct from ordinary
+literals: their escape decoding differs, and their spelling stays unchanged.
+Ordinary literals inside template interpolation expressions follow the
+ordinary-literal rules.
+
 Formatter source slicing converts half-open rune boundaries to bytes through one
 mapping per call; inclusive token stops become exclusive ends before conversion.
 Formatting does not resolve host functions or execute programs. Recovered panics
