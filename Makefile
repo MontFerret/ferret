@@ -53,10 +53,11 @@ test-32bit:
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIREF} test -count=1 ./... && \
 	GOOS=linux GOARCH=386 CGO_ENABLED=0 go -C ${DIR_TOOL_APIPUBLISH} test -count=1 ./...
 
+# Serialize go/packages type checking in apiref tests until https://go.dev/issue/81122 is fixed.
 test-unit:
 	CGO_ENABLED=1 go test -race ${DIR_PKG}/... ${DIR_UAPI}/... ${DIR_SCRIPTS}/... && \
 	CGO_ENABLED=1 go -C ${DIR_TOOL_APIREF} env GOMOD GOVERSION && \
-	CGO_ENABLED=1 go -C ${DIR_TOOL_APIREF} test -race ./... && \
+	CGO_ENABLED=1 GOMAXPROCS=1 go -C ${DIR_TOOL_APIREF} test -race ./... && \
 	CGO_ENABLED=1 go -C ${DIR_TOOL_APIPUBLISH} test -race ./... && \
 	CGO_ENABLED=1 go test -race ${DIR_COMPAT}/... .
 
