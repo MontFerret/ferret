@@ -26,16 +26,13 @@ workflow files rather than duplicating their installation scripts elsewhere.
 
 The API reference and publisher tools are independent Go modules under
 `tools/apiref` and `tools/apipublish`. Root targets that cover them use `go -C`
-and their own module files. The root module and API publisher require Go 1.25;
-the API-reference module and pinned `fieldalignment` and `goimports` tools
-require Go 1.26 for their `golang.org/x/tools` dependency.
+and their own module files. The root module and both tools require Go 1.26 or
+later.
 
 With the default `GOTOOLCHAIN=auto`, tool installation and commands in independent
 modules can select a newer toolchain without changing the compiler selected
 for root-module tests. `actions/setup-go@v6` sets `GOTOOLCHAIN=local`, so CI steps
 that can require a newer tooling compiler explicitly set `GOTOOLCHAIN=auto`.
-Root-module commands still use the selected matrix compiler because the root
-module's Go requirement remains 1.25.
 
 `make test-unit` and `make test-32bit` print the API-reference module path and
 selected Go version before testing it. Static analysis binaries must be built
