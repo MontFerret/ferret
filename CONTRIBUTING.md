@@ -10,7 +10,7 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Prerequisites
 
-- Go 1.25 or later
+- Go 1.26 or later
 - Make (optional, for running Makefile commands)
 
 ### Setting Up the Development Environment

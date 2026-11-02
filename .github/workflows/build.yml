@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goVer: [1.25, 1.26, 1.27]
+        goVer: [1.26, 1.27]
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        goVer: [1.25, 1.26, 1.27]
+        goVer: [1.26, 1.27]
 
     steps:
       - name: Check out code into the Go module directory
@@ -122,7 +122,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.25
+          go-version: 1.26
 
       - name: Run security tests
         run: make test-security
@@ -138,7 +138,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: 1.25
+          go-version: 1.26
           cache-dependency-path: |
             go.sum
             tools/apiref/go.sum
