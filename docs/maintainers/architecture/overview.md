@@ -275,14 +275,42 @@ sides of `..` when an adjacent operand would join it to a dot (`. .. 10`,
 `1 .. .name`). In `return (DISTINCT.values)`, keep a pair of parentheses so
 the parser reads `DISTINCT` as the start of the value.
 In `f() on error return (1)..3`, the closing parenthesis keeps the range
-outside the recovery action. The same rule applies inside a nested `waitfor`
-when the closing parenthesis ends both the recovery value and the left range
-operand. With a later `timeout` clause, redundant grouping in the `waitfor`
-value can still simplify.
+outside the recovery action. The same rule applies to direct retry delays such
+as `f() on error retry 1 delay (2)..3`, including unary `+(2)` delays, and inside
+a nested `waitfor` when the closing parenthesis ends both the recovery value
+and the left range operand. This boundary requirement composes with precedence
+requirements: either can require retaining parentheses. For example, in
+`f() on error return waitfor value 1 on error retry 1 delay (2)..3`, the delay's
+closing parenthesis keeps the range outside the enclosing recovery action even
+though `2` needs no precedence grouping. The closing token must remain the end
+of every rule along the ancestor walk to the left range operand. A later token,
+including a `timeout` or `backoff` clause, supplies its own boundary, so otherwise
+redundant grouping in the `waitfor` value or retry delay can still simplify.
+Scalar expressions without an outer range and right range operands keep their
+ordinary simplification. Boundary preservation applies whether or not the
+recovery action executes; formatting never compiles or executes the program.
 
 When a retained parenthesized comment requires a line break, reject enclosing
 single-line layouts so the next token stays outside a line comment and
 multiline block comments keep their lines.
+
+Quote style is a preference subject to preserving exact compiled string bytes.
+Preserve ordinary literal bodies verbatim: the compiler decodes `\n` and `\t`,
+but retains other backslash pairs and doubled delimiters. Change only the outer
+delimiters when the body contains no preferred quote and has no unpaired trailing
+backslash; otherwise retain the original token. Handle Unicode delimiter widths
+without splitting UTF-8. In particular, retain the accepted acute-delimited
+trailing-backslash spelling because the compiler includes its closing acute
+accent in the value. This is an existing language behavior, not an escaping rule
+for the formatter to repair.
+
+Emit multiline literal contents through the raw-text printer so embedded
+newlines survive without added indentation, and hard newlines reject enclosing
+single-line layouts. Single-line literals use the ordinary writer, which also
+preserves their control characters. Keep template chunks distinct from ordinary
+literals: their escape decoding differs, and their spelling stays unchanged.
+Ordinary literals inside template interpolation expressions follow the
+ordinary-literal rules.
 
 Formatter source slicing converts half-open rune boundaries to bytes through one
 mapping per call; inclusive token stops become exclusive ends before conversion.

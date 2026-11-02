@@ -38,7 +38,9 @@ func WithTabWidth(size uint64) Option {
 		Build()
 }
 
-// WithSingleQuote configures whether string literals use single quotes.
+// WithSingleQuote configures whether ordinary string literals prefer single
+// quotes. The formatter retains the original spelling when changing delimiters
+// could change the string value. Template chunks retain their original spelling.
 func WithSingleQuote(val bool) Option {
 	return func(config *internal.Config) error {
 		config.SingleQuote = val

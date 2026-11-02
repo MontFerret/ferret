@@ -1,87 +1,46 @@
 package internal
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
-func unquoteStringLiteral(raw string) string {
-	if len(raw) < 2 {
+func formatStringLiteral(raw string, singleQuote bool) string {
+	quote := byte('"')
+	if singleQuote {
+		quote = '\''
+	}
+
+	delimiter, width := utf8.DecodeRuneInString(raw)
+	if delimiter == rune(quote) {
 		return raw
 	}
 
-	quote := raw[0]
-	content := raw[1 : len(raw)-1]
-	var b strings.Builder
-	b.Grow(len(content))
-
-	for i := 0; i < len(content); i++ {
-		ch := content[i]
-
-		if ch == '\\' && i+1 < len(content) {
-			next := content[i+1]
-			switch next {
-			case 'n':
-				b.WriteByte('\n')
-			case 't':
-				b.WriteByte('\t')
-			default:
-				b.WriteByte('\\')
-				b.WriteByte(next)
-			}
-
-			i++
-
-			continue
-		}
-
-		if (quote == '\'' || quote == '"') && ch == quote && i+1 < len(content) && content[i+1] == quote {
-			b.WriteByte(quote)
-			i++
-
-			continue
-		}
-
-		b.WriteByte(ch)
+	if delimiter != '\'' && delimiter != '"' && delimiter != '´' {
+		return raw
 	}
 
-	return b.String()
-}
-
-func quoteStringLiteral(val string, singleQuote bool) string {
-	quote := byte('"')
-	doubleQuote := "\"\""
-
-	if singleQuote {
-		quote = '\''
-		doubleQuote = "''"
+	if len(raw) < 2*width || !strings.HasSuffix(raw, raw[:width]) {
+		return raw
 	}
 
-	var b strings.Builder
-	b.Grow(len(val) + 2)
-	b.WriteByte(quote)
-
-	for _, r := range val {
-		switch r {
-		case '\n':
-			b.WriteString("\\n")
-		case '\t':
-			b.WriteString("\\t")
-		case '\\':
-			b.WriteString("\\\\")
-		default:
-			if r == rune(quote) {
-				b.WriteString(doubleQuote)
-
-				continue
-			}
-
-			b.WriteRune(r)
-		}
+	body := raw[width : len(raw)-width]
+	// FQL preserves doubled delimiters and unknown backslash pairs. Escaping a
+	// preferred quote would therefore change the value rather than encode it.
+	if strings.IndexByte(body, quote) >= 0 {
+		return raw
 	}
 
-	b.WriteByte(quote)
+	trailingBackslashes := 0
+	for i := len(body) - 1; i >= 0 && body[i] == '\\'; i-- {
+		trailingBackslashes++
+	}
 
-	return b.String()
-}
+	// Acute-delimited strings can end in an unpaired backslash. The compiler
+	// includes the closing acute accent in that escape pair; retain the token.
+	if trailingBackslashes%2 != 0 {
+		return raw
+	}
 
-func formatStringLiteral(raw string, singleQuote bool) string {
-	return quoteStringLiteral(unquoteStringLiteral(raw), singleQuote)
+	return string(quote) + body + string(quote)
 }

@@ -229,56 +229,177 @@ func TestFormatterGrammarBoundaries(t *testing.T) {
 	})
 }
 
-func TestFormatterWaitForRecoveryRangeFallback(t *testing.T) {
-	const input = "return BAD() on error return WAITFOR VALUE +(2)..3"
-	const want = "return BAD() on error return waitfor value +(2)..3"
-	const result = "[2,3]"
+func TestFormatterRetryDelayRangeBoundaries(t *testing.T) {
+	const function = "func f() => 1\n"
 
-	calls := 0
-	fail := vm.WithFunction("BAD", func(context.Context, ...runtime.Value) (runtime.Value, error) {
-		calls++
-		return runtime.None, errors.New("bad")
+	toDuration := vm.WithFunction("TO_DURATION", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.ToDuration(ctx, args[0])
 	})
-	checkCalls := func(want int) {
-		t.Helper()
-		if calls != want {
-			t.Fatalf("BAD() was called %d times, want %d", calls, want)
-		}
+	tests := []grammarBoundaryCase{
+		{
+			name:   "direct delay ends at range boundary",
+			input:  function + "return f() on error retry 1 delay (2)..3",
+			want:   function + "return f() on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "unary direct delay ends at range boundary",
+			input:  function + "return f() on error retry 1 delay +(2)..3",
+			want:   function + "return f() on error retry 1 delay +(2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "nested direct delay grouping keeps one boundary",
+			input:  function + "return f() on error retry 1 delay ((2))..3",
+			want:   function + "return f() on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "backoff supplies a later direct delay boundary",
+			input:  function + "return f() on error retry 1 delay (2) backoff constant..3",
+			want:   function + "return f() on error retry 1 delay 2 backoff constant..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "direct delay without outer range",
+			input:  function + "return f() on error retry 1 delay (2)",
+			want:   function + "return f() on error retry 1 delay 2",
+			result: "1",
+		},
+		{
+			name:   "direct delay at right endpoint",
+			input:  function + "return 1..f() on error retry 1 delay (2)",
+			want:   function + "return 1..f() on error retry 1 delay 2",
+			result: "[1]",
+		},
+		{
+			name:   "duration delay at range boundary",
+			input:  function + "return f() on error retry 1 delay (1ms)..3",
+			want:   function + "return f() on error retry 1 delay (1ms)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "unary delay precedence without outer range",
+			input:  function + "return f() on error retry 1 delay (+2)",
+			want:   function + "return f() on error retry 1 delay (+2)",
+			result: "1",
+		},
+		{
+			name:   "logical delay precedence before recovery suffix",
+			input:  function + "return f() on error retry 1 delay (0ms or 1ms) or return none",
+			want:   function + "return f() on error retry 1 delay (0ms or 1ms) or return none",
+			result: "1",
+		},
+		{
+			name:   "ternary delay precedence without outer range",
+			input:  function + "return f() on error retry 1 delay (true ? 1ms : 2ms)",
+			want:   function + "return f() on error retry 1 delay (true ? 1ms : 2ms)",
+			result: "1",
+		},
+		{
+			name:   "delay ends at recovery range boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 on error retry 1 delay (2)..3",
+			want:   function + "return f() on error return waitfor value 1 on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "backoff supplies a later recovery range boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 on error retry 1 delay (2) backoff constant..3",
+			want:   function + "return f() on error return waitfor value 1 on error retry 1 delay 2 backoff constant..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "nested delay grouping keeps one boundary",
+			input:  function + "return f() on error return WAITFOR VALUE 1 on error retry 1 delay ((2))..3",
+			want:   function + "return f() on error return waitfor value 1 on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
 	}
 
-	original, err := spec.Compile(input)
-	if err != nil {
-		t.Fatalf("compile original: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.check(t, nil, toDuration)
+		})
+	}
+}
+
+func TestFormatterRecoveryRangeFallbacks(t *testing.T) {
+	const function = "func f() => 1\n"
+
+	toDuration := vm.WithFunction("TO_DURATION", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.ToDuration(ctx, args[0])
+	})
+	tests := []grammarBoundaryCase{
+		{
+			name:   "waitfor value ends at recovery range boundary",
+			input:  "return BAD() on error return WAITFOR VALUE +(2)..3",
+			want:   "return BAD() on error return waitfor value +(2)..3",
+			result: "[2,3]",
+		},
+		{
+			name:   "direct delay ends at recovery range boundary",
+			input:  function + "return BAD() on error return f() on error retry 1 delay (2)..3",
+			want:   function + "return BAD() on error return f() on error retry 1 delay (2)..3",
+			result: "[1,2,3]",
+		},
+		{
+			name:   "backoff supplies a later recovery range boundary",
+			input:  function + "return BAD() on error return f() on error retry 1 delay (2) backoff constant..3",
+			want:   function + "return BAD() on error return f() on error retry 1 delay 2 backoff constant..3",
+			result: "[1,2,3]",
+		},
 	}
 
-	checkCalls(0)
-	formatted := formatSource(t, input)
-	checkCalls(0)
-	if formatted != want {
-		t.Errorf("formatted output:\n%s\nwant:\n%s", formatted, want)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			fail := vm.WithFunction("BAD", func(context.Context, ...runtime.Value) (runtime.Value, error) {
+				calls++
+				return runtime.None, errors.New("bad")
+			})
+			checkCalls := func(want int) {
+				t.Helper()
+				if calls != want {
+					t.Fatalf("BAD() was called %d times, want %d", calls, want)
+				}
+			}
 
-	recompiled, err := spec.Compile(formatted)
-	if err != nil {
-		t.Fatalf("compile formatted: %v", err)
-	}
+			original, err := spec.Compile(tt.input)
+			if err != nil {
+				t.Fatalf("compile original: %v", err)
+			}
 
-	before, err := spec.Run(original, fail)
-	if err != nil || string(before) != result {
-		t.Errorf("run original: got %s, want %s, error %v", before, result, err)
-	}
-	checkCalls(1)
+			checkCalls(0)
+			formatted := formatSource(t, tt.input)
+			checkCalls(0)
+			if formatted != tt.want {
+				t.Errorf("formatted output:\n%s\nwant:\n%s", formatted, tt.want)
+			}
 
-	after, err := spec.Run(recompiled, fail)
-	if err != nil || string(after) != result {
-		t.Errorf("run formatted: got %s, want %s, error %v", after, result, err)
-	}
-	checkCalls(2)
+			recompiled, err := spec.Compile(formatted)
+			if err != nil {
+				t.Fatalf("compile formatted: %v", err)
+			}
 
-	second := formatSource(t, formatted)
-	checkCalls(2)
-	if second != formatted {
-		t.Errorf("second format changed output:\n%s\nfirst:\n%s", second, formatted)
+			checkCalls(0)
+			before, err := spec.Run(original, toDuration, fail)
+			if err != nil || string(before) != tt.result {
+				t.Errorf("run original: got %s, want %s, error %v", before, tt.result, err)
+			}
+			checkCalls(1)
+
+			after, err := spec.Run(recompiled, toDuration, fail)
+			if err != nil || string(after) != tt.result {
+				t.Errorf("run formatted: got %s, want %s, original %s, error %v", after, tt.result, before, err)
+			}
+			checkCalls(2)
+
+			second := formatSource(t, formatted)
+			checkCalls(2)
+			if second != formatted {
+				t.Errorf("second format changed output:\n%s\nfirst:\n%s", second, formatted)
+			}
+		})
 	}
 }
 
@@ -386,7 +507,7 @@ func (tt grammarBoundaryCase) check(t *testing.T, options []formatter.Option, en
 
 	after, err := spec.Run(recompiled, env...)
 	if err != nil || string(after) != tt.result {
-		t.Errorf("run formatted: got %s, want %s, error %v", after, tt.result, err)
+		t.Errorf("run formatted: got %s, want %s, original %s, error %v", after, tt.result, before, err)
 	}
 
 	if second := formatSource(t, formatted, options...); second != formatted {
