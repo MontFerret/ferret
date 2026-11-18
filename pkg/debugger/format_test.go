@@ -1,6 +1,8 @@
 package debugger
 
 import (
+	"errors"
+	"strings"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -8,19 +10,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
-
-func TestFormatDurationValue(t *testing.T) {
-	t.Parallel()
-
-	value := runtime.NewDuration(1500 * time.Millisecond)
-	access := vm.NewDebugValueAccess()
-	if got := formatValue(value, access, DefaultFormatOptions()); got != "1.5s" {
-		t.Fatalf("formatted duration = %q", got)
-	}
-	if got := access.TypeName(value); got != runtime.TypeDuration.Name() {
-		t.Fatalf("duration type name = %q", got)
-	}
-}
 
 type hostileDebugValue struct {
 	infoCalls *int
@@ -43,85 +32,115 @@ func (v hostileDebugValue) DebugInfo() runtime.DebugInfo {
 	return v.info
 }
 
-func TestFormatValueDoesNotInvokeOpaqueHostValue(t *testing.T) {
-	value := hostileDebugValue{}
+func TestValueAccessRejectsOpaqueKeys(t *testing.T) {
 	access := vm.NewDebugValueAccess()
-	if got := formatValue(value, access, DefaultFormatOptions()); got != "HostValue(debugger.hostileDebugValue)" {
-		t.Fatalf("unexpected host summary: %q", got)
-	}
-	if got := access.TypeName(value); got != "debugger.hostileDebugValue" {
-		t.Fatalf("unexpected host type name: %q", got)
-	}
-}
-
-func TestFormatValueBoundsStrings(t *testing.T) {
-	const maxBytes = 8
-	got := formatValue(runtime.NewString("abcdefghijklmnopqrstuvwxyz"), vm.NewDebugValueAccess(), FormatOptions{
-		MaxDepth: 1,
-		MaxItems: 1,
-		MaxBytes: maxBytes,
-	})
-	if len(got) > maxBytes+3 {
-		t.Fatalf("formatted value exceeds limit: %q", got)
+	calls := 0
+	key := hostileDebugValue{infoCalls: &calls}
+	for _, value := range []runtime.Value{runtime.NewObject(), runtime.NewArray(0)} {
+		if _, err := access.Lookup(value, key); !errors.Is(err, runtime.ErrInvalidArgument) || calls != 0 {
+			t.Fatalf("lookup on %T with opaque key: err=%v, hook calls=%d", value, err, calls)
+		}
 	}
 }
 
-func TestBoundedText(t *testing.T) {
-	tests := []struct {
-		name  string
-		value string
-		want  string
-		max   int
+func TestFormatSemanticValues(t *testing.T) {
+	access := vm.NewDebugValueAccess()
+	pattern, err := runtime.NewRegexp("a+")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	zone := time.FixedZone(strings.Repeat("z", 10000), -(3*60+30)*60)
+	date := runtime.NewDateTime(time.Date(2026, 2, 3, 4, 5, 6, 123456789, zone))
+	for _, tc := range []struct {
+		value         runtime.Value
+		name, display string
 	}{
-		{name: "ascii", value: "product", max: 4, want: "prod..."},
-		{name: "unicode", value: "éclair", max: 3, want: "éc..."},
-		{name: "emoji", value: "🙂x", max: 3, want: "..."},
-		{name: "zero limit", value: "value", max: 0, want: "..."},
-		{name: "negative limit", value: "value", max: -1, want: "..."},
-		{name: "empty with negative limit", value: "", max: -1, want: ""},
-		{name: "within limit", value: "é", max: 2, want: "é"},
-		{name: "malformed UTF-8", value: string([]byte{'a', 0xff, 'b'}), max: 8, want: "a\uFFFDb"},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			got := boundedText(test.value, test.max)
-
-			if got != test.want {
-				t.Fatalf("unexpected bounded text: got %q, want %q", got, test.want)
-			}
-			if !utf8.ValidString(got) {
-				t.Fatalf("bounded text is not valid UTF-8: %q", got)
+		{nil, "None", "NONE"},
+		{runtime.None, "None", "NONE"},
+		{runtime.True, "Boolean", "true"},
+		{runtime.Int(42), "Int", "42"},
+		{runtime.Float(3.14), "Float", "3.14"},
+		{runtime.NewDuration(1500 * time.Millisecond), "Duration", "1.5s"},
+		{date, "DateTime", "2026-02-03T04:05:06.123456789-03:30"},
+		{pattern, "Regexp", "<Regexp>"},
+		{runtime.String("hello"), "String", `"hello"`},
+		{runtime.Binary(make([]byte, 1<<20)), "Binary", "Binary(1048576)"},
+		{runtime.NewArray(8), "Array", "Array(0)"},
+		{runtime.NewObject(), "Object", "Object(0)"},
+		{runtime.NewSizedArray(1000000), "Array", "Array(1000000)"},
+		{(*runtime.Array)(nil), "Array", "<Array>"},
+		{(*runtime.Object)(nil), "Object", "<Object>"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := inspector{values: access, format: DefaultFormatOptions()}
+			if got := s.debugValue(tc.value); got != (Value{Type: tc.name, Display: tc.display}) {
+				t.Fatalf("got %+v, want %s %s with reference zero", got, tc.name, tc.display)
 			}
 		})
 	}
 }
 
-func TestFormatValueFinalTruncationIsValidUTF8(t *testing.T) {
-	got := formatValue(
-		runtime.NewArrayWith(hostileDebugValue{info: runtime.DebugInfo{Display: "🙂🙂"}}),
-		vm.NewDebugValueAccess(),
-		FormatOptions{MaxDepth: 1, MaxItems: 1, MaxBytes: 5},
-	)
+func TestFormatNativeScalarPointers(t *testing.T) {
+	s := inspector{values: vm.NewDebugValueAccess(), format: DefaultFormatOptions()}
+	boolean, integer, float := runtime.True, runtime.Int(42), runtime.Float(3.14)
+	duration, date := runtime.NewDuration(time.Second), runtime.NewDateTime(time.Unix(42, 0))
+	str, bin := runtime.String(strings.Repeat("é", 1<<20)), runtime.Binary(make([]byte, 4096))
+	for _, tc := range []struct{ value, pointer, absent runtime.Value }{
+		{boolean, &boolean, (*runtime.Boolean)(nil)},
+		{integer, &integer, (*runtime.Int)(nil)},
+		{float, &float, (*runtime.Float)(nil)},
+		{duration, &duration, (*runtime.Duration)(nil)},
+		{str, &str, (*runtime.String)(nil)},
+		{date, &date, (*runtime.DateTime)(nil)},
+		{bin, &bin, (*runtime.Binary)(nil)},
+	} {
+		want := s.debugValue(tc.value)
+		if got := s.debugValue(tc.pointer); got != want {
+			t.Errorf("%T = %+v, want %+v", tc.pointer, got, want)
+		}
 
-	if !utf8.ValidString(got) {
-		t.Fatalf("formatted value is not valid UTF-8: %q", got)
+		if got := s.debugValue(tc.absent); got != (Value{Type: want.Type, Display: "<" + want.Type + ">"}) {
+			t.Errorf("nil %T = %+v", tc.absent, got)
+		}
+	}
+
+	if got := s.debugValue(&hostileDebugEvalValue{}); got != (Value{Type: "Resource", Display: "<Resource>"}) {
+		t.Fatalf("opaque pointer = %+v", got)
 	}
 }
 
-func TestFormatValueUsesNestedRuntimeDebugDisplay(t *testing.T) {
-	value := runtime.NewArrayWith(hostileDebugValue{
-		info: runtime.DebugInfo{Display: "<div.product-card>"},
-	})
-
-	if got := formatValue(value, vm.NewDebugValueAccess(), DefaultFormatOptions()); got != "[<div.product-card>]" {
-		t.Fatalf("unexpected nested custom display: %q", got)
-	}
-}
-
-func TestValueAccessRejectsOpaqueKeys(t *testing.T) {
-	value := runtime.NewObject()
-	if _, err := vm.NewDebugValueAccess().Lookup(value, hostileDebugValue{}); err == nil {
-		t.Fatal("expected opaque object key to be rejected")
+func TestBoundedText(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		input  string
+		want   string
+		max    int
+		quoted bool
+	}{
+		{name: "zero", input: "value", max: 0, quoted: false, want: ""},
+		{name: "negative", input: "value", max: -1, quoted: true, want: ""},
+		{name: "one", input: "value", max: 1, quoted: false, want: "."},
+		{name: "two", input: "value", max: 2, quoted: true, want: ".."},
+		{name: "empty quoted", input: "", max: 2, quoted: true, want: `""`},
+		{name: "short quoted", input: "x", max: 3, quoted: true, want: `"x"`},
+		{name: "quoting overhead", input: "abc", max: 4, quoted: true, want: "..."},
+		{name: "only marker fits", input: "abcd", max: 5, quoted: true, want: `"..."`},
+		{name: "ascii", input: "product", max: 4, quoted: false, want: "p..."},
+		{name: "rune exact fit", input: "🙂", max: 4, quoted: false, want: "🙂"},
+		{name: "rune cut", input: "éclair", max: 5, quoted: false, want: "é..."},
+		{name: "rune too wide", input: "🙂x", max: 3, quoted: false, want: "..."},
+		{name: "escapes", input: "\n\"\\\x01", max: 12, quoted: true, want: `"\n\"\\\x01"`},
+		{name: "escape boundary", input: "\x01\x01x", max: 8, quoted: true, want: `"..."`},
+		{name: "quoted multibyte", input: "é🙂abcdef", max: 7, quoted: true, want: `"é..."`},
+		{name: "visible invalid", input: "a\xffb", max: 7, quoted: true, want: `"a�b"`},
+		{name: "large with invalid suffix", input: strings.Repeat("a", 4<<20) + "\xff", max: 8, quoted: true, want: `"aaa..."`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, _ := renderText(tc.input, tc.max, tc.quoted)
+			if got != tc.want || len(got) > max(0, tc.max) || !utf8.ValidString(got) {
+				t.Fatalf("rendered %q, want %q", got, tc.want)
+			}
+		})
 	}
 }

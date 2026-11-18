@@ -144,19 +144,47 @@ unlocking commands would not safely publish live changes or preserve hit IDs.
 
 ## Values and expression evaluation
 
-Runtime values may opt into debugger inspection through runtime-owned contracts.
-The VM exposes a generic inspection view, and `pkg/debugger` applies bounded
-formatting and translates it into debugger values and child references.
-Debugger code should not accumulate concrete type switches for runtime-owned
-semantics.
+The VM's `DebugValueAccess.Describe` classifies the paused value and reads only
+cheap metadata. Native arrays and buffered VM datasets have type `Array`.
+Native objects and VM fast objects have type `Object`. Their displays use the
+in-memory length, for example `Array(3)`. Pointers to native scalars use the
+pointed-to value's presentation. A nil scalar pointer retains its semantic type
+and displays a summary such as `<Int>`. Binary values display their byte
+length. Generic collection and query capabilities supply a category name and
+an unknown length. The debugger falls back to `Resource` and `<Resource>` for
+opaque values.
+
+A value can supply its own semantic type or summary through
+`runtime.DebugInspectable`. The VM calls the hook once per description and
+isolates hook panics. Embedders own the cost of the hook itself. The SDK's
+opaque host wrapper can obtain a declared semantic name from its explicit
+type descriptor without consulting the target.
+
+The inspector reuses the description for formatting and reference eligibility.
+`Variables` enumerates a collection's immediate children. Evaluating an
+explicit member expression reads the selected child through VM lookup. Lookup
+on a typed-nil collection returns an invalid-operation error.
+Under the alpha.21 interface, nonempty native arrays, native objects and fast
+objects with at most `MaxItems` entries receive references. Buffered datasets
+of every size are summary-only. Indexed children follow source order and
+object keys sort lexicographically. Nested children receive shallow descriptions
+and their own stop-scoped references when eligible.
+
+`MaxBytes` bounds each type and display independently, including quotes,
+escapes and a three-byte `...` truncation marker. For truncated text, budgets
+of one and two bytes give one and two dots. Quoted strings retain both quotes
+when they and the marker fit. Formatting examines a bounded prefix, preserves
+whole runes and escapes, and replaces malformed display bytes with U+FFFD.
+A malformed visible custom type name falls back to the classified name.
+Debugger-authored type mismatch messages apply the same byte budget to the
+actual operand's type name. DateTime displays use RFC3339Nano with the value's
+numeric UTC offset (`Z` at offset zero). Debugger session creation resolves
+Go's local timezone so formatting a local DateTime only reads in-memory data.
 
 Evaluation is deliberately conservative and side-effect-free. It reads paused
 frame bindings and supports the documented expression subset; calls, mutation,
 queries, async/event behavior, and full collection execution remain outside the
 debug evaluator.
-
-Formatting limits bound depth, item count, and rendered bytes. Expansion should
-be deterministic and must not mutate the live paused value.
 
 ## Completion and cleanup
 

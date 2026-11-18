@@ -222,6 +222,61 @@ func TestDebugSessionLocalsIncludeDeclaredBindParameters(t *testing.T) {
 	}
 }
 
+func TestDebugSessionTypedNilLookupAndPresentationLimits(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN @answer"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	answer := runtime.Int(42)
+	session, err := plan.NewDebugSession(t.Context(),
+		WithDebugFormat(debugger.FormatOptions{MaxItems: 3, MaxBytes: 8}),
+		WithSessionRuntimeParams(runtime.Params{
+			"answer": &answer,
+			"arr":    (*runtime.Array)(nil),
+			"obj":    (*runtime.Object)(nil),
+			"three":  runtime.NewSizedArray(3),
+			"four":   runtime.NewSizedArray(4),
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, expression := range []string{"@arr[0]", "@obj.a"} {
+		if _, err := session.Evaluate(t.Context(), expression); !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Errorf("%s: got %v, want ErrInvalidOperation", expression, err)
+		}
+	}
+
+	for _, tc := range []struct {
+		expression, typ, display string
+		expandable               bool
+	}{
+		{"@answer", "Int", "42", false},
+		{"'abcdefgh'", "String", `"abc..."`, false},
+		{"@three", "Array", "Array(3)", true},
+		{"@four", "Array", "Array(4)", false},
+	} {
+		value, err := session.Evaluate(t.Context(), tc.expression)
+		if err != nil || value.Type != tc.typ || value.Display != tc.display || value.Reference.Valid() != tc.expandable {
+			t.Errorf("%s: value = %+v, err = %v", tc.expression, value, err)
+		}
+	}
+}
+
 func TestDebugPlanRunsNormally(t *testing.T) {
 	engine, err := New()
 	if err != nil {
@@ -283,12 +338,61 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(locals) != 1 || locals[0].Value.Display != `{"a": 1, "b": 2}` {
+	if len(locals) != 1 || locals[0].Value.Type != "Object" || locals[0].Value.Display != "Object(2)" {
 		t.Fatalf("unexpected formatted object: %#v", locals)
 	}
+	children, err := session.Variables(t.Context(), locals[0].Value.Reference)
+	if err != nil || len(children) != 2 || children[0].Name != "a" || children[0].Value.Display != "1" ||
+		children[1].Name != "b" || children[1].Value.Display != "2" {
+		t.Fatalf("unexpected expanded object: %#v, %v", children, err)
+	}
+
 	value, err := session.Evaluate(context.Background(), "obj.a")
 	if err != nil || value.Display != "1" {
 		t.Fatalf("unexpected member evaluation: %#v, %v", value, err)
+	}
+}
+
+func TestDebugSessionBufferedDataSetSummary(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	src := source.New("dataset.fql", "LET results = (FOR n IN 1..3 RETURN n)\nRETURN results")
+	plan, err := engine.CompileDebug(t.Context(), src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.SetBreakpoint(t.Context(), source.Location{Position: source.Position{Line: 2}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if event, err := session.Continue(t.Context()); err != nil || event.Reason != debugger.ReasonBreakpoint {
+		t.Fatalf("stop = %+v, err = %v", event, err)
+	}
+
+	want := debugger.Value{Type: "Array", Display: "Array(3)"}
+	locals, err := session.FrameLocals(t.Context(), 0)
+	if err != nil || len(locals) != 1 || locals[0].Name != "results" || locals[0].Value != want {
+		t.Fatalf("locals = %+v, err = %v", locals, err)
+	}
+
+	if got, err := session.Evaluate(t.Context(), "results"); err != nil || got != want {
+		t.Fatalf("evaluated dataset = %+v, err = %v", got, err)
 	}
 }
 

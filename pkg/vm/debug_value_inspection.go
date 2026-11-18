@@ -4,7 +4,24 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
+	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
+
+// Only these in-memory object implementations have debugger-safe accessors.
+func debugObject(value runtime.Value) runtime.Map {
+	switch v := value.(type) {
+	case *runtime.Object:
+		if v != nil {
+			return v
+		}
+	case *data.FastObject:
+		if v != nil {
+			return v
+		}
+	}
+
+	return nil
+}
 
 func inspectDebugMap(value runtime.Map, maxItems int) DebugValueInspection {
 	length, _ := value.Length(context.Background())

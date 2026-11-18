@@ -1,163 +1,134 @@
 package debugger
 
 import (
-	"fmt"
-	"reflect"
-	"sort"
 	"strconv"
-	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
-func formatValue(value runtime.Value, access vm.DebugValueAccess, options FormatOptions) string {
-	info, _ := access.DebugInfo(value)
-
-	return formatValueWithInfo(value, info, access, options)
-}
-
-func formatValueWithInfo(value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions) string {
-	if info.Display != "" {
-		return boundedText(info.Display, options.MaxBytes)
+func formatValue(value runtime.Value, description vm.DebugValueDescription, maxBytes int) Value {
+	typeName := formatTypeName(description, maxBytes)
+	if description.Hint.Display != "" {
+		return Value{Type: typeName, Display: boundedText(description.Hint.Display, maxBytes)}
 	}
 
-	var b strings.Builder
-
-	writeValue(&b, value, info, access, options, 0)
-	out := b.String()
-
-	if len(out) <= options.MaxBytes {
-		return out
+	if description.Scalar != nil {
+		value = description.Scalar
 	}
 
-	return boundedText(out, options.MaxBytes)
-}
-
-func writeValue(b *strings.Builder, value runtime.Value, info runtime.DebugInfo, access vm.DebugValueAccess, options FormatOptions, depth int) {
-	if info.Display != "" {
-		b.WriteString(boundedText(info.Display, options.MaxBytes))
-
-		return
-	}
-
-	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
-		b.WriteString("NONE")
-
-		return
-	}
-
-	switch value := value.(type) {
-	case runtime.Boolean:
-		if value {
-			b.WriteString("true")
-		} else {
-			b.WriteString("false")
-		}
-	case runtime.Int:
-		b.WriteString(strconv.FormatInt(int64(value), 10))
-	case runtime.Float:
-		b.WriteString(strconv.FormatFloat(float64(value), 'g', -1, 64))
-	case runtime.Duration:
-		b.WriteString(value.String())
+	var display string
+	switch v := value.(type) {
 	case runtime.String:
-		b.WriteString(strconv.Quote(boundedText(value.String(), options.MaxBytes)))
+		display, _ = renderText(string(v), maxBytes, true)
+
+		return Value{Type: typeName, Display: display}
+	case runtime.Boolean:
+		display = strconv.FormatBool(bool(v))
+	case runtime.Int:
+		display = strconv.FormatInt(int64(v), 10)
+	case runtime.Float:
+		display = strconv.FormatFloat(float64(v), 'g', -1, 64)
+	case runtime.Duration:
+		display = v.String()
 	case runtime.DateTime:
-		b.WriteString(boundedText(value.String(), options.MaxBytes))
-	case runtime.Binary:
-		fmt.Fprintf(b, "Binary(%d)", len(value))
+		display = v.Format(time.RFC3339Nano)
 	default:
-		inspection, ok := access.Inspect(value, options.MaxItems)
+		switch {
+		case value == nil || value == runtime.None:
+			display = "NONE"
+		case description.Length >= 0:
+			display = typeName + "(" + strconv.Itoa(description.Length) + ")"
+		default:
+			display = "<" + typeName + ">"
+		}
+	}
 
-		if !ok {
-			typeName := info.TypeName
+	return Value{Type: typeName, Display: boundedText(display, maxBytes)}
+}
 
-			if typeName == "" {
-				typeName = access.TypeName(value)
+func formatTypeName(description vm.DebugValueDescription, maxBytes int) string {
+	if hint := description.Hint.TypeName; hint != "" {
+		if name, valid := renderText(hint, maxBytes, false); valid {
+			return name
+		}
+	}
+
+	return boundedText(description.TypeName, maxBytes)
+}
+
+func boundedText(value string, maxBytes int) string {
+	text, _ := renderText(value, maxBytes, false)
+
+	return text
+}
+
+// renderText counts output bytes, including delimiters and the truncation
+// marker. It remembers the last whole token that leaves room for the marker,
+// so an exact fit can still use the entire budget.
+func renderText(value string, maxBytes int, quoted bool) (string, bool) {
+	const marker = "..."
+	if maxBytes <= 0 {
+		return "", true
+	}
+
+	if !quoted && len(value) <= maxBytes && utf8.ValidString(value) {
+		return value, true
+	}
+
+	var scratch [128]byte
+	out := scratch[:0]
+	limit := maxBytes
+	if quoted {
+		if maxBytes < 2 {
+			return marker[:maxBytes], true
+		}
+
+		out = append(out, '"')
+		limit-- // closing quote
+	}
+
+	markerAt := len(out)
+	valid := true
+	markerValid := true
+	for len(value) > 0 {
+		r, size := utf8.DecodeRuneInString(value)
+		unit := value[:size]
+		if r == utf8.RuneError && size == 1 {
+			valid = false
+			unit = "\uFFFD"
+		}
+
+		var escape [12]byte
+		if quoted && (r < ' ' || r >= 0x7f || r == '"' || r == '\\') {
+			token := strconv.AppendQuote(escape[:0], unit)
+			unit = string(token[1 : len(token)-1])
+		}
+
+		if len(unit) > limit-len(out) {
+			if maxBytes < len(marker) || (quoted && maxBytes < len(marker)+2) {
+				return marker[:min(maxBytes, len(marker))], true
 			}
 
-			fmt.Fprintf(b, "HostValue(%s)", boundedText(typeName, options.MaxBytes))
-
-			return
+			valid = markerValid
+			out = append(out[:markerAt], marker...)
+			break
 		}
 
-		if depth >= options.MaxDepth || inspection.Length > options.MaxItems || !inspection.Complete {
-			writeCollectionSummary(b, inspection)
-
-			return
+		out = append(out, unit...)
+		if len(out) <= limit-len(marker) {
+			markerAt = len(out)
+			markerValid = valid
 		}
 
-		writeInspection(b, inspection, access, options, depth)
-	}
-}
-
-func writeInspection(b *strings.Builder, inspection vm.DebugValueInspection, access vm.DebugValueAccess, options FormatOptions, depth int) {
-	if inspection.Kind == vm.DebugValueArray {
-		b.WriteByte('[')
-
-		for i, item := range inspection.Items {
-			if i > 0 {
-				b.WriteString(", ")
-			}
-
-			info, _ := access.DebugInfo(item.Value)
-			writeValue(b, item.Value, info, access, options, depth+1)
-		}
-
-		b.WriteByte(']')
-
-		return
+		value = value[size:]
 	}
 
-	items := append([]vm.DebugValueItem(nil), inspection.Items...)
-	sort.Slice(items, func(i, j int) bool { return items[i].Key < items[j].Key })
-	b.WriteByte('{')
-
-	for i, item := range items {
-		if i > 0 {
-			b.WriteString(", ")
-		}
-
-		b.WriteString(strconv.Quote(boundedText(item.Key, options.MaxBytes)))
-		b.WriteString(": ")
-		info, _ := access.DebugInfo(item.Value)
-		writeValue(b, item.Value, info, access, options, depth+1)
+	if quoted {
+		out = append(out, '"')
 	}
 
-	b.WriteByte('}')
-}
-
-func writeCollectionSummary(b *strings.Builder, inspection vm.DebugValueInspection) {
-	if inspection.Kind == vm.DebugValueArray {
-		fmt.Fprintf(b, "Array(%d)", inspection.Length)
-
-		return
-	}
-
-	fmt.Fprintf(b, "Object(%d)", inspection.Length)
-}
-
-func boundedText(value string, max int) string {
-	if value == "" {
-		return value
-	}
-
-	if max <= 0 {
-		return "..."
-	}
-
-	if !utf8.ValidString(value) {
-		value = strings.ToValidUTF8(value, "\uFFFD")
-	}
-
-	if len(value) <= max {
-		return value
-	}
-
-	for max > 0 && !utf8.RuneStart(value[max]) {
-		max--
-	}
-
-	return value[:max] + "..."
+	return string(out), valid
 }

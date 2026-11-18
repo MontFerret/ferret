@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	apidebugger "github.com/MontFerret/api/debugger"
 
@@ -65,7 +66,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if value.Display != "2" || values.typeCalls == 0 || values.debugInfoCalls == 0 {
+	if value.Display != "2" || values.describeCalls == 0 {
 		t.Fatalf("unexpected evaluated value: %#v", value)
 	}
 	if _, err := session.FrameLocals(context.Background(), 1); !errors.Is(err, runtime.ErrInvalidOperation) {
@@ -80,6 +81,27 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	}
 	if !execution.closed || !services.closed {
 		t.Fatal("expected execution and services to close")
+	}
+}
+
+func TestSessionLocalDateTime(t *testing.T) {
+	instant := time.Unix(0, 123456789).In(time.Local)
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry},
+		locals:     []vm.DebugLocal{{Name: "date", Value: runtime.NewDateTime(instant)}},
+	}
+	session := newLifecycleTestSession(t, execution, &fakeSessionServices{})
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	value, err := session.Evaluate(t.Context(), "date")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := instant.Format(time.RFC3339Nano); value.Display != want {
+		t.Errorf("local DateTime display = %q, want %q", value.Display, want)
 	}
 }
 
@@ -203,9 +225,17 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		}},
 		status: vm.DebugExecutionNew,
 	}
+	access := &fakeValueAccess{inner: vm.NewDebugValueAccess()}
+	assertReads := func(inspections, descriptions int) {
+		t.Helper()
+		if access.inspectCalls != inspections || access.describeCalls != descriptions {
+			t.Fatalf("inspect/describe calls = %d/%d, want %d/%d", access.inspectCalls, access.describeCalls, inspections, descriptions)
+		}
+	}
+
 	session, err := NewSession(Config{
 		Execution:   execution,
-		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Values:      access,
 		Services:    &fakeSessionServices{},
 		Source:      src,
 		DebugPoints: []bytecode.DebugPoint{point},
@@ -223,7 +253,8 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(locals) != 1 || !locals[0].Value.Reference.Valid() {
+	assertReads(0, 1)
+	if len(locals) != 1 || locals[0].Value.Display != "Object(1)" || !locals[0].Value.Reference.Valid() {
 		t.Fatalf("expected expandable local, got %#v", locals)
 	}
 
@@ -231,7 +262,8 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(children) != 1 || children[0].Name != "nested" || !children[0].Value.Reference.Valid() {
+	assertReads(1, 2)
+	if len(children) != 1 || children[0].Value.Display != "Array(2)" || children[0].Name != "nested" || !children[0].Value.Reference.Valid() {
 		t.Fatalf("unexpected object children: %#v", children)
 	}
 
@@ -239,6 +271,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	assertReads(2, 4)
 	if len(items) != 2 || items[0].Name != "0" || items[0].Value.Display != "1" || items[1].Name != "1" || !items[1].Value.Reference.Valid() {
 		t.Fatalf("unexpected array children: %#v", items)
 	}
@@ -247,6 +280,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	assertReads(3, 5)
 	if len(nested) != 1 || nested[0].Name != "answer" || nested[0].Value.Display != "42" {
 		t.Fatalf("unexpected nested object children: %#v", nested)
 	}
@@ -259,7 +293,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		locals: []vm.DebugLocal{{
 			Name:  "value",
-			Value: runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+			Value: runtime.NewSizedArray(4),
 		}},
 		status: vm.DebugExecutionNew,
 	}
@@ -269,7 +303,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		Services:    &fakeSessionServices{},
 		Source:      src,
 		DebugPoints: []bytecode.DebugPoint{point},
-		Format:      FormatOptions{MaxDepth: 3, MaxItems: 1, MaxBytes: 1024},
+		Format:      FormatOptions{MaxItems: 3, MaxBytes: 8},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -284,8 +318,12 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(locals) != 1 || locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(2)" {
+	if len(locals) != 1 || locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(4)" {
 		t.Fatalf("expected bounded summary without reference, got %#v", locals)
+	}
+
+	if got, err := session.Evaluate(t.Context(), "'abcdefgh'"); err != nil || got.Display != `"abc..."` {
+		t.Fatalf("eight-byte display = %q, err = %v", got.Display, err)
 	}
 
 	if _, err := session.Variables(context.Background(), 0); !errors.Is(err, runtime.ErrInvalidArgument) {
@@ -390,13 +428,8 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	}
 	values := &fakeValueAccess{
 		inner: vm.NewDebugValueAccess(),
-		inspect: func(runtime.Value, int) (vm.DebugValueInspection, bool) {
-			return vm.DebugValueInspection{
-				Kind:     vm.DebugValueKind(255),
-				Length:   1,
-				Items:    []vm.DebugValueItem{{Value: runtime.NewInt(1)}},
-				Complete: true,
-			}, true
+		describe: func(runtime.Value) vm.DebugValueDescription {
+			return vm.DebugValueDescription{TypeName: "Array", Length: 1, Children: vm.DebugValueKind(255)}
 		},
 	}
 	session, err := NewSession(Config{

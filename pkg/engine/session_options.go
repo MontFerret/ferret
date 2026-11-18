@@ -34,7 +34,7 @@ func WithDebugFormat(format debugger.FormatOptions) SessionOption {
 			Value(format).
 			Named("debug format").
 			Validators(gooptions.Check(func(format debugger.FormatOptions) error {
-				if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
+				if format.MaxItems <= 0 || format.MaxBytes <= 0 {
 					return fmt.Errorf("debug format limits must be positive")
 				}
 

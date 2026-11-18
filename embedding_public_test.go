@@ -208,7 +208,7 @@ func TestPublicDebugSession(t *testing.T) {
 
 	session, err := plan.NewDebugSession(t.Context(),
 		ferret.WithSessionParam("input", 41),
-		ferret.WithDebugFormat(ferret.DebugFormatOptions{MaxDepth: 3, MaxItems: 10, MaxBytes: 256}),
+		ferret.WithDebugFormat(ferret.DebugFormatOptions{MaxItems: 10, MaxBytes: 256}),
 	)
 	if err != nil {
 		t.Fatal(err)

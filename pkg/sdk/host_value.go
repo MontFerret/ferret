@@ -73,6 +73,20 @@ func (v *HostValue[T]) Type() runtime.Type {
 	return runtime.HostTypeOf(v.target)
 }
 
+// DebugInfo reads presentation hints only from the explicitly supplied type.
+// The wrapped target and its derived host type stay private.
+func (v *HostValue[T]) DebugInfo() runtime.DebugInfo {
+	if v == nil {
+		return runtime.DebugInfo{}
+	}
+
+	if descriptor, ok := v.typeName.(runtime.DebugInspectable); ok {
+		return runtime.DebugInfo{TypeName: descriptor.DebugInfo().TypeName}
+	}
+
+	return runtime.DebugInfo{}
+}
+
 // Unwrap returns the underlying host representation.
 func (v *HostValue[T]) Unwrap() any {
 	if v == nil {
