@@ -38,7 +38,7 @@ func mustBuildEnvironmentForTest(t *testing.T, opts *sessionConfig) *vm.Environm
 func TestSessionSimpleOptionsApplyValidValues(t *testing.T) {
 	t.Parallel()
 
-	format := debugger.FormatOptions{MaxItems: 12, MaxBytes: 2048}
+	format := debugger.FormatOptions{MaxBytes: 2048}
 	opts := mustNewSessionConfigForTest(
 		t,
 		WithDebugFormat(format),
@@ -72,11 +72,9 @@ func TestSessionSimpleOptionsReturnStructuredValidationErrors(t *testing.T) {
 		{
 			name:   "debug format",
 			field:  "debug format",
-			value:  "{0 1024}",
-			reason: "debug format limits must be positive",
-			option: WithDebugFormat(debugger.FormatOptions{
-				MaxBytes: 1024,
-			}),
+			value:  "{0}",
+			reason: "debug format MaxBytes must be positive",
+			option: WithDebugFormat(debugger.FormatOptions{}),
 		},
 		{
 			name:   "output content type",
@@ -132,7 +130,7 @@ func TestInvalidSessionBuilderOptionDoesNotMutateConfig(t *testing.T) {
 	config.config.FSRoot = "existing"
 
 	for _, option := range []SessionOption{
-		WithDebugFormat(debugger.FormatOptions{MaxItems: 8}),
+		WithDebugFormat(debugger.FormatOptions{MaxBytes: -1}),
 		WithOutputContentType(" \t "),
 		WithSessionFSRoot(" \t "),
 	} {

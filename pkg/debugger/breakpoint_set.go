@@ -258,7 +258,12 @@ func (s *breakpointSet) lockBreakpoints(ctx context.Context, replacement bool) e
 // Construction holds the writer gate; only the atomic commit shares the
 // lifecycle lock with terminal commitment and closure.
 func (s *breakpointSet) publishBreakpoints(ctx context.Context, snapshot *breakpointSnapshot, replacement bool) error {
-	if err := s.lifecycle.lockPublication(ctx, replacement); err != nil {
+	terminalOperation := ""
+	if replacement {
+		terminalOperation = "replace breakpoints"
+	}
+
+	if err := s.lifecycle.lockPublication(ctx, terminalOperation); err != nil {
 		return err
 	}
 	defer s.lifecycle.unlockPublication()

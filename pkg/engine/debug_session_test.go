@@ -237,7 +237,7 @@ func TestDebugSessionTypedNilLookupAndPresentationLimits(t *testing.T) {
 
 	answer := runtime.Int(42)
 	session, err := plan.NewDebugSession(t.Context(),
-		WithDebugFormat(debugger.FormatOptions{MaxItems: 3, MaxBytes: 8}),
+		WithDebugFormat(debugger.FormatOptions{MaxBytes: 8}),
 		WithSessionRuntimeParams(runtime.Params{
 			"answer": &answer,
 			"arr":    (*runtime.Array)(nil),
@@ -268,7 +268,7 @@ func TestDebugSessionTypedNilLookupAndPresentationLimits(t *testing.T) {
 		{"@answer", "Int", "42", false},
 		{"'abcdefgh'", "String", `"abc..."`, false},
 		{"@three", "Array", "Array(3)", true},
-		{"@four", "Array", "Array(4)", false},
+		{"@four", "Array", "Array(4)", true},
 	} {
 		value, err := session.Evaluate(t.Context(), tc.expression)
 		if err != nil || value.Type != tc.typ || value.Display != tc.display || value.Reference.Valid() != tc.expandable {
@@ -341,9 +341,10 @@ func TestDebugSessionPauseAndSafeObjectInspection(t *testing.T) {
 	if len(locals) != 1 || locals[0].Value.Type != "Object" || locals[0].Value.Display != "Object(2)" {
 		t.Fatalf("unexpected formatted object: %#v", locals)
 	}
-	children, err := session.Variables(t.Context(), locals[0].Value.Reference)
-	if err != nil || len(children) != 2 || children[0].Name != "a" || children[0].Value.Display != "1" ||
-		children[1].Name != "b" || children[1].Value.Display != "2" {
+
+	children, err := session.Variables(t.Context(), locals[0].Value.Reference, debugger.VariablePage{})
+	if err != nil || len(children) != 2 || children[0].Name != "b" || children[0].Value.Display != "2" ||
+		children[1].Name != "a" || children[1].Value.Display != "1" {
 		t.Fatalf("unexpected expanded object: %#v, %v", children, err)
 	}
 
@@ -385,14 +386,25 @@ func TestDebugSessionBufferedDataSetSummary(t *testing.T) {
 		t.Fatalf("stop = %+v, err = %v", event, err)
 	}
 
-	want := debugger.Value{Type: "Array", Display: "Array(3)"}
+	matches := func(v debugger.Value) bool {
+		return v.Type == "Array" && v.Display == "Array(3)" && v.Reference.Valid() && v.IndexedCount != nil && *v.IndexedCount == 3 && v.NamedCount != nil && *v.NamedCount == 0
+	}
 	locals, err := session.FrameLocals(t.Context(), 0)
-	if err != nil || len(locals) != 1 || locals[0].Name != "results" || locals[0].Value != want {
+	if err != nil || len(locals) != 1 || locals[0].Name != "results" || !matches(locals[0].Value) {
 		t.Fatalf("locals = %+v, err = %v", locals, err)
 	}
 
-	if got, err := session.Evaluate(t.Context(), "results"); err != nil || got != want {
+	if got, err := session.Evaluate(t.Context(), "results"); err != nil || !matches(got) {
 		t.Fatalf("evaluated dataset = %+v, err = %v", got, err)
+	}
+
+	page, err := session.Variables(t.Context(), locals[0].Value.Reference, debugger.VariablePage{Start: 1, Count: 1})
+	if err != nil || len(page) != 1 || page[0].Name != "1" || page[0].Value.Display != "2" {
+		t.Fatalf("dataset page: %+v, %v", page, err)
+	}
+
+	if event, err := session.Continue(t.Context()); err != nil || event.Reason != debugger.ReasonCompleted {
+		t.Fatalf("resume: %+v, %v", event, err)
 	}
 }
 

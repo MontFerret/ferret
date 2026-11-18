@@ -94,8 +94,8 @@ func (s *debugSession) FrameLocals(ctx context.Context, frame int) ([]apidebugge
 	return values, wrapDiagnosticError(err)
 }
 
-func (s *debugSession) Variables(ctx context.Context, reference apidebugger.ValueReference) ([]apidebugger.Variable, error) {
-	values, err := s.native.Variables(ctx, reference)
+func (s *debugSession) Variables(ctx context.Context, reference apidebugger.ValueReference, page apidebugger.VariablePage) ([]apidebugger.Variable, error) {
+	values, err := s.native.Variables(ctx, reference, page)
 
 	return values, wrapDiagnosticError(err)
 }

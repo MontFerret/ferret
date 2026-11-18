@@ -42,6 +42,12 @@ type (
 	// DebugSourceLocation identifies a position requested for a breakpoint.
 	DebugSourceLocation = source.Location
 
+	// DebugVariablePage selects a bounded page of immediate children.
+	DebugVariablePage = debugger.VariablePage
+
+	// DebugVariableFilter selects named, indexed or all children.
+	DebugVariableFilter = debugger.VariableFilter
+
 	// DebugValueReference identifies an expandable value in the current paused state.
 	DebugValueReference = debugger.ValueReference
 
@@ -56,13 +62,16 @@ type (
 )
 
 const (
-	DebugReasonEntry        = debugger.ReasonEntry
-	DebugReasonBreakpoint   = debugger.ReasonBreakpoint
-	DebugReasonStep         = debugger.ReasonStep
-	DebugReasonPause        = debugger.ReasonPause
-	DebugReasonRuntimeError = debugger.ReasonRuntimeError
-	DebugReasonCompleted    = debugger.ReasonCompleted
-	DebugReasonTerminated   = debugger.ReasonTerminated
+	DebugVariableFilterAll     = debugger.VariableFilterAll
+	DebugVariableFilterNamed   = debugger.VariableFilterNamed
+	DebugVariableFilterIndexed = debugger.VariableFilterIndexed
+	DebugReasonEntry           = debugger.ReasonEntry
+	DebugReasonBreakpoint      = debugger.ReasonBreakpoint
+	DebugReasonStep            = debugger.ReasonStep
+	DebugReasonPause           = debugger.ReasonPause
+	DebugReasonRuntimeError    = debugger.ReasonRuntimeError
+	DebugReasonCompleted       = debugger.ReasonCompleted
+	DebugReasonTerminated      = debugger.ReasonTerminated
 
 	DebugBreakpointBindNextExecutableInSource   = debugger.BreakpointBindNextExecutableInSource
 	DebugBreakpointBindExact                    = debugger.BreakpointBindExact

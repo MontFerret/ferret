@@ -315,6 +315,8 @@ func publicExports() []publicExport {
 		{name: "DebugStateError", kind: token.TYPE, target: "pkg/debugger.StateError", root: reflect.TypeFor[ferret.DebugStateError](), owner: reflect.TypeFor[debugger.StateError]()},
 		{name: "DebugValue", kind: token.TYPE, target: "pkg/debugger.Value", root: reflect.TypeFor[ferret.DebugValue](), owner: reflect.TypeFor[debugger.Value]()},
 		{name: "DebugValueReference", kind: token.TYPE, target: "pkg/debugger.ValueReference", root: reflect.TypeFor[ferret.DebugValueReference](), owner: reflect.TypeFor[debugger.ValueReference]()},
+		{name: "DebugVariablePage", kind: token.TYPE, target: "pkg/debugger.VariablePage", root: reflect.TypeFor[ferret.DebugVariablePage](), owner: reflect.TypeFor[debugger.VariablePage]()},
+		{name: "DebugVariableFilter", kind: token.TYPE, target: "pkg/debugger.VariableFilter", root: reflect.TypeFor[ferret.DebugVariableFilter](), owner: reflect.TypeFor[debugger.VariableFilter]()},
 		{name: "DebugVariable", kind: token.TYPE, target: "pkg/debugger.Variable", root: reflect.TypeFor[ferret.DebugVariable](), owner: reflect.TypeFor[debugger.Variable]()},
 		{name: "Engine", kind: token.TYPE, target: "pkg/engine.Engine", root: reflect.TypeFor[ferret.Engine](), owner: reflect.TypeFor[engine.Engine]()},
 		{name: "EngineCloseHook", kind: token.TYPE, target: "pkg/module.EngineCloseHook", root: reflect.TypeFor[ferret.EngineCloseHook](), owner: reflect.TypeFor[module.EngineCloseHook]()},
@@ -345,6 +347,9 @@ func publicExports() []publicExport {
 		{name: "Span", kind: token.TYPE, target: "pkg/source.Span", root: reflect.TypeFor[ferret.Span](), owner: reflect.TypeFor[source.Span]()},
 		{name: "Value", kind: token.TYPE, target: "pkg/runtime.Value", root: reflect.TypeFor[ferret.Value](), owner: reflect.TypeFor[runtime.Value]()},
 
+		{name: "DebugVariableFilterAll", kind: token.CONST, target: "pkg/debugger.VariableFilterAll", root: ferret.DebugVariableFilterAll, owner: debugger.VariableFilterAll},
+		{name: "DebugVariableFilterNamed", kind: token.CONST, target: "pkg/debugger.VariableFilterNamed", root: ferret.DebugVariableFilterNamed, owner: debugger.VariableFilterNamed},
+		{name: "DebugVariableFilterIndexed", kind: token.CONST, target: "pkg/debugger.VariableFilterIndexed", root: ferret.DebugVariableFilterIndexed, owner: debugger.VariableFilterIndexed},
 		{name: "DebugBreakpointBindExact", kind: token.CONST, target: "pkg/debugger.BreakpointBindExact", root: ferret.DebugBreakpointBindExact, owner: debugger.BreakpointBindExact},
 		{name: "DebugBreakpointBindNextExecutableInFunction", kind: token.CONST, target: "pkg/debugger.BreakpointBindNextExecutableInFunction", root: ferret.DebugBreakpointBindNextExecutableInFunction, owner: debugger.BreakpointBindNextExecutableInFunction},
 		{name: "DebugBreakpointBindNextExecutableInSource", kind: token.CONST, target: "pkg/debugger.BreakpointBindNextExecutableInSource", root: ferret.DebugBreakpointBindNextExecutableInSource, owner: debugger.BreakpointBindNextExecutableInSource},

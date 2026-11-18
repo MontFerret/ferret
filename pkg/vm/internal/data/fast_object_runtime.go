@@ -8,6 +8,7 @@ import (
 
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	"github.com/MontFerret/ferret/v2/pkg/encoding/json"
+	"github.com/MontFerret/ferret/v2/pkg/internal/debugmap"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
@@ -87,9 +88,12 @@ func (t *FastObject) ObjectLike() {}
 
 func (t *FastObject) Copy() runtime.Value {
 	if t.dict != nil {
-		dict := make(map[string]runtime.Value, len(t.dict))
-		for k, v := range t.dict {
+		dict := make(map[string]runtime.Value, len(t.dict.values))
+		var bounds debugmap.Bounds
+
+		for k, v := range t.dict.values {
 			dict[k] = v
+			bounds.AddKey(k)
 		}
 
 		return &FastObject{
@@ -97,7 +101,7 @@ func (t *FastObject) Copy() runtime.Value {
 			shape:         t.shape,
 			slots:         nil,
 			size:          len(dict),
-			dict:          dict,
+			dict:          &fastDictionary{values: dict, bounds: bounds},
 			dictThreshold: t.dictThreshold,
 		}
 	}
@@ -116,9 +120,11 @@ func (t *FastObject) Copy() runtime.Value {
 
 func (t *FastObject) Clone(ctx context.Context) (runtime.Cloneable, error) {
 	if t.dict != nil {
-		cloned := make(map[string]runtime.Value, len(t.dict))
+		cloned := make(map[string]runtime.Value, len(t.dict.values))
+		var bounds debugmap.Bounds
 
-		for key, value := range t.dict {
+		for key, value := range t.dict.values {
+			bounds.AddKey(key)
 			if cloneable, ok := value.(runtime.Cloneable); ok {
 				clone, err := cloneable.Clone(ctx)
 				if err != nil {
@@ -134,7 +140,7 @@ func (t *FastObject) Clone(ctx context.Context) (runtime.Cloneable, error) {
 		return &FastObject{
 			cache:         t.cache,
 			shape:         t.shape,
-			dict:          cloned,
+			dict:          &fastDictionary{values: cloned, bounds: bounds},
 			size:          len(cloned),
 			dictThreshold: t.dictThreshold,
 		}, nil
@@ -196,7 +202,7 @@ func (t *FastObject) Values(_ context.Context) (runtime.List, error) {
 
 func (t *FastObject) ForEach(ctx context.Context, predicate runtime.KeyReadablePredicate) error {
 	if t.dict != nil {
-		for key, val := range t.dict {
+		for key, val := range t.dict.values {
 			doContinue, err := predicate(ctx, val, runtime.String(key))
 
 			if err != nil {
@@ -363,7 +369,7 @@ func (t *FastObject) Remove(ctx context.Context, value runtime.Value) error {
 
 func (t *FastObject) Clear(_ context.Context) error {
 	if t.dict != nil {
-		t.dict = make(map[string]runtime.Value)
+		t.dict = &fastDictionary{values: make(map[string]runtime.Value)}
 		t.size = 0
 
 		return nil
@@ -378,15 +384,15 @@ func (t *FastObject) Clear(_ context.Context) error {
 
 func (t *FastObject) Iterate(_ context.Context) (runtime.Iterator, error) {
 	if t.dict != nil {
-		keys := make([]string, 0, len(t.dict))
+		keys := make([]string, 0, len(t.dict.values))
 
-		for key := range t.dict {
+		for key := range t.dict.values {
 			keys = append(keys, key)
 		}
 
 		return &fastObjectDictIterator{
 			keys: keys,
-			dict: t.dict,
+			dict: t.dict.values,
 		}, nil
 	}
 

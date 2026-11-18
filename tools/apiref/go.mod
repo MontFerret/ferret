@@ -10,7 +10,7 @@ require (
 )
 
 require (
-	github.com/MontFerret/api v1.0.0-alpha.21 // indirect
+	github.com/MontFerret/api v1.0.0-alpha.22 // indirect
 	github.com/gobwas/glob v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

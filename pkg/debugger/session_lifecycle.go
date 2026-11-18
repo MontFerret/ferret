@@ -141,8 +141,8 @@ func (s *sessionLifecycle) finishResume(command resumeCommand) {
 	}
 }
 
-func (s *sessionLifecycle) resume(ctx context.Context, mode vm.DebugResumeMode, predicate vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
-	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, predicate)
+func (s *sessionLifecycle) resume(ctx context.Context, mode vm.DebugResumeMode, predicate vm.DebugBreakpointPredicate, admitted func()) (*vm.DebugExecutionEvent, error) {
+	event, err := s.execution.Resume(s.services.ExtendContext(ctx), mode, predicate, admitted)
 	if err != nil {
 		err = s.settleExecutionError(err)
 	}
@@ -227,6 +227,28 @@ func (s *sessionLifecycle) ensureOpen() error {
 	}
 
 	return nil
+}
+
+// The command mutex protects the stopped VM while inspection is admitted.
+func (s *sessionLifecycle) ensureInspectable() error {
+	if err := s.ensureOpen(); err != nil {
+		return err
+	}
+
+	switch s.execution.Status() {
+	case vm.DebugExecutionPaused:
+		return nil
+	case vm.DebugExecutionNew:
+		return &StateError{Operation: "inspect", State: "new"}
+	case vm.DebugExecutionCompleted:
+		return &StateError{Operation: "inspect", State: "completed"}
+	case vm.DebugExecutionRunning:
+		return &StateError{Operation: "inspect", State: "running"}
+	case vm.DebugExecutionClosed:
+		return &StateError{Operation: "inspect", State: "closed"}
+	default:
+		return &StateError{Operation: "inspect", State: "terminated"}
+	}
 }
 
 func (s *sessionLifecycle) lockCommand() error {
@@ -382,7 +404,7 @@ func (s *sessionLifecycle) checkBreakpointContext(ctx context.Context, replaceme
 }
 
 // Success leaves lifecycleMu held until the caller publishes its snapshot.
-func (s *sessionLifecycle) lockPublication(ctx context.Context, replacement bool) error {
+func (s *sessionLifecycle) lockPublication(ctx context.Context, terminalOperation string) error {
 	s.lifecycleMu.Lock()
 
 	if err := checkContext(ctx); err != nil {
@@ -397,11 +419,11 @@ func (s *sessionLifecycle) lockPublication(ctx context.Context, replacement bool
 		return err
 	}
 
-	if replacement && s.terminalState != "" {
+	if terminalOperation != "" && s.terminalState != "" {
 		state := s.terminalState
 		s.lifecycleMu.Unlock()
 
-		return &StateError{Operation: "replace breakpoints", State: state}
+		return &StateError{Operation: terminalOperation, State: state}
 	}
 
 	return nil

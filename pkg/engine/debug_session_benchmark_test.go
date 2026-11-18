@@ -2,11 +2,83 @@ package engine
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/debugger"
+	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
+
+// Time the complete public operation, including metadata and stop-scoped publication.
+func BenchmarkDebugSessionVariablePage(b *testing.B) {
+	engine, err := New()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	defer engine.Close()
+
+	for _, kind := range []string{"array", "dataset"} {
+		for _, size := range []int{100, 10_000, 1_000_000} {
+			b.Run(kind+"/"+strconv.Itoa(size), func(b *testing.B) {
+				query := "LET results = @items\nRETURN results"
+				var option SessionOption
+				if kind == "array" {
+					values := make([]runtime.Value, size)
+
+					for i := range values {
+						values[i] = runtime.Int(42)
+					}
+
+					option = WithSessionRuntimeParam("items", runtime.NewArrayOf(values))
+				} else {
+					query = "LET results = (FOR n IN 0..@last RETURN 42)\nRETURN results"
+					option = WithSessionRuntimeParam("last", runtime.Int(size-1))
+				}
+
+				plan, err := engine.CompileDebug(b.Context(), source.NewAnonymous(query))
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				defer plan.Close()
+				session, err := plan.NewDebugSession(b.Context(), option)
+				if err != nil {
+					b.Fatal(err)
+				}
+
+				defer session.Close()
+				if _, err := session.SetBreakpoint(b.Context(), source.Location{Position: source.Position{Line: 2}}); err != nil {
+					b.Fatal(err)
+				}
+
+				if _, err := session.Start(b.Context()); err != nil {
+					b.Fatal(err)
+				}
+
+				if stop, err := session.Continue(b.Context()); err != nil || stop.Reason != debugger.ReasonBreakpoint {
+					b.Fatalf("stop: %+v, %v", stop, err)
+				}
+
+				root, err := session.Evaluate(b.Context(), "results")
+				if err != nil || root.IndexedCount == nil || *root.IndexedCount != int64(size) {
+					b.Fatalf("root: %+v, %v", root, err)
+				}
+
+				page := debugger.VariablePage{Start: int64(size - 20), Count: 20, Filter: debugger.VariableFilterIndexed}
+				b.ReportAllocs()
+
+				for b.Loop() {
+					got, err := session.Variables(b.Context(), root.Reference, page)
+					if err != nil || len(got) != 20 {
+						b.Fatalf("page length %d: %v", len(got), err)
+					}
+				}
+			})
+		}
+	}
+}
 
 func BenchmarkDebugSessionRepeatedSourcePoints(b *testing.B) {
 	engine, err := New()

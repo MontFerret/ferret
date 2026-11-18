@@ -41,8 +41,8 @@ func (c *breakpointWaitContext) Done() <-chan struct{} {
 	return c.Context.Done()
 }
 
-func (d *deferredStopExecution) Resume(ctx context.Context, mode vm.DebugResumeMode, check vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
-	event, err := d.DebugExecution.Resume(ctx, mode, check)
+func (d *deferredStopExecution) Resume(ctx context.Context, mode vm.DebugResumeMode, check vm.DebugBreakpointPredicate, admitted func()) (*vm.DebugExecutionEvent, error) {
+	event, err := d.DebugExecution.Resume(ctx, mode, check, admitted)
 	if err == nil && event.Reason == d.reason {
 		select {
 		case d.ready <- event:

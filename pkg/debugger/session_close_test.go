@@ -147,7 +147,7 @@ func TestSessionNilAndClosedReceivers(t *testing.T) {
 				t.Fatalf("locals: %v", err)
 			}
 
-			if _, err := session.Variables(context.Background(), 1); !errors.Is(err, &StateError{}) {
+			if _, err := session.Variables(context.Background(), 1, VariablePage{}); !errors.Is(err, &StateError{}) {
 				t.Fatalf("variables: %v", err)
 			}
 

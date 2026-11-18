@@ -10,9 +10,22 @@ import (
 )
 
 func formatValue(value runtime.Value, description vm.DebugValueDescription, maxBytes int) Value {
-	typeName := formatTypeName(description, maxBytes)
+	result := Value{Type: formatTypeName(description, maxBytes)}
+	views := description.Children
+	switch {
+	case views.Named.Known && views.Indexed.Known:
+		counts := [2]int64{views.Named.Count, views.Indexed.Count}
+		result.NamedCount, result.IndexedCount = &counts[0], &counts[1]
+	case views.Named.Known:
+		result.NamedCount = new(views.Named.Count)
+	case views.Indexed.Known:
+		result.IndexedCount = new(views.Indexed.Count)
+	}
+
 	if description.Hint.Display != "" {
-		return Value{Type: typeName, Display: boundedText(description.Hint.Display, maxBytes)}
+		result.Display = boundedText(description.Hint.Display, maxBytes)
+
+		return result
 	}
 
 	if description.Scalar != nil {
@@ -22,9 +35,9 @@ func formatValue(value runtime.Value, description vm.DebugValueDescription, maxB
 	var display string
 	switch v := value.(type) {
 	case runtime.String:
-		display, _ = renderText(string(v), maxBytes, true)
+		result.Display, _ = renderText(string(v), maxBytes, true)
 
-		return Value{Type: typeName, Display: display}
+		return result
 	case runtime.Boolean:
 		display = strconv.FormatBool(bool(v))
 	case runtime.Int:
@@ -40,13 +53,15 @@ func formatValue(value runtime.Value, description vm.DebugValueDescription, maxB
 		case value == nil || value == runtime.None:
 			display = "NONE"
 		case description.Length >= 0:
-			display = typeName + "(" + strconv.Itoa(description.Length) + ")"
+			display = result.Type + "(" + strconv.Itoa(description.Length) + ")"
 		default:
-			display = "<" + typeName + ">"
+			display = "<" + result.Type + ">"
 		}
 	}
 
-	return Value{Type: typeName, Display: boundedText(display, maxBytes)}
+	result.Display = boundedText(display, maxBytes)
+
+	return result
 }
 
 func formatTypeName(description vm.DebugValueDescription, maxBytes int) string {

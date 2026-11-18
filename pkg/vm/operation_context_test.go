@@ -31,13 +31,19 @@ func TestOperationContextsRejectNilBeforeStartingWork(t *testing.T) {
 		t.Fatalf("start after rejected context event=%+v error=%v", event, err)
 	}
 
-	event, err = execution.Resume(nil, DebugResumeContinue, nil)
+	admissions := 0
+	admitted := func() { admissions++ }
+	event, err = execution.Resume(nil, DebugResumeContinue, nil, admitted)
 	if event != nil || !errors.Is(err, runtime.ErrInvalidArgument) {
 		t.Fatalf("resume event=%+v error=%v", event, err)
 	}
 
-	event, err = execution.Resume(t.Context(), DebugResumeContinue, nil)
-	if err != nil || event.Reason != DebugStopCompleted {
+	if admissions != 0 {
+		t.Fatal("rejected resume admitted")
+	}
+
+	event, err = execution.Resume(t.Context(), DebugResumeContinue, nil, admitted)
+	if err != nil || event.Reason != DebugStopCompleted || admissions != 1 {
 		t.Fatalf("resume after rejected context event=%+v error=%v", event, err)
 	}
 }

@@ -2,7 +2,10 @@ package runtime_test
 
 import (
 	c "context"
+	goruntime "runtime"
+	"strconv"
 	"testing"
+	"weak"
 
 	ferretencoding "github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
@@ -523,4 +526,72 @@ func TestObject(t *testing.T) {
 			So(compareValues(nestedInObjArr, nestedInCloneArr), ShouldNotEqual, 0)
 		})
 	})
+}
+
+// A Go value copy keeps the old map alive across Clear. It must not keep
+// values subsequently stored by the cleared receiver alive.
+func TestObjectClearDetachesSurvivingCopy(t *testing.T) {
+	clearedCopy := func(clearOwner bool) (*Object, weak.Pointer[Array]) {
+		owner := NewObject()
+		owner.SetString("old", True)
+		alias := *owner
+		cleared, survivor := owner, &alias
+		if !clearOwner {
+			cleared, survivor = survivor, cleared
+		}
+
+		if err := cleared.Clear(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		replacement := NewArrayWith(False)
+		reachability := weak.Make(replacement)
+		cleared.SetString("new", replacement)
+		if v, ok, err := survivor.Lookup(t.Context(), String("old")); err != nil || !ok || v != True {
+			t.Fatalf("lost old backing: %v, %v, %v", v, ok, err)
+		}
+		if _, ok, err := survivor.Lookup(t.Context(), String("new")); err != nil || ok {
+			t.Fatalf("replacement visible through copy: %v, %v", ok, err)
+		}
+
+		return survivor, reachability
+	}
+
+	for _, clearOwner := range []bool{true, false} {
+		survivor, reachability := clearedCopy(clearOwner)
+		goruntime.GC()
+		if reachability.Value() != nil {
+			t.Fatalf("surviving copy retained replacement after Clear (cleared original: %v)", clearOwner)
+		}
+		goruntime.KeepAlive(survivor)
+	}
+}
+
+func TestObjectSetStringMatchesSet(t *testing.T) {
+	obj := NewObject()
+	obj.SetString("1", False)
+	if err := obj.Set(t.Context(), Int(1), True); err != nil {
+		t.Fatal(err)
+	}
+	value, ok, err := obj.Lookup(t.Context(), String("1"))
+	if err != nil || !ok || value != True {
+		t.Fatalf("generic write: %v, %v, %v", value, ok, err)
+	}
+	obj.SetString("1", nil)
+	value, ok, err = obj.Lookup(t.Context(), Int(1))
+	if err != nil || !ok || value != None {
+		t.Fatalf("nil string-key write: %v, %v, %v", value, ok, err)
+	}
+}
+
+var constructedObject *Object
+
+func BenchmarkNewObjectOf(b *testing.B) {
+	for _, size := range []int{0, 1, 256} {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				constructedObject = NewObjectOf(size)
+			}
+		})
+	}
 }

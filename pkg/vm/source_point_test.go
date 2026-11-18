@@ -132,7 +132,7 @@ func TestNewDebugExecutionObservesSourcePointsWithoutMutatingPlan(t *testing.T) 
 		t.Fatalf("unexpected entry event: %#v", event)
 	}
 
-	event, err = execution.Resume(context.Background(), DebugResumeStepIn, nil)
+	event, err = execution.Resume(context.Background(), DebugResumeStepIn, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestNewDebugExecutionObservesSourcePointsWithoutMutatingPlan(t *testing.T) 
 		t.Fatalf("unexpected StepIn event: %#v", event)
 	}
 
-	event, err = execution.Resume(context.Background(), DebugResumeContinue, nil)
+	event, err = execution.Resume(context.Background(), DebugResumeContinue, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestDebugExecutionChecksCancellationAtSourcePointSafepoint(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	event, err = execution.Resume(ctx, DebugResumeContinue, nil)
+	event, err = execution.Resume(ctx, DebugResumeContinue, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

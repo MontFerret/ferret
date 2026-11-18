@@ -192,7 +192,18 @@ See [Runtime and lifecycle](runtime.md).
 
 ## API release alignment
 
-Universal API `v1.0.0-alpha.21` adds consumable output and detached content to the
+Universal API `v1.0.0-alpha.22` adds bounded debugger inspection. The adapter
+forwards `Variables(ctx, reference, page)`, optional child counts and native
+inspection errors directly. See [debugger architecture](debugger.md#paging-and-stop-scoped-references).
+
+The Wire migration needs a mutually checked protocol revision for the new
+request and value fields. Carry the signed 64-bit range and count presence,
+preserve distinguishable inspection and context errors, and check response
+size before delivery. A delivery failure can occur after Core publishes a
+page. Retrying that range during the same stop reuses its child handles.
+Adapters must verify the stop generation before installing a response.
+
+The published API also carries consumable output and detached content alongside the
 context-aware `Plan.Params` and
 `Runtime.Version` metadata contracts. It also includes context parameters for
 debugger operations, error returns from `Session.Breakpoints`, and
