@@ -65,7 +65,7 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if value.Display != "2" || values.typeCalls == 0 || values.debugInfoCalls == 0 {
+	if value.Display != "2" || values.describeCalls == 0 {
 		t.Fatalf("unexpected evaluated value: %#v", value)
 	}
 	if _, err := session.FrameLocals(context.Background(), 1); !errors.Is(err, runtime.ErrInvalidOperation) {
@@ -203,9 +203,17 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		}},
 		status: vm.DebugExecutionNew,
 	}
+	access := &fakeValueAccess{inner: vm.NewDebugValueAccess()}
+	assertReads := func(inspections, descriptions int) {
+		t.Helper()
+		if access.inspectCalls != inspections || access.describeCalls != descriptions {
+			t.Fatalf("inspect/describe calls = %d/%d, want %d/%d", access.inspectCalls, access.describeCalls, inspections, descriptions)
+		}
+	}
+
 	session, err := NewSession(Config{
 		Execution:   execution,
-		Values:      &fakeValueAccess{inner: vm.NewDebugValueAccess()},
+		Values:      access,
 		Services:    &fakeSessionServices{},
 		Source:      src,
 		DebugPoints: []bytecode.DebugPoint{point},
@@ -223,7 +231,8 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(locals) != 1 || !locals[0].Value.Reference.Valid() {
+	assertReads(0, 1)
+	if len(locals) != 1 || locals[0].Value.Display != "Object(1)" || !locals[0].Value.Reference.Valid() {
 		t.Fatalf("expected expandable local, got %#v", locals)
 	}
 
@@ -231,7 +240,8 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(children) != 1 || children[0].Name != "nested" || !children[0].Value.Reference.Valid() {
+	assertReads(1, 2)
+	if len(children) != 1 || children[0].Value.Display != "Array(2)" || children[0].Name != "nested" || !children[0].Value.Reference.Valid() {
 		t.Fatalf("unexpected object children: %#v", children)
 	}
 
@@ -239,6 +249,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	assertReads(2, 4)
 	if len(items) != 2 || items[0].Name != "0" || items[0].Value.Display != "1" || items[1].Name != "1" || !items[1].Value.Reference.Valid() {
 		t.Fatalf("unexpected array children: %#v", items)
 	}
@@ -247,6 +258,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	assertReads(3, 5)
 	if len(nested) != 1 || nested[0].Name != "answer" || nested[0].Value.Display != "42" {
 		t.Fatalf("unexpected nested object children: %#v", nested)
 	}
@@ -390,13 +402,8 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	}
 	values := &fakeValueAccess{
 		inner: vm.NewDebugValueAccess(),
-		inspect: func(runtime.Value, int) (vm.DebugValueInspection, bool) {
-			return vm.DebugValueInspection{
-				Kind:     vm.DebugValueKind(255),
-				Length:   1,
-				Items:    []vm.DebugValueItem{{Value: runtime.NewInt(1)}},
-				Complete: true,
-			}, true
+		describe: func(runtime.Value) vm.DebugValueDescription {
+			return vm.DebugValueDescription{TypeName: "Array", Length: 1, Children: vm.DebugValueKind(255)}
 		},
 	}
 	session, err := NewSession(Config{

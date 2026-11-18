@@ -158,10 +158,10 @@ func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 		Execution: execution,
 		Values: &fakeValueAccess{
 			inner: inner,
-			inspect: func(value runtime.Value, maxItems int) (vm.DebugValueInspection, bool) {
+			describe: func(value runtime.Value) vm.DebugValueDescription {
 				inspectStarted <- struct{}{}
 				<-inspectRelease
-				return inner.Inspect(value, maxItems)
+				return inner.Describe(value)
 			},
 		},
 		Services:    &fakeSessionServices{},

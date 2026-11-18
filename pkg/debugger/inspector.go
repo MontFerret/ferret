@@ -95,8 +95,8 @@ func (s *inspector) variables(reference ValueReference) ([]Variable, error) {
 		return nil, runtime.Errorf(runtime.ErrNotFound, "debug value reference %d", reference)
 	}
 
-	inspection, ok := s.expandableInspection(value)
-	if !ok {
+	inspection, ok := s.values.Inspect(value, s.format.MaxItems)
+	if !ok || !inspection.Complete || !s.canExpand(inspection.Kind, inspection.Length) {
 		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debug value reference %d is not expandable", reference)
 	}
 
@@ -164,21 +164,11 @@ func (s *inspector) rawFrameLocals(frame int) ([]vm.DebugLocal, error) {
 }
 
 func (s *inspector) debugValue(value runtime.Value) Value {
-	info, _ := s.values.DebugInfo(value)
-	typeName := info.TypeName
+	description := s.values.Describe(value)
+	result := formatValue(value, description, s.format.MaxBytes)
+	result.Reference = s.referenceForValue(value, description)
 
-	if typeName == "" {
-		typeName = s.values.TypeName(value)
-		info.TypeName = typeName
-	} else {
-		typeName = boundedText(typeName, s.format.MaxBytes)
-	}
-
-	return Value{
-		Reference: s.referenceForValue(value),
-		Type:      typeName,
-		Display:   formatValueWithInfo(value, info, s.values, s.format),
-	}
+	return result
 }
 
 func (s *inspector) locationForPC(pc int, functionID bytecode.FunctionID) source.Location {
@@ -205,8 +195,8 @@ func (s *inspector) resetValueReferences() {
 	clear(s.valueRefs)
 }
 
-func (s *inspector) referenceForValue(value runtime.Value) ValueReference {
-	if _, ok := s.expandableInspection(value); !ok {
+func (s *inspector) referenceForValue(value runtime.Value, description vm.DebugValueDescription) ValueReference {
+	if !s.canExpand(description.Children, description.Length) {
 		return 0
 	}
 
@@ -217,15 +207,6 @@ func (s *inspector) referenceForValue(value runtime.Value) ValueReference {
 	return reference
 }
 
-func (s *inspector) expandableInspection(value runtime.Value) (vm.DebugValueInspection, bool) {
-	inspection, ok := s.values.Inspect(value, s.format.MaxItems)
-	if !ok || !inspection.Complete || inspection.Length <= 0 || inspection.Length > s.format.MaxItems {
-		return vm.DebugValueInspection{}, false
-	}
-
-	if inspection.Kind != vm.DebugValueArray && inspection.Kind != vm.DebugValueObject {
-		return vm.DebugValueInspection{}, false
-	}
-
-	return inspection, true
+func (s *inspector) canExpand(kind vm.DebugValueKind, length int) bool {
+	return (kind == vm.DebugValueArray || kind == vm.DebugValueObject) && length > 0 && length <= s.format.MaxItems
 }

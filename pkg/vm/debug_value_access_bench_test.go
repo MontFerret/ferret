@@ -6,17 +6,17 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
-func BenchmarkDebugValueAccessTypeNameBuiltin(b *testing.B) {
+func BenchmarkDebugValueAccessDescribeBuiltin(b *testing.B) {
 	value := runtime.NewString("value")
 	access := NewDebugValueAccess()
 
 	b.ReportAllocs()
 	for b.Loop() {
-		_ = access.TypeName(value)
+		_ = access.Describe(value)
 	}
 }
 
-func BenchmarkDebugValueAccessDebugInfoCustom(b *testing.B) {
+func BenchmarkDebugValueAccessDescribeCustom(b *testing.B) {
 	value := debugMetadataValue{info: runtime.DebugInfo{
 		TypeName: "SQL::Connection",
 		Display:  "open connection",
@@ -25,6 +25,6 @@ func BenchmarkDebugValueAccessDebugInfoCustom(b *testing.B) {
 
 	b.ReportAllocs()
 	for b.Loop() {
-		_, _ = access.DebugInfo(value)
+		_ = access.Describe(value)
 	}
 }

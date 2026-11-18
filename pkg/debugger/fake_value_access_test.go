@@ -6,22 +6,20 @@ import (
 )
 
 type fakeValueAccess struct {
-	inner          vm.DebugValueAccess
-	inspect        func(runtime.Value, int) (vm.DebugValueInspection, bool)
-	debugInfoCalls int
-	typeCalls      int
-	lookupCalls    int
-	inspectCalls   int
+	inner         vm.DebugValueAccess
+	describe      func(runtime.Value) vm.DebugValueDescription
+	describeCalls int
+	lookupCalls   int
+	inspectCalls  int
 }
 
-func (f *fakeValueAccess) TypeName(value runtime.Value) string {
-	f.typeCalls++
-	return f.inner.TypeName(value)
-}
+func (f *fakeValueAccess) Describe(value runtime.Value) vm.DebugValueDescription {
+	f.describeCalls++
+	if f.describe != nil {
+		return f.describe(value)
+	}
 
-func (f *fakeValueAccess) DebugInfo(value runtime.Value) (runtime.DebugInfo, bool) {
-	f.debugInfoCalls++
-	return f.inner.DebugInfo(value)
+	return f.inner.Describe(value)
 }
 
 func (f *fakeValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
@@ -32,10 +30,6 @@ func (f *fakeValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error
 
 func (f *fakeValueAccess) Inspect(value runtime.Value, maxItems int) (vm.DebugValueInspection, bool) {
 	f.inspectCalls++
-
-	if f.inspect != nil {
-		return f.inspect(value, maxItems)
-	}
 
 	return f.inner.Inspect(value, maxItems)
 }

@@ -35,10 +35,13 @@ type (
 	// Event reports a debugger stop, completion, or termination.
 	Event = apidebugger.Event
 
-	// FormatOptions bounds debugger value traversal and rendered output.
+	// FormatOptions bounds debugger value presentation and explicit expansion.
 	FormatOptions struct {
+		// MaxDepth is retained for compatibility. Descriptions are always shallow.
 		MaxDepth int
+		// MaxItems is the largest collection the session can expand.
 		MaxItems int
+		// MaxBytes bounds each type and display including quotes and truncation.
 		MaxBytes int
 	}
 

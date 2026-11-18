@@ -220,7 +220,7 @@ func assertNoInspectionWork(t *testing.T, session *Session) {
 	}
 
 	values := session.inspector.values.(*fakeValueAccess)
-	if values.lookupCalls != 0 || values.inspectCalls != 0 || values.debugInfoCalls != 0 || values.typeCalls != 0 {
-		t.Fatalf("canceled inspection accessed values: lookup=%d inspect=%d debugInfo=%d type=%d", values.lookupCalls, values.inspectCalls, values.debugInfoCalls, values.typeCalls)
+	if values.lookupCalls != 0 || values.inspectCalls != 0 || values.describeCalls != 0 {
+		t.Fatalf("canceled inspection accessed values: lookup=%d inspect=%d describe=%d", values.lookupCalls, values.inspectCalls, values.describeCalls)
 	}
 }

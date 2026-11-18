@@ -2,7 +2,6 @@ package vm
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
@@ -12,6 +11,15 @@ type (
 	// DebugValueKind identifies a built-in collection shape available for safe
 	// debugger inspection.
 	DebugValueKind uint8
+
+	// DebugValueDescription holds shallow presentation metadata. Length is -1
+	// when unavailable. Children identifies an explicitly inspectable shape.
+	DebugValueDescription struct {
+		Hint     runtime.DebugInfo
+		TypeName string
+		Length   int
+		Children DebugValueKind
+	}
 
 	// DebugValueItem is one safely inspected collection item. Key is populated
 	// for object values.
@@ -32,8 +40,7 @@ type (
 	// DebugValueAccess exposes only side-effect-free VM value operations needed
 	// by source-level debugger policy.
 	DebugValueAccess interface {
-		TypeName(runtime.Value) string
-		DebugInfo(runtime.Value) (runtime.DebugInfo, bool)
+		Describe(runtime.Value) DebugValueDescription
 		Lookup(runtime.Value, runtime.Value) (runtime.Value, error)
 		Inspect(runtime.Value, int) (DebugValueInspection, bool)
 	}
@@ -52,65 +59,13 @@ func NewDebugValueAccess() DebugValueAccess {
 	return debugValueAccess{}
 }
 
-func (a debugValueAccess) TypeName(value runtime.Value) string {
-	if info, ok := a.DebugInfo(value); ok && info.TypeName != "" {
-		return info.TypeName
+func (a debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
+	description := a.classify(value)
+	if inspectable, ok := value.(runtime.DebugInspectable); ok {
+		description.Hint = a.safeDebugInfo(inspectable)
 	}
 
-	return a.defaultTypeName(value)
-}
-
-// DebugInfo returns optional presentation metadata supplied by a runtime
-// value.
-func (a debugValueAccess) DebugInfo(value runtime.Value) (runtime.DebugInfo, bool) {
-	inspectable, ok := value.(runtime.DebugInspectable)
-	if !ok {
-		return runtime.DebugInfo{}, false
-	}
-
-	return a.safeDebugInfo(inspectable)
-}
-
-// safeDebugInfo isolates panic recovery to implementations of the optional
-// runtime hook.
-func (debugValueAccess) safeDebugInfo(inspectable runtime.DebugInspectable) (info runtime.DebugInfo, ok bool) {
-	defer func() {
-		if recover() != nil {
-			info = runtime.DebugInfo{}
-			ok = false
-		}
-	}()
-
-	return inspectable.DebugInfo(), true
-}
-
-func (debugValueAccess) defaultTypeName(value runtime.Value) string {
-	if value == nil || reflect.TypeOf(value) == reflect.TypeOf(runtime.None) {
-		return runtime.TypeNone.Name()
-	}
-
-	switch value.(type) {
-	case runtime.Boolean:
-		return runtime.TypeBoolean.Name()
-	case runtime.Int:
-		return runtime.TypeInt.Name()
-	case runtime.Float:
-		return runtime.TypeFloat.Name()
-	case runtime.Duration:
-		return runtime.TypeDuration.Name()
-	case runtime.String:
-		return runtime.TypeString.Name()
-	case runtime.DateTime:
-		return runtime.TypeDateTime.Name()
-	case runtime.Binary:
-		return runtime.TypeBinary.Name()
-	case *runtime.Array:
-		return runtime.TypeArray.Name()
-	case *runtime.Object, *data.FastObject:
-		return runtime.TypeObject.Name()
-	default:
-		return reflect.TypeOf(value).String()
-	}
+	return description
 }
 
 func (a debugValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
@@ -139,7 +94,7 @@ func (a debugValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error
 
 		return value.Get(ctx, property)
 	default:
-		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debugger cannot inspect %s", a.TypeName(value))
+		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debugger cannot inspect %s", a.classify(value).TypeName)
 	}
 }
 
@@ -173,5 +128,5 @@ func (debugValueAccess) Inspect(value runtime.Value, maxItems int) (DebugValueIn
 }
 
 func (a debugValueAccess) lookupTypeError(value runtime.Value, expected string) error {
-	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger lookup requires %s, got %s", expected, a.TypeName(value))
+	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger lookup requires %s, got %s", expected, a.classify(value).TypeName)
 }

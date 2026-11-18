@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 type (
@@ -26,8 +27,9 @@ type (
 	// name is the string representation of the type's name.
 	// assert is a TypeMatcher function used to determine if a value matches this type.
 	runtimeType struct {
-		assert TypeMatcher
-		name   string
+		assert    TypeMatcher
+		name      string
+		debugName bool
 	}
 
 	// hostType is a struct that represents a type defined in the host environment (e.g., Go types).
@@ -53,15 +55,7 @@ const (
 //	    return true // or false based on the logic
 //	})
 func NewType(pkg, name string, assert TypeMatcher) Type {
-	if pkg == "" {
-		panic("pkg cannot be empty")
-	}
-
-	if name == "" {
-		panic("name cannot be empty")
-	}
-
-	return &runtimeType{name: pkg + "." + name, assert: assert}
+	return newRuntimeType(pkg, name, assert, true)
 }
 
 // NewTypeFor creates a new Type for T, using a TypeMatcher that checks if a value is of type T.
@@ -79,11 +73,25 @@ func NewTypeFor[T Value]() Type {
 		t = t.Elem()
 	}
 
-	return NewType(t.PkgPath(), t.Name(), func(v Value) bool {
+	return newRuntimeType(t.PkgPath(), t.Name(), func(v Value) bool {
 		_, ok := v.(T)
 
 		return ok
-	})
+	}, false)
+}
+
+func newRuntimeType(pkg, name string, assert TypeMatcher, declared bool) Type {
+	if pkg == "" {
+		panic("pkg cannot be empty")
+	}
+
+	if name == "" {
+		panic("name cannot be empty")
+	}
+
+	qualified := pkg + "." + name
+
+	return &runtimeType{name: qualified, assert: assert, debugName: declared && !strings.ContainsAny(qualified, "/\\*[]")}
 }
 
 func newBuiltinType(name string, assert TypeMatcher) Type {
@@ -91,7 +99,17 @@ func newBuiltinType(name string, assert TypeMatcher) Type {
 		panic("name cannot be empty")
 	}
 
-	return &runtimeType{name: name, assert: assert}
+	return &runtimeType{name: name, assert: assert, debugName: true}
+}
+
+// DebugInfo exposes declared semantic names to tools without invoking a
+// target's type methods or publishing a reflected Go name.
+func (rt *runtimeType) DebugInfo() DebugInfo {
+	if rt == nil || !rt.debugName {
+		return DebugInfo{}
+	}
+
+	return DebugInfo{TypeName: rt.name}
 }
 
 func (rt *runtimeType) Name() string {

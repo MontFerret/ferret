@@ -360,3 +360,39 @@ func assertDoesNotImplement[T any](t *testing.T, value any, name string) {
 		t.Fatalf("%T unexpectedly implements %s", value, name)
 	}
 }
+
+type (
+	// A nil embedded interface makes any descriptor or target access panic.
+	privateDebugTarget struct {
+		runtime.Typed
+		runtime.Unwrappable
+		runtime.Value
+	}
+	privateDebugType struct{ runtime.Type }
+)
+
+func (privateDebugTarget) MarshalJSON() ([]byte, error) { panic("MarshalJSON called") }
+
+func TestHostValueDebuggerDescription(t *testing.T) {
+	target := privateDebugTarget{}
+	for _, tc := range []struct {
+		name  string
+		value *sdk.HostValue[privateDebugTarget]
+		want  string
+	}{
+		{"derived", sdk.NewHostValue(target), ""},
+		{"explicit", sdk.NewHostValueWithType(runtime.NewType("html", "Node", nil), target), "html.Node"},
+		{"builtin", sdk.NewHostValueWithType(runtime.TypeDateTime, target), "DateTime"},
+		{"host descriptor", sdk.NewHostValueWithType(runtime.HostTypeOf(target), target), ""},
+		{"reflected descriptor", sdk.NewHostValueWithType(runtime.NewTypeFor[privateDebugTarget](), target), ""},
+		{"Go import path", sdk.NewHostValueWithType(runtime.NewType("example.com/private/driver", "Node", nil), target), ""},
+		{"third-party descriptor", sdk.NewHostValueWithType(privateDebugType{}, target), ""},
+		{"nil", nil, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.value.DebugInfo(); got != (runtime.DebugInfo{TypeName: tc.want}) {
+				t.Fatalf("wrapper metadata = %+v", got)
+			}
+		})
+	}
+}

@@ -449,5 +449,7 @@ func unsupportedDebugExpression(value any) error {
 }
 
 func debugEvalTypeError(value runtime.Value, expected string, access vm.DebugValueAccess) error {
-	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger expression requires %s, got %s", expected, access.TypeName(value))
+	typeName := formatTypeName(access.Describe(value), DefaultFormatOptions().MaxBytes)
+
+	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger expression requires %s, got %s", expected, typeName)
 }

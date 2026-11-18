@@ -59,6 +59,23 @@ func (ds *DataSet) Length(ctx context.Context) (runtime.Int, error) {
 	return ds.values.Length(ctx)
 }
 
+// BufferedLength reports the in-memory array length for shallow inspection.
+// An unavailable buffer has unknown length. Never delegate to host list methods.
+func (ds *DataSet) BufferedLength() int {
+	if ds == nil {
+		return -1
+	}
+
+	buffer, ok := ds.values.(*runtime.Array)
+	if !ok || buffer == nil {
+		return -1
+	}
+
+	length, _ := buffer.Length(context.Background())
+
+	return int(length)
+}
+
 func (ds *DataSet) String() string {
 	return "[DataSet]"
 }
