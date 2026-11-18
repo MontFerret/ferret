@@ -50,7 +50,8 @@ func TestFormatSemanticValues(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	date := runtime.NewDateTime(time.Date(2026, 2, 3, 4, 5, 6, 0, time.FixedZone(strings.Repeat("z", 10000), 3600)))
+	zone := time.FixedZone(strings.Repeat("z", 10000), -(3*60+30)*60)
+	date := runtime.NewDateTime(time.Date(2026, 2, 3, 4, 5, 6, 123456789, zone))
 	for _, tc := range []struct {
 		value         runtime.Value
 		name, display string
@@ -61,7 +62,7 @@ func TestFormatSemanticValues(t *testing.T) {
 		{runtime.Int(42), "Int", "42"},
 		{runtime.Float(3.14), "Float", "3.14"},
 		{runtime.NewDuration(1500 * time.Millisecond), "Duration", "1.5s"},
-		{date, "DateTime", "2026-02-03T03:05:06Z"},
+		{date, "DateTime", "2026-02-03T04:05:06.123456789-03:30"},
 		{pattern, "Regexp", "<Regexp>"},
 		{runtime.String("hello"), "String", `"hello"`},
 		{runtime.Binary(make([]byte, 1<<20)), "Binary", "Binary(1048576)"},

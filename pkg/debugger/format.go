@@ -34,7 +34,7 @@ func formatValue(value runtime.Value, description vm.DebugValueDescription, maxB
 	case runtime.Duration:
 		display = v.String()
 	case runtime.DateTime:
-		display = v.UTC().Format(time.RFC3339Nano)
+		display = v.Format(time.RFC3339Nano)
 	default:
 		switch {
 		case value == nil || value == runtime.None:

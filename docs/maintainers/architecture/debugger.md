@@ -177,8 +177,9 @@ when they and the marker fit. Formatting examines a bounded prefix, preserves
 whole runes and escapes, and replaces malformed display bytes with U+FFFD.
 A malformed visible custom type name falls back to the classified name.
 Debugger-authored type mismatch messages apply the same byte budget to the
-actual operand's type name. DateTime displays use UTC. `MaxDepth` is ignored
-and may be omitted when setting `MaxItems` and `MaxBytes`.
+actual operand's type name. DateTime displays use RFC3339Nano with the value's
+numeric UTC offset (`Z` at offset zero). Debugger session creation resolves
+Go's local timezone so formatting a local DateTime only reads in-memory data.
 
 Evaluation is deliberately conservative and side-effect-free. It reads paused
 frame bindings and supports the documented expression subset; calls, mutation,

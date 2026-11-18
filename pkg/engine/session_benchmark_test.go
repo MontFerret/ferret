@@ -21,7 +21,7 @@ func BenchmarkNewSessionOptions(b *testing.B) {
 				WithSessionParam("value", 42),
 				WithOutputContentType("application/json"),
 				WithSessionLogLevel(logging.InfoLevel),
-				WithDebugFormat(debugger.FormatOptions{MaxDepth: 4, MaxItems: 12, MaxBytes: 2048}),
+				WithDebugFormat(debugger.FormatOptions{MaxItems: 12, MaxBytes: 2048}),
 			}
 		}
 

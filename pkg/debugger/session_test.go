@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	apidebugger "github.com/MontFerret/api/debugger"
 
@@ -80,6 +81,27 @@ func TestSessionUsesInterfacesForBreakpointsEvaluationAndLifecycle(t *testing.T)
 	}
 	if !execution.closed || !services.closed {
 		t.Fatal("expected execution and services to close")
+	}
+}
+
+func TestSessionLocalDateTime(t *testing.T) {
+	instant := time.Unix(0, 123456789).In(time.Local)
+	execution := &fakeExecution{
+		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry},
+		locals:     []vm.DebugLocal{{Name: "date", Value: runtime.NewDateTime(instant)}},
+	}
+	session := newLifecycleTestSession(t, execution, &fakeSessionServices{})
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	value, err := session.Evaluate(t.Context(), "date")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want := instant.Format(time.RFC3339Nano); value.Display != want {
+		t.Errorf("local DateTime display = %q, want %q", value.Display, want)
 	}
 }
 

@@ -2,6 +2,7 @@ package debugger
 
 import (
 	"context"
+	"time"
 
 	"github.com/MontFerret/ferret/v2/pkg/internal/debugpoint"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -49,6 +50,9 @@ func NewSession(config Config) (*Session, error) {
 	if err != nil {
 		return nil, runtime.Errorf(runtime.ErrInvalidArgument, "invalid debug points: %s", err)
 	}
+
+	// Resolve the system timezone here so inspecting a local DateTime cannot trigger timezone file I/O.
+	_ = time.Local.String()
 
 	session := &Session{
 		lifecycle:  newSessionLifecycle(config.Execution, config.Services),

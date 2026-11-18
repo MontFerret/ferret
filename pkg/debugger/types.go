@@ -37,8 +37,6 @@ type (
 
 	// FormatOptions bounds debugger value presentation and explicit expansion.
 	FormatOptions struct {
-		// MaxDepth is ignored and may be omitted. Descriptions are always shallow.
-		MaxDepth int
 		// MaxItems is the largest collection the session can expand.
 		MaxItems int
 		// MaxBytes bounds each type and display including quotes and truncation.
@@ -81,7 +79,7 @@ const (
 
 // DefaultFormatOptions returns conservative debugger formatting limits.
 func DefaultFormatOptions() FormatOptions {
-	return FormatOptions{MaxDepth: 3, MaxItems: 8, MaxBytes: 1024}
+	return FormatOptions{MaxItems: 8, MaxBytes: 1024}
 }
 
 var _ apidebugger.Session = (*Session)(nil)

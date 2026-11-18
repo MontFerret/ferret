@@ -77,7 +77,7 @@ func TestDebugValueUsesRuntimeDebugInfo(t *testing.T) {
 func TestDebugValueBoundsRuntimeDebugInfo(t *testing.T) {
 	inspection := &inspector{
 		values: vm.NewDebugValueAccess(),
-		format: FormatOptions{MaxDepth: 1, MaxItems: 1, MaxBytes: 4},
+		format: FormatOptions{MaxItems: 1, MaxBytes: 4},
 	}
 	got := inspection.debugValue(hostileDebugValue{info: runtime.DebugInfo{
 		TypeName: "HTML::Node",
@@ -91,7 +91,7 @@ func TestDebugValueBoundsRuntimeDebugInfo(t *testing.T) {
 func TestDebugValueBoundsRuntimeDebugInfoAtUTF8Boundaries(t *testing.T) {
 	inspection := &inspector{
 		values: vm.NewDebugValueAccess(),
-		format: FormatOptions{MaxDepth: 1, MaxItems: 1, MaxBytes: 4},
+		format: FormatOptions{MaxItems: 1, MaxBytes: 4},
 	}
 	got := inspection.debugValue(hostileDebugValue{info: runtime.DebugInfo{
 		TypeName: "类类",
@@ -110,7 +110,7 @@ func TestDebugValueNormalizesMalformedRuntimeDebugInfo(t *testing.T) {
 	malformed := string([]byte{'a', 0xff, 'b'})
 	inspection := &inspector{
 		values: vm.NewDebugValueAccess(),
-		format: FormatOptions{MaxDepth: 1, MaxItems: 1, MaxBytes: 8},
+		format: FormatOptions{MaxItems: 1, MaxBytes: 8},
 	}
 	got := inspection.debugValue(hostileDebugValue{info: runtime.DebugInfo{
 		TypeName: malformed,
