@@ -2,6 +2,8 @@ package benchmarks_test
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -119,6 +121,16 @@ func BenchmarkArraySpreadHostSnapshot_Full(b *testing.B) {
 
 func BenchmarkObjectLiterals_None(b *testing.B) {
 	RunBenchmarkNone(b, objectLiteralsQuery)
+}
+
+func BenchmarkObjectDictionaryLiterals_None(b *testing.B) {
+	// The 65th distinct field crosses the default VM dictionary threshold.
+	fields := make([]string, 65)
+	for i := range fields {
+		fields[i] = "k" + strconv.Itoa(i) + ": n"
+	}
+
+	RunBenchmarkNone(b, "FOR n IN 1..16 LET obj = {"+strings.Join(fields, ",")+"} RETURN obj.k64")
 }
 
 func BenchmarkObjectLiterals_Basic(b *testing.B) {

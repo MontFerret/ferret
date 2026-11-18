@@ -314,6 +314,38 @@ func TestDebugRuntimeErrorRemainsInspectable(t *testing.T) {
 	}
 }
 
+func TestDebugSummaryOnlyObjectReference(t *testing.T) {
+	rt := newTestRuntime(t)
+	plan, err := rt.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN @object"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer plan.Close()
+	object := runtime.NewObjectOf(256)
+	object.SetString("only", runtime.True)
+	session, err := plan.NewDebugSession(t.Context(), api.WithParam("object", object))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer session.Close()
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	value, err := session.Evaluate(t.Context(), "@object")
+	if err != nil || value.Display != "Object(1)" || value.Reference != 0 ||
+		value.NamedCount == nil || *value.NamedCount != 1 || value.IndexedCount == nil || *value.IndexedCount != 0 {
+		t.Fatalf("summary: %+v, %v", value, err)
+	}
+
+	page, err := session.Variables(t.Context(), value.Reference, apidebugger.VariablePage{Filter: apidebugger.VariableFilterIndexed})
+	if page != nil || !errors.Is(err, apidebugger.ErrInvalidValueReference) {
+		t.Fatalf("zero reference: %v, %v", page, err)
+	}
+}
+
 type filteredDebugValue struct{ runtime.Value }
 
 func (filteredDebugValue) DebugChildrenInfo() runtime.DebugChildrenInfo {

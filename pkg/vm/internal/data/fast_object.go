@@ -132,12 +132,9 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 	}
 
 	if t.dict != nil {
-		if _, exists := t.dict.values[key]; !exists {
-			t.size++
-		}
-
 		t.dict.bounds.AddKey(key)
 		t.dict.values[key] = value
+		t.size = len(t.dict.values)
 
 		return nil, nil, 0, false
 	}

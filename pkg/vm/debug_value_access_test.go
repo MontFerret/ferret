@@ -172,6 +172,61 @@ func TestDebugNamedPage(t *testing.T) {
 	}
 }
 
+func TestDebugObjectChildViews(t *testing.T) {
+	access := NewDebugValueAccess()
+	for _, tc := range []struct {
+		object   runtime.Map
+		name     string
+		keys     int
+		pageable bool
+	}{
+		{runtime.NewObject(), "small", 1, true},
+		{runtime.NewObjectOf(256), "reserved", 1, false},
+		{data.NewFastObject(nil, 1), "large_dictionary", 129, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for i := range tc.keys {
+				if err := tc.object.Set(t.Context(), runtime.String(strconv.Itoa(i)), runtime.Int(i)); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			views := access.Describe(tc.object).Children
+			if !views.Named.Known || views.Named.Count != int64(tc.keys) || views.Named.CanExpand() != tc.pageable ||
+				!views.Indexed.Known || views.Indexed.Count != 0 || views.Indexed.CanExpand() {
+				t.Fatalf("unexpected child views: %+v", views)
+			}
+
+			for _, start := range []int64{0, 10} {
+				page, err := access.ReadChildren(t.Context(), tc.object, debugger.VariablePage{Filter: debugger.VariableFilterIndexed, Start: start})
+				if err != nil || len(page) != 0 {
+					t.Errorf("indexed at %d: %v, %v", start, page, err)
+				}
+			}
+
+			page, err := access.ReadChildren(t.Context(), tc.object, debugger.VariablePage{Filter: debugger.VariableFilterIndexed, Start: -1})
+			if page != nil || !errors.Is(err, debugger.ErrInvalidVariablePage) {
+				t.Fatalf("invalid indexed range: %v, %v", page, err)
+			}
+
+			for _, filter := range []debugger.VariableFilter{debugger.VariableFilterAll, debugger.VariableFilterNamed} {
+				page, err := access.ReadChildren(t.Context(), tc.object, debugger.VariablePage{Filter: filter, Count: 1})
+				if !tc.pageable {
+					if page != nil || !errors.Is(err, errors.ErrUnsupported) {
+						t.Errorf("filter %q: %v, %v", filter, page, err)
+					}
+
+					continue
+				}
+
+				if err != nil || len(page) != 1 || page[0] != (DebugChild{Kind: debugger.VariableFilterNamed, Name: "0", Position: 0, Value: runtime.Int(0)}) {
+					t.Errorf("filter %q: %v, %v", filter, page, err)
+				}
+			}
+		})
+	}
+}
+
 func TestNativeObjectAliasesShareInspectionBounds(t *testing.T) {
 	owner := runtime.NewObject()
 	alias := *owner
@@ -314,6 +369,18 @@ func TestDebugProviderViews(t *testing.T) {
 	got, err := a.ReadChildren(t.Context(), p, debugger.VariablePage{Start: 1, Count: 5})
 	if err != nil || len(got) != 4 || fmt.Sprint(reads) != "[named/1 indexed/0 indexed/1 indexed/2 indexed/3]" {
 		t.Fatalf("mixed: %v, reads %v, %v", got, reads, err)
+	}
+
+	for i, pos := range []int64{1, 0, 1, 2} {
+		kind := debugger.VariableFilterIndexed
+		if i == 0 {
+			kind = debugger.VariableFilterNamed
+		}
+
+		want := DebugChild{Kind: kind, Position: pos, Name: strconv.FormatInt(pos, 10), Value: runtime.Int(pos)}
+		if got[i] != want {
+			t.Fatalf("combined page entry %d: %+v, want %+v", i, got[i], want)
+		}
 	}
 
 	p.info.Named.Known = false

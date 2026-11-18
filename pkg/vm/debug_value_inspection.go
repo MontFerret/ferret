@@ -34,12 +34,16 @@ func debugObject(value runtime.Value) debugFields {
 }
 
 func readObjectPage(ctx context.Context, object debugFields, page debugger.VariablePage) ([]DebugChild, error) {
+	if page.Filter == debugger.VariableFilterIndexed {
+		return nil, nil
+	}
+
 	if !object.DebugFieldsPageable() {
 		return nil, errors.ErrUnsupported
 	}
 
 	length, _ := object.Length(ctx)
-	if page.Filter == debugger.VariableFilterIndexed || page.Start >= int64(length) {
+	if page.Start >= int64(length) {
 		return nil, nil
 	}
 
