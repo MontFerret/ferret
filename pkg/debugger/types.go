@@ -37,7 +37,7 @@ type (
 
 	// FormatOptions bounds debugger value presentation and explicit expansion.
 	FormatOptions struct {
-		// MaxDepth is retained for compatibility. Descriptions are always shallow.
+		// MaxDepth is ignored and may be omitted. Descriptions are always shallow.
 		MaxDepth int
 		// MaxItems is the largest collection the session can expand.
 		MaxItems int

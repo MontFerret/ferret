@@ -1,6 +1,7 @@
 package debugger
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -32,9 +33,13 @@ func (v hostileDebugValue) DebugInfo() runtime.DebugInfo {
 }
 
 func TestValueAccessRejectsOpaqueKeys(t *testing.T) {
-	value := runtime.NewObject()
-	if _, err := vm.NewDebugValueAccess().Lookup(value, hostileDebugValue{}); err == nil {
-		t.Fatal("expected opaque object key to be rejected")
+	access := vm.NewDebugValueAccess()
+	calls := 0
+	key := hostileDebugValue{infoCalls: &calls}
+	for _, value := range []runtime.Value{runtime.NewObject(), runtime.NewArray(0)} {
+		if _, err := access.Lookup(value, key); !errors.Is(err, runtime.ErrInvalidArgument) || calls != 0 {
+			t.Fatalf("lookup on %T with opaque key: err=%v, hook calls=%d", value, err, calls)
+		}
 	}
 }
 
@@ -72,6 +77,35 @@ func TestFormatSemanticValues(t *testing.T) {
 				t.Fatalf("got %+v, want %s %s with reference zero", got, tc.name, tc.display)
 			}
 		})
+	}
+}
+
+func TestFormatNativeScalarPointers(t *testing.T) {
+	s := inspector{values: vm.NewDebugValueAccess(), format: DefaultFormatOptions()}
+	boolean, integer, float := runtime.True, runtime.Int(42), runtime.Float(3.14)
+	duration, date := runtime.NewDuration(time.Second), runtime.NewDateTime(time.Unix(42, 0))
+	str, bin := runtime.String(strings.Repeat("é", 1<<20)), runtime.Binary(make([]byte, 4096))
+	for _, tc := range []struct{ value, pointer, absent runtime.Value }{
+		{boolean, &boolean, (*runtime.Boolean)(nil)},
+		{integer, &integer, (*runtime.Int)(nil)},
+		{float, &float, (*runtime.Float)(nil)},
+		{duration, &duration, (*runtime.Duration)(nil)},
+		{str, &str, (*runtime.String)(nil)},
+		{date, &date, (*runtime.DateTime)(nil)},
+		{bin, &bin, (*runtime.Binary)(nil)},
+	} {
+		want := s.debugValue(tc.value)
+		if got := s.debugValue(tc.pointer); got != want {
+			t.Errorf("%T = %+v, want %+v", tc.pointer, got, want)
+		}
+
+		if got := s.debugValue(tc.absent); got != (Value{Type: want.Type, Display: "<" + want.Type + ">"}) {
+			t.Errorf("nil %T = %+v", tc.absent, got)
+		}
+	}
+
+	if got := s.debugValue(&hostileDebugEvalValue{}); got != (Value{Type: "Resource", Display: "<Resource>"}) {
+		t.Fatalf("opaque pointer = %+v", got)
 	}
 }
 

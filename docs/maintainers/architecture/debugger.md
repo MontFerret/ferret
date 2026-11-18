@@ -147,7 +147,9 @@ unlocking commands would not safely publish live changes or preserve hit IDs.
 The VM's `DebugValueAccess.Describe` classifies the paused value and reads only
 cheap metadata. Native arrays and buffered VM datasets have type `Array`.
 Native objects and VM fast objects have type `Object`. Their displays use the
-in-memory length, for example `Array(3)`. Binary values display their byte
+in-memory length, for example `Array(3)`. Pointers to native scalars use the
+pointed-to value's presentation. A nil scalar pointer retains its semantic type
+and displays a summary such as `<Int>`. Binary values display their byte
 length. Generic collection and query capabilities supply a category name and
 an unknown length. The debugger falls back to `Resource` and `<Resource>` for
 opaque values.
@@ -159,7 +161,9 @@ opaque host wrapper can obtain a declared semantic name from its explicit
 type descriptor without consulting the target.
 
 The inspector reuses the description for formatting and reference eligibility.
-Only an explicit `Variables` request reads a collection's immediate children.
+`Variables` enumerates a collection's immediate children. Evaluating an
+explicit member expression reads the selected child through VM lookup. Lookup
+on a typed-nil collection returns an invalid-operation error.
 Under the alpha.21 interface, nonempty native arrays, native objects and fast
 objects with at most `MaxItems` entries receive references. Buffered datasets
 of every size are summary-only. Indexed children follow source order and
@@ -172,7 +176,9 @@ of one and two bytes give one and two dots. Quoted strings retain both quotes
 when they and the marker fit. Formatting examines a bounded prefix, preserves
 whole runes and escapes, and replaces malformed display bytes with U+FFFD.
 A malformed visible custom type name falls back to the classified name.
-DateTime displays use UTC. `MaxDepth` remains accepted for compatibility.
+Debugger-authored type mismatch messages apply the same byte budget to the
+actual operand's type name. DateTime displays use UTC. `MaxDepth` is ignored
+and may be omitted when setting `MaxItems` and `MaxBytes`.
 
 Evaluation is deliberately conservative and side-effect-free. It reads paused
 frame bindings and supports the documented expression subset; calls, mutation,

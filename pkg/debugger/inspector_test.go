@@ -1,6 +1,7 @@
 package debugger
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -126,10 +127,11 @@ func TestDebugValueNormalizesMalformedRuntimeDebugInfo(t *testing.T) {
 
 // Nil embedded capabilities panic if presentation attempts any access.
 type (
-	debugHostList  struct{ runtime.List }
-	namedDebugList struct{ runtime.List }
-	debugHostMap   struct{ runtime.Map }
-	debugHostQuery struct {
+	debugHostList   struct{ runtime.List }
+	namedDebugList  struct{ runtime.List }
+	debugHostMap    struct{ runtime.Map }
+	debugHostObject struct{ runtime.Map }
+	debugHostQuery  struct {
 		runtime.Value
 		runtime.Queryable
 	}
@@ -148,6 +150,8 @@ func (namedDebugList) DebugInfo() runtime.DebugInfo {
 	return runtime.DebugInfo{TypeName: "DB::Rows"}
 }
 
+func (debugHostObject) ObjectLike() { panic("ObjectLike marker invoked") }
+
 func TestDebugValueCapabilitySummaries(t *testing.T) {
 	access := &fakeValueAccess{inner: vm.NewDebugValueAccess()}
 	s := inspector{values: access, format: DefaultFormatOptions()}
@@ -157,6 +161,7 @@ func TestDebugValueCapabilitySummaries(t *testing.T) {
 	}{
 		{struct{ runtime.Value }{}, "Resource"}, {namedDebugList{}, "DB::Rows"},
 		{debugHostList{}, "List"}, {debugHostMap{}, "Map"},
+		{debugHostObject{}, "Object"},
 		{debugHostQuery{}, "Queryable"}, {debugHostIterator{}, "Iterator"},
 		{debugHostIterable{}, "Iterable"},
 	} {
@@ -216,6 +221,57 @@ func TestDebugValueLongCustomHints(t *testing.T) {
 		value := hostileDebugValue{info: runtime.DebugInfo{TypeName: input, Display: input}}
 		if got := s.debugValue(value); got != (Value{Type: "xxxxx...", Display: "xxxxx..."}) {
 			t.Fatalf("truncated hints = %+v", got)
+		}
+	}
+}
+
+func TestEvaluateUsesSessionBudgetForOperandType(t *testing.T) {
+	calls := 0
+	host := hostileDebugValue{infoCalls: &calls, info: runtime.DebugInfo{TypeName: "HTML::Node"}}
+	s := inspector{
+		execution: &fakeExecution{locals: []vm.DebugLocal{{Name: "node", Value: host}}},
+		values:    vm.NewDebugValueAccess(),
+		format:    FormatOptions{MaxItems: 3, MaxBytes: 8},
+	}
+	shown, err := s.evaluateFrame(t.Context(), 0, "node")
+	if err != nil || shown.Type != "HTML:..." || calls != 1 {
+		t.Fatalf("node = %+v, err = %v, hook calls = %d", shown, err, calls)
+	}
+
+	if _, err := s.evaluateFrame(t.Context(), 0, "node AND true"); !errors.Is(err, runtime.ErrInvalidArgument) ||
+		!strings.HasSuffix(err.Error(), "got "+shown.Type) || calls != 2 {
+		t.Fatalf("logical expression error = %v, hook calls = %d", err, calls)
+	}
+
+	if _, err := s.evaluateFrame(t.Context(), 0, "node.tag"); !errors.Is(err, runtime.ErrInvalidOperation) ||
+		strings.Contains(err.Error(), "Resource") || calls != 2 {
+		t.Fatalf("member lookup error = %v, hook calls = %d", err, calls)
+	}
+}
+
+func TestFrameLocalsSnapshotsDeclaredParamsOnce(t *testing.T) {
+	for _, tc := range []struct {
+		declared []string
+		want     []string
+		calls    int
+	}{
+		{nil, []string{"local"}, 0},
+		{[]string{"z", "missing", "a"}, []string{"local", "@a", "@z"}, 1},
+	} {
+		execution := &fakeExecution{
+			locals: []vm.DebugLocal{{Name: "local", Value: runtime.True}},
+			params: runtime.Params{"a": runtime.True, "z": runtime.False, "undeclared": runtime.None},
+		}
+		s := newInspector(Config{Execution: execution, Params: tc.declared, Values: vm.NewDebugValueAccess()}, nil, nil, DefaultFormatOptions())
+		locals, err := s.frameLocals(0)
+		if err != nil || len(locals) != len(tc.want) || execution.paramsCalls != tc.calls {
+			t.Fatalf("declared %v: locals = %+v, err = %v, Params calls = %d", tc.declared, locals, err, execution.paramsCalls)
+		}
+
+		for i, want := range tc.want {
+			if locals[i].Name != want {
+				t.Errorf("local %d = %q, want %q", i, locals[i].Name, want)
+			}
 		}
 	}
 }

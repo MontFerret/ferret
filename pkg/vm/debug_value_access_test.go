@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -72,5 +73,22 @@ func TestDebugValueAccessInspectRemainsBuiltInOnly(t *testing.T) {
 		info: runtime.DebugInfo{Display: "custom"},
 	}, 1); ok || inspection.Items != nil || inspection.Length != 0 || inspection.Kind != 0 || inspection.Complete {
 		t.Fatalf("custom metadata unexpectedly enabled expansion: %#v, available=%t", inspection, ok)
+	}
+}
+
+func TestDebugValueAccessRejectsNilCollections(t *testing.T) {
+	access := NewDebugValueAccess()
+	for _, tc := range []struct{ value, key runtime.Value }{
+		{(*runtime.Array)(nil), runtime.Int(0)},
+		{(*runtime.Object)(nil), runtime.String("name")},
+		{(*data.FastObject)(nil), runtime.String("name")},
+	} {
+		if _, err := access.Lookup(tc.value, tc.key); !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Errorf("lookup on %T: got %v, want ErrInvalidOperation", tc.value, err)
+		}
+
+		if _, ok := access.Inspect(tc.value, 8); ok {
+			t.Errorf("inspection available for nil %T", tc.value)
+		}
 	}
 }

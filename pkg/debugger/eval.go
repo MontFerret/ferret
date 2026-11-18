@@ -11,7 +11,6 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/parser"
 	"github.com/MontFerret/ferret/v2/pkg/parser/fql"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm"
 )
 
 func evaluateExpression(ctx context.Context, text string, scope evalScope) (runtime.Value, error) {
@@ -61,7 +60,7 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 			return nil, err
 		}
 
-		return evalDebugUnary(node.UnaryOperator().GetText(), value, scope.values)
+		return evalDebugUnary(node.UnaryOperator().GetText(), value)
 	}
 
 	if node.GetCoalesceOperator() != nil {
@@ -93,7 +92,7 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 		if strings.EqualFold(op, "AND") {
 			leftBool, ok := left.(runtime.Boolean)
 			if !ok {
-				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name(), scope.values)
+				return nil, scope.typeError(left, runtime.TypeBoolean.Name())
 			}
 
 			if !leftBool {
@@ -102,7 +101,7 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 		} else if strings.EqualFold(op, "OR") {
 			leftBool, ok := left.(runtime.Boolean)
 			if !ok {
-				return nil, debugEvalTypeError(left, runtime.TypeBoolean.Name(), scope.values)
+				return nil, scope.typeError(left, runtime.TypeBoolean.Name())
 			}
 
 			if leftBool {
@@ -126,7 +125,7 @@ func evalDebugExpression(ctx context.Context, expr fql.IExpressionContext, scope
 
 		ok, isBool := condition.(runtime.Boolean)
 		if !isBool {
-			return nil, debugEvalTypeError(condition, runtime.TypeBoolean.Name(), scope.values)
+			return nil, scope.typeError(condition, runtime.TypeBoolean.Name())
 		}
 
 		if ok && node.GetOnTrue() != nil {
@@ -332,7 +331,7 @@ func evalDebugLiteral(literal fql.ILiteralContext) (runtime.Value, error) {
 	}
 }
 
-func evalDebugUnary(op string, value runtime.Value, _ vm.DebugValueAccess) (runtime.Value, error) {
+func evalDebugUnary(op string, value runtime.Value) (runtime.Value, error) {
 	if strings.EqualFold(op, "NOT") {
 		op = "!"
 	}
@@ -446,10 +445,4 @@ func unsupportedDebugExpression(value any) error {
 	}
 
 	return base
-}
-
-func debugEvalTypeError(value runtime.Value, expected string, access vm.DebugValueAccess) error {
-	typeName := formatTypeName(access.Describe(value), DefaultFormatOptions().MaxBytes)
-
-	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger expression requires %s, got %s", expected, typeName)
 }

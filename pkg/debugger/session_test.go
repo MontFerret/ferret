@@ -271,7 +271,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		startEvent: &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &point},
 		locals: []vm.DebugLocal{{
 			Name:  "value",
-			Value: runtime.NewArrayWith(runtime.NewInt(1), runtime.NewInt(2)),
+			Value: runtime.NewSizedArray(4),
 		}},
 		status: vm.DebugExecutionNew,
 	}
@@ -281,7 +281,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		Services:    &fakeSessionServices{},
 		Source:      src,
 		DebugPoints: []bytecode.DebugPoint{point},
-		Format:      FormatOptions{MaxDepth: 3, MaxItems: 1, MaxBytes: 1024},
+		Format:      FormatOptions{MaxItems: 3, MaxBytes: 8},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -296,8 +296,12 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(locals) != 1 || locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(2)" {
+	if len(locals) != 1 || locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(4)" {
 		t.Fatalf("expected bounded summary without reference, got %#v", locals)
+	}
+
+	if got, err := session.Evaluate(t.Context(), "'abcdefgh'"); err != nil || got.Display != `"abc..."` {
+		t.Fatalf("eight-byte display = %q, err = %v", got.Display, err)
 	}
 
 	if _, err := session.Variables(context.Background(), 0); !errors.Is(err, runtime.ErrInvalidArgument) {

@@ -28,12 +28,15 @@ type inspector struct {
 }
 
 func newInspector(config Config, src *source.Source, points *debugpoint.Index, format FormatOptions) inspector {
+	params := append([]string(nil), config.Params...)
+	sort.Strings(params)
+
 	return inspector{
 		execution:    config.Execution,
 		values:       config.Values,
 		valueRefs:    make(map[ValueReference]runtime.Value),
 		pointIndex:   points,
-		params:       append([]string(nil), config.Params...),
+		params:       params,
 		source:       src,
 		format:       format,
 		nextValueRef: 1,
@@ -65,18 +68,18 @@ func (s *inspector) frameLocals(frame int) ([]Variable, error) {
 		return nil, err
 	}
 
-	out := make([]Variable, 0, len(locals)+len(s.execution.Params()))
+	out := make([]Variable, 0, len(locals)+len(s.params))
 
 	for _, local := range locals {
 		out = append(out, Variable{Name: local.Name, Mutable: local.Mutable, Value: s.debugValue(local.Value)})
 	}
 
+	if len(s.params) == 0 {
+		return out, nil
+	}
+
 	params := s.execution.Params()
-	names := append([]string(nil), s.params...)
-
-	sort.Strings(names)
-
-	for _, name := range names {
+	for _, name := range s.params {
 		if value, exists := params.Get(name); exists {
 			out = append(out, Variable{Name: "@" + name, Param: true, Value: s.debugValue(value)})
 		}
@@ -140,9 +143,10 @@ func (s *inspector) evaluateFrame(ctx context.Context, frame int, expression str
 	}
 
 	value, err := evaluateExpression(ctx, expression, evalScope{
-		locals: values,
-		params: s.execution.Params(),
-		values: s.values,
+		locals:   values,
+		params:   s.execution.Params(),
+		values:   s.values,
+		maxBytes: s.format.MaxBytes,
 	})
 	if err != nil {
 		return Value{}, err

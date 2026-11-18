@@ -41,7 +41,7 @@ func NewSession(config Config) (*Session, error) {
 	}
 
 	format := config.Format
-	if format.MaxDepth <= 0 || format.MaxItems <= 0 || format.MaxBytes <= 0 {
+	if format.MaxItems <= 0 || format.MaxBytes <= 0 {
 		format = DefaultFormatOptions()
 	}
 

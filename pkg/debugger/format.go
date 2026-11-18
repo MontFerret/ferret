@@ -15,6 +15,10 @@ func formatValue(value runtime.Value, description vm.DebugValueDescription, maxB
 		return Value{Type: typeName, Display: boundedText(description.Hint.Display, maxBytes)}
 	}
 
+	if description.Scalar != nil {
+		value = description.Scalar
+	}
+
 	var display string
 	switch v := value.(type) {
 	case runtime.String:

@@ -222,6 +222,61 @@ func TestDebugSessionLocalsIncludeDeclaredBindParameters(t *testing.T) {
 	}
 }
 
+func TestDebugSessionTypedNilLookupAndPresentationLimits(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+
+	plan, err := engine.CompileDebug(t.Context(), source.NewAnonymous("RETURN @answer"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	answer := runtime.Int(42)
+	session, err := plan.NewDebugSession(t.Context(),
+		WithDebugFormat(debugger.FormatOptions{MaxItems: 3, MaxBytes: 8}),
+		WithSessionRuntimeParams(runtime.Params{
+			"answer": &answer,
+			"arr":    (*runtime.Array)(nil),
+			"obj":    (*runtime.Object)(nil),
+			"three":  runtime.NewSizedArray(3),
+			"four":   runtime.NewSizedArray(4),
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, expression := range []string{"@arr[0]", "@obj.a"} {
+		if _, err := session.Evaluate(t.Context(), expression); !errors.Is(err, runtime.ErrInvalidOperation) {
+			t.Errorf("%s: got %v, want ErrInvalidOperation", expression, err)
+		}
+	}
+
+	for _, tc := range []struct {
+		expression, typ, display string
+		expandable               bool
+	}{
+		{"@answer", "Int", "42", false},
+		{"'abcdefgh'", "String", `"abc..."`, false},
+		{"@three", "Array", "Array(3)", true},
+		{"@four", "Array", "Array(4)", false},
+	} {
+		value, err := session.Evaluate(t.Context(), tc.expression)
+		if err != nil || value.Type != tc.typ || value.Display != tc.display || value.Reference.Valid() != tc.expandable {
+			t.Errorf("%s: value = %+v, err = %v", tc.expression, value, err)
+		}
+	}
+}
+
 func TestDebugPlanRunsNormally(t *testing.T) {
 	engine, err := New()
 	if err != nil {

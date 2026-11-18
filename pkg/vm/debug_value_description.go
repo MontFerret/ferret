@@ -7,9 +7,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-// Only concrete, buffered implementations may supply a length or children.
+// Describe reads a length or child shape only from concrete buffered values.
 // Host collection capabilities provide names without granting access.
-func (debugValueAccess) classify(value runtime.Value) DebugValueDescription {
+func (a debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
 	d := DebugValueDescription{Length: -1}
 	if value == nil || value == runtime.None {
 		d.TypeName = runtime.TypeNone.Name()
@@ -30,11 +30,28 @@ func (debugValueAccess) classify(value runtime.Value) DebugValueDescription {
 		d.TypeName = runtime.TypeString.Name()
 	case runtime.DateTime:
 		d.TypeName = runtime.TypeDateTime.Name()
+	case *runtime.Boolean:
+		d = describeScalarPointer(v, runtime.TypeBoolean)
+	case *runtime.Int:
+		d = describeScalarPointer(v, runtime.TypeInt)
+	case *runtime.Float:
+		d = describeScalarPointer(v, runtime.TypeFloat)
+	case *runtime.Duration:
+		d = describeScalarPointer(v, runtime.TypeDuration)
+	case *runtime.String:
+		d = describeScalarPointer(v, runtime.TypeString)
+	case *runtime.DateTime:
+		d = describeScalarPointer(v, runtime.TypeDateTime)
 	case *runtime.Regexp:
 		d.TypeName = runtime.TypeRegexp.Name()
 	case runtime.Binary:
 		d.TypeName = runtime.TypeBinary.Name()
 		d.Length = len(v)
+	case *runtime.Binary:
+		d.TypeName = runtime.TypeBinary.Name()
+		if v != nil {
+			d.Length = len(*v)
+		}
 	case *runtime.Array:
 		d.TypeName = runtime.TypeArray.Name()
 		if v != nil {
@@ -44,20 +61,12 @@ func (debugValueAccess) classify(value runtime.Value) DebugValueDescription {
 	case *data.DataSet:
 		d.TypeName = runtime.TypeArray.Name()
 		d.Length = v.BufferedLength()
-	case *runtime.Object:
-		d.TypeName = runtime.TypeObject.Name()
-		if v != nil {
-			length, _ := v.Length(context.Background())
-			d.Length, d.Children = int(length), DebugValueObject
-		}
-	case *data.FastObject:
-		d.TypeName = runtime.TypeObject.Name()
-		if v != nil {
-			length, _ := v.Length(context.Background())
-			d.Length, d.Children = int(length), DebugValueObject
-		}
 	case runtime.ObjectLike:
 		d.TypeName = runtime.TypeObject.Name()
+		if object := debugObject(v); object != nil {
+			length, _ := object.Length(context.Background())
+			d.Length, d.Children = int(length), DebugValueObject
+		}
 	case runtime.List:
 		d.TypeName = runtime.TypeList.Name()
 	case runtime.Map:
@@ -70,6 +79,19 @@ func (debugValueAccess) classify(value runtime.Value) DebugValueDescription {
 		d.TypeName = runtime.TypeIterable.Name()
 	default:
 		d.TypeName = "Resource"
+	}
+
+	if inspectable, ok := value.(runtime.DebugInspectable); ok {
+		d.Hint = a.safeDebugInfo(inspectable)
+	}
+
+	return d
+}
+
+func describeScalarPointer[T runtime.Value](value *T, typ runtime.Type) DebugValueDescription {
+	d := DebugValueDescription{TypeName: typ.Name(), Length: -1}
+	if value != nil {
+		d.Scalar = *value
 	}
 
 	return d

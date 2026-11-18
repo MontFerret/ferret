@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
-	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
 type (
@@ -15,6 +14,9 @@ type (
 	// DebugValueDescription holds shallow presentation metadata. Length is -1
 	// when unavailable. Children identifies an explicitly inspectable shape.
 	DebugValueDescription struct {
+		// Scalar is the value behind a non-nil pointer to a native scalar.
+		// Binary provides only its byte length.
+		Scalar   runtime.Value
 		Hint     runtime.DebugInfo
 		TypeName string
 		Length   int
@@ -59,49 +61,33 @@ func NewDebugValueAccess() DebugValueAccess {
 	return debugValueAccess{}
 }
 
-func (a debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
-	description := a.classify(value)
-	if inspectable, ok := value.(runtime.DebugInspectable); ok {
-		description.Hint = a.safeDebugInfo(inspectable)
-	}
-
-	return description
-}
-
-func (a debugValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
+func (debugValueAccess) Lookup(value, key runtime.Value) (runtime.Value, error) {
 	ctx := context.Background()
 
-	switch value := value.(type) {
-	case *runtime.Array:
+	if array, ok := value.(*runtime.Array); ok && array != nil {
 		index, ok := key.(runtime.Int)
 		if !ok {
-			return nil, a.lookupTypeError(key, runtime.TypeInt.Name())
+			return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger array lookup requires an Int index")
 		}
 
-		return value.At(ctx, index)
-	case *runtime.Object:
-		property, ok := key.(runtime.String)
-		if !ok {
-			return nil, a.lookupTypeError(key, runtime.TypeString.Name())
-		}
-
-		return value.Get(ctx, property)
-	case *data.FastObject:
-		property, ok := key.(runtime.String)
-		if !ok {
-			return nil, a.lookupTypeError(key, runtime.TypeString.Name())
-		}
-
-		return value.Get(ctx, property)
-	default:
-		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debugger cannot inspect %s", a.classify(value).TypeName)
+		return array.At(ctx, index)
 	}
+
+	if object := debugObject(value); object != nil {
+		property, ok := key.(runtime.String)
+		if !ok {
+			return nil, runtime.Error(runtime.ErrInvalidArgument, "debugger object lookup requires a String key")
+		}
+
+		return object.Get(ctx, property)
+	}
+
+	return nil, runtime.Error(runtime.ErrInvalidOperation, "value does not support debugger member lookup")
 }
 
 func (debugValueAccess) Inspect(value runtime.Value, maxItems int) (DebugValueInspection, bool) {
-	switch value := value.(type) {
-	case *runtime.Array:
-		length, _ := value.Length(context.Background())
+	if array, ok := value.(*runtime.Array); ok && array != nil {
+		length, _ := array.Length(context.Background())
 		out := DebugValueInspection{Kind: DebugValueArray, Length: int(length)}
 
 		if maxItems <= 0 || out.Length > maxItems {
@@ -111,22 +97,18 @@ func (debugValueAccess) Inspect(value runtime.Value, maxItems int) (DebugValueIn
 		out.Items = make([]DebugValueItem, 0, out.Length)
 
 		for i := 0; i < out.Length; i++ {
-			item, _ := value.At(context.Background(), runtime.Int(i))
+			item, _ := array.At(context.Background(), runtime.Int(i))
 			out.Items = append(out.Items, DebugValueItem{Value: item})
 		}
 
 		out.Complete = true
 
 		return out, true
-	case *runtime.Object:
-		return inspectDebugMap(value, maxItems), true
-	case *data.FastObject:
-		return inspectDebugMap(value, maxItems), true
-	default:
-		return DebugValueInspection{}, false
 	}
-}
 
-func (a debugValueAccess) lookupTypeError(value runtime.Value, expected string) error {
-	return runtime.Errorf(runtime.ErrInvalidArgument, "debugger lookup requires %s, got %s", expected, a.classify(value).TypeName)
+	if object := debugObject(value); object != nil {
+		return inspectDebugMap(object, maxItems), true
+	}
+
+	return DebugValueInspection{}, false
 }
