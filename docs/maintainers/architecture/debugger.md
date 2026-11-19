@@ -57,10 +57,11 @@ The public `Session` composes three private concrete components in
   All inspection and reference invalidation run under the lifecycle command lock.
 
 `Session` retains source-event projection and coordinates transitions between
-these owners. Run preparation succeeds before it invalidates inspection
-references and enters the VM. Close first rejects new work and cancels execution,
-then acquires the command lock; Session clears inspection references and captured
-hits before lifecycle cleanup releases execution and embedding resources.
+these owners. The command lock prevents inspection from observing references
+during a transition. A replacement stop invalidates the preceding stop's
+references. Close rejects new work, cancels execution, then acquires the
+command lock. Session clears inspection references and captured hits before
+lifecycle cleanup releases execution and embedding resources.
 
 Source metadata belongs to Session. Breakpoints and inspection borrow the same
 source and debug-point index by pointer; the index is never copied after use.
@@ -160,15 +161,67 @@ isolates hook panics. Embedders own the cost of the hook itself. The SDK's
 opaque host wrapper can obtain a declared semantic name from its explicit
 type descriptor without consulting the target.
 
-The inspector reuses the description for formatting and reference eligibility.
-`Variables` enumerates a collection's immediate children. Evaluating an
-explicit member expression reads the selected child through VM lookup. Lookup
-on a typed-nil collection returns an invalid-operation error.
-Under the alpha.21 interface, nonempty native arrays, native objects and fast
-objects with at most `MaxItems` entries receive references. Buffered datasets
-of every size are summary-only. Indexed children follow source order and
-object keys sort lexicographically. Nested children receive shallow descriptions
-and their own stop-scoped references when eligible.
+### Paging and stop-scoped references
+
+`Variables(ctx, reference, page)` asks the VM's `ReadChildren` for one page.
+The zero page requests 100 immediate children. The maximum is 1,000.
+`VariablePage.Normalize` validates the filter and the signed 64-bit range
+before any child access. Apply the offset within the chosen view. The combined
+view places named children first. When its boundary is unknown, callers can
+retry with the named or indexed filter after `errors.ErrUnsupported`.
+A short successful page ends that view. Indexed names give absolute decimal
+positions. Named children retain their exact keys. A malformed UTF-8 key
+fails only pages that select it.
+
+Arrays and VM datasets backed by a native array use direct indexed reads.
+A million-element array takes one handle to describe. Fetching 20 positions
+reads 20 children, each with its own shallow description. Optional
+`IndexedCount` and `NamedCount` are detached, exact snapshots. Zero is a
+known empty view and nil is an unknown count. A known size can also accompany
+a summary-only value.
+
+Dense fast objects page directly in shape order. A sparse shape can scan up
+to 128 slots for occupied positions. Native objects and fast dictionaries
+sort up to 128 unordered keys on explicit expansion. Core bounds the backing
+scan conservatively. The live count plus successful removals since allocation
+must fit within 128, and the original capacity hint must also fit. A singleton
+therefore becomes summary-only after 128 deletions and reinsertions. Removing
+a missing property leaves the budget intact. Keys longer than
+64 KiB make the unordered backing ineligible for sorting. Replacing the
+backing on clear resets its history. These objects report their exact property
+count and an indexed count of zero. The VM returns an empty indexed page
+without checking or enumerating the named backing. A summary-only object has
+reference zero, so a session rejects an expansion request using that reference.
+
+Host values can implement `runtime.DebugChildrenProvider` separately from
+presentation. `DebugChildrenInfo` reports the named and indexed views, and
+`DebugChildAt` reads a specific position in one view. The host must guarantee
+bounded, read-only access and stable reachable storage throughout the pause.
+This includes backing slices lent to native arrays. A host without that
+guarantee can supply independently safe metadata and leave the views
+unreadable. Explicit expression member reads retain their own VM lookup rules.
+
+The inspector identifies a root by frame index, binding namespace and name.
+Each frame exposes one visible local per name. A backend can reorder its locals
+within a stop. A child is identified by parent handle, kind and absolute position.
+`Locals` and `FrameLocals(ctx, 0)` therefore agree, as do overlapping pages.
+The command mutex serializes inspection and resume. New references are staged
+while reading and describing values. Under the lifecycle mutex the inspector
+checks cancellation and terminal state, then publishes the complete result
+and all its handles. Inspection failure consumes no IDs. The per-stop budget
+is 65,536 live handles. Exhaustion of that budget or positive ID space returns
+`debugger.ErrValueReferencesExhausted`. Previously issued handles remain usable.
+
+A failed inspection affects only its request. Close can interrupt a provider
+through its read context and stop subsequent child descriptions. A runtime-error
+stop remains inspectable until execution resumes or cleanup begins. Starting or resuming execution,
+termination and Close invalidate the previous stop's handles. The VM calls
+the resume admission callback before dispatch or runtime-error termination.
+A rejected resume preserves the paused handles. An admitted resume releases
+their values even if execution continues for a long time. IDs increase
+across stops. Retained pages, names, summaries and counts survive cleanup.
+During a live stop stale or unknown handles match `ErrInvalidValueReference`.
+Outside a stop the operation returns a session-state error.
 
 `MaxBytes` bounds each type and display independently, including quotes,
 escapes and a three-byte `...` truncation marker. For truncated text, budgets
@@ -261,6 +314,139 @@ frames, breakpoint resolution, stale value references, formatter bounds,
 runtime errors, completion, and cleanup failures. Benchmark debug metadata hooks
 and repeated inspection when a change could affect normal dispatch or paused
 interaction cost.
+
+### Measuring a fixed page
+
+`BenchmarkDebugBufferedPage` times the VM reader. `BenchmarkDebugSessionVariablePage`
+times a native session stopped in a compiled FQL program, including shallow
+formatting and publication. Both read the final 20 elements, after constructing
+the collection outside the timed loop. The session uses the same scalar payload
+at each position. The index names grow from two to six decimal digits. The VM
+benchmark also reads positions 80 through 99 at every size to hold names and
+payloads constant.
+
+```sh
+go test -mod=readonly -p=1 ./pkg/vm ./pkg/engine -run '^$' \
+  -bench 'Benchmark(DebugBufferedPage|DebugSessionVariablePage)' \
+  -benchmem -cpu=1 -benchtime=200ms -count=6
+go test -mod=readonly -p=1 ./pkg/debugger ./pkg/vm ./test/benchmarks -run '^$' \
+  -bench 'Benchmark(FormatValue|DebugValueAccessDescribe|DebugSourcePointDispatch|DispatchLongStatement_None|DirectMutation_ObjectProperty_None|ObjectLiterals_None)' \
+  -benchmem -cpu=1 -benchtime=200ms -count=6
+```
+
+`TestBufferedPageReadPositions` counts accesses at offsets 1,000 and 999,980.
+`go test ./scripts -run TestDebuggerBufferedReadCounts` verifies the concrete
+backing calls for each case using Go coverage counters. Both descriptions read
+zero elements. Each tail page makes 20 native array lookups. The dataset case
+also makes 20 calls to its buffered getter.
+
+The table gives median costs for the 20-element tail page on Go 1.27.3,
+darwin/arm64, Apple M2 Max. Times are rounded to whole nanoseconds.
+
+| Collection | Elements | VM ns/op | VM B/op | Session ns/op | Session B/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Array | 100 | 516 | 1,200 | 2,697 | 3,088 |
+| Array | 10,000 | 626 | 1,232 | 2,913 | 3,120 |
+| Array | 1,000,000 | 781 | 1,280 | 3,176 | 3,168 |
+| Buffered dataset | 100 | 542 | 1,200 | 2,767 | 3,088 |
+| Buffered dataset | 10,000 | 638 | 1,232 | 2,796 | 3,120 |
+| Buffered dataset | 1,000,000 | 796 | 1,280 | 3,251 | 3,168 |
+
+Every VM page took two allocations, and every session page took five. At
+the fixed offset of 80, the VM used 1,200 B at every size. Median times
+were 514, 566 and 692 ns/op for arrays and 558, 595 and 711 ns/op for
+datasets. Task 2 could only return a summary for collections of these sizes
+with its default settings.
+
+The ordinary JSON and MessagePack decoders write Go string keys directly into
+native objects. On Go 1.27.3 the flat 256-property fixture took 1,037 JSON and
+255 MessagePack allocations per decode. The 5,000-object fixture took 25,075
+and 20,003. Task 2 took 1,036 and 254 for the flat fixtures and 20,075 and
+15,003 for the nested fixtures. The difference is one shared bounds record
+per native object. Plain Go value copies share that record until one receiver
+clears its map. An old copy can outlive a cleared receiver without retaining
+its replacement values. The [native object inspection investigation](native-object-inspection-cost.md)
+records the open allocation target and the cost of discovering names at a stop.
+
+```sh
+go test -mod=readonly -p=1 ./pkg/encoding/json ./pkg/encoding/msgpack -run '^$' \
+  -bench 'CodecDecode/(flat_object_256|nested_object_5000)$' \
+  -benchmem -cpu=1 -benchtime=200ms -count=6
+go test ./pkg/runtime -run '^$' -bench '^BenchmarkNewObjectOf$' \
+  -benchmem -cpu=1 -benchtime=200ms -count=6
+```
+
+Shallow inspection has a small fixed cost relative to Task 2 (`3ac60f34`).
+In six 200 ms samples on the same machine, builtin
+string description went from 20.55 to 23.07 ns/op and custom description
+from 12.76 to 17.43 ns/op. Their allocations stayed at 16 B / 1 allocation
+and 0 B / 0 allocations respectively. Formatting a three-element array went
+from 54.37 to 65.45 ns/op and from 8 to 24 B/op. The additional allocation
+holds both detached 64-bit counts. A custom display went from 29.56 to
+35.68 ns/op and remained allocation-free. Plain, escaped and late-malformed
+strings used 64 B and one allocation for both 96-byte and 4 MiB inputs
+at a 64-byte presentation budget.
+
+The same comparison found no statistically significant timing change in
+source-point dispatch (7.63 to 7.68 ns/op), direct object mutation (370 to
+376 ns/op), long-statement dispatch (465 to 473 ns/op), or object literals
+(446 to 418 ns/op). Bytes and allocations per operation were identical for
+each pair.
+
+### FastObject dictionary costs
+
+These are medians on Go 1.27.3, darwin/arm64, Apple M2 Max. The timing columns
+compare Task 2 (`3ac60f34`), the first pagination commit (`75653d64`), and
+the follow-up. The allocation columns give Task 2 → follow-up. The first
+pagination commit and the follow-up had the same allocation counts.
+
+| Operation | Task 2 ns/op | First PR ns/op | Follow-up ns/op | B/op | allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Build four-field shape | 317 | 317 | 316 | 224 → 224 | 5 → 5 |
+| Overwrite shape field | 8.86 | 8.50 | 8.65 | 0 → 0 | 0 → 0 |
+| Transition on field 65 | 1,281 | 1,308 | 1,317 | 4,952 → 4,968 | 4 → 5 |
+| Build 65-field dictionary | 15,842 | 16,390 | 16,337 | 40,280 → 40,296 | 69 → 70 |
+| Overwrite dictionary field | 15.42 | 16.09 | 9.94 | 0 → 0 | 0 → 0 |
+| Insert and remove one field | 36.90 | 37.87 | 32.19 | 0 → 0 | 0 → 0 |
+| Dictionary Copy | 2,369 | 2,430 | 2,417 | 5,016 → 5,032 | 5 → 6 |
+| Dictionary Clone | 2,486 | 2,522 | 2,503 | 5,016 → 5,032 | 5 → 6 |
+| Clear and write one field | 90.06 | 100.45 | 100.70 | 336 → 352 | 2 → 3 |
+| VM direct property mutation | 357 | 358 | 360 | 128 → 128 | 4 → 4 |
+| VM four-field literal | 427 | 428 | 428 | 288 → 288 | 6 → 6 |
+| VM sixteen 65-field literals | 390,358 | 390,863 | 388,124 | 663,252 → 663,508 | 1,123 → 1,139 |
+
+The fixtures use the same warmed shape cache, keys, and 64-field dictionary
+threshold on all three revisions. The isolated transition starts with 64
+populated slots. Copy and Clone retain the result. Pairing insertion with
+removal holds dictionary size constant. The VM compiles the query before timing.
+Copy `pkg/vm/internal/data/fast_object_bench_test.go` and
+`test/benchmarks/bench_literals_test.go` into each older checkout and run this
+command serially in each tree, then compare with `benchstat`.
+
+```sh
+GOWORK=off go test -mod=readonly -p=1 ./pkg/vm/internal/data ./test/benchmarks -run '^$' \
+  -bench '^Benchmark(FastObject|ObjectLiterals_None|DirectMutation_ObjectProperty_None|ObjectDictionaryLiterals_None)$' \
+  -benchmem -cpu=1 -benchtime=200ms -count=6
+```
+
+A dictionary write now takes the map length after assignment, saving a second
+key lookup. The follow-up reduced overwrite time by 38% and insert/remove time
+by 15% against the first PR commit. The VM execution timings showed no
+statistically significant difference across the three revisions.
+
+Array and dataset pages used the same bytes and allocations at every measured
+size as the first PR commit (two allocations in the VM and five in the session).
+Small timing differences for shape overwrites and dataset session reads did
+not reproduce in ten alternating 200 ms samples. The native constructor and
+both codecs reproduced the allocation counts recorded above.
+
+The dictionary wrapper still costs 16 bytes and one allocation each time a
+backing map is created or replaced. That includes transition, Copy, Clone,
+and Clear. The wrapper keeps bounds with the map while shape-backed objects
+keep their original footprint. Clear detaches the old backing for existing
+iterators and value copies. Removing that allocation is deferred to the
+dedicated performance PR along with the separately measured
+[native object allocation](native-object-inspection-cost.md).
 
 ## Related guides
 

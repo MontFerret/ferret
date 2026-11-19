@@ -2,8 +2,7 @@ package debugger
 
 import (
 	"context"
-	"sort"
-	"strconv"
+	"slices"
 
 	apidebugger "github.com/MontFerret/api/debugger"
 
@@ -22,24 +21,30 @@ type inspector struct {
 	valueRefs    map[ValueReference]runtime.Value
 	pointIndex   *debugpoint.Index
 	source       *source.Source
+	occurrences  map[occurrence]ValueReference
+	lifecycle    *sessionLifecycle
 	params       []string
 	format       FormatOptions
-	nextValueRef ValueReference
+	lastValueRef ValueReference
+	handleLimit  int
 }
 
-func newInspector(config Config, src *source.Source, points *debugpoint.Index, format FormatOptions) inspector {
-	params := append([]string(nil), config.Params...)
-	sort.Strings(params)
+func newInspector(lifecycle *sessionLifecycle, config Config, src *source.Source, points *debugpoint.Index, format FormatOptions) inspector {
+	params := slices.Clone(config.Params)
+	slices.Sort(params)
+	params = slices.Compact(params)
 
 	return inspector{
-		execution:    config.Execution,
-		values:       config.Values,
-		valueRefs:    make(map[ValueReference]runtime.Value),
-		pointIndex:   points,
-		params:       params,
-		source:       src,
-		format:       format,
-		nextValueRef: 1,
+		execution:   config.Execution,
+		values:      config.Values,
+		valueRefs:   make(map[ValueReference]runtime.Value),
+		pointIndex:  points,
+		params:      params,
+		source:      src,
+		format:      format,
+		handleLimit: 1 << 16,
+		occurrences: make(map[occurrence]ValueReference),
+		lifecycle:   lifecycle,
 	}
 }
 
@@ -62,71 +67,97 @@ func (s *inspector) frames() ([]Frame, error) {
 	return out, nil
 }
 
-func (s *inspector) frameLocals(frame int) ([]Variable, error) {
+func (s *inspector) frameLocals(ctx context.Context, frame int) ([]Variable, error) {
 	locals, err := s.rawFrameLocals(frame)
 	if err != nil {
 		return nil, err
 	}
 
+	batch := inspectionBatch{owner: s}
 	out := make([]Variable, 0, len(locals)+len(s.params))
 
+	names := make(map[string]struct{}, len(locals))
 	for _, local := range locals {
-		out = append(out, Variable{Name: local.Name, Mutable: local.Mutable, Value: s.debugValue(local.Value)})
+		if _, duplicate := names[local.Name]; duplicate {
+			return nil, runtime.Errorf(runtime.ErrUnexpected, "duplicate visible local %q in frame %d", local.Name, frame)
+		}
+		names[local.Name] = struct{}{}
+
+		value, err := batch.describe(ctx, occurrence{frame: frame, kind: localBinding, name: local.Name}, local.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		out = append(out, Variable{Name: local.Name, Mutable: local.Mutable, Value: value})
 	}
 
-	if len(s.params) == 0 {
-		return out, nil
-	}
+	if len(s.params) > 0 {
+		params := s.execution.Params()
 
-	params := s.execution.Params()
-	for _, name := range s.params {
-		if value, exists := params.Get(name); exists {
-			out = append(out, Variable{Name: "@" + name, Param: true, Value: s.debugValue(value)})
+		for _, name := range s.params {
+			if raw, ok := params.Get(name); ok {
+				value, err := batch.describe(ctx, occurrence{frame: frame, kind: paramBinding, name: name}, raw)
+				if err != nil {
+					return nil, err
+				}
+
+				out = append(out, Variable{Name: "@" + name, Param: true, Value: value})
+			}
 		}
 	}
 
+	if err := batch.publish(ctx); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
-func (s *inspector) variables(reference ValueReference) ([]Variable, error) {
-	if !reference.Valid() {
-		return nil, runtime.Error(runtime.ErrInvalidArgument, "debug value reference must be positive")
+func (s *inspector) variables(ctx context.Context, reference ValueReference, page VariablePage) ([]Variable, error) {
+	page, err := page.Normalize()
+	if err != nil {
+		return nil, err
 	}
 
-	value, exists := s.valueRefs[reference]
-	if !exists {
-		return nil, runtime.Errorf(runtime.ErrNotFound, "debug value reference %d", reference)
+	raw, ok := s.valueRefs[reference]
+	if !ok || !reference.Valid() {
+		return nil, apidebugger.ErrInvalidValueReference
 	}
 
-	inspection, ok := s.values.Inspect(value, s.format.MaxItems)
-	if !ok || !inspection.Complete || !s.canExpand(inspection.Kind, inspection.Length) {
-		return nil, runtime.Errorf(runtime.ErrInvalidOperation, "debug value reference %d is not expandable", reference)
+	// Close can interrupt a cooperative provider without canceling execution on
+	// request cancellation. Only one command can own activeCancel at a time.
+	readCtx, cancel := context.WithCancelCause(ctx)
+	id := s.lifecycle.setActiveCancel(cancel)
+	defer s.lifecycle.clearActiveCancel(id)
+	defer cancel(nil)
+
+	items, err := s.values.ReadChildren(readCtx, raw, page)
+	if err != nil {
+		return nil, err
 	}
 
-	if inspection.Kind == vm.DebugValueArray {
-		out := make([]Variable, 0, len(inspection.Items))
-
-		for i, item := range inspection.Items {
-			out = append(out, Variable{
-				Name:  strconv.Itoa(i),
-				Value: s.debugValue(item.Value),
-			})
-		}
-
-		return out, nil
+	if int64(len(items)) > page.Count {
+		return nil, runtime.Error(runtime.ErrUnexpected, "debug value access exceeded requested count")
 	}
 
-	items := append([]vm.DebugValueItem(nil), inspection.Items...)
-	sort.Slice(items, func(i, j int) bool { return items[i].Key < items[j].Key })
-
+	batch := inspectionBatch{owner: s}
 	out := make([]Variable, 0, len(items))
 	for _, item := range items {
-		out = append(out, Variable{
-			Name:  item.Key,
-			Value: s.debugValue(item.Value),
-		})
+		kind := indexedChild
+		if item.Kind == VariableFilterNamed {
+			kind = namedChild
+		}
+
+		value, err := batch.describe(readCtx, occurrence{parent: reference, kind: kind, position: item.Position}, item.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		out = append(out, Variable{Name: item.Name, Value: value})
 	}
 
+	if err := batch.publish(ctx); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -152,7 +183,17 @@ func (s *inspector) evaluateFrame(ctx context.Context, frame int, expression str
 		return Value{}, err
 	}
 
-	return s.debugValue(value), nil
+	batch := inspectionBatch{owner: s}
+	result, err := batch.describe(ctx, occurrence{}, value)
+	if err != nil {
+		return Value{}, err
+	}
+
+	if err := batch.publish(ctx); err != nil {
+		return Value{}, err
+	}
+
+	return result, nil
 }
 
 func (s *inspector) rawFrameLocals(frame int) ([]vm.DebugLocal, error) {
@@ -165,14 +206,6 @@ func (s *inspector) rawFrameLocals(frame int) ([]vm.DebugLocal, error) {
 	}
 
 	return s.execution.Locals()
-}
-
-func (s *inspector) debugValue(value runtime.Value) Value {
-	description := s.values.Describe(value)
-	result := formatValue(value, description, s.format.MaxBytes)
-	result.Reference = s.referenceForValue(value, description)
-
-	return result
 }
 
 func (s *inspector) locationForPC(pc int, functionID bytecode.FunctionID) source.Location {
@@ -192,25 +225,6 @@ func (s *inspector) locationForPC(pc int, functionID bytecode.FunctionID) source
 }
 
 func (s *inspector) resetValueReferences() {
-	if len(s.valueRefs) == 0 {
-		return
-	}
-
 	clear(s.valueRefs)
-}
-
-func (s *inspector) referenceForValue(value runtime.Value, description vm.DebugValueDescription) ValueReference {
-	if !s.canExpand(description.Children, description.Length) {
-		return 0
-	}
-
-	reference := s.nextValueRef
-	s.nextValueRef++
-	s.valueRefs[reference] = value
-
-	return reference
-}
-
-func (s *inspector) canExpand(kind vm.DebugValueKind, length int) bool {
-	return (kind == vm.DebugValueArray || kind == vm.DebugValueObject) && length > 0 && length <= s.format.MaxItems
+	clear(s.occurrences)
 }

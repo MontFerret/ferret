@@ -3,33 +3,41 @@ package runtime
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"hash/fnv"
 	"sort"
 	"strings"
+
+	"github.com/MontFerret/ferret/v2/pkg/internal/debugmap"
 )
 
 type Object struct {
 	data map[string]Value
+	// Go value copies share the backing map and its scan history.
+	bounds *debugmap.Bounds
 }
 
 func NewObject() *Object {
-	return &Object{make(map[string]Value)}
+	return NewObjectOf(0)
 }
 
 func NewObjectOf(size int) *Object {
-	return &Object{make(map[string]Value, size)}
+	o := &Object{data: make(map[string]Value, size), bounds: new(debugmap.Bounds)}
+	o.bounds.Reserve(size)
+
+	return o
 }
 
 // NewObjectWith creates a new object with the provided properties.
 // The properties are copied to ensure that the original map can be safely modified without affecting the created object.
 func NewObjectWith(props map[string]Value) *Object {
-	data := make(map[string]Value, len(props))
+	o := NewObjectOf(len(props))
 
 	for k, v := range props {
-		data[k] = v
+		o.setKey(k, v)
 	}
 
-	return &Object{data}
+	return o
 }
 
 func (t *Object) Type() Type {
@@ -157,6 +165,23 @@ func (t *Object) Compare(ctx context.Context, other Value) (Ordering, error) {
 	return Equal, nil
 }
 
+// DebugFieldsPageable reports whether a lexicographic key sort is bounded.
+func (t *Object) DebugFieldsPageable() bool { return t.bounds != nil && t.bounds.Pageable(len(t.data)) }
+
+// ReadDebugFields visits the selected interval in stable key order.
+func (t *Object) ReadDebugFields(start, end int, visit func(string, Value) error) error {
+	if t.bounds == nil {
+		return errors.ErrUnsupported
+	}
+
+	return debugmap.Read(t.data, *t.bounds, start, end, visit)
+}
+
+func (t *Object) setKey(key string, value Value) {
+	t.bounds.AddKey(key)
+	t.data[key] = value
+}
+
 func (t *Object) sortedKeys() []string {
 	keys := make([]string, 0, len(t.data))
 	for key := range t.data {
@@ -206,17 +231,17 @@ func (t *Object) Hash() uint64 {
 }
 
 func (t *Object) Copy() Value {
-	c := &Object{make(map[string]Value)}
+	c := NewObject()
 
 	for k, v := range t.data {
-		c.data[k] = v
+		c.setKey(k, v)
 	}
 
 	return c
 }
 
 func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
-	cloned := &Object{make(map[string]Value)}
+	cloned := NewObject()
 
 	var value Value
 
@@ -236,7 +261,7 @@ func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
 			value = value.Copy()
 		}
 
-		cloned.data[key] = value
+		cloned.setKey(key, value)
 	}
 
 	return cloned, nil
@@ -362,17 +387,27 @@ func (t *Object) Lookup(_ context.Context, key Value) (Value, bool, error) {
 }
 
 func (t *Object) Set(_ context.Context, key, value Value) error {
-	if value == nil {
-		value = None
-	}
-
-	t.data[key.String()] = value
+	t.SetString(key.String(), value)
 
 	return nil
 }
 
+// SetString stores a value under a native string key.
+func (t *Object) SetString(key string, value Value) {
+	if value == nil {
+		value = None
+	}
+
+	t.setKey(key, value)
+}
+
 func (t *Object) RemoveKey(_ context.Context, key Value) error {
-	delete(t.data, key.String())
+	keyName := key.String()
+	before := len(t.data)
+	delete(t.data, keyName)
+	if len(t.data) != before {
+		t.bounds.Removed()
+	}
 
 	return nil
 }
@@ -386,6 +421,7 @@ func (t *Object) Remove(ctx context.Context, value Value) error {
 
 		if equal {
 			delete(t.data, key)
+			t.bounds.Removed()
 			break
 		}
 	}
@@ -397,20 +433,20 @@ func (t *Object) Merge(ctx context.Context, other Map) error {
 	switch m := other.(type) {
 	case *Object:
 		for key, val := range m.data {
-			t.data[key] = val
+			t.setKey(key, val)
 		}
 
 		return nil
 	default:
 		return m.ForEach(ctx, func(ctx context.Context, value, key Value) (Boolean, error) {
-			t.data[key.String()] = value
+			t.setKey(key.String(), value)
 			return true, nil
 		})
 	}
 }
 
 func (t *Object) Clear(_ context.Context) error {
-	t.data = make(map[string]Value)
+	*t = *NewObject()
 
 	return nil
 }

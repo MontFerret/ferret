@@ -37,7 +37,11 @@ func (f *fakeExecution) Start(context.Context) (*vm.DebugExecutionEvent, error) 
 	return f.startEvent, nil
 }
 
-func (f *fakeExecution) Resume(_ context.Context, _ vm.DebugResumeMode, breakpoints vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
+func (f *fakeExecution) Resume(_ context.Context, _ vm.DebugResumeMode, breakpoints vm.DebugBreakpointPredicate, admitted func()) (*vm.DebugExecutionEvent, error) {
+	if admitted != nil && (f.resumeErr == nil || f.errorStatus != vm.DebugExecutionPaused) {
+		admitted()
+	}
+
 	if f.resumeErr != nil {
 		f.status = f.errorStatus
 

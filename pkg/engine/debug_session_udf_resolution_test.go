@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -320,6 +321,78 @@ RETURN y`
 	}
 }
 
+func TestDebugSessionRecursiveBindingReferences(t *testing.T) {
+	engine, err := New()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer engine.Close()
+	src := source.New("recur.fql", "FUNC recur(n) {\n LET box = [n]\n RETURN n > 0 ? recur(n - 1) : box\n}\nRETURN recur(2)")
+	plan, err := engine.CompileDebug(t.Context(), src)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer plan.Close()
+	s, err := plan.NewDebugSession(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer s.Close()
+	if _, err := s.SetBreakpoint(t.Context(), source.Location{Position: source.Position{Line: 3}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := s.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	for range 3 {
+		if e, err := s.Continue(t.Context()); err != nil || e.Reason != debugger.ReasonBreakpoint {
+			t.Fatalf("recursive stop: %+v, %v", e, err)
+		}
+	}
+
+	seen := make(map[debugger.ValueReference]int)
+
+	for frame := range 3 {
+		for range 2 {
+			locals, err := s.FrameLocals(t.Context(), frame)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var ref debugger.ValueReference
+
+			for _, v := range locals {
+				if v.Name == "box" {
+					ref = v.Value.Reference
+				}
+			}
+
+			if !ref.Valid() {
+				t.Fatalf("missing box in frame %d: %v", frame, locals)
+			}
+
+			if other, ok := seen[ref]; ok && other != frame {
+				t.Fatalf("frames %d and %d share %d", frame, other, ref)
+			}
+
+			seen[ref] = frame
+			page, err := s.Variables(t.Context(), ref, debugger.VariablePage{})
+			if err != nil || len(page) != 1 || page[0].Value.Display != fmt.Sprint(frame) {
+				t.Fatalf("frame %d: %+v, %v", frame, page, err)
+			}
+		}
+	}
+
+	if len(seen) != 3 {
+		t.Fatalf("refresh issued %d handles", len(seen))
+	}
+}
+
 func TestDebugSessionCallerFramesExposeBindingsCellsAndParameters(t *testing.T) {
 	engine, err := New()
 	if err != nil {
@@ -416,7 +489,8 @@ RETURN outer(2) + x + @input + box.value - 10`
 	if event.Location.Line != 6 {
 		t.Fatalf("unexpected mutable-cell StepIn: %#v", event)
 	}
-	if _, err := session.Variables(context.Background(), callerReference); !errors.Is(err, runtime.ErrNotFound) {
+
+	if _, err := session.Variables(context.Background(), callerReference, debugger.VariablePage{}); !errors.Is(err, apidebugger.ErrInvalidValueReference) {
 		t.Fatalf("expected caller reference to become stale on resume, got %v", err)
 	}
 	assertFrameValues(t, session, 0, map[string]string{"shared": "4", "@input": "5"})

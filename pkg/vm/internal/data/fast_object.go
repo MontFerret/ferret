@@ -2,17 +2,26 @@ package data
 
 import (
 	"context"
+	"errors"
 
+	"github.com/MontFerret/ferret/v2/pkg/internal/debugmap"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type FastObject struct {
 	cache         *ShapeCache
 	shape         *fastShape
-	dict          map[string]runtime.Value
+	dict          *fastDictionary
 	slots         []runtime.Value
 	size          int
 	dictThreshold int
+}
+
+// Keep unordered-table history with the dictionary so shape-backed VM objects
+// pay no additional allocation or storage cost.
+type fastDictionary struct {
+	values map[string]runtime.Value
+	bounds debugmap.Bounds
 }
 
 func NewFastObject(cache *ShapeCache, dictThreshold int) *FastObject {
@@ -123,11 +132,9 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 	}
 
 	if t.dict != nil {
-		if _, exists := t.dict[key]; !exists {
-			t.size++
-		}
-
-		t.dict[key] = value
+		t.dict.bounds.AddKey(key)
+		t.dict.values[key] = value
+		t.size = len(t.dict.values)
 
 		return nil, nil, 0, false
 	}
@@ -149,8 +156,9 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 
 	if t.dictThreshold > 0 && t.size+1 > t.dictThreshold {
 		t.toDict()
-		t.dict[key] = value
-		t.size = len(t.dict)
+		t.dict.bounds.AddKey(key)
+		t.dict.values[key] = value
+		t.size = len(t.dict.values)
 
 		return nil, nil, 0, false
 	}
@@ -180,8 +188,9 @@ func (t *FastObject) setString(key string, value runtime.Value) {
 
 func (t *FastObject) removeString(key string) {
 	if t.dict != nil {
-		if _, exists := t.dict[key]; exists {
-			delete(t.dict, key)
+		if _, exists := t.dict.values[key]; exists {
+			delete(t.dict.values, key)
+			t.dict.bounds.Removed()
 
 			t.size--
 		}
@@ -205,7 +214,7 @@ func (t *FastObject) toDict() {
 		return
 	}
 
-	dict := make(map[string]runtime.Value, t.size)
+	dict := &fastDictionary{values: make(map[string]runtime.Value, t.size)}
 	for idx, key := range t.shape.names {
 		if idx >= len(t.slots) {
 			break
@@ -217,28 +226,86 @@ func (t *FastObject) toDict() {
 			continue
 		}
 
-		dict[key] = val
+		dict.bounds.AddKey(key)
+		dict.values[key] = val
 	}
 
 	t.dict = dict
 	t.shape = nil
 	t.slots = nil
-	t.size = len(dict)
+	t.size = len(dict.values)
 }
 
 func (t *FastObject) len() int {
 	if t.dict != nil {
-		return len(t.dict)
+		return len(t.dict.values)
 	}
 
 	return t.size
 }
 
+// DebugFieldsPageable checks the actual shape width, including tombstones.
+func (t *FastObject) DebugFieldsPageable() bool {
+	if t.dict != nil {
+		return t.dict.bounds.Pageable(len(t.dict.values))
+	}
+
+	if t.shape == nil || len(t.shape.names) != len(t.slots) {
+		return false
+	}
+
+	return t.size == len(t.slots) || len(t.slots) <= debugmap.MaxKeys
+}
+
+// ReadDebugFields pages dense shapes directly in slot order. A small sparse
+// shape needs a bounded occupancy scan to locate the requested logical offset.
+func (t *FastObject) ReadDebugFields(start, end int, visit func(string, runtime.Value) error) error {
+	if t.dict != nil {
+		return debugmap.Read(t.dict.values, t.dict.bounds, start, end, visit)
+	}
+
+	if !t.DebugFieldsPageable() || start < 0 || end < start || end > t.size {
+		return errors.ErrUnsupported
+	}
+
+	if t.size == len(t.slots) {
+		for i := start; i < end; i++ {
+			if err := visit(t.shape.names[i], t.slots[i]); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	pos := 0
+
+	for slot, value := range t.slots {
+		if pos == end {
+			break
+		}
+
+		if value == nil {
+			continue
+		}
+
+		if pos >= start {
+			if err := visit(t.shape.names[slot], value); err != nil {
+				return err
+			}
+		}
+
+		pos++
+	}
+
+	return nil
+}
+
 func (t *FastObject) keys() []string {
 	if t.dict != nil {
-		keys := make([]string, 0, len(t.dict))
+		keys := make([]string, 0, len(t.dict.values))
 
-		for k := range t.dict {
+		for k := range t.dict.values {
 			keys = append(keys, k)
 		}
 
@@ -259,7 +326,7 @@ func (t *FastObject) keys() []string {
 
 func (t *FastObject) getByKey(key string) runtime.Value {
 	if t.dict != nil {
-		return t.dict[key]
+		return t.dict.values[key]
 	}
 
 	if idx, ok := t.shape.fields[key]; ok {
@@ -273,7 +340,7 @@ func (t *FastObject) getByKey(key string) runtime.Value {
 
 func (t *FastObject) getSlot(key string) (runtime.Value, bool) {
 	if t.dict != nil {
-		val, ok := t.dict[key]
+		val, ok := t.dict.values[key]
 
 		return val, ok
 	}
@@ -292,7 +359,7 @@ func (t *FastObject) getSlot(key string) (runtime.Value, bool) {
 
 func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
 	if t.dict != nil {
-		for key, val := range t.dict {
+		for key, val := range t.dict.values {
 			fn(key, val)
 		}
 
@@ -312,7 +379,7 @@ func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
 
 func (t *FastObject) toMap() runtime.Map {
 	if t.dict != nil {
-		return runtime.NewObjectWith(t.dict)
+		return runtime.NewObjectWith(t.dict.values)
 	}
 
 	ctx := context.Background()

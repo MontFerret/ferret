@@ -154,9 +154,7 @@ func (dec decoder) decodeMap(ctx context.Context, op *codecutil.Operation, d *vm
 			return runtime.None, err
 		}
 
-		if err := obj.Set(ctx, runtime.NewString(key), value); err != nil {
-			return runtime.None, err
-		}
+		obj.SetString(key, value)
 	}
 
 	return obj, nil

@@ -15,9 +15,9 @@ func TestDebugValueUsesRuntimeDebugInfo(t *testing.T) {
 	inspection := &inspector{values: vm.NewDebugValueAccess(), format: DefaultFormatOptions()}
 	fallbackType := "Resource"
 	tests := []struct {
-		name  string
-		value runtime.Value
 		want  Value
+		value runtime.Value
+		name  string
 	}{
 		{
 			name:  "custom type",
@@ -77,7 +77,7 @@ func TestDebugValueUsesRuntimeDebugInfo(t *testing.T) {
 func TestDebugValueBoundsRuntimeDebugInfo(t *testing.T) {
 	inspection := &inspector{
 		values: vm.NewDebugValueAccess(),
-		format: FormatOptions{MaxItems: 1, MaxBytes: 4},
+		format: FormatOptions{MaxBytes: 4},
 	}
 	got := inspection.debugValue(hostileDebugValue{info: runtime.DebugInfo{
 		TypeName: "HTML::Node",
@@ -91,7 +91,7 @@ func TestDebugValueBoundsRuntimeDebugInfo(t *testing.T) {
 func TestDebugValueBoundsRuntimeDebugInfoAtUTF8Boundaries(t *testing.T) {
 	inspection := &inspector{
 		values: vm.NewDebugValueAccess(),
-		format: FormatOptions{MaxItems: 1, MaxBytes: 4},
+		format: FormatOptions{MaxBytes: 4},
 	}
 	got := inspection.debugValue(hostileDebugValue{info: runtime.DebugInfo{
 		TypeName: "类类",
@@ -110,7 +110,7 @@ func TestDebugValueNormalizesMalformedRuntimeDebugInfo(t *testing.T) {
 	malformed := string([]byte{'a', 0xff, 'b'})
 	inspection := &inspector{
 		values: vm.NewDebugValueAccess(),
-		format: FormatOptions{MaxItems: 1, MaxBytes: 8},
+		format: FormatOptions{MaxBytes: 8},
 	}
 	got := inspection.debugValue(hostileDebugValue{info: runtime.DebugInfo{
 		TypeName: malformed,
@@ -179,17 +179,28 @@ func TestDebugValueReadsChildHookOnlyOnExpansion(t *testing.T) {
 	calls := 0
 	value := runtime.NewArrayWith(hostileDebugValue{infoCalls: &calls, info: runtime.DebugInfo{Display: "child"}})
 	s := inspector{
-		values:       vm.NewDebugValueAccess(),
-		format:       FormatOptions{MaxItems: 1, MaxBytes: 64},
-		nextValueRef: 1,
-		valueRefs:    make(map[ValueReference]runtime.Value),
+		values:      vm.NewDebugValueAccess(),
+		format:      FormatOptions{MaxBytes: 64},
+		lifecycle:   &sessionLifecycle{},
+		handleLimit: 1 << 16,
+		occurrences: make(map[occurrence]ValueReference),
+		valueRefs:   make(map[ValueReference]runtime.Value),
 	}
-	parent := s.debugValue(value)
+
+	batch := inspectionBatch{owner: &s}
+	parent, err := batch.describe(t.Context(), occurrence{}, value)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := batch.publish(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 	if calls != 0 || parent.Display != "Array(1)" || !parent.Reference.Valid() {
 		t.Fatalf("parent = %+v, child called %d times", parent, calls)
 	}
 
-	children, err := s.variables(parent.Reference)
+	children, err := s.variables(t.Context(), parent.Reference, VariablePage{})
 	if err != nil || len(children) != 1 || calls != 1 || children[0].Value.Display != "child" {
 		t.Fatalf("children = %+v, calls = %d, err = %v", children, calls, err)
 	}
@@ -229,9 +240,10 @@ func TestEvaluateUsesSessionBudgetForOperandType(t *testing.T) {
 	calls := 0
 	host := hostileDebugValue{infoCalls: &calls, info: runtime.DebugInfo{TypeName: "HTML::Node"}}
 	s := inspector{
+		lifecycle: &sessionLifecycle{},
 		execution: &fakeExecution{locals: []vm.DebugLocal{{Name: "node", Value: host}}},
 		values:    vm.NewDebugValueAccess(),
-		format:    FormatOptions{MaxItems: 3, MaxBytes: 8},
+		format:    FormatOptions{MaxBytes: 8},
 	}
 	shown, err := s.evaluateFrame(t.Context(), 0, "node")
 	if err != nil || shown.Type != "HTML:..." || calls != 1 {
@@ -256,14 +268,15 @@ func TestFrameLocalsSnapshotsDeclaredParamsOnce(t *testing.T) {
 		calls    int
 	}{
 		{nil, []string{"local"}, 0},
-		{[]string{"z", "missing", "a"}, []string{"local", "@a", "@z"}, 1},
+		{[]string{"z", "missing", "a", "z"}, []string{"local", "@a", "@z"}, 1},
 	} {
 		execution := &fakeExecution{
 			locals: []vm.DebugLocal{{Name: "local", Value: runtime.True}},
 			params: runtime.Params{"a": runtime.True, "z": runtime.False, "undeclared": runtime.None},
 		}
-		s := newInspector(Config{Execution: execution, Params: tc.declared, Values: vm.NewDebugValueAccess()}, nil, nil, DefaultFormatOptions())
-		locals, err := s.frameLocals(0)
+
+		s := newInspector(&sessionLifecycle{}, Config{Execution: execution, Params: tc.declared, Values: vm.NewDebugValueAccess()}, nil, nil, DefaultFormatOptions())
+		locals, err := s.frameLocals(t.Context(), 0)
 		if err != nil || len(locals) != len(tc.want) || execution.paramsCalls != tc.calls {
 			t.Fatalf("declared %v: locals = %+v, err = %v, Params calls = %d", tc.declared, locals, err, execution.paramsCalls)
 		}

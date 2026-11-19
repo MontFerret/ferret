@@ -63,7 +63,7 @@ func TestDebugExecutionTerminationRetainsOnlyCleanupErrors(t *testing.T) {
 					instance.sourcePointObserver = &recordingSourcePointObserver{action: sourcePointTerminate}
 				}
 
-				event, err := execution.Resume(ctx, DebugResumeContinue, nil)
+				event, err := execution.Resume(ctx, DebugResumeContinue, nil, nil)
 				if err != nil || event == nil || event.Reason != DebugStopTerminated {
 					t.Fatalf("termination: event=%+v err=%v", event, err)
 				}

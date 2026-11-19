@@ -62,7 +62,7 @@ func TestDebugAdapterPreservesContextErrors(t *testing.T) {
 			return err
 		},
 		"variables": func(ctx context.Context) error {
-			_, err := session.Variables(ctx, 1)
+			_, err := session.Variables(ctx, 1, apidebugger.VariablePage{})
 
 			return err
 		},

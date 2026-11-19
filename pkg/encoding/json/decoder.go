@@ -60,9 +60,7 @@ func (dec decoder) decodeValue(ctx context.Context, op *codecutil.Operation, jde
 				return fmt.Errorf("json: expected object key before value")
 			}
 
-			if err := top.obj.Set(ctx, runtime.NewString(top.key), val); err != nil {
-				return err
-			}
+			top.obj.SetString(top.key, val)
 
 			top.expectKey = true
 			top.key = ""

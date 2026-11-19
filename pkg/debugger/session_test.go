@@ -258,7 +258,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatalf("expected expandable local, got %#v", locals)
 	}
 
-	children, err := session.Variables(context.Background(), locals[0].Value.Reference)
+	children, err := session.Variables(context.Background(), locals[0].Value.Reference, VariablePage{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +267,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatalf("unexpected object children: %#v", children)
 	}
 
-	items, err := session.Variables(context.Background(), children[0].Value.Reference)
+	items, err := session.Variables(context.Background(), children[0].Value.Reference, VariablePage{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 		t.Fatalf("unexpected array children: %#v", items)
 	}
 
-	nested, err := session.Variables(context.Background(), items[1].Value.Reference)
+	nested, err := session.Variables(context.Background(), items[1].Value.Reference, VariablePage{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,7 +286,7 @@ func TestSessionVariablesExpandNestedCollections(t *testing.T) {
 	}
 }
 
-func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T) {
+func TestSessionFormatBudgetIsIndependentOfExpansion(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
 	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
@@ -303,7 +303,7 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 		Services:    &fakeSessionServices{},
 		Source:      src,
 		DebugPoints: []bytecode.DebugPoint{point},
-		Format:      FormatOptions{MaxItems: 3, MaxBytes: 8},
+		Format:      FormatOptions{MaxBytes: 8},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -318,15 +318,16 @@ func TestSessionVariablesStaySummarizedWhenCollectionExceedsBounds(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(locals) != 1 || locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(4)" {
-		t.Fatalf("expected bounded summary without reference, got %#v", locals)
+
+	if len(locals) != 1 || !locals[0].Value.Reference.Valid() || locals[0].Value.Display != "Array(4)" {
+		t.Fatalf("expected shallow expandable summary, got %#v", locals)
 	}
 
 	if got, err := session.Evaluate(t.Context(), "'abcdefgh'"); err != nil || got.Display != `"abc..."` {
 		t.Fatalf("eight-byte display = %q, err = %v", got.Display, err)
 	}
 
-	if _, err := session.Variables(context.Background(), 0); !errors.Is(err, runtime.ErrInvalidArgument) {
+	if _, err := session.Variables(context.Background(), 0, VariablePage{}); !errors.Is(err, apidebugger.ErrInvalidValueReference) {
 		t.Fatalf("expected invalid reference error, got %v", err)
 	}
 }
@@ -372,12 +373,12 @@ func TestSessionVariablesInvalidateReferencesAfterResume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := session.Variables(context.Background(), reference); !errors.Is(err, runtime.ErrNotFound) {
+	if _, err := session.Variables(context.Background(), reference, VariablePage{}); !errors.Is(err, apidebugger.ErrInvalidValueReference) {
 		t.Fatalf("expected stale reference to be rejected, got %v", err)
 	}
 }
 
-func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
+func TestSessionInspectionRequiresPausedState(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
 	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	execution := &fakeExecution{
@@ -400,24 +401,22 @@ func TestSessionVariablesInvalidateReferencesAtStart(t *testing.T) {
 	}
 	defer session.Close()
 
-	locals, err := session.Locals(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	if locals, err := session.Locals(t.Context()); locals != nil || !errors.Is(err, &StateError{}) {
+		t.Fatalf("pre-start locals: %+v %v", locals, err)
 	}
-	reference := locals[0].Value.Reference
-	if !reference.Valid() {
-		t.Fatalf("expected expandable reference, got %#v", locals[0].Value)
+	if page, err := session.Variables(t.Context(), 0, VariablePage{Count: -1}); page != nil || !errors.Is(err, &StateError{}) {
+		t.Fatalf("pre-start page: %+v %v", page, err)
 	}
-
 	if _, err := session.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := session.Variables(context.Background(), reference); !errors.Is(err, runtime.ErrNotFound) {
-		t.Fatalf("expected pre-start reference to be rejected, got %v", err)
+
+	if locals, err := session.Locals(t.Context()); err != nil || len(locals) != 1 || locals[0].Value.Reference != 1 {
+		t.Fatalf("first stop: %v %v", locals, err)
 	}
 }
 
-func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
+func TestSessionSummaryWithoutReadableViews(t *testing.T) {
 	src := source.New("debug.fql", "RETURN 1")
 	point := bytecode.DebugPoint{ID: 1, PC: 0, Span: source.Span{Start: 0, End: 8}, FunctionID: bytecode.NoFunction}
 	value := runtime.NewArrayWith(runtime.NewInt(1))
@@ -429,7 +428,7 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	values := &fakeValueAccess{
 		inner: vm.NewDebugValueAccess(),
 		describe: func(runtime.Value) vm.DebugValueDescription {
-			return vm.DebugValueDescription{TypeName: "Array", Length: 1, Children: vm.DebugValueKind(255)}
+			return vm.DebugValueDescription{TypeName: "Array", Length: 1, Children: runtime.DebugChildrenInfo{}}
 		},
 	}
 	session, err := NewSession(Config{
@@ -456,7 +455,7 @@ func TestSessionVariablesRejectUnknownCollectionKind(t *testing.T) {
 	}
 }
 
-func TestSessionAbortedStartPreservesReferencesUntilRetry(t *testing.T) {
+func TestSessionAbortedStartPublishesNoReferences(t *testing.T) {
 	for _, invalid := range []string{"nil_context", "canceled_context"} {
 		t.Run(invalid, func(t *testing.T) {
 			execution := &fakeExecution{
@@ -491,11 +490,7 @@ func TestSessionAbortedStartPreservesReferencesUntilRetry(t *testing.T) {
 			}
 			t.Cleanup(func() { _ = session.Close() })
 
-			locals, err := session.Locals(context.Background())
-			if err != nil {
-				t.Fatal(err)
-			}
-			reference := locals[0].Value.Reference
+			const reference ValueReference = 1
 			expectedErr := runtime.ErrInvalidArgument
 			if invalid == "canceled_context" {
 				expectedErr = context.Canceled
@@ -509,16 +504,16 @@ func TestSessionAbortedStartPreservesReferencesUntilRetry(t *testing.T) {
 				t.Fatalf("aborted attempt: status=%v hooks=%d err=%v", execution.Status(), services.afterCalls, services.afterRunErr)
 			}
 
-			if _, err := session.Variables(context.Background(), reference); err != nil {
-				t.Fatalf("aborted start invalidated reference: %v", err)
+			if _, err := session.Variables(context.Background(), reference, VariablePage{}); !errors.Is(err, &StateError{}) {
+				t.Fatalf("inspection before successful start: %v", err)
 			}
 
 			if event, err := session.Start(t.Context()); err != nil || event.Reason != ReasonEntry {
 				t.Fatalf("retry: event=%+v err=%v", event, err)
 			}
 
-			if _, err := session.Variables(context.Background(), reference); !errors.Is(err, runtime.ErrNotFound) {
-				t.Fatalf("successful start retained stale reference: %v", err)
+			if locals, err := session.Locals(t.Context()); err != nil || len(locals) != 1 || locals[0].Value.Reference != 1 {
+				t.Fatalf("retry stop: %v %v", locals, err)
 			}
 
 			if services.afterCalls != 1 {

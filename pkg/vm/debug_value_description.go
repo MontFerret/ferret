@@ -7,9 +7,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/vm/internal/data"
 )
 
-// Describe reads a length or child shape only from concrete buffered values.
-// Host collection capabilities provide names without granting access.
-func (a debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
+// Describe reads only cheap native metadata or explicitly opted-in host hooks.
+// General host collection capabilities provide names without granting access.
+func (debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
 	d := DebugValueDescription{Length: -1}
 	if value == nil || value == runtime.None {
 		d.TypeName = runtime.TypeNone.Name()
@@ -56,17 +56,31 @@ func (a debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
 		d.TypeName = runtime.TypeArray.Name()
 		if v != nil {
 			length, _ := v.Length(context.Background())
-			d.Length, d.Children = int(length), DebugValueArray
+			d.Length = int(length)
+			d.Children = indexedChildren(d.Length)
 		}
 	case *data.DataSet:
 		d.TypeName = runtime.TypeArray.Name()
 		d.Length = v.BufferedLength()
+		d.Children = indexedChildren(d.Length)
+	case *runtime.Object, *data.FastObject:
+		d.TypeName = runtime.TypeObject.Name()
+		if object := debugObject(value); object != nil {
+			length, _ := object.Length(context.Background())
+			d.Length = int(length)
+			d.Children = namedChildren(d.Length, object.DebugFieldsPageable())
+		}
+	default:
+		describeHost(value, &d)
+	}
+
+	return d
+}
+
+func describeHost(value runtime.Value, d *DebugValueDescription) {
+	switch value.(type) {
 	case runtime.ObjectLike:
 		d.TypeName = runtime.TypeObject.Name()
-		if object := debugObject(v); object != nil {
-			length, _ := object.Length(context.Background())
-			d.Length, d.Children = int(length), DebugValueObject
-		}
 	case runtime.List:
 		d.TypeName = runtime.TypeList.Name()
 	case runtime.Map:
@@ -82,10 +96,40 @@ func (a debugValueAccess) Describe(value runtime.Value) DebugValueDescription {
 	}
 
 	if inspectable, ok := value.(runtime.DebugInspectable); ok {
-		d.Hint = a.safeDebugInfo(inspectable)
+		d.Hint = safeDebugInfo(inspectable)
 	}
 
-	return d
+	if provider, ok := value.(runtime.DebugChildrenProvider); ok {
+		d.Children = safeChildrenInfo(provider)
+	}
+}
+
+func indexedChildren(length int) runtime.DebugChildrenInfo {
+	return runtime.DebugChildrenInfo{
+		Named:   runtime.DebugChildView{Known: true},
+		Indexed: runtime.DebugChildView{Known: length >= 0, Count: int64(max(0, length)), Readable: length > 0},
+	}
+}
+
+func namedChildren(length int, pageable bool) runtime.DebugChildrenInfo {
+	return runtime.DebugChildrenInfo{
+		Indexed: runtime.DebugChildView{Known: true},
+		Named:   runtime.DebugChildView{Known: true, Count: int64(length), Readable: pageable && length > 0},
+	}
+}
+
+func safeChildrenInfo(provider runtime.DebugChildrenProvider) (info runtime.DebugChildrenInfo) {
+	defer func() {
+		if recover() != nil {
+			info = runtime.DebugChildrenInfo{}
+		}
+	}()
+	info = provider.DebugChildrenInfo()
+	if info.Named.Known && info.Named.Count < 0 || info.Indexed.Known && info.Indexed.Count < 0 {
+		return runtime.DebugChildrenInfo{}
+	}
+
+	return info
 }
 
 func describeScalarPointer[T runtime.Value](value *T, typ runtime.Type) DebugValueDescription {
@@ -98,7 +142,7 @@ func describeScalarPointer[T runtime.Value](value *T, typ runtime.Type) DebugVal
 }
 
 // Recover only around the optional embedder hook.
-func (debugValueAccess) safeDebugInfo(value runtime.DebugInspectable) (info runtime.DebugInfo) {
+func safeDebugInfo(value runtime.DebugInspectable) (info runtime.DebugInfo) {
 	defer func() {
 		if recover() != nil {
 			info = runtime.DebugInfo{}

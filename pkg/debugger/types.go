@@ -16,6 +16,9 @@ type (
 	Reason = apidebugger.Reason
 	// BreakpointID identifies a breakpoint within one session.
 	BreakpointID = apidebugger.BreakpointID
+	// VariablePage and VariableFilter select a bounded immediate-child view.
+	VariablePage   = apidebugger.VariablePage
+	VariableFilter = apidebugger.VariableFilter
 	// ValueReference identifies an expandable value in one paused state.
 	ValueReference = apidebugger.ValueReference
 	// BreakpointBindingMode selects how a source location binds.
@@ -35,10 +38,8 @@ type (
 	// Event reports a debugger stop, completion, or termination.
 	Event = apidebugger.Event
 
-	// FormatOptions bounds debugger value presentation and explicit expansion.
+	// FormatOptions bounds debugger value presentation.
 	FormatOptions struct {
-		// MaxItems is the largest collection the session can expand.
-		MaxItems int
 		// MaxBytes bounds each type and display including quotes and truncation.
 		MaxBytes int
 	}
@@ -65,6 +66,9 @@ type (
 )
 
 const (
+	VariableFilterAll                      = apidebugger.VariableFilterAll
+	VariableFilterNamed                    = apidebugger.VariableFilterNamed
+	VariableFilterIndexed                  = apidebugger.VariableFilterIndexed
 	ReasonEntry                            = apidebugger.ReasonEntry
 	ReasonBreakpoint                       = apidebugger.ReasonBreakpoint
 	ReasonStep                             = apidebugger.ReasonStep
@@ -79,7 +83,7 @@ const (
 
 // DefaultFormatOptions returns conservative debugger formatting limits.
 func DefaultFormatOptions() FormatOptions {
-	return FormatOptions{MaxItems: 8, MaxBytes: 1024}
+	return FormatOptions{MaxBytes: 1024}
 }
 
 var _ apidebugger.Session = (*Session)(nil)

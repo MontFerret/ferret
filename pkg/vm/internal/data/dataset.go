@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MontFerret/ferret/v2/pkg/internal/valueset"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
@@ -62,18 +63,34 @@ func (ds *DataSet) Length(ctx context.Context) (runtime.Int, error) {
 // BufferedLength reports the in-memory array length for shallow inspection.
 // An unavailable buffer has unknown length. Never delegate to host list methods.
 func (ds *DataSet) BufferedLength() int {
-	if ds == nil {
-		return -1
-	}
-
-	buffer, ok := ds.values.(*runtime.Array)
-	if !ok || buffer == nil {
+	buffer := ds.bufferedArray()
+	if buffer == nil {
 		return -1
 	}
 
 	length, _ := buffer.Length(context.Background())
 
 	return int(length)
+}
+
+// BufferedAt reads only from the native backing accepted by BufferedLength.
+func (ds *DataSet) BufferedAt(ctx context.Context, index runtime.Int) (runtime.Value, bool, error) {
+	buffer := ds.bufferedArray()
+	if buffer == nil {
+		return nil, false, errors.ErrUnsupported
+	}
+
+	return buffer.LookupAt(ctx, index)
+}
+
+func (ds *DataSet) bufferedArray() *runtime.Array {
+	if ds == nil {
+		return nil
+	}
+
+	buffer, _ := ds.values.(*runtime.Array)
+
+	return buffer
 }
 
 func (ds *DataSet) String() string {

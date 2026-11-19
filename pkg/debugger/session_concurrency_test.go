@@ -186,12 +186,12 @@ func TestSessionCloseClearsReferencesCreatedByActiveInspection(t *testing.T) {
 	go func() {
 		closeDone <- session.Close()
 	}()
-	for !session.lifecycle.closed.Load() {
-		time.Sleep(time.Millisecond)
-	}
+	<-session.lifecycle.terminalDone
 
 	close(inspectRelease)
-	waitForError(t, localsDone, "locals")
+	if err := <-localsDone; !errors.Is(err, &StateError{}) {
+		t.Fatalf("inspection after close commitment: %v", err)
+	}
 	waitForError(t, closeDone, "close")
 	if len(session.inspector.valueRefs) != 0 {
 		t.Fatalf("close retained references created by active inspection: %#v", session.inspector.valueRefs)

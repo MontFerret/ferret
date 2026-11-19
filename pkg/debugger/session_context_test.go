@@ -54,7 +54,7 @@ func TestSessionInspectionAndBreakpointContexts(t *testing.T) {
 			return err
 		},
 		"variables": func(s *Session, ctx context.Context) error {
-			_, err := s.Variables(ctx, 1)
+			_, err := s.Variables(ctx, 1, VariablePage{})
 
 			return err
 		},
@@ -118,7 +118,7 @@ func TestInspectionRechecksCancellationAfterCommandWait(t *testing.T) {
 			return err
 		},
 		"variables": func(s *Session, ctx context.Context) error {
-			_, err := s.Variables(ctx, 1)
+			_, err := s.Variables(ctx, 1, VariablePage{})
 
 			return err
 		},

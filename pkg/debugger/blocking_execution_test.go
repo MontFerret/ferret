@@ -10,6 +10,7 @@ import (
 )
 
 type blockingExecution struct {
+	params         runtime.Params
 	resumeStarted  chan struct{}
 	resumeRelease  chan struct{}
 	resumeCanceled chan struct{}
@@ -43,8 +44,11 @@ func (b *blockingExecution) Start(context.Context) (*vm.DebugExecutionEvent, err
 	return &vm.DebugExecutionEvent{Reason: vm.DebugStopEntry, Point: &b.point}, nil
 }
 
-func (b *blockingExecution) Resume(ctx context.Context, _ vm.DebugResumeMode, _ vm.DebugBreakpointPredicate) (*vm.DebugExecutionEvent, error) {
+func (b *blockingExecution) Resume(ctx context.Context, _ vm.DebugResumeMode, _ vm.DebugBreakpointPredicate, admitted func()) (*vm.DebugExecutionEvent, error) {
 	b.mu.Lock()
+	if admitted != nil {
+		admitted()
+	}
 	b.status = vm.DebugExecutionRunning
 	b.resumeCalls++
 	b.active++
@@ -91,7 +95,7 @@ func (b *blockingExecution) Locals() ([]vm.DebugLocal, error) {
 }
 
 func (b *blockingExecution) Params() runtime.Params {
-	return runtime.NewParams()
+	return b.params
 }
 
 func (b *blockingExecution) Frames() ([]vm.DebugFrame, error) {

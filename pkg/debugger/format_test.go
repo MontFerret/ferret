@@ -43,6 +43,11 @@ func TestValueAccessRejectsOpaqueKeys(t *testing.T) {
 	}
 }
 
+// Formatting tests exercise detached presentation independently of handle allocation.
+func (s *inspector) debugValue(value runtime.Value) Value {
+	return formatValue(value, s.values.Describe(value), s.format.MaxBytes)
+}
+
 func TestFormatSemanticValues(t *testing.T) {
 	access := vm.NewDebugValueAccess()
 	pattern, err := runtime.NewRegexp("a+")
@@ -74,8 +79,8 @@ func TestFormatSemanticValues(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := inspector{values: access, format: DefaultFormatOptions()}
-			if got := s.debugValue(tc.value); got != (Value{Type: tc.name, Display: tc.display}) {
-				t.Fatalf("got %+v, want %s %s with reference zero", got, tc.name, tc.display)
+			if got := s.debugValue(tc.value); got.Type != tc.name || got.Display != tc.display {
+				t.Fatalf("got %+v, want %s %s", got, tc.name, tc.display)
 			}
 		})
 	}

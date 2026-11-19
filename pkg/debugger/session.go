@@ -42,7 +42,7 @@ func NewSession(config Config) (*Session, error) {
 	}
 
 	format := config.Format
-	if format.MaxItems <= 0 || format.MaxBytes <= 0 {
+	if format.MaxBytes <= 0 {
 		format = DefaultFormatOptions()
 	}
 
@@ -59,7 +59,8 @@ func NewSession(config Config) (*Session, error) {
 		source:     config.Source,
 		pointIndex: pointIndex,
 	}
-	session.inspector = newInspector(config, &session.source, &session.pointIndex, format)
+
+	session.inspector = newInspector(&session.lifecycle, config, &session.source, &session.pointIndex, format)
 	session.breakpoints.initialize(&session.lifecycle, &session.source, &session.pointIndex)
 
 	return session, nil
@@ -244,16 +245,16 @@ func (s *Session) FrameLocals(ctx context.Context, frame int) ([]Variable, error
 		return nil, err
 	}
 
-	if err := s.ensureOpen(); err != nil {
+	if err := s.lifecycle.ensureInspectable(); err != nil {
 		return nil, err
 	}
 
-	return s.inspector.frameLocals(frame)
+	return s.inspector.frameLocals(ctx, frame)
 }
 
 // Variables returns the child variables for one expandable debugger value from
 // the current paused state.
-func (s *Session) Variables(ctx context.Context, reference ValueReference) ([]Variable, error) {
+func (s *Session) Variables(ctx context.Context, reference ValueReference, page VariablePage) ([]Variable, error) {
 	if err := checkContext(ctx); err != nil {
 		return nil, err
 	}
@@ -267,11 +268,11 @@ func (s *Session) Variables(ctx context.Context, reference ValueReference) ([]Va
 		return nil, err
 	}
 
-	if err := s.ensureOpen(); err != nil {
+	if err := s.lifecycle.ensureInspectable(); err != nil {
 		return nil, err
 	}
 
-	return s.inspector.variables(reference)
+	return s.inspector.variables(ctx, reference, page)
 }
 
 // Evaluate evaluates a conservative, side-effect-free expression against the
@@ -298,7 +299,7 @@ func (s *Session) EvaluateFrame(ctx context.Context, frame int, expression strin
 		return Value{}, err
 	}
 
-	if err := s.ensureOpen(); err != nil {
+	if err := s.lifecycle.ensureInspectable(); err != nil {
 		return Value{}, err
 	}
 
@@ -343,9 +344,10 @@ func (s *Session) resume(ctx context.Context, mode vm.DebugResumeMode) (*Event, 
 		defer s.lifecycle.finishResume(command)
 	}
 
-	s.inspector.resetValueReferences()
-	s.breakpoints.resetHit()
-	event, err := s.lifecycle.resume(command.ctx, mode, s.breakpoints.predicate)
+	event, err := s.lifecycle.resume(command.ctx, mode, s.breakpoints.predicate, func() {
+		s.inspector.resetValueReferences()
+		s.breakpoints.resetHit()
+	})
 	if err != nil {
 		return nil, err
 	}

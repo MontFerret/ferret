@@ -54,8 +54,10 @@ type (
 	// call concurrently with execution.
 	DebugExecution interface {
 		Start(context.Context) (*DebugExecutionEvent, error)
-		// Resume continues execution according to the mode and breakpoint predicate.
-		Resume(context.Context, DebugResumeMode, DebugBreakpointPredicate) (*DebugExecutionEvent, error)
+		// Resume calls admitted, when non-nil, exactly once after accepting the
+		// paused stop and before executing or terminating it. A rejected resume
+		// leaves the stop intact. The callback must not re-enter execution.
+		Resume(ctx context.Context, mode DebugResumeMode, breakpoints DebugBreakpointPredicate, admitted func()) (*DebugExecutionEvent, error)
 		RequestPause()
 		Status() DebugExecutionStatus
 		Locals() ([]DebugLocal, error)
@@ -186,7 +188,7 @@ func (d *debugExecution) Start(ctx context.Context) (*DebugExecutionEvent, error
 }
 
 // Resume continues a paused execution according to mode and the breakpoint predicate.
-func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints DebugBreakpointPredicate) (*DebugExecutionEvent, error) {
+func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, breakpoints DebugBreakpointPredicate, admitted func()) (*DebugExecutionEvent, error) {
 	if err := validateOperationContext(ctx); err != nil {
 		return nil, err
 	}
@@ -196,6 +198,10 @@ func (d *debugExecution) Resume(ctx context.Context, mode DebugResumeMode, break
 
 	if d.status != DebugExecutionPaused {
 		return nil, runtime.Error(runtime.ErrInvalidOperation, "debug execution is not paused")
+	}
+
+	if admitted != nil {
+		admitted()
 	}
 
 	if d.terminalErr != nil {

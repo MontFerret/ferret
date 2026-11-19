@@ -10,6 +10,7 @@ import (
 	"github.com/MontFerret/api"
 	apidebugger "github.com/MontFerret/api/debugger"
 	apidiagnostics "github.com/MontFerret/api/diagnostics"
+	nativedebug "github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/engine"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
@@ -108,8 +109,16 @@ RETURN [value, result]`))
 
 				reference = value.Reference
 
-				children, err := session.Variables(context.Background(), reference)
-				if err != nil || len(children) != 2 {
+				if value.IndexedCount == nil || *value.IndexedCount != 2 || value.NamedCount == nil || *value.NamedCount != 0 {
+					t.Fatalf("array counts: %+v", value)
+				}
+
+				if page, err := session.Variables(t.Context(), reference, apidebugger.VariablePage{Count: -1}); page != nil || !errors.Is(err, apidebugger.ErrInvalidVariablePage) {
+					t.Fatalf("invalid page: %v, %v", page, err)
+				}
+
+				children, err := session.Variables(t.Context(), reference, apidebugger.VariablePage{Filter: apidebugger.VariableFilterIndexed, Start: 1, Count: 1})
+				if err != nil || len(children) != 1 || children[0].Name != "1" || children[0].Value.Display != "2" {
 					t.Fatalf("children=%+v err=%v", children, err)
 				}
 			}
@@ -137,7 +146,7 @@ RETURN [value, result]`))
 			}
 
 			if reference.Valid() {
-				if _, err := session.Variables(context.Background(), reference); err == nil {
+				if _, err := session.Variables(context.Background(), reference, apidebugger.VariablePage{}); !errors.Is(err, apidebugger.ErrInvalidValueReference) {
 					t.Fatal("resumed session accepted a stale value reference")
 				}
 			}
@@ -243,7 +252,7 @@ func TestDebugPauseAndCancellationReachNativeExecution(t *testing.T) {
 func TestDebugRuntimeErrorRemainsInspectable(t *testing.T) {
 	runtime := newTestRuntime(t)
 
-	plan, err := runtime.CompileDebug(t.Context(), api.NewSource("buffer://error", "LET value = 1\nRETURN value / @zero"))
+	plan, err := runtime.CompileDebug(t.Context(), api.NewSource("buffer://error", "LET box = [1]\nLET value = box[0]\nRETURN value / @zero"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,5 +283,112 @@ func TestDebugRuntimeErrorRemainsInspectable(t *testing.T) {
 
 	if value, err := session.EvaluateFrame(t.Context(), 0, "value + 1"); err != nil || value.Display != "2" {
 		t.Fatalf("evaluation at runtime error stop: value=%+v err=%v", value, err)
+	}
+
+	locals, err := session.Locals(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var ref apidebugger.ValueReference
+
+	for _, binding := range locals {
+		if binding.Name == "box" {
+			ref = binding.Value.Reference
+		}
+	}
+
+	for range 2 {
+		page, err := session.Variables(t.Context(), ref, apidebugger.VariablePage{})
+		if err != nil || len(page) != 1 || page[0].Value.Display != "1" {
+			t.Fatalf("runtime-error page: %+v, %v", page, err)
+		}
+	}
+
+	if event, err := session.Continue(t.Context()); err != nil || event.Reason != apidebugger.ReasonTerminated {
+		t.Fatalf("terminate: %+v, %v", event, err)
+	}
+
+	if page, err := session.Variables(t.Context(), ref, apidebugger.VariablePage{}); page != nil || !errors.Is(err, &nativedebug.StateError{}) {
+		t.Fatalf("terminal state: %+v, %v", page, err)
+	}
+}
+
+func TestDebugSummaryOnlyObjectReference(t *testing.T) {
+	rt := newTestRuntime(t)
+	plan, err := rt.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN @object"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer plan.Close()
+	object := runtime.NewObjectOf(256)
+	object.SetString("only", runtime.True)
+	session, err := plan.NewDebugSession(t.Context(), api.WithParam("object", object))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer session.Close()
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	value, err := session.Evaluate(t.Context(), "@object")
+	if err != nil || value.Display != "Object(1)" || value.Reference != 0 ||
+		value.NamedCount == nil || *value.NamedCount != 1 || value.IndexedCount == nil || *value.IndexedCount != 0 {
+		t.Fatalf("summary: %+v, %v", value, err)
+	}
+
+	page, err := session.Variables(t.Context(), value.Reference, apidebugger.VariablePage{Filter: apidebugger.VariableFilterIndexed})
+	if page != nil || !errors.Is(err, apidebugger.ErrInvalidValueReference) {
+		t.Fatalf("zero reference: %v, %v", page, err)
+	}
+}
+
+type filteredDebugValue struct{ runtime.Value }
+
+func (filteredDebugValue) DebugChildrenInfo() runtime.DebugChildrenInfo {
+	return runtime.DebugChildrenInfo{Indexed: runtime.DebugChildView{Readable: true}}
+}
+
+func (filteredDebugValue) DebugChildAt(_ context.Context, kind apidebugger.VariableFilter, position int64) (string, runtime.Value, bool, error) {
+	if kind != apidebugger.VariableFilterIndexed {
+		return "", nil, false, errors.ErrUnsupported
+	}
+
+	return "", runtime.True, position == 0, nil
+}
+
+func TestDebugFilteredOnlyProvider(t *testing.T) {
+	rt := newTestRuntime(t)
+	plan, err := rt.CompileDebug(t.Context(), api.NewAnonymousSource("RETURN @view"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer plan.Close()
+	session, err := plan.NewDebugSession(t.Context(), api.WithParam("view", filteredDebugValue{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer session.Close()
+	if _, err := session.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	value, err := session.Evaluate(t.Context(), "@view")
+	if err != nil || !value.Reference.Valid() || value.NamedCount != nil || value.IndexedCount != nil {
+		t.Fatalf("view: %+v %v", value, err)
+	}
+
+	if page, err := session.Variables(t.Context(), value.Reference, apidebugger.VariablePage{}); page != nil || !errors.Is(err, errors.ErrUnsupported) {
+		t.Fatalf("combined: %+v %v", page, err)
+	}
+
+	page, err := session.Variables(t.Context(), value.Reference, apidebugger.VariablePage{Filter: apidebugger.VariableFilterIndexed})
+	if err != nil || len(page) != 1 || page[0].Name != "0" || page[0].Value.Display != "true" {
+		t.Fatalf("indexed: %+v, %v", page, err)
 	}
 }
