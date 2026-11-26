@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"strconv"
 	"testing"
 )
@@ -73,6 +74,17 @@ func BenchmarkObjectOperations(b *testing.B) {
 							break
 						}
 						benchmarkObjectValue = v
+					}
+				}
+			})
+			b.Run("for_each", func(b *testing.B) {
+				visit := func(_ context.Context, value, _ Value) (Boolean, error) {
+					benchmarkObjectValue = value
+					return True, nil
+				}
+				for b.Loop() {
+					if err := obj.ForEach(ctx, visit); err != nil {
+						b.Fatal(err)
 					}
 				}
 			})
