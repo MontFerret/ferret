@@ -107,6 +107,10 @@ func (t *Object) lookup(key string) (Value, bool) {
 	return v, ok
 }
 
+func objectNameTag(key string) byte {
+	return byte(maphash.Comparable(objectKeySeed, key))
+}
+
 func (b *objectProperties) find(key string) (int, byte) {
 	if b.index == nil {
 		for i := range b.slots {
@@ -118,7 +122,7 @@ func (b *objectProperties) find(key string) (int, byte) {
 		return -1, 0
 	}
 
-	tag := byte(maphash.String(objectKeySeed, key))
+	tag := objectNameTag(key)
 	hint := b.index.candidate[tag]
 	if hint == 0 {
 		return -1, tag

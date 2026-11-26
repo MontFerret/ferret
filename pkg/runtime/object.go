@@ -293,13 +293,29 @@ func (t *Object) Values(_ context.Context) (List, error) {
 	return NewArrayOf(keys), nil
 }
 
-func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) (err error) {
-	t.callbackEntries(func(key string, value Value) bool {
-		var more Boolean
-		more, err = predicate(ctx, value, String(key))
-		return err == nil && bool(more)
-	})
-	return err
+func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) error {
+	// Capture the backing across Clear. Keeping the map loop with the supplied
+	// predicate lets Go inline a concrete callback without boxing each key.
+	return func(view Object) (err error) {
+		visit := func(key string, value Value) bool {
+			more, visitErr := predicate(ctx, value, String(key))
+			if visitErr != nil {
+				err = visitErr
+				return false
+			}
+			return bool(more)
+		}
+		if fields := view.fields(); fields != nil {
+			for key, value := range fields {
+				if !visit(key, value) {
+					break
+				}
+			}
+		} else {
+			view.callbackEntries(visit)
+		}
+		return err
+	}(*t)
 }
 
 func (t *Object) Filter(ctx context.Context, predicate KeyReadablePredicate) (List, error) {

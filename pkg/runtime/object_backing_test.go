@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"errors"
-	"hash/maphash"
 	"io"
 	goruntime "runtime"
 	"slices"
@@ -159,7 +158,7 @@ func TestObjectFingerprintCollisions(t *testing.T) {
 	var keys []string
 	for i := 0; len(keys) < 3; i++ {
 		key := strconv.Itoa(i)
-		tag := byte(maphash.String(objectKeySeed, key))
+		tag := objectNameTag(key)
 		buckets[tag] = append(buckets[tag], key)
 		if len(buckets[tag]) == 3 {
 			keys = buckets[tag]
@@ -269,6 +268,23 @@ func TestObjectForEachSkipsRemovedFields(t *testing.T) {
 		})
 		if err != nil || len(visited) != 3 {
 			t.Fatalf("hint %d visited %v after removing %q: %v", hint, visited, removed, err)
+		}
+	}
+}
+
+func TestObjectForEachPropagatesCallbackError(t *testing.T) {
+	stop := errors.New("stop traversal")
+	for _, hint := range []int{0, 16, 256} {
+		obj := NewObjectOf(hint)
+		obj.SetString("a", True)
+		obj.SetString("b", False)
+		calls := 0
+		err := obj.ForEach(t.Context(), func(_ context.Context, _, _ Value) (Boolean, error) {
+			calls++
+			return True, stop
+		})
+		if calls != 1 || !errors.Is(err, stop) {
+			t.Fatalf("hint %d made %d calls and returned %v", hint, calls, err)
 		}
 	}
 }
