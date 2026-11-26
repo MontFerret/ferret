@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"encoding/base64"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -96,18 +95,7 @@ func writeArray(buf *strings.Builder, arr *Array) {
 func writeObject(buf *strings.Builder, obj *Object) {
 	buf.WriteByte('{')
 
-	if len(obj.data) == 0 {
-		buf.WriteByte('}')
-
-		return
-	}
-
-	keys := make([]string, 0, len(obj.data))
-	for k := range obj.data {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
+	keys := obj.sortedKeys()
 
 	for i, k := range keys {
 		if i > 0 {
@@ -116,7 +104,8 @@ func writeObject(buf *strings.Builder, obj *Object) {
 
 		writeString(buf, k)
 		buf.WriteByte(':')
-		writeValue(buf, obj.data[k])
+		value, _ := obj.lookup(k)
+		writeValue(buf, value)
 	}
 
 	buf.WriteByte('}')

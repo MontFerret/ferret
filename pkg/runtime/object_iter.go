@@ -6,22 +6,13 @@ import (
 )
 
 type ObjectIterator struct {
-	data map[string]Value
-	keys []string
-	pos  int
+	backing Object
+	keys    []string
+	pos     int
 }
 
 func NewObjectIterator(obj *Object) Iterator {
-	iter := &ObjectIterator{data: obj.data, keys: make([]string, len(obj.data))}
-
-	i := 0
-
-	for key := range iter.data {
-		iter.keys[i] = key
-		i++
-	}
-
-	return iter
+	return &ObjectIterator{backing: *obj, keys: obj.propertyNames()}
 }
 
 func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
@@ -30,7 +21,7 @@ func (iter *ObjectIterator) Next(_ context.Context) (Value, Value, error) {
 	}
 
 	key := iter.keys[iter.pos]
-	value := iter.data[key]
+	value, _ := iter.backing.lookup(key)
 	iter.pos++
 
 	return value, String(key), nil

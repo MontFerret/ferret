@@ -531,8 +531,8 @@ func TestObject(t *testing.T) {
 // A Go value copy keeps the old map alive across Clear. It must not keep
 // values subsequently stored by the cleared receiver alive.
 func TestObjectClearDetachesSurvivingCopy(t *testing.T) {
-	clearedCopy := func(clearOwner bool) (*Object, weak.Pointer[Array]) {
-		owner := NewObject()
+	clearedCopy := func(hint int, clearOwner bool) (*Object, weak.Pointer[Array]) {
+		owner := NewObjectOf(hint)
 		owner.SetString("old", True)
 		alias := *owner
 		cleared, survivor := owner, &alias
@@ -556,13 +556,16 @@ func TestObjectClearDetachesSurvivingCopy(t *testing.T) {
 		return survivor, reachability
 	}
 
-	for _, clearOwner := range []bool{true, false} {
-		survivor, reachability := clearedCopy(clearOwner)
-		goruntime.GC()
-		if reachability.Value() != nil {
-			t.Fatalf("surviving copy retained replacement after Clear (cleared original: %v)", clearOwner)
+	for _, hint := range []int{0, 16, 256} {
+		for _, clearOwner := range []bool{true, false} {
+			survivor, reachability := clearedCopy(hint, clearOwner)
+			goruntime.GC()
+			if reachability.Value() != nil {
+				t.Fatalf("surviving copy retained replacement after Clear (hint %d, cleared original %t)", hint, clearOwner)
+			}
+
+			goruntime.KeepAlive(survivor)
 		}
-		goruntime.KeepAlive(survivor)
 	}
 }
 
