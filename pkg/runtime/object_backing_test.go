@@ -240,3 +240,35 @@ func TestObjectForEachKeepsBackingAcrossMutation(t *testing.T) {
 		})
 	}
 }
+
+func TestObjectForEachSkipsRemovedFields(t *testing.T) {
+	for _, hint := range []int{0, 16} {
+		obj := NewObjectOf(hint)
+		for _, key := range []string{"a", "b", "c", "d"} {
+			obj.SetString(key, True)
+		}
+
+		visited := map[String]bool{}
+		var removed String
+		err := obj.ForEach(t.Context(), func(ctx context.Context, _ Value, key Value) (Boolean, error) {
+			k := key.(String)
+			if len(visited) == 0 {
+				removed = "b"
+				if k == removed {
+					removed = "c"
+				}
+				if err := obj.RemoveKey(ctx, removed); err != nil {
+					return False, err
+				}
+			}
+			if k == removed || visited[k] {
+				t.Fatalf("hint %d visited removed or repeated field %q", hint, k)
+			}
+			visited[k] = true
+			return True, nil
+		})
+		if err != nil || len(visited) != 3 {
+			t.Fatalf("hint %d visited %v after removing %q: %v", hint, visited, removed, err)
+		}
+	}
+}

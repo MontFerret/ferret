@@ -528,7 +528,7 @@ func TestObject(t *testing.T) {
 	})
 }
 
-// A Go value copy keeps the old map alive across Clear. It must not keep
+// A Go value copy keeps the old backing alive across Clear. It must not keep
 // values subsequently stored by the cleared receiver alive.
 func TestObjectClearDetachesSurvivingCopy(t *testing.T) {
 	clearedCopy := func(hint int, clearOwner bool) (*Object, weak.Pointer[Array]) {
