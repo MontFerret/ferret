@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math/rand/v2"
 	goruntime "runtime"
 	"slices"
 	"strconv"
@@ -61,7 +62,7 @@ func TestObjectBackingReleasesRemovedValues(t *testing.T) {
 		hint, count int
 	}{
 		{"singleton", 0, 1}, {"small", 0, 2}, {"promoted", 0, 9},
-		{"indexed", 128, 128}, {"large", 256, 256},
+		{"indexed", 128, 128}, {"promoted_index", 16, 17}, {"large", 256, 256},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			create := func() (*Object, weak.Pointer[Array]) {
@@ -286,5 +287,41 @@ func TestObjectForEachPropagatesCallbackError(t *testing.T) {
 		if calls != 1 || !errors.Is(err, stop) {
 			t.Fatalf("hint %d made %d calls and returned %v", hint, calls, err)
 		}
+	}
+}
+
+func TestObjectBackingMixedWritesAndRemovals(t *testing.T) {
+	for _, hint := range []int{0, 9, 17, 33, 65, 128, 129} {
+		t.Run(strconv.Itoa(hint), func(t *testing.T) {
+			obj := NewObjectOf(hint)
+			random := rand.New(rand.NewPCG(10, 20))
+			keys := make([]string, max(smallObjectFields, hint))
+			for i := 1; i < len(keys); i++ {
+				keys[i] = strconv.Itoa(i) + "x"
+			}
+			want := make(map[string]Value)
+			for step := range 600 {
+				key := keys[random.IntN(len(keys))]
+				if random.IntN(3) == 0 {
+					delete(want, key)
+					if err := obj.RemoveKey(t.Context(), String(key)); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					want[key] = Int(step)
+					obj.SetString(key, want[key])
+				}
+				if size, _ := obj.Length(t.Context()); int(size) != len(want) {
+					t.Fatalf("size at step %d: %d, want %d", step, size, len(want))
+				}
+				for _, k := range keys {
+					v, ok, err := obj.Lookup(t.Context(), String(k))
+					expected, present := want[k]
+					if err != nil || ok != present || (ok && v != expected) {
+						t.Fatalf("step %d key %q: %v, %t, %v; want %v, %t", step, k, v, ok, err, expected, present)
+					}
+				}
+			}
+		})
 	}
 }

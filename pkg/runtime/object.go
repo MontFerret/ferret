@@ -405,7 +405,11 @@ func (t *Object) SetString(key string, value Value) {
 		value = None
 	}
 
-	t.setKey(key, value)
+	if t.backing == nil {
+		t.large[key] = value
+	} else {
+		t.setTrackedKey(key, value)
+	}
 }
 
 func (t *Object) RemoveKey(_ context.Context, key Value) error {

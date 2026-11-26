@@ -7,7 +7,10 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/internal/debugmap"
 )
 
-const smallObjectFields = 8
+const (
+	smallObjectFields   = 8
+	multipleObjectSlots = 255 // Above every one-based slot position.
+)
 
 type (
 	// A backing holds the first property inline. Copies share the backing,
@@ -20,14 +23,14 @@ type (
 	}
 
 	objectProperties struct {
-		fields map[string]Value
-		index  *objectNameIndex
-		slots  []objectProperty
+		fields    map[string]Value
+		index     *objectNameIndex
+		slots     []objectProperty
+		smallBits uint64
 	}
 
-	// Each tag remembers one candidate slot. On a collision the byte vector
-	// finds other candidates without comparing every property name. A removal may
-	// leave a stale hint. Only zero proves the tag has never been inserted.
+	// A tag is absent, names one slot, or requires a bounded scan for
+	// collisions. Every candidate is compared by its exact string key.
 	objectNameIndex struct {
 		candidate [256]uint8
 		tags      [debugmap.MaxKeys]byte
@@ -37,22 +40,56 @@ type (
 		value Value
 		key   string
 	}
+
+	// Co-allocate the detached owner, its index and one bounded size class.
+	indexedObject struct {
+		objectBacking
+		properties objectProperties
+		names      objectNameIndex
+	}
+
+	indexedObjectBlock[Slots any] struct {
+		slots Slots
+		indexedObject
+	}
 )
 
 var objectKeySeed = maphash.MakeSeed()
 
+func (b *indexedObject) withSlots(slots []objectProperty) *objectBacking {
+	b.properties.slots = slots
+	b.properties.index = &b.names
+	b.group = &b.properties
+	return &b.objectBacking
+}
+
 func newObjectBacking(size int) *objectBacking {
-	b := new(objectBacking)
-	if size > smallObjectFields {
-		g := new(struct {
-			objectProperties
-			names objectNameIndex
-		})
-		g.slots = make([]objectProperty, 0, size)
-		g.index = &g.names
-		b.group = &g.objectProperties
+	switch {
+	case size <= smallObjectFields:
+		return new(objectBacking)
+	case size <= 16:
+		p := new(indexedObjectBlock[[16]objectProperty])
+		return p.withSlots(p.slots[:0])
+	case size <= 32:
+		p := new(indexedObjectBlock[[32]objectProperty])
+		return p.withSlots(p.slots[:0])
+	case size <= 64:
+		p := new(indexedObjectBlock[[64]objectProperty])
+		return p.withSlots(p.slots[:0])
+	default:
+		p := new(indexedObjectBlock[[debugmap.MaxKeys]objectProperty])
+		return p.withSlots(p.slots[:0])
 	}
-	return b
+}
+
+// A clear bit rules out the key. Shared bits and old bits left by deletions
+// only cause an exact scan of the small group.
+func smallObjectBit(key string) uint64 {
+	tag := len(key)
+	if tag != 0 {
+		tag ^= int(key[len(key)-1])
+	}
+	return uint64(1) << (tag & 63)
 }
 
 func (b *objectBacking) slots() []objectProperty {
@@ -113,6 +150,9 @@ func objectNameTag(key string) byte {
 
 func (b *objectProperties) find(key string) (int, byte) {
 	if b.index == nil {
+		if b.smallBits&smallObjectBit(key) == 0 {
+			return -1, 0
+		}
 		for i := range b.slots {
 			if b.slots[i].key == key {
 				return i, 0
@@ -128,9 +168,12 @@ func (b *objectProperties) find(key string) (int, byte) {
 		return -1, tag
 	}
 
-	slot := int(hint) - 1
-	if slot < len(b.slots) && b.slots[slot].key == key {
-		return slot, tag
+	if hint != multipleObjectSlots {
+		slot := int(hint) - 1
+		if b.slots[slot].key == key {
+			return slot, tag
+		}
+		return -1, tag
 	}
 
 	tags := b.index.tags[:len(b.slots)]
@@ -152,12 +195,15 @@ func (b *objectProperties) find(key string) (int, byte) {
 }
 
 func (t *Object) setKey(key string, value Value) {
-	b := t.backing
-	if b == nil {
+	if t.backing == nil {
 		t.large[key] = value
-
-		return
+	} else {
+		t.setTrackedKey(key, value)
 	}
+}
+
+func (t *Object) setTrackedKey(key string, value Value) {
+	b := t.backing
 
 	b.bounds.AddKey(key)
 	g := b.group
@@ -174,6 +220,7 @@ func (t *Object) setKey(key string, value Value) {
 		p.inline[0] = b.first[0]
 		p.inline[1] = objectProperty{key: key, value: value}
 		p.slots = p.inline[:2]
+		p.smallBits = smallObjectBit(p.inline[0].key) | smallObjectBit(key)
 		b.first[0] = objectProperty{}
 		b.firstLen = 0
 		b.group = &p.objectProperties
@@ -212,9 +259,15 @@ func (t *Object) setKey(key string, value Value) {
 	}
 
 	g.slots = append(g.slots, objectProperty{key: key, value: value})
-	if g.index != nil {
+	if g.index == nil {
+		g.smallBits |= smallObjectBit(key)
+	} else {
 		g.index.tags[len(g.slots)-1] = tag
-		g.index.candidate[tag] = uint8(len(g.slots))
+		if g.index.candidate[tag] == 0 {
+			g.index.candidate[tag] = uint8(len(g.slots))
+		} else {
+			g.index.candidate[tag] = multipleObjectSlots
+		}
 	}
 }
 
@@ -246,7 +299,7 @@ func (t *Object) deleteKey(key string) {
 		return
 	}
 
-	idx, _ := g.find(key)
+	idx, removedTag := g.find(key)
 	if idx < 0 {
 		return
 	}
@@ -255,10 +308,17 @@ func (t *Object) deleteKey(key string) {
 	g.slots[idx] = g.slots[last]
 	g.slots[last] = objectProperty{}
 	g.slots = g.slots[:last]
-	if g.index != nil && idx != last {
-		tag := g.index.tags[last]
-		g.index.tags[idx] = tag
-		g.index.candidate[tag] = uint8(idx + 1)
+	if ix := g.index; ix != nil {
+		if ix.candidate[removedTag] != multipleObjectSlots {
+			ix.candidate[removedTag] = 0
+		}
+		if idx != last {
+			tag := ix.tags[last]
+			ix.tags[idx] = tag
+			if ix.candidate[tag] != multipleObjectSlots {
+				ix.candidate[tag] = uint8(idx + 1)
+			}
+		}
 	}
 
 	b.bounds.Removed()
