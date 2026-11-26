@@ -118,6 +118,14 @@ func (t *Object) length() int {
 	return len(t.large)
 }
 
+func (t *Object) lookupValue(key Value) (Value, bool) {
+	name, ok := key.(String)
+	if !ok {
+		name = String(key.String())
+	}
+	return t.lookup(string(name))
+}
+
 func (t *Object) lookup(key string) (Value, bool) {
 	fields := t.large
 	if b := t.backing; b != nil {

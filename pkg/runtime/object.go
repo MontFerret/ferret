@@ -353,7 +353,7 @@ func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (Valu
 }
 
 func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
-	_, exists := t.lookup(key.String())
+	_, exists := t.lookupValue(key)
 
 	return Boolean(exists), nil
 }
@@ -374,7 +374,7 @@ func (t *Object) Contains(ctx context.Context, target Value) (Boolean, error) {
 }
 
 func (t *Object) Get(_ context.Context, key Value) (Value, error) {
-	val, found := t.lookup(key.String())
+	val, found := t.lookupValue(key)
 
 	if found {
 		return val, nil
@@ -384,7 +384,7 @@ func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 }
 
 func (t *Object) Lookup(_ context.Context, key Value) (Value, bool, error) {
-	val, found := t.lookup(key.String())
+	val, found := t.lookupValue(key)
 
 	if found {
 		return val, true, nil
