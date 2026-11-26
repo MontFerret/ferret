@@ -182,7 +182,9 @@ a summary-only value.
 
 Dense fast objects page directly in shape order. A sparse shape can scan up
 to 128 slots for occupied positions. Native objects and fast dictionaries
-sort up to 128 unordered keys on explicit expansion. Core bounds the backing
+sort up to 128 unordered keys on explicit expansion. Native objects use bounded
+property slots, a Go map inside the same detached owner after outgrowing the
+slots, or a direct map for an oversized reservation. Core bounds the backing
 scan conservatively. The live count plus successful removals since allocation
 must fit within 128, and the original capacity hint must also fit. A singleton
 therefore becomes summary-only after 128 deletions and reinsertions. Removing
@@ -359,22 +361,12 @@ datasets. Task 2 could only return a summary for collections of these sizes
 with its default settings.
 
 The ordinary JSON and MessagePack decoders write Go string keys directly into
-native objects. On Go 1.27.3 the flat 256-property fixture took 1,037 JSON and
-255 MessagePack allocations per decode. The 5,000-object fixture took 25,075
-and 20,003. Task 2 took 1,036 and 254 for the flat fixtures and 20,075 and
-15,003 for the nested fixtures. The difference is one shared bounds record
-per native object. Plain Go value copies share that record until one receiver
-clears its map. An old copy can outlive a cleared receiver without retaining
-its replacement values. The [native object inspection investigation](native-object-inspection-cost.md)
-records the open allocation target and the cost of discovering names at a stop.
-
-```sh
-go test -mod=readonly -p=1 ./pkg/encoding/json ./pkg/encoding/msgpack -run '^$' \
-  -bench 'CodecDecode/(flat_object_256|nested_object_5000)$' \
-  -benchmem -cpu=1 -benchtime=200ms -count=6
-go test ./pkg/runtime -run '^$' -bench '^BenchmarkNewObjectOf$' \
-  -benchmem -cpu=1 -benchtime=200ms -count=6
-```
+native objects. Native properties and their inspection bounds now share a
+detached owner, so an ordinary object has no separate bounds allocation. A Go
+value copy retains the original properties when another receiver clears and
+reuses its storage. Allocation and timing comparisons, ownership tests and
+sparse-map discovery costs are documented in the
+[native storage investigation](native-object-inspection-cost.md).
 
 Shallow inspection has a small fixed cost relative to Task 2 (`3ac60f34`).
 In six 200 ms samples on the same machine, builtin
@@ -444,9 +436,9 @@ The dictionary wrapper still costs 16 bytes and one allocation each time a
 backing map is created or replaced. That includes transition, Copy, Clone,
 and Clear. The wrapper keeps bounds with the map while shape-backed objects
 keep their original footprint. Clear detaches the old backing for existing
-iterators and value copies. Removing that allocation is deferred to the
-dedicated performance PR along with the separately measured
-[native object allocation](native-object-inspection-cost.md).
+iterators and value copies. The
+[native storage comparison](native-object-inspection-cost.md#measured-performance)
+includes separate measurements for shapes, dictionary transitions and FQL execution.
 
 ## Related guides
 
