@@ -57,15 +57,21 @@ func TestObjectBackingAliasesAndClear(t *testing.T) {
 }
 
 func TestObjectBackingReleasesRemovedValues(t *testing.T) {
-	for _, count := range []int{1, 2, 9, 128, 256} {
-		t.Run(strconv.Itoa(count), func(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		hint, count int
+	}{
+		{"singleton", 0, 1}, {"small", 0, 2}, {"promoted", 0, 9},
+		{"indexed", 128, 128}, {"large", 256, 256},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			create := func() (*Object, weak.Pointer[Array]) {
-				obj := NewObject()
+				obj := NewObjectOf(tc.hint)
 				alias := *obj
 				value := NewArrayWith(True)
 				ref := weak.Make(value)
 				obj.SetString("", value)
-				for i := 1; i < count; i++ {
+				for i := 1; i < tc.count; i++ {
 					alias.SetString(strconv.Itoa(i), Int(i))
 				}
 				if err := alias.RemoveKey(t.Context(), String("")); err != nil {
