@@ -176,8 +176,8 @@ func (t *Object) DebugFieldsPageable() bool {
 
 // ReadDebugFields visits the selected interval in stable key order.
 func (t *Object) ReadDebugFields(start, end int, visit func(string, Value) error) error {
-	if b := t.backing; b != nil && b.fields != nil {
-		return debugmap.Read(b.fields, b.bounds, start, end, visit)
+	if b := t.backing; b != nil && b.group != nil && b.group.fields != nil {
+		return debugmap.Read(b.group.fields, b.bounds, start, end, visit)
 	}
 
 	size := t.length()
@@ -293,20 +293,13 @@ func (t *Object) Values(_ context.Context) (List, error) {
 	return NewArrayOf(keys), nil
 }
 
-func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) error {
-	for key, val := range t.callbackEntries {
-		doContinue, err := predicate(ctx, val, String(key))
-
-		if err != nil {
-			return err
-		}
-
-		if !doContinue {
-			break
-		}
-	}
-
-	return nil
+func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) (err error) {
+	t.callbackEntries(func(key string, value Value) bool {
+		var more Boolean
+		more, err = predicate(ctx, value, String(key))
+		return err == nil && bool(more)
+	})
+	return err
 }
 
 func (t *Object) Filter(ctx context.Context, predicate KeyReadablePredicate) (List, error) {

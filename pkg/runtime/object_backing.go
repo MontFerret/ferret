@@ -9,44 +9,73 @@ import (
 
 const smallObjectFields = 8
 
-// Backings are shared by Go value copies and never refer to the receiver.
-// A bounded vector can filter candidate names by a one-byte fingerprint.
-// A fingerprint match always requires an exact Go string comparison.
-type objectBacking struct {
-	fields map[string]Value
-	index  *objectNameIndex
-	slots  []objectProperty
-	bounds debugmap.Bounds
-}
+type (
+	// A backing holds the first property inline. Copies share the backing,
+	// which never points back to a receiver that Clear could replace.
+	objectBacking struct {
+		group    *objectProperties
+		first    [1]objectProperty
+		bounds   debugmap.Bounds
+		firstLen uint8
+	}
 
-// Each tag remembers one candidate slot. On a collision the byte vector
-// finds other candidates without comparing every property name. A removal may
-// leave a stale hint. Only zero proves the tag has never been inserted.
-type objectNameIndex struct {
-	candidate [256]uint8
-	tags      [debugmap.MaxKeys]byte
-}
+	objectProperties struct {
+		fields map[string]Value
+		index  *objectNameIndex
+		slots  []objectProperty
+	}
 
-type objectProperty struct {
-	value Value
-	key   string
-}
+	// Each tag remembers one candidate slot. On a collision the byte vector
+	// finds other candidates without comparing every property name. A removal may
+	// leave a stale hint. Only zero proves the tag has never been inserted.
+	objectNameIndex struct {
+		candidate [256]uint8
+		tags      [debugmap.MaxKeys]byte
+	}
+
+	objectProperty struct {
+		value Value
+		key   string
+	}
+)
 
 var objectKeySeed = maphash.MakeSeed()
 
 func newObjectBacking(size int) *objectBacking {
 	b := new(objectBacking)
 	if size > smallObjectFields {
-		b.slots = make([]objectProperty, 0, size)
-		b.index = new(objectNameIndex)
+		g := new(struct {
+			objectProperties
+			names objectNameIndex
+		})
+		g.slots = make([]objectProperty, 0, size)
+		g.index = &g.names
+		b.group = &g.objectProperties
+	}
+	return b
+}
+
+func (b *objectBacking) slots() []objectProperty {
+	if b.group == nil {
+		return b.first[:b.firstLen]
+	}
+	return b.group.slots
+}
+
+func (t Object) fields() map[string]Value {
+	if b := t.backing; b != nil && b.group != nil {
+		return b.group.fields
 	}
 
-	return b
+	return t.large
 }
 
 func (t *Object) length() int {
 	if b := t.backing; b != nil {
-		return len(b.slots) + len(b.fields)
+		if b.group == nil {
+			return int(b.firstLen)
+		}
+		return len(b.group.slots) + len(b.group.fields)
 	}
 
 	return len(t.large)
@@ -55,16 +84,22 @@ func (t *Object) length() int {
 func (t *Object) lookup(key string) (Value, bool) {
 	fields := t.large
 	if b := t.backing; b != nil {
-		if b.fields == nil {
-			i, _ := b.find(key)
-			if i >= 0 {
-				return b.slots[i].value, true
+		g := b.group
+		if g == nil {
+			p := &b.first[0]
+			if b.firstLen != 0 && p.key == key {
+				return p.value, true
 			}
-
 			return nil, false
 		}
-
-		fields = b.fields
+		if g.fields == nil {
+			i, _ := g.find(key)
+			if i >= 0 {
+				return g.slots[i].value, true
+			}
+			return nil, false
+		}
+		fields = g.fields
 	}
 
 	v, ok := fields[key]
@@ -72,7 +107,7 @@ func (t *Object) lookup(key string) (Value, bool) {
 	return v, ok
 }
 
-func (b *objectBacking) find(key string) (int, byte) {
+func (b *objectProperties) find(key string) (int, byte) {
 	if b.index == nil {
 		for i := range b.slots {
 			if b.slots[i].key == key {
@@ -121,44 +156,61 @@ func (t *Object) setKey(key string, value Value) {
 	}
 
 	b.bounds.AddKey(key)
-	if b.fields != nil {
-		b.fields[key] = value
+	g := b.group
+	if g == nil {
+		if b.firstLen == 0 || b.first[0].key == key {
+			b.first[0] = objectProperty{key: key, value: value}
+			b.firstLen = 1
+			return
+		}
+		p := new(struct {
+			inline [smallObjectFields]objectProperty
+			objectProperties
+		})
+		p.inline[0] = b.first[0]
+		p.inline[1] = objectProperty{key: key, value: value}
+		p.slots = p.inline[:2]
+		b.first[0] = objectProperty{}
+		b.firstLen = 0
+		b.group = &p.objectProperties
+		return
+	}
+
+	if g.fields != nil {
+		g.fields[key] = value
 
 		return
 	}
 
-	idx, tag := b.find(key)
+	idx, tag := g.find(key)
 	if idx >= 0 {
-		b.slots[idx].value = value
+		g.slots[idx].value = value
 
 		return
 	}
 
-	if b.slots == nil {
-		b.slots = make([]objectProperty, 0, smallObjectFields)
-	}
-
-	if len(b.slots) == cap(b.slots) {
+	if len(g.slots) == cap(g.slots) {
 		// Skip the first small Go map growth when spilling an unhinted
 		// vector. Keep the reservation within the proven inspection limit.
-		size := min(debugmap.MaxKeys, 2*len(b.slots))
+		size := min(debugmap.MaxKeys, 2*len(g.slots))
 		fields := make(map[string]Value, size)
-		for _, property := range b.slots {
+		for _, property := range g.slots {
 			fields[property.key] = property.value
 		}
 
 		fields[key] = value
-		b.slots = nil
-		b.index = nil
-		b.fields = fields
+		clear(g.slots)
+		g.slots = nil
+		g.index = nil
+		g.fields = fields
 
 		return
 	}
 
-	b.slots = append(b.slots, objectProperty{key: key, value: value})
-	if b.index != nil {
-		b.index.tags[len(b.slots)-1] = tag
-		b.index.candidate[tag] = uint8(len(b.slots))
+	g.slots = append(g.slots, objectProperty{key: key, value: value})
+	if g.index != nil {
+		g.index.tags[len(g.slots)-1] = tag
+		g.index.candidate[tag] = uint8(len(g.slots))
 	}
 }
 
@@ -170,29 +222,39 @@ func (t *Object) deleteKey(key string) {
 		return
 	}
 
-	if b.fields != nil {
-		before := len(b.fields)
-		delete(b.fields, key)
-		if len(b.fields) < before {
+	g := b.group
+	if g == nil {
+		if b.firstLen != 0 && b.first[0].key == key {
+			b.first[0] = objectProperty{}
+			b.firstLen = 0
+			b.bounds.Removed()
+		}
+		return
+	}
+
+	if g.fields != nil {
+		before := len(g.fields)
+		delete(g.fields, key)
+		if len(g.fields) < before {
 			b.bounds.Removed()
 		}
 
 		return
 	}
 
-	idx, _ := b.find(key)
+	idx, _ := g.find(key)
 	if idx < 0 {
 		return
 	}
 
-	last := len(b.slots) - 1
-	b.slots[idx] = b.slots[last]
-	b.slots[last] = objectProperty{}
-	b.slots = b.slots[:last]
-	if b.index != nil && idx != last {
-		tag := b.index.tags[last]
-		b.index.tags[idx] = tag
-		b.index.candidate[tag] = uint8(idx + 1)
+	last := len(g.slots) - 1
+	g.slots[idx] = g.slots[last]
+	g.slots[last] = objectProperty{}
+	g.slots = g.slots[:last]
+	if g.index != nil && idx != last {
+		tag := g.index.tags[last]
+		g.index.tags[idx] = tag
+		g.index.candidate[tag] = uint8(idx + 1)
 	}
 
 	b.bounds.Removed()
@@ -200,19 +262,14 @@ func (t *Object) deleteKey(key string) {
 
 // entries is used when the consumer cannot mutate this backing.
 func (t Object) entries(yield func(string, Value) bool) {
-	fields := t.large
-	if b := t.backing; b != nil {
-		if b.fields == nil {
-			for _, p := range b.slots {
-				if !yield(p.key, p.value) {
-					return
-				}
+	fields := t.fields()
+	if fields == nil && t.backing != nil {
+		for _, p := range t.backing.slots() {
+			if !yield(p.key, p.value) {
+				return
 			}
-
-			return
 		}
-
-		fields = b.fields
+		return
 	}
 
 	for key, value := range fields {
@@ -223,39 +280,52 @@ func (t Object) entries(yield func(string, Value) bool) {
 }
 
 func (t Object) callbackEntries(yield func(string, Value) bool) {
-	b := t.backing
-	if b == nil || b.fields != nil || len(b.slots) <= 1 {
-		t.entries(yield)
-
+	if fields := t.fields(); fields != nil || t.backing == nil {
+		for key, value := range fields {
+			if !yield(key, value) {
+				return
+			}
+		}
 		return
 	}
 
-	// Callbacks may delete, promote, or clear. Snapshot the names and read
-	// each surviving value from the original backing.
-	var names [debugmap.MaxKeys]string
-	for i := range b.slots {
-		names[i] = b.slots[i].key
+	b := t.backing
+	slots := b.slots()
+	if len(slots) <= 1 {
+		if len(slots) == 1 {
+			yield(slots[0].key, slots[0].value)
+		}
+		return
 	}
-	for _, key := range names[:len(b.slots)] {
-		if v, ok := t.lookup(key); ok && !yield(key, v) {
+
+	// A callback may remove a field, move its slot or promote the group.
+	// Preserve the original names and read their current values on delivery.
+	var names [debugmap.MaxKeys]string
+	for i := range slots {
+		names[i] = slots[i].key
+	}
+	for i, key := range names[:len(slots)] {
+		current := b.slots()
+		if i < len(current) && current[i].key == key {
+			if !yield(key, current[i].value) {
+				return
+			}
+		} else if v, ok := t.lookup(key); ok && !yield(key, v) {
 			return
 		}
 	}
 }
 
 func (t *Object) propertyNames() []string {
-	fields := t.large
-	if b := t.backing; b != nil {
-		if b.fields == nil {
-			keys := make([]string, len(b.slots))
-			for i := range b.slots {
-				keys[i] = b.slots[i].key
-			}
-
-			return keys
+	fields := t.fields()
+	if fields == nil && t.backing != nil {
+		slots := t.backing.slots()
+		keys := make([]string, len(slots))
+		for i := range slots {
+			keys[i] = slots[i].key
 		}
 
-		fields = b.fields
+		return keys
 	}
 
 	keys := make([]string, 0, len(fields))
