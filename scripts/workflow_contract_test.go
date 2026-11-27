@@ -1,7 +1,9 @@
 package scripts_test
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -25,8 +27,10 @@ func TestEveryPagesWriterUsesRepositoryWideSerialization(t *testing.T) {
 		t.Fatal("benchmark workflow still contains an independent auto-push writer")
 	}
 
-	if !strings.Contains(benchmark, "needs:\n      - main-baseline-unit\n      - main-baseline-integration") {
-		t.Fatal("benchmark persistence does not wait for both parallel baseline jobs")
+	for _, required := range []string{"needs: main-baseline", "suite: [unit, integration]", "sample: [1, 2, 3, 4, 5]"} {
+		if !strings.Contains(benchmark, required) {
+			t.Fatalf("baseline publication is missing %q", required)
+		}
 	}
 }
 
@@ -99,4 +103,55 @@ func readWorkflow(t *testing.T, root, name string) string {
 	}
 
 	return string(data)
+}
+
+func TestCombineBenchmarkSamples(t *testing.T) {
+	script, err := filepath.Abs("combine-benchmark-samples.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, fifth string }{
+		{"complete", "BenchmarkObject 5 32 ns/op\n"},
+		{"missing", ""}, {"empty", ""}, {"log-only", "ok github.com/MontFerret/ferret/v2/pkg/runtime\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			output := filepath.Join(dir, "benchmark-unit-output.txt")
+			var want strings.Builder
+			for i := 1; i <= 5; i++ {
+				path := filepath.Join(dir, fmt.Sprintf("benchmark-output-main-unit-%d", i))
+				if err := os.Mkdir(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				data := fmt.Sprintf("BenchmarkObject %d 32 ns/op\n", i)
+				if i == 5 {
+					if tc.name == "missing" {
+						continue
+					}
+					data = tc.fifth
+				}
+				if err := os.WriteFile(filepath.Join(path, filepath.Base(output)), []byte(data), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				want.WriteString(data)
+			}
+			log, err := exec.Command("bash", script, dir, "unit", output).CombinedOutput()
+			if tc.name != "complete" {
+				if err == nil || !strings.Contains(string(log), "unit sample 5") {
+					t.Fatalf("incomplete suite returned %v, %s", err, log)
+				}
+				if _, err := os.Stat(output); !os.IsNotExist(err) {
+					t.Fatalf("partial baseline published: %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("combine: %v, %s", err, log)
+			}
+			got, err := os.ReadFile(output)
+			if err != nil || string(got) != want.String() {
+				t.Fatalf("combined samples = %q, %v; want %q", got, err, want.String())
+			}
+		})
+	}
 }

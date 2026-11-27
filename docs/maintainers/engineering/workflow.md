@@ -168,7 +168,10 @@ Baseline and comparison requirements live in the
 [benchmark policy](testing.md#significant-changes-and-benchmarks). The benchmark
 workflow records main baselines on `gh-pages`, runs unit comparisons
 for pull requests, and gates integration comparisons behind its configured
-label or manual inputs. For unit comparisons, the run summary contains the
+label or manual inputs. On a main push, five independent jobs per suite each
+run one complete sample. The publisher collects all ten successful jobs,
+combines each suite in sample order, and publishes both baselines in one push.
+For unit comparisons, the run summary contains the
 full table and the run artifacts include the raw Go output. Same-repository
 pull requests receive a link to the run. The workflow file owns the current
 labels, thresholds, and artifact names.

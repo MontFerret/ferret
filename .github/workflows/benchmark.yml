@@ -56,11 +56,18 @@ concurrency:
   cancel-in-progress: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
-  main-baseline-unit:
-    name: Run main unit benchmark baseline
+  main-baseline:
+    name: Run main ${{ matrix.suite }} benchmark baseline (sample ${{ matrix.sample }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        suite: [unit, integration]
+        sample: [1, 2, 3, 4, 5]
+    env:
+      SUITE: ${{ matrix.suite }}
+      OUTPUT: benchmark-${{ matrix.suite }}-output.txt
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -71,54 +78,24 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Run unit benchmarks
+      - name: Run one complete benchmark sample
         shell: bash
         run: |
           set -euo pipefail
-          make bench-unit BENCH_COUNT=5 BENCH_TIMEOUT=15m | tee "${UNIT_BENCHMARK_OUTPUT}"
+          make "bench-${SUITE}" BENCH_COUNT=1 BENCH_TIMEOUT=110m | tee "${OUTPUT}"
 
-      - name: Upload raw unit benchmark output
+      - name: Upload raw benchmark output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-output-main-unit
-          path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
-          if-no-files-found: warn
-
-  main-baseline-integration:
-    name: Run main integration benchmark baseline
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Run integration benchmarks
-        shell: bash
-        run: |
-          set -euo pipefail
-          make bench-integration BENCH_COUNT=5 BENCH_TIMEOUT=30m | tee "${INTEGRATION_BENCHMARK_OUTPUT}"
-
-      - name: Upload raw integration benchmark output
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-output-main-integration
-          path: ${{ env.INTEGRATION_BENCHMARK_OUTPUT }}
-          if-no-files-found: warn
+          name: benchmark-output-main-${{ matrix.suite }}-${{ matrix.sample }}
+          overwrite: true
+          path: ${{ env.OUTPUT }}
+          if-no-files-found: error
 
   persist-main-baselines:
     name: Persist main benchmark baselines
-    needs:
-      - main-baseline-unit
-      - main-baseline-integration
+    needs: main-baseline
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -134,17 +111,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download unit benchmark output
+      - name: Download baseline samples
         uses: actions/download-artifact@v5
         with:
-          name: benchmark-output-main-unit
-          path: .
+          pattern: benchmark-output-main-*
+          path: baseline-samples
 
-      - name: Download integration benchmark output
-        uses: actions/download-artifact@v5
-        with:
-          name: benchmark-output-main-integration
-          path: .
+      - name: Combine five complete samples for each suite
+        run: |
+          bash scripts/combine-benchmark-samples.sh baseline-samples unit "${UNIT_BENCHMARK_OUTPUT}"
+          bash scripts/combine-benchmark-samples.sh baseline-samples integration "${INTEGRATION_BENCHMARK_OUTPUT}"
 
       - name: Store unit benchmark result
         uses: benchmark-action/github-action-benchmark@v1
