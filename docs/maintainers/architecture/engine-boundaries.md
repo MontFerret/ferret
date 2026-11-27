@@ -62,10 +62,15 @@ views once from the finalized host and reuses them across accessor calls.
 | --- | --- |
 | `FileSystem` | Borrowed engine-owned filesystem. Executions inherit it by default. `WithSessionFSRoot` selects a session-owned filesystem. |
 | `Network` | Borrowed network shared by module registration and executions. The engine handles cleanup for networks it creates. Networks supplied through `WithNetwork` are caller-owned. |
-| `Logger` | Configured logger value with its writer, level, and fields. Use `With` to derive a logger with additional fields. |
+| `Logger` | Configured logger value with its writer, level, and shared context. Derive a child with `With().Logger()` before calling `UpdateContext`. |
 | `Encoding` | Read-only `encoding.CodecResolver` with shared codec instances. |
 | `Params` | Read-only `runtime.ParamsReader` with shared values, including mutable values. `Names` returns an independent sorted slice. |
 | `Functions` | Read-only `runtime.FunctionRegistry` with arity-specific collections and a defensive copy from `List`. |
+
+Each view retains its backing registry or bindings independently of the engine.
+Ordinary and debugger execution share finalized codec registrations through the
+context lookup helpers. Calling `encoding.RegistryFrom` on one of these contexts
+returns a shallow snapshot. Codec instances remain shared.
 
 Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
 `SessionOption` remain aliases instantiated with engine-owned configuration

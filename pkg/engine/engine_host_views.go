@@ -22,19 +22,19 @@ type (
 // Encoding returns the reusable read-only view of the engine's finalized codec
 // registrations. Resolved codec instances are shared with the engine.
 func (e *Engine) Encoding() encoding.CodecResolver {
-	return &e.codecView
+	return e.codecView
 }
 
 // Params returns the reusable read-only view of the engine's default parameter
 // bindings. The retrieved values are shared and may be mutable.
 func (e *Engine) Params() runtime.ParamsReader {
-	return &e.paramsView
+	return e.paramsView
 }
 
 // Functions returns the reusable read-only view of the engine's finalized
 // function registry.
 func (e *Engine) Functions() runtime.FunctionRegistry {
-	return &e.functionsView
+	return e.functionsView
 }
 
 func (v *codecResolverView) Codec(contentType string) (encoding.Codec, error) {

@@ -11,7 +11,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rs/zerolog"
+
 	"github.com/MontFerret/ferret/v2"
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	"github.com/MontFerret/ferret/v2/pkg/encoding"
 	encodingjson "github.com/MontFerret/ferret/v2/pkg/encoding/json"
 	encodingmsgpack "github.com/MontFerret/ferret/v2/pkg/encoding/msgpack"
@@ -25,6 +28,8 @@ var _ interface {
 	Params() runtime.ParamsReader
 	Functions() runtime.FunctionRegistry
 } = (*ferret.Engine)(nil)
+
+var hostAccessorViewSink [3]any
 
 type hostAccessorCodec struct {
 	encoding.Codec
@@ -83,13 +88,17 @@ func TestPublicEngineHostAccessorsLogger(t *testing.T) {
 		t.Fatalf("configured log level = %v, want %v", got, ferret.LogWarn)
 	}
 	logger.Info().Msg("suppressed")
-	logger.Warn().Msg("visible")
+
+	first, second := logger.With().Logger(), logger.With().Logger()
+	first.UpdateContext(func(ctx zerolog.Context) zerolog.Context { return ctx.Str("request", "first") })
+	second.UpdateContext(func(ctx zerolog.Context) zerolog.Context { return ctx.Str("request", "other") })
+	first.Warn().Msg("visible")
 
 	var event map[string]any
 	if err := json.Unmarshal(logs.Bytes(), &event); err != nil {
 		t.Fatalf("expected one warning in the configured writer, got %q: %v", logs.String(), err)
 	}
-	if event["level"] != "warn" || event["message"] != "visible" || event["service"] != "host-accessors" {
+	if event["level"] != "warn" || event["message"] != "visible" || event["service"] != "host-accessors" || event["request"] != "first" {
 		t.Fatalf("unexpected log event: %v", event)
 	}
 }
@@ -138,6 +147,96 @@ func TestPublicEngineHostAccessorsEncodingView(t *testing.T) {
 	}
 	if _, err := collectEngine(eng, ctx, src, ferret.WithOutputContentType(bootstrapContentType)); !errors.Is(err, encoding.ErrCodecNotFound) {
 		t.Fatalf("expected execution to reject the bootstrap-only content type, got %v", err)
+	}
+}
+
+func TestPublicEngineExecutionCodecRegistrationsAreReadOnly(t *testing.T) {
+	const contentType = "application/x-host-accessor-json"
+	const addedType = "application/x-host-accessor-added"
+	original := &hostAccessorCodec{Codec: encodingjson.Default, contentType: contentType}
+	replacement := &hostAccessorCodec{Codec: encodingmsgpack.Default, contentType: contentType}
+	added := &hostAccessorCodec{Codec: encodingjson.Default, contentType: addedType}
+	register := ferret.WithFunctionsRegistrar(func(ns runtime.Namespace) {
+		ns.Function().A0().Add("CHECK_CODEC_REGISTRATIONS", func(ctx context.Context) (runtime.Value, error) {
+			snapshot, err := encoding.RegistryFrom(ctx)
+			if err != nil {
+				return runtime.None, err
+			}
+			if err := snapshot.Register(replacement); err != nil {
+				return runtime.None, err
+			}
+			if err := snapshot.Register(added); err != nil {
+				return runtime.None, err
+			}
+			if _, err := encoding.CodecFrom(ctx, addedType); !errors.Is(err, encoding.ErrCodecNotFound) {
+				return runtime.None, errors.New("context codec lookup observed registration in the snapshot")
+			}
+			if got, err := encoding.EncoderFrom(ctx, contentType); err != nil || got != original {
+				return runtime.None, errors.New("context encoder lookup lost the original codec")
+			}
+			if got, err := encoding.DecoderFrom(ctx, contentType); err != nil || got != original {
+				return runtime.None, errors.New("context decoder lookup lost the original codec")
+			}
+
+			return runtime.Int(42), nil
+		})
+	})
+	src := ferret.NewAnonymousSource("RETURN CHECK_CODEC_REGISTRATIONS()")
+	outputType := ferret.WithOutputContentType(contentType)
+
+	for _, mode := range []string{"ordinary", "debugger"} {
+		t.Run(mode, func(t *testing.T) {
+			eng := newHostAccessorTestEngine(t, ferret.WithEncodingRegistry(encoding.NewRegistry(original)), register)
+			view := eng.Encoding()
+			ctx := t.Context()
+			var output *encoding.Content
+
+			if mode == "ordinary" {
+				var err error
+				output, err = collectEngine(eng, ctx, src, outputType)
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				plan, err := eng.CompileDebug(ctx, src)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer plan.Close()
+
+				session, err := plan.NewDebugSession(ctx, outputType)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer session.Close()
+
+				if _, err := session.Start(ctx); err != nil {
+					t.Fatal(err)
+				}
+				event, err := session.Continue(ctx)
+				if err != nil || event == nil {
+					t.Fatalf("expected a debugger event, got %#v, %v", event, err)
+				}
+				if event.Reason != debugger.ReasonCompleted {
+					t.Fatalf("debugger stopped with %s: %v", event.Reason, event.Error)
+				}
+				output = event.Output
+			}
+
+			if output == nil || output.Metadata.ContentType != contentType || string(output.Data) != "42" {
+				t.Fatalf("expected output from the finalized codec, got %#v", output)
+			}
+			if got, err := view.Codec(contentType); err != nil || got != original {
+				t.Fatalf("held view lost the original codec, got %T, %v", got, err)
+			}
+			if _, err := view.Codec(addedType); !errors.Is(err, encoding.ErrCodecNotFound) {
+				t.Fatalf("held view observed a registration from the snapshot: %v", err)
+			}
+			output, err := collectEngine(eng, ctx, ferret.NewAnonymousSource("RETURN 7"), outputType)
+			if err != nil || output == nil || output.Metadata.ContentType != contentType || string(output.Data) != "7" {
+				t.Fatalf("expected later output from the finalized codec, got %#v, %v", output, err)
+			}
+		})
 	}
 }
 
@@ -298,11 +397,13 @@ func TestPublicEngineHostAccessorsHideMutableTypes(t *testing.T) {
 
 func TestPublicEngineHostAccessorsReuseViewsWithoutAllocating(t *testing.T) {
 	eng := newHostAccessorTestEngine(t, ferret.WithParam("configured", 20))
-	codecs, params, functions := eng.Encoding(), eng.Params(), eng.Functions()
+	views := [3]any{eng.Encoding(), eng.Params(), eng.Functions()}
+	defer func() { hostAccessorViewSink = [3]any{} }()
 
 	reused := true
 	allocations := testing.AllocsPerRun(100, func() {
-		if eng.Encoding() != codecs || eng.Params() != params || eng.Functions() != functions {
+		hostAccessorViewSink = [3]any{eng.Encoding(), eng.Params(), eng.Functions()}
+		if hostAccessorViewSink != views {
 			reused = false
 		}
 	})

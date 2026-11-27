@@ -97,7 +97,7 @@ func (e *Execution) Close() error {
 func (e *Execution) extendContext(ctx context.Context) context.Context {
 	ctx = rnd.WithContext(ctx, e.random)
 	ctx = e.logger.WithContext(ctx)
-	ctx = encoding.WithRegistry(ctx, e.encoding)
+	ctx = encoding.WithReadOnlyRegistry(ctx, e.encoding)
 	ctx = fs.WithFileSystem(ctx, e.filesystem)
 
 	return ferretnet.WithNetwork(ctx, e.network)

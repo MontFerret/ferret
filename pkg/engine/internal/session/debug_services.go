@@ -75,7 +75,7 @@ func (s *DebugServices) AfterRun(ctx context.Context, runErr error) error {
 func (s *DebugServices) ExtendContext(ctx context.Context) context.Context {
 	ctx = rnd.WithContext(ctx, s.random)
 	ctx = s.logger.WithContext(ctx)
-	ctx = encoding.WithRegistry(ctx, s.encoding)
+	ctx = encoding.WithReadOnlyRegistry(ctx, s.encoding)
 	ctx = fs.WithFileSystem(ctx, s.filesystem)
 
 	return ferretnet.WithNetwork(ctx, s.network)

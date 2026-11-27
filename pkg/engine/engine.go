@@ -32,9 +32,9 @@ type Engine struct {
 	hooks             *host.Hooks
 	resources         *resource.Manager
 	limiter           *enginesession.Limiter
-	codecView         codecResolverView
-	paramsView        paramsReaderView
-	functionsView     functionRegistryView
+	codecView         *codecResolverView
+	paramsView        *paramsReaderView
+	functionsView     *functionRegistryView
 	closeOnce         sync.Once
 	closed            atomic.Bool
 	optimizationLevel compiler.OptimizationLevel
@@ -92,9 +92,9 @@ func New(setters ...Option) (*Engine, error) {
 		hooks:             state.Hooks,
 		resources:         state.Resources,
 		limiter:           state.Limiter,
-		codecView:         codecResolverView{registry: state.Host.Encoding},
-		paramsView:        paramsReaderView{params: state.Host.Params},
-		functionsView:     functionRegistryView{functions: state.Host.Functions},
+		codecView:         &codecResolverView{registry: state.Host.Encoding},
+		paramsView:        &paramsReaderView{params: state.Host.Params},
+		functionsView:     &functionRegistryView{functions: state.Host.Functions},
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil
@@ -117,7 +117,8 @@ func (e *Engine) Network() ferretnet.Network {
 }
 
 // Logger returns the configured engine logger with its writer, level, and
-// structured fields. Use its With method to derive a logger with more fields.
+// structured fields. The returned logger shares its field buffer with the engine.
+// Derive a child with With().Logger() before calling UpdateContext.
 func (e *Engine) Logger() logging.Logger {
 	return e.host.Logger
 }
