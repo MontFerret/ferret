@@ -45,16 +45,20 @@ expand the root API.
   `WithDebugFormat`. These configure native artifact loading, VM environments,
   and debugger output without moving those subsystem contracts into the engine.
 
-The 14 methods declared on native public types are intentional API:
+The 15 methods declared on native public types are intentional API:
 
-* `Engine`: `Network`, `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
+* `Engine`: `FileSystem`, `Network`, `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
 * `Plan`: `Params`, `NewSession`, `NewDebugSession`, `Marshal`, `Close`.
 * `Session`: `Run`, `Close`.
 * `OptimizationLevel`: `String`.
 
+`Engine.FileSystem` gives embedders a borrowed reference to the engine-owned
+filesystem used by module registration and executions that inherit the engine
+root. `WithSessionFSRoot` selects a separate filesystem for that execution.
+
 `Engine.Network` gives embedders a borrowed reference to the same network that
-module registration and both ordinary and debugger executions receive. The
-method is also available on the root `ferret.Engine` alias.
+module registration and both ordinary and debugger executions receive. The root
+`ferret.Engine` alias exposes both methods.
 
 Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
 `SessionOption` remain aliases instantiated with engine-owned configuration

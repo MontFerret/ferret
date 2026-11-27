@@ -14,6 +14,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
+	"github.com/MontFerret/ferret/v2/pkg/fs"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -90,6 +91,14 @@ func New(setters ...Option) (*Engine, error) {
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil
+}
+
+// FileSystem returns the filesystem configured for the engine. With no root,
+// file operations return [fs.ErrRootNotConfigured]. The filesystem is borrowed
+// and remains owned by the engine. Callers must finish using it before calling
+// [Engine.Close] and must leave filesystem closure to the engine.
+func (e *Engine) FileSystem() fs.FileSystem {
+	return e.host.FileSystem
 }
 
 // Network returns the engine's configured network service. The caller borrows

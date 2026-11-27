@@ -19,7 +19,15 @@ func TestEngineCloseClosesRootFileSystem(t *testing.T) {
 		t.Fatalf("new engine: %v", err)
 	}
 
-	filesystem := engine.host.FileSystem
+	defer engine.Close()
+
+	filesystem := engine.FileSystem()
+	if filesystem == nil {
+		t.Fatal("expected a rooted filesystem")
+	}
+	if _, err := filesystem.Stat("."); err != nil {
+		t.Fatalf("stat before engine close: %v", err)
+	}
 
 	if err := engine.Close(); err != nil {
 		t.Fatalf("close engine: %v", err)

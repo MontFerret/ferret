@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	stdhttp "net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync/atomic"
@@ -13,9 +15,76 @@ import (
 
 	"github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
+
+func TestPublicEngineDefaultFileSystemIsDisabled(t *testing.T) {
+	eng, err := ferret.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	filesystem := eng.FileSystem()
+	if filesystem == nil {
+		t.Fatal("expected a disabled filesystem")
+	}
+	if _, err := filesystem.ReadFile("report.txt"); !errors.Is(err, ferretfs.ErrRootNotConfigured) {
+		t.Fatalf("read error = %v, want %v", err, ferretfs.ErrRootNotConfigured)
+	}
+	if err := filesystem.WriteFile("report.txt", []byte("report"), 0o600); !errors.Is(err, ferretfs.ErrRootNotConfigured) {
+		t.Fatalf("write error = %v, want %v", err, ferretfs.ErrRootNotConfigured)
+	}
+}
+
+func TestPublicEngineFileSystemEnforcesRootAndReadOnly(t *testing.T) {
+	parent := t.TempDir()
+	root := filepath.Join(parent, "root")
+	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "report.txt"), []byte("inside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(parent, "outside.txt"), []byte("outside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	eng, err := ferret.New(ferret.WithFSRoot(root), ferret.WithFSReadOnly())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	filesystem := eng.FileSystem()
+	if filesystem == nil {
+		t.Fatal("expected a rooted filesystem")
+	}
+	data, err := filesystem.ReadFile("report.txt")
+	if err != nil || string(data) != "inside" {
+		t.Fatalf("read inside root = %q, %v, want inside", data, err)
+	}
+	if err := filesystem.WriteFile("new.txt", []byte("report"), 0o600); !errors.Is(err, ferretfs.ErrReadOnly) {
+		t.Fatalf("write error = %v, want %v", err, ferretfs.ErrReadOnly)
+	}
+	if _, err := os.Stat(filepath.Join(root, "new.txt")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat after denied write: %v, want %v", err, os.ErrNotExist)
+	}
+	data, err = filesystem.ReadFile(filepath.Join("..", "outside.txt"))
+	if err == nil || len(data) != 0 {
+		t.Fatalf("expected read outside root to be denied, got %q, %v", data, err)
+	}
+}
 
 func TestPublicEngineDefaultNetwork(t *testing.T) {
 	eng, err := ferret.New()
