@@ -15,7 +15,7 @@ import (
 )
 
 func TestObjectBackingAliasesAndClear(t *testing.T) {
-	for _, hint := range []int{0, 16, 256} {
+	for _, hint := range []int{0, 16, 128, 256} {
 		for _, clearOwner := range []bool{false, true} {
 			t.Run(strconv.Itoa(hint)+"/clear_owner_"+strconv.FormatBool(clearOwner), func(t *testing.T) {
 				obj := NewObjectOf(hint)
@@ -64,10 +64,10 @@ func TestObjectBackingReleasesRemovedValues(t *testing.T) {
 		hint, count int
 	}{
 		{"singleton", 0, 1}, {"small", 0, 2}, {"promoted", 0, 9},
-		{"indexed", 128, 128}, {"promoted_index", 16, 17}, {"large", 256, 256},
+		{"reserved_16", 16, 16}, {"grown_17", 16, 17}, {"reserved_128", 128, 128}, {"large", 256, 256},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			create := func() (*Object, weak.Pointer[Array]) {
+			create := func() (*Object, weak.Pointer[Array], weak.Pointer[Array]) {
 				obj := NewObjectOf(tc.hint)
 				alias := *obj
 				value := NewArrayWith(True)
@@ -76,16 +76,19 @@ func TestObjectBackingReleasesRemovedValues(t *testing.T) {
 				for i := 1; i < tc.count; i++ {
 					alias.SetString(strconv.Itoa(i), Int(i))
 				}
+				replacement := NewArrayWith(False)
+				replaced := weak.Make(replacement)
+				alias.SetString("", replacement)
 				if err := alias.RemoveKey(t.Context(), String("")); err != nil {
 					t.Fatal(err)
 				}
 
-				return obj, ref
+				return obj, ref, replaced
 			}
-			obj, ref := create()
+			obj, overwritten, removed := create()
 			goruntime.GC()
-			if ref.Value() != nil {
-				t.Fatal("removed value retained by live backing")
+			if overwritten.Value() != nil || removed.Value() != nil {
+				t.Fatal("live backing retained an overwritten or removed value")
 			}
 			goruntime.KeepAlive(obj)
 		})
@@ -93,7 +96,7 @@ func TestObjectBackingReleasesRemovedValues(t *testing.T) {
 }
 
 func TestObjectOverwriteReleasesOldKey(t *testing.T) {
-	for _, hint := range []int{0, 16} {
+	for _, hint := range []int{0, 16, 128} {
 		t.Run(strconv.Itoa(hint), func(t *testing.T) {
 			const key = "seventeen letters"
 			obj := NewObjectOf(hint)
@@ -119,6 +122,46 @@ func TestObjectOverwriteReleasesOldKey(t *testing.T) {
 				t.Fatalf("lookup after overwrite: %v, %t, %v", v, found, err)
 			}
 		})
+	}
+}
+
+func TestObjectCopiesAcrossSmallStoragePromotion(t *testing.T) {
+	ctx := t.Context()
+	obj := NewObject()
+	child := NewArrayWith(True)
+	obj.SetString("child", child)
+	for i := 1; i < smallObjectFields; i++ {
+		obj.SetString(strconv.Itoa(i), Int(i))
+	}
+
+	before := obj.Copy().(*Object)
+	alias := *obj
+	alias.SetString("spill", False)
+	after := obj.Copy().(*Object)
+	cloned, err := alias.Clone(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := alias.Clear(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		object      *Object
+		spill       bool
+		sharedChild bool
+	}{{before, false, true}, {after, true, true}, {cloned.(*Object), true, false}} {
+		value, found, err := tc.object.Lookup(ctx, String("spill"))
+		if err != nil || found != tc.spill || (found && value != False) {
+			t.Fatalf("copied spill: %v, %t, %v", value, found, err)
+		}
+		value, found, err = tc.object.Lookup(ctx, String("child"))
+		if err != nil || !found || (value == child) != tc.sharedChild {
+			t.Fatalf("copied child: %v, %t, %v", value, found, err)
+		}
+		tc.object.SetString("independent", True)
+		if _, found, _ := obj.Lookup(ctx, String("independent")); found {
+			t.Fatal("copy mutated the promoted backing")
+		}
 	}
 }
 
@@ -185,21 +228,80 @@ func TestObjectBackingSparseInspection(t *testing.T) {
 	}
 }
 
-func collidingObjectNames(prefix string) []string {
-	var buckets [256][]string
-	for i := 0; ; i++ {
-		key := prefix + strconv.Itoa(i)
-		tag := objectNameTag(key)
-		buckets[tag] = append(buckets[tag], key)
-		if len(buckets[tag]) == 3 {
-			return buckets[tag]
-		}
+func TestObjectMediumBackingInspection(t *testing.T) {
+	for _, hint := range []int{0, 16, 32, 128} {
+		t.Run(strconv.Itoa(hint), func(t *testing.T) {
+			ctx := t.Context()
+			obj := NewObjectOf(hint)
+			alias := *obj
+			for i := 127; i >= 0; i-- {
+				obj.SetString(strconv.Itoa(1000+i), Int(i))
+			}
+
+			_ = alias.RemoveKey(ctx, String("absent"))
+			var keys []string
+			err := alias.ReadDebugFields(125, 128, func(key string, value Value) error {
+				if value != Int(125+len(keys)) {
+					t.Fatalf("unexpected value %v for %q", value, key)
+				}
+				keys = append(keys, key)
+				return nil
+			})
+			if err != nil || !slices.Equal(keys, []string{"1125", "1126", "1127"}) {
+				t.Fatalf("128-field page: %v, %v", keys, err)
+			}
+
+			if allocations := testing.AllocsPerRun(10, func() {
+				err := alias.ReadDebugFields(128, 128, func(string, Value) error {
+					t.Fatal("visited a field for an empty page")
+					return nil
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}); allocations != 0 {
+				t.Fatalf("empty page allocated %v times", allocations)
+			}
+
+			_ = alias.RemoveKey(ctx, String("1127"))
+			if !obj.DebugFieldsPageable() {
+				t.Fatal("127 live keys and one removal should still be pageable")
+			}
+			alias.SetString("replacement", False)
+			if obj.DebugFieldsPageable() {
+				t.Fatal("live keys plus removal history exceeded the budget")
+			}
+			for i := range 127 {
+				_ = obj.RemoveKey(ctx, String(strconv.Itoa(1000+i)))
+			}
+			err = alias.ReadDebugFields(0, 1, func(string, Value) error {
+				t.Fatal("enumerated a backing with exhausted history")
+				return nil
+			})
+			if !errors.Is(err, errors.ErrUnsupported) {
+				t.Fatal(err)
+			}
+
+			cloned, err := alias.Clone(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, fresh := range []*Object{obj.Copy().(*Object), cloned.(*Object)} {
+				if !fresh.DebugFieldsPageable() {
+					t.Fatal("single live field inherited old storage history")
+				}
+				fresh.SetString("replacement", True)
+				if value, found, err := alias.Lookup(ctx, String("replacement")); err != nil || !found || value != False {
+					t.Fatalf("copy changed original: %v, %t, %v", value, found, err)
+				}
+			}
+		})
 	}
 }
 
-func TestObjectFingerprintCollisions(t *testing.T) {
-	keys := collidingObjectNames("common long prefix ")
-	obj := NewObjectOf(16)
+func TestObjectExactNamesWithCollidingFilterBits(t *testing.T) {
+	keys := []string{"prefix-aa", "prefix-ba", "prefix-ca"}
+	obj := NewObject()
 	alias := *obj
 	for i, k := range keys {
 		obj.SetString(k, Int(i))
@@ -233,20 +335,16 @@ func TestObjectFingerprintCollisions(t *testing.T) {
 }
 
 func TestObjectLookupAfterMovingCollidingProperty(t *testing.T) {
-	keys := collidingObjectNames("")
+	keys := []string{"aa", "ba", "ca"}
 	other := "other"
-	for objectNameTag(other) == objectNameTag(keys[0]) {
-		other += "x"
-	}
 
-	obj := NewObjectOf(16)
+	obj := NewObject()
 	obj.SetString(other, None)
 	for i, key := range keys {
 		obj.SetString(key, Int(i))
 	}
 
-	// Move the last colliding key to slot zero, shrink below its old slot,
-	// and place an unrelated key at the end of the live range.
+	// Move the last colliding key to slot zero and reuse its previous slot.
 	for _, key := range []string{other, keys[1]} {
 		if err := obj.RemoveKey(t.Context(), String(key)); err != nil {
 			t.Fatal(err)

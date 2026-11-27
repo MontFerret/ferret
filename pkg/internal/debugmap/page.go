@@ -11,6 +11,10 @@ func Read[V any](values map[string]V, bounds Bounds, start, end int, visit func(
 		return errors.ErrUnsupported
 	}
 
+	if start == end {
+		return nil
+	}
+
 	keys := make([]string, 0, len(values))
 
 	for key := range values {

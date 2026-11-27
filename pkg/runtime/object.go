@@ -12,11 +12,11 @@ import (
 )
 
 // Object is a handle. Value copies share its properties until Clear detaches
-// one receiver. Large reservations can use a Go map directly because their
-// backing is permanently ineligible for debugger enumeration.
+// one receiver. A pre-sized map has a shared history only when its original
+// reservation permits bounded debugger enumeration.
 type Object struct {
-	backing *objectBacking
-	large   map[string]Value
+	backing  *objectBacking
+	reserved map[string]Value
 }
 
 func NewObject() *Object {
@@ -24,11 +24,14 @@ func NewObject() *Object {
 }
 
 func NewObjectOf(size int) *Object {
-	if size > debugmap.MaxKeys {
-		return &Object{large: make(map[string]Value, size)}
+	if size <= smallObjectFields {
+		return &Object{backing: new(objectBacking)}
 	}
-
-	return &Object{backing: newObjectBacking(size)}
+	obj := &Object{reserved: make(map[string]Value, size)}
+	if size <= debugmap.MaxKeys {
+		obj.backing = new(objectBacking)
+	}
+	return obj
 }
 
 // NewObjectWith creates a new object with the provided properties.
@@ -176,8 +179,8 @@ func (t *Object) DebugFieldsPageable() bool {
 
 // ReadDebugFields visits the selected interval in stable key order.
 func (t *Object) ReadDebugFields(start, end int, visit func(string, Value) error) error {
-	if b := t.backing; b != nil && b.group != nil && b.group.fields != nil {
-		return debugmap.Read(b.group.fields, b.bounds, start, end, visit)
+	if fields := t.fields(); t.backing != nil && fields != nil {
+		return debugmap.Read(fields, t.backing.bounds, start, end, visit)
 	}
 
 	size := t.length()
@@ -385,11 +388,7 @@ func (t *Object) SetString(key string, value Value) {
 		value = None
 	}
 
-	if t.backing == nil {
-		t.large[key] = value
-	} else {
-		t.setTrackedKey(key, value)
-	}
+	t.setKey(key, value)
 }
 
 func (t *Object) RemoveKey(_ context.Context, key Value) error {

@@ -24,7 +24,7 @@ func BenchmarkObjectOperations(b *testing.B) {
 		return obj
 	}
 
-	for _, size := range []int{1, 2, 8, 16, 64, 128, 256} {
+	for _, size := range []int{1, 2, 7, 8, 9, 16, 32, 64, 128, 256} {
 		name := strconv.Itoa(size)
 		b.Run("grow_"+name, func(b *testing.B) {
 			for b.Loop() {
@@ -38,7 +38,7 @@ func BenchmarkObjectOperations(b *testing.B) {
 		})
 	}
 
-	for _, size := range []int{1, 16, 256} {
+	for _, size := range []int{1, 16, 128, 256} {
 		b.Run(strconv.Itoa(size), func(b *testing.B) {
 			obj := build(size, size)
 			key := Value(keys[size-1])
@@ -54,6 +54,12 @@ func BenchmarkObjectOperations(b *testing.B) {
 				}
 			})
 			b.Run("lookup", func(b *testing.B) {
+				for b.Loop() {
+					benchmarkObjectValue, _, _ = obj.Lookup(ctx, key)
+				}
+			})
+			b.Run("lookup_miss", func(b *testing.B) {
+				key := Value(String("field999"))
 				for b.Loop() {
 					benchmarkObjectValue, _, _ = obj.Lookup(ctx, key)
 				}

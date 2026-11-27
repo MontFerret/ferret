@@ -181,7 +181,9 @@ func TestDebugObjectChildViews(t *testing.T) {
 		pageable bool
 	}{
 		{runtime.NewObject(), "small", 1, true},
+		{runtime.NewObjectOf(128), "bounded_reservation", 128, true},
 		{runtime.NewObjectOf(256), "reserved", 1, false},
+		{data.NewShapeCache(64, 64).NewFastObject(), "bounded_dictionary", 128, true},
 		{data.NewShapeCache(0, 1).NewFastObject(), "large_dictionary", 129, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

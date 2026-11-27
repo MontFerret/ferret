@@ -1550,7 +1550,7 @@ func (vm *VM) loadFastKeyCached(
 ) (runtime.Value, error) {
 	shapeID := obj.ShapeID()
 	if shapeID == 0 {
-		return vm.loadKey(ctx, obj, arg)
+		return obj.Get(ctx, arg)
 	}
 
 	if constKey {

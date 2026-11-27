@@ -8,7 +8,7 @@ import (
 )
 
 func BenchmarkObjectLookupKeys(b *testing.B) {
-	for _, size := range []int{16, 128} {
+	for _, size := range []int{7, 8, 9, 15, 16, 17, 31, 32, 33, 64, 128} {
 		for _, pattern := range []string{"short", "four_bytes", "eight_bytes", "common_suffix"} {
 			obj := NewObjectOf(size)
 			hits := make([]Value, size)
@@ -37,10 +37,20 @@ func BenchmarkObjectLookupKeys(b *testing.B) {
 			}{{"hit", hits}, {"miss", misses}} {
 				b.Run(strconv.Itoa(size)+"/"+pattern+"/"+tc.name, func(b *testing.B) {
 					ctx := b.Context()
+					for _, key := range tc.keys {
+						value, found, err := obj.Lookup(ctx, key)
+						if err != nil || found != (tc.name == "hit") || (found && value != True) {
+							b.Fatalf("lookup %q: value %v, found %t, error %v", key, value, found, err)
+						}
+					}
+
 					i := 0
 					for b.Loop() {
 						benchmarkObjectValue, _, _ = obj.Lookup(ctx, tc.keys[i])
-						i = (i + 1) & (size - 1)
+						i++
+						if i == len(tc.keys) {
+							i = 0
+						}
 					}
 				})
 			}

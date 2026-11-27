@@ -155,13 +155,7 @@ func (t *FastObject) setString(key string, value runtime.Value) {
 }
 
 func (t *FastObject) toDict() {
-	// Crossing the threshold signals growth. Reserve room for subsequent
-	// writes while keeping a small dictionary eligible for named pages.
-	capacity := t.size + 1
-	if capacity <= debugmap.MaxKeys {
-		capacity = min(t.size*2, debugmap.MaxKeys)
-	}
-	dict := *runtime.NewObjectOf(capacity)
+	dict := *runtime.NewObjectOf(t.size + 1)
 	for idx, key := range t.shape.names {
 		if idx >= len(t.slots) {
 			break
