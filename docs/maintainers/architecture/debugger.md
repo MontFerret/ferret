@@ -184,9 +184,10 @@ Dense fast objects page directly in shape order. A sparse shape can scan up
 to 128 slots for occupied positions. Native objects and fast dictionaries
 sort up to 128 unordered keys on explicit expansion. After crossing its live-key
 threshold, a fast object uses detached native property storage. Its shape and
-slot caches apply only before that transition. Native storage uses bounded slots,
-a Go map after outgrowing the slots, or a direct map for an oversized reservation. Core bounds the backing
-scan conservatively. The live count plus successful removals since allocation
+slot caches apply only before that transition. Native storage uses up to eight
+compact slots. Larger reservations and objects that outgrow their slots use
+Go maps. A fresh map reserved for 128 fields can still page all 128 names.
+Core bounds the backing scan conservatively. The live count plus successful removals since allocation
 must fit within 128, and the original capacity hint must also fit. A singleton
 therefore becomes summary-only after 128 deletions and reinsertions. Removing
 a missing property leaves the budget intact. Keys longer than
@@ -362,10 +363,11 @@ datasets. Task 2 could only return a summary for collections of these sizes
 with its default settings.
 
 The ordinary JSON and MessagePack decoders write Go string keys directly into
-native objects. Native properties and their inspection bounds now share a
-detached owner, so an ordinary object has no separate bounds allocation. A Go
-value copy retains the original properties when another receiver clears and
-reuses its storage. Allocation and timing comparisons, ownership tests and
+native objects. Compact properties carry inspection history on their detached
+owner. Reservations from 9 through 128 share one additional history owner
+among Go value copies. Larger reservations omit it. A surviving copy retains
+the original properties when another receiver clears and reuses its storage.
+Allocation and timing comparisons, ownership tests and
 sparse-map discovery costs are documented in the
 [native storage investigation](native-object-inspection-cost.md).
 
@@ -390,8 +392,8 @@ each pair.
 
 A shape-backed fast object uses shared shape identities and reads and writes
 through cached slots. Crossing its configured live-key threshold copies the
-occupied slots into a native dictionary, including the field that triggered
-the transition. The threshold belongs to the per-VM shape cache. Moving that
+occupied slots into a native dictionary reserved for the live keys plus the
+incoming field. The threshold belongs to the per-VM shape cache. Moving that
 setting off each fast object made room for a native dictionary handle in
 the original 64-byte fast-object header on 64-bit systems.
 
