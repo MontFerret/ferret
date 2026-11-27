@@ -1,8 +1,25 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
-type Params map[string]Value
+type (
+	// ParamsReader reads parameter bindings. Retrieved values may be mutable.
+	ParamsReader interface {
+		Get(name string) (Value, bool)
+		MustGet(name string) Value
+		GetOr(name string, fallback Value) Value
+		Has(name string) bool
+		Size() int
+		Names() []string
+	}
+
+	Params map[string]Value
+)
+
+var _ ParamsReader = Params(nil)
 
 // NewParams creates and returns an empty Params map.
 func NewParams() Params {
@@ -68,6 +85,22 @@ func (p Params) Has(name string) bool {
 	_, exists := p[name]
 
 	return exists
+}
+
+// Size returns the number of bindings.
+func (p Params) Size() int {
+	return len(p)
+}
+
+// Names returns the parameter names in lexicographic order as a new slice.
+func (p Params) Names() []string {
+	names := make([]string, 0, len(p))
+	for name := range p {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+
+	return names
 }
 
 func (p Params) SetValue(name string, value Value) Params {

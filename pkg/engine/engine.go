@@ -32,6 +32,9 @@ type Engine struct {
 	hooks             *host.Hooks
 	resources         *resource.Manager
 	limiter           *enginesession.Limiter
+	codecView         codecResolverView
+	paramsView        paramsReaderView
+	functionsView     functionRegistryView
 	closeOnce         sync.Once
 	closed            atomic.Bool
 	optimizationLevel compiler.OptimizationLevel
@@ -89,6 +92,9 @@ func New(setters ...Option) (*Engine, error) {
 		hooks:             state.Hooks,
 		resources:         state.Resources,
 		limiter:           state.Limiter,
+		codecView:         codecResolverView{registry: state.Host.Encoding},
+		paramsView:        paramsReaderView{params: state.Host.Params},
+		functionsView:     functionRegistryView{functions: state.Host.Functions},
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil
@@ -114,26 +120,6 @@ func (e *Engine) Network() ferretnet.Network {
 // structured fields. Use its With method to derive a logger with more fields.
 func (e *Engine) Logger() logging.Logger {
 	return e.host.Logger
-}
-
-// Encoding returns a snapshot of the finalized codec registrations. Changes to
-// the snapshot's registrations are local to it. Codec instances are shared.
-func (e *Engine) Encoding() *encoding.Registry {
-	return e.host.Encoding.Clone()
-}
-
-// Params returns a shallow snapshot of the engine's default parameter bindings.
-// Changes to those bindings are local to the snapshot. Values, including
-// mutable values, are shared.
-func (e *Engine) Params() runtime.Params {
-	return e.host.Params.Clone()
-}
-
-// Functions returns a shallow copy of the finalized function registry for
-// introspection. The copy shares the engine's read-only function collections.
-func (e *Engine) Functions() *runtime.Functions {
-	functions := *e.host.Functions
-	return &functions
 }
 
 // Compile synchronously compiles source into a reusable execution plan. Omitted

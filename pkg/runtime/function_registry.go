@@ -1,19 +1,39 @@
 package runtime
 
-// Functions is a container for functions that organizes them by their argument count.
-// It provides separate storage for functions with fixed argument counts (0-4) and
-// functions with variable argument counts for optimal performance.
-type Functions struct {
-	av    FunctionCollection[Function]
-	a0    FunctionCollection[Function0]
-	a1    FunctionCollection[Function1]
-	a2    FunctionCollection[Function2]
-	a3    FunctionCollection[Function3]
-	a4    FunctionCollection[Function4]
-	names []string
-	hash  uint64
-	size  int
-}
+type (
+	// FunctionRegistry provides read-only introspection and arity-specific lookup
+	// for a finalized function registry.
+	FunctionRegistry interface {
+		Hash() uint64
+		Size() int
+		Has(name string) bool
+		List() []string
+
+		A0() FunctionCollection[Function0]
+		A1() FunctionCollection[Function1]
+		A2() FunctionCollection[Function2]
+		A3() FunctionCollection[Function3]
+		A4() FunctionCollection[Function4]
+		Var() FunctionCollection[Function]
+	}
+
+	// Functions is a container for functions that organizes them by their argument count.
+	// It provides separate storage for functions with fixed argument counts (0-4) and
+	// functions with variable argument counts for optimal performance.
+	Functions struct {
+		av    FunctionCollection[Function]
+		a0    FunctionCollection[Function0]
+		a1    FunctionCollection[Function1]
+		a2    FunctionCollection[Function2]
+		a3    FunctionCollection[Function3]
+		a4    FunctionCollection[Function4]
+		names []string
+		hash  uint64
+		size  int
+	}
+)
+
+var _ FunctionRegistry = (*Functions)(nil)
 
 var (
 	// Shared empty collections keep sparse registries read-only on lookup paths.

@@ -54,15 +54,18 @@ The 19 methods declared on native public types are intentional API:
 * `OptimizationLevel`: `String`.
 
 The root `ferret.Engine` alias exposes all six finalized host accessors.
+Modules use `module.HostContext` during bootstrap to register codecs and
+functions and set default parameter bindings. The engine creates the read-only
+views once from the finalized host and reuses them across accessor calls.
 
 | Accessor | Result and ownership |
 | --- | --- |
 | `FileSystem` | Borrowed engine-owned filesystem. Executions inherit it by default. `WithSessionFSRoot` selects a session-owned filesystem. |
 | `Network` | Borrowed network shared by module registration and executions. The engine handles cleanup for networks it creates. Networks supplied through `WithNetwork` are caller-owned. |
 | `Logger` | Configured logger value with its writer, level, and fields. Use `With` to derive a logger with additional fields. |
-| `Encoding` | Independent snapshot of codec registrations with shared codec instances. |
-| `Params` | Independent snapshot of default bindings with shared parameter values, including mutable values. |
-| `Functions` | Shallow copy of the finalized registry that shares read-only function collections for introspection. |
+| `Encoding` | Read-only `encoding.CodecResolver` with shared codec instances. |
+| `Params` | Read-only `runtime.ParamsReader` with shared values, including mutable values. `Names` returns an independent sorted slice. |
+| `Functions` | Read-only `runtime.FunctionRegistry` with arity-specific collections and a defensive copy from `List`. |
 
 Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
 `SessionOption` remain aliases instantiated with engine-owned configuration

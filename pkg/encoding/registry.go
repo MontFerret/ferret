@@ -4,15 +4,28 @@ import (
 	"fmt"
 )
 
-// Registry stores codecs by content type.
 type (
+	// CodecRegistrar registers codecs by content type.
 	CodecRegistrar interface {
 		Register(codec Codec) error
 	}
 
+	// CodecResolver looks up registered codecs and their encoding and decoding capabilities.
+	CodecResolver interface {
+		Codec(contentType string) (Codec, error)
+		Encoder(contentType string) (Encoder, error)
+		Decoder(contentType string) (Decoder, error)
+	}
+
+	// Registry stores codecs by content type.
 	Registry struct {
 		entries map[string]Codec
 	}
+)
+
+var (
+	_ CodecRegistrar = (*Registry)(nil)
+	_ CodecResolver  = (*Registry)(nil)
 )
 
 // NewRegistry creates a registry seeded with the provided codecs.
