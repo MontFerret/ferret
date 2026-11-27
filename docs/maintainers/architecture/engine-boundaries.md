@@ -6,7 +6,7 @@ relays. The root API, FQL semantics, error identity, and lifecycle ownership
 remain unchanged. Native callers use lower-level owners for shared vocabulary.
 Subsequent construction and session extractions add `internal/bootstrap` and
 `internal/session.Execution` with the ownership boundaries described below;
-the native and root export inventories remain unchanged.
+the native and root package-level export inventories remain unchanged.
 
 ## Native exports
 
@@ -45,12 +45,32 @@ expand the root API.
   `WithDebugFormat`. These configure native artifact loading, VM environments,
   and debugger output without moving those subsystem contracts into the engine.
 
-The 13 methods declared on native public types are intentional API:
+The 19 methods declared on native public types are intentional API:
 
-* `Engine`: `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
+* `Engine`: `FileSystem`, `Network`, `Logger`, `Encoding`, `Params`, `Functions`,
+  `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
 * `Plan`: `Params`, `NewSession`, `NewDebugSession`, `Marshal`, `Close`.
 * `Session`: `Run`, `Close`.
 * `OptimizationLevel`: `String`.
+
+The root `ferret.Engine` alias exposes all six finalized host accessors.
+Modules use `module.HostContext` during bootstrap to register codecs and
+functions and set default parameter bindings. The engine creates the read-only
+views once from the finalized host and reuses them across accessor calls.
+
+| Accessor | Result and ownership |
+| --- | --- |
+| `FileSystem` | Borrowed engine-owned filesystem. Executions inherit it by default. `WithSessionFSRoot` selects a session-owned filesystem. |
+| `Network` | Borrowed network shared by module registration and executions. The engine handles cleanup for networks it creates. Networks supplied through `WithNetwork` are caller-owned. |
+| `Logger` | Configured logger value with its writer, level, and shared context. Derive a child with `With().Logger()` before calling `UpdateContext`. |
+| `Encoding` | Read-only `encoding.CodecResolver` with shared codec instances. |
+| `Params` | Read-only `runtime.ParamsReader` with shared values, including mutable values. `Names` returns an independent sorted slice. |
+| `Functions` | Read-only `runtime.FunctionRegistry` with arity-specific collections and a defensive copy from `List`. |
+
+Each view retains its backing registry or bindings independently of the engine.
+Ordinary and debugger execution share finalized codec registrations through the
+context lookup helpers. Calling `encoding.RegistryFrom` on one of these contexts
+returns a shallow snapshot. Codec instances remain shared.
 
 Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
 `SessionOption` remain aliases instantiated with engine-owned configuration

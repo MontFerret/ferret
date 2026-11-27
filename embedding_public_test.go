@@ -4,13 +4,149 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	stdhttp "net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
+
+func TestPublicEngineDefaultFileSystemIsDisabled(t *testing.T) {
+	eng, err := ferret.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	filesystem := eng.FileSystem()
+	if filesystem == nil {
+		t.Fatal("expected a disabled filesystem")
+	}
+	if _, err := filesystem.ReadFile("report.txt"); !errors.Is(err, ferretfs.ErrRootNotConfigured) {
+		t.Fatalf("read error = %v, want %v", err, ferretfs.ErrRootNotConfigured)
+	}
+	if err := filesystem.WriteFile("report.txt", []byte("report"), 0o600); !errors.Is(err, ferretfs.ErrRootNotConfigured) {
+		t.Fatalf("write error = %v, want %v", err, ferretfs.ErrRootNotConfigured)
+	}
+}
+
+func TestPublicEngineFileSystemEnforcesRootAndReadOnly(t *testing.T) {
+	parent := t.TempDir()
+	root := filepath.Join(parent, "root")
+	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "report.txt"), []byte("inside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(parent, "outside.txt"), []byte("outside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	eng, err := ferret.New(ferret.WithFSRoot(root), ferret.WithFSReadOnly())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	filesystem := eng.FileSystem()
+	if filesystem == nil {
+		t.Fatal("expected a rooted filesystem")
+	}
+	data, err := filesystem.ReadFile("report.txt")
+	if err != nil || string(data) != "inside" {
+		t.Fatalf("read inside root = %q, %v, want inside", data, err)
+	}
+	if err := filesystem.WriteFile("new.txt", []byte("report"), 0o600); !errors.Is(err, ferretfs.ErrReadOnly) {
+		t.Fatalf("write error = %v, want %v", err, ferretfs.ErrReadOnly)
+	}
+	if _, err := os.Stat(filepath.Join(root, "new.txt")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat after denied write: %v, want %v", err, os.ErrNotExist)
+	}
+	data, err = filesystem.ReadFile(filepath.Join("..", "outside.txt"))
+	if err == nil || len(data) != 0 {
+		t.Fatalf("expected read outside root to be denied, got %q, %v", data, err)
+	}
+}
+
+func TestPublicEngineDefaultNetwork(t *testing.T) {
+	eng, err := ferret.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	network := eng.Network()
+	if network == nil || network.HTTP() == nil {
+		t.Fatal("expected a default network with an HTTP client")
+	}
+	if eng.Network() != network {
+		t.Fatal("repeated calls returned different networks")
+	}
+}
+
+func TestPublicEngineNetworkAppliesHTTPPolicy(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
+		requests.Add(1)
+		w.WriteHeader(stdhttp.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+
+	eng, err := ferret.New(ferret.WithNetworkOptions(ferretnet.WithHTTPPolicies(
+		ferrethttp.WithAllowLocalhost(true),
+		ferrethttp.WithAllowedMethods(stdhttp.MethodGet),
+	)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	network := eng.Network()
+	if network == nil || network.HTTP() == nil {
+		t.Fatal("expected a configured network with an HTTP client")
+	}
+	client := network.HTTP()
+	res, err := client.Do(t.Context(), &ferrethttp.Request{URL: server.URL, Method: stdhttp.MethodGet})
+	if err != nil || res == nil || res.StatusCode != stdhttp.StatusNoContent {
+		t.Fatalf("expected GET to succeed, got response %+v, error %v", res, err)
+	}
+
+	_, err = client.Do(t.Context(), &ferrethttp.Request{URL: server.URL, Method: stdhttp.MethodPost})
+	var denied *ferrethttp.PolicyError
+	if !errors.Is(err, ferrethttp.ErrPolicyDenied) || !errors.As(err, &denied) ||
+		denied.Target != ferrethttp.PolicyTargetRequest || denied.Subject != `method "POST"` {
+		t.Fatalf("expected POST to be denied by the method policy, got %v", err)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("server handled %d requests, want 1", got)
+	}
+}
 
 func TestPublicEngineRunPreservesOptionsOutputAndCleanup(t *testing.T) {
 	hookErr := errors.New("after run failed")

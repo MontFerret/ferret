@@ -14,6 +14,9 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
+	"github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -29,6 +32,9 @@ type Engine struct {
 	hooks             *host.Hooks
 	resources         *resource.Manager
 	limiter           *enginesession.Limiter
+	codecView         *codecResolverView
+	paramsView        *paramsReaderView
+	functionsView     *functionRegistryView
 	closeOnce         sync.Once
 	closed            atomic.Bool
 	optimizationLevel compiler.OptimizationLevel
@@ -86,9 +92,35 @@ func New(setters ...Option) (*Engine, error) {
 		hooks:             state.Hooks,
 		resources:         state.Resources,
 		limiter:           state.Limiter,
+		codecView:         &codecResolverView{registry: state.Host.Encoding},
+		paramsView:        &paramsReaderView{params: state.Host.Params},
+		functionsView:     &functionRegistryView{functions: state.Host.Functions},
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil
+}
+
+// FileSystem returns the filesystem configured for the engine. With no root,
+// file operations return [fs.ErrRootNotConfigured]. The filesystem is borrowed
+// and remains owned by the engine. Callers must finish using it before calling
+// [Engine.Close] and must leave filesystem closure to the engine.
+func (e *Engine) FileSystem() fs.FileSystem {
+	return e.host.FileSystem
+}
+
+// Network returns the engine's configured network service. The caller borrows
+// the service. Finish work using an engine-owned network before calling
+// [Engine.Close] and leave its cleanup to the engine. A network supplied through
+// [WithNetwork] remains caller-owned.
+func (e *Engine) Network() ferretnet.Network {
+	return e.host.Network
+}
+
+// Logger returns the configured engine logger with its writer, level, and
+// structured fields. The returned logger shares its field buffer with the engine.
+// Derive a child with With().Logger() before calling UpdateContext.
+func (e *Engine) Logger() logging.Logger {
+	return e.host.Logger
 }
 
 // Compile synchronously compiles source into a reusable execution plan. Omitted

@@ -9,10 +9,65 @@ import (
 	"testing"
 	"time"
 
+	"github.com/MontFerret/ferret/v2/pkg/debugger"
 	ferretfs "github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/module"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
+
+func TestEngineFileSystemMatchesModuleAndExecutionContexts(t *testing.T) {
+	t.Parallel()
+
+	var moduleFS, executionFS ferretfs.FileSystem
+	mod := testModule{registerFn: func(boot module.Bootstrap) error {
+		moduleFS = boot.Host().FileSystem()
+
+		return nil
+	}}
+	eng := mustNewEngine(t, WithFSRoot(t.TempDir()), WithModules(mod), withCapturedSessionFileSystem(&executionFS))
+	defer eng.Close()
+
+	filesystem := eng.FileSystem()
+	if filesystem == nil || filesystem != moduleFS {
+		t.Fatal("expected the same filesystem as the module host")
+	}
+
+	ctx := t.Context()
+	src := source.New("filesystem-identity.fql", "RETURN CAPTURE_FS()")
+	if _, err := collectEngine(eng, ctx, src); err != nil {
+		t.Fatal(err)
+	}
+	if executionFS != filesystem {
+		t.Fatal("ordinary execution received a different filesystem")
+	}
+
+	executionFS = nil
+	plan, err := eng.CompileDebug(ctx, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer plan.Close()
+
+	session, err := plan.NewDebugSession(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	if _, err := session.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	event, err := session.Continue(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event == nil || event.Reason != debugger.ReasonCompleted {
+		t.Fatalf("expected debugger execution to complete, got %#v", event)
+	}
+	if executionFS != filesystem {
+		t.Fatal("debugger execution received a different filesystem")
+	}
+}
 
 func TestSessionFSRootOverridesEngineFSRoot(t *testing.T) {
 	t.Parallel()
