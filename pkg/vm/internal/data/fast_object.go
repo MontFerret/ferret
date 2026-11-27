@@ -115,11 +115,12 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 	}
 
 	if idx, ok := shape.fields[key]; ok {
-		if t.slots[idx] == nil {
+		slot := &t.slots[idx]
+		if *slot == nil {
 			t.size++
 		}
 
-		t.slots[idx] = value
+		*slot = value
 
 		return shape, shape, idx, true
 	}
