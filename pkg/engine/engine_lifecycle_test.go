@@ -129,6 +129,13 @@ func TestEngineCloseClosesOwnedNetworkIdleConnections(t *testing.T) {
 	client := &recordingHTTPClient{}
 	eng := mustNewEngine(t, WithNetworkOptions(ferretnet.WithHTTPClient(client)))
 
+	if network := eng.Network(); network == nil || network.HTTP() != client {
+		t.Error("expected the engine-managed network to expose the configured HTTP client")
+	}
+	if got := client.idleCloseCount(); got != 0 {
+		t.Errorf("retrieving the network triggered %d cleanup calls", got)
+	}
+
 	if err := eng.Close(); err != nil {
 		t.Fatalf("close engine: %v", err)
 	}
@@ -163,6 +170,13 @@ func TestEngineCloseDoesNotCleanInjectedNetwork(t *testing.T) {
 	client := &recordingHTTPClient{}
 	network := mustNewTestNetwork(t, ferretnet.WithHTTPClient(client))
 	eng := mustNewEngine(t, WithNetwork(network))
+
+	if got := eng.Network(); got != network || got.HTTP() != client {
+		t.Error("expected the supplied network and HTTP client")
+	}
+	if got := client.idleCloseCount(); got != 0 {
+		t.Errorf("retrieving the network triggered %d cleanup calls", got)
+	}
 
 	if err := eng.Close(); err != nil {
 		t.Fatalf("close engine: %v", err)

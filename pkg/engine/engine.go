@@ -14,6 +14,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/host"
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
 )
@@ -89,6 +90,14 @@ func New(setters ...Option) (*Engine, error) {
 		idleCap:           opts.maxIdleVMsPerPlan,
 		totalCap:          opts.maxVMsPerPlan,
 	}, nil
+}
+
+// Network returns the engine's configured network service. The caller borrows
+// the service. Finish work using an engine-owned network before calling
+// [Engine.Close] and leave its cleanup to the engine. A network supplied through
+// [WithNetwork] remains caller-owned.
+func (e *Engine) Network() ferretnet.Network {
+	return e.host.Network
 }
 
 // Compile synchronously compiles source into a reusable execution plan. Omitted

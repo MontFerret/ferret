@@ -4,13 +4,80 @@ import (
 	"context"
 	"errors"
 	"io/fs"
+	stdhttp "net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/MontFerret/ferret/v2"
 	"github.com/MontFerret/ferret/v2/pkg/diagnostics"
+	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
+	ferrethttp "github.com/MontFerret/ferret/v2/pkg/net/http"
 )
+
+func TestPublicEngineDefaultNetwork(t *testing.T) {
+	eng, err := ferret.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	network := eng.Network()
+	if network == nil || network.HTTP() == nil {
+		t.Fatal("expected a default network with an HTTP client")
+	}
+	if eng.Network() != network {
+		t.Fatal("repeated calls returned different networks")
+	}
+}
+
+func TestPublicEngineNetworkAppliesHTTPPolicy(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(stdhttp.HandlerFunc(func(w stdhttp.ResponseWriter, _ *stdhttp.Request) {
+		requests.Add(1)
+		w.WriteHeader(stdhttp.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+
+	eng, err := ferret.New(ferret.WithNetworkOptions(ferretnet.WithHTTPPolicies(
+		ferrethttp.WithAllowLocalhost(true),
+		ferrethttp.WithAllowedMethods(stdhttp.MethodGet),
+	)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := eng.Close(); err != nil {
+			t.Errorf("close engine: %v", err)
+		}
+	})
+
+	network := eng.Network()
+	if network == nil || network.HTTP() == nil {
+		t.Fatal("expected a configured network with an HTTP client")
+	}
+	client := network.HTTP()
+	res, err := client.Do(t.Context(), &ferrethttp.Request{URL: server.URL, Method: stdhttp.MethodGet})
+	if err != nil || res == nil || res.StatusCode != stdhttp.StatusNoContent {
+		t.Fatalf("expected GET to succeed, got response %+v, error %v", res, err)
+	}
+
+	_, err = client.Do(t.Context(), &ferrethttp.Request{URL: server.URL, Method: stdhttp.MethodPost})
+	var denied *ferrethttp.PolicyError
+	if !errors.Is(err, ferrethttp.ErrPolicyDenied) || !errors.As(err, &denied) ||
+		denied.Target != ferrethttp.PolicyTargetRequest || denied.Subject != `method "POST"` {
+		t.Fatalf("expected POST to be denied by the method policy, got %v", err)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("server handled %d requests, want 1", got)
+	}
+}
 
 func TestPublicEngineRunPreservesOptionsOutputAndCleanup(t *testing.T) {
 	hookErr := errors.New("after run failed")

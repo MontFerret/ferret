@@ -6,7 +6,7 @@ relays. The root API, FQL semantics, error identity, and lifecycle ownership
 remain unchanged. Native callers use lower-level owners for shared vocabulary.
 Subsequent construction and session extractions add `internal/bootstrap` and
 `internal/session.Execution` with the ownership boundaries described below;
-the native and root export inventories remain unchanged.
+the native and root package-level export inventories remain unchanged.
 
 ## Native exports
 
@@ -45,12 +45,16 @@ expand the root API.
   `WithDebugFormat`. These configure native artifact loading, VM environments,
   and debugger output without moving those subsystem contracts into the engine.
 
-The 13 methods declared on native public types are intentional API:
+The 14 methods declared on native public types are intentional API:
 
-* `Engine`: `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
+* `Engine`: `Network`, `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
 * `Plan`: `Params`, `NewSession`, `NewDebugSession`, `Marshal`, `Close`.
 * `Session`: `Run`, `Close`.
 * `OptimizationLevel`: `String`.
+
+`Engine.Network` gives embedders a borrowed reference to the same network that
+module registration and both ordinary and debugger executions receive. The
+method is also available on the root `ferret.Engine` alias.
 
 Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
 `SessionOption` remain aliases instantiated with engine-owned configuration
