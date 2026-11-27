@@ -104,42 +104,77 @@ func TestDataSetUsesListSemanticsAndBackingHash(t *testing.T) {
 }
 
 func TestFastObjectUsesObjectLikeSemantics(t *testing.T) {
-	ctx := context.Background()
-	fast := data.NewFastObject(nil, 0)
-	object := runtime.NewObject()
+	for name, threshold := range map[string]int{"shape": 0, "dictionary": 1} {
+		t.Run(name, func(t *testing.T) {
+			ctx := t.Context()
+			fast := data.NewShapeCache(0, threshold).NewFastObject()
+			native := runtime.NewObject()
+			child := runtime.NewArrayWith(runtime.True)
 
-	for key, value := range map[string]runtime.Value{
-		"a": runtime.NewInt(1),
-		"b": runtime.NewString("two"),
-	} {
-		if err := fast.Set(ctx, runtime.NewString(key), value); err != nil {
-			t.Fatalf("set fast object: %v", err)
-		}
-		if err := object.Set(ctx, runtime.NewString(key), value); err != nil {
-			t.Fatalf("set runtime object: %v", err)
-		}
-	}
+			for _, object := range []runtime.Map{fast, native} {
+				for key, value := range map[runtime.String]runtime.Value{
+					"": runtime.None, "é": child, "e\u0301": runtime.Int(2),
+				} {
+					if err := object.Set(ctx, key, value); err != nil {
+						t.Fatal(err)
+					}
+				}
 
-	for _, operands := range [][2]runtime.Value{{fast, object}, {object, fast}} {
-		equal, err := runtime.EqualValues(ctx, operands[0], operands[1])
-		if err != nil {
-			t.Fatalf("equal fast object and object: %v", err)
-		}
-		if !equal {
-			t.Fatal("expected fast object and runtime object to be structurally equal")
-		}
+				for _, key := range []runtime.String{"", "missing"} {
+					got, present, err := object.Lookup(ctx, key)
+					if err != nil || got != runtime.None || present != (key == "") {
+						t.Fatalf("%T.Lookup(%q) = %v, %t, %v", object, key, got, present, err)
+					}
+				}
 
-		ordering, err := runtime.CompareValues(ctx, operands[0], operands[1])
-		if err != nil {
-			t.Fatalf("compare fast object and object: %v", err)
-		}
-		if ordering != runtime.Equal {
-			t.Fatalf("expected equal ordering, got %v", ordering)
-		}
-	}
+				copyValue, err := object.Copy().(runtime.Map).Get(ctx, runtime.String("é"))
+				if err != nil || copyValue != child {
+					t.Fatalf("%T.Copy child = %v, %v", object, copyValue, err)
+				}
 
-	if fast.Hash() != object.Hash() {
-		t.Fatalf("expected fast-object hash %d to match object hash %d", fast.Hash(), object.Hash())
+				clone, err := object.Clone(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				cloneValue, err := clone.(runtime.Map).Get(ctx, runtime.String("é"))
+				if err != nil || cloneValue == child {
+					t.Fatalf("%T.Clone child = %v, %v", object, cloneValue, err)
+				}
+
+				equal, err := runtime.EqualValues(ctx, child, cloneValue)
+				if err != nil || !equal {
+					t.Fatalf("%T cloned child differs: %v, %v", object, cloneValue, err)
+				}
+			}
+
+			checkOrder := func(left, right runtime.Map, want runtime.Ordering) {
+				t.Helper()
+
+				equal, err := runtime.EqualValues(ctx, left, right)
+				if err != nil || equal != (want == runtime.Equal) {
+					t.Fatalf("EqualValues(%T, %T) = %t, %v", left, right, equal, err)
+				}
+
+				order, err := runtime.CompareValues(ctx, left, right)
+				if err != nil || order != want {
+					t.Fatalf("CompareValues(%T, %T) = %v, %v, want %v", left, right, order, err, want)
+				}
+			}
+
+			checkOrder(fast, native, runtime.Equal)
+			checkOrder(native, fast, runtime.Equal)
+			if fast.Hash() != native.Hash() {
+				t.Fatal("structurally equal objects have different hashes")
+			}
+
+			if err := fast.Set(ctx, runtime.String("e\u0301"), runtime.Int(3)); err != nil {
+				t.Fatal(err)
+			}
+
+			checkOrder(fast, native, runtime.Greater)
+			checkOrder(native, fast, runtime.Less)
+		})
 	}
 }
 
@@ -239,8 +274,8 @@ func TestCoreComparisonHelpersDoNotPollCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	left := data.NewFastObject(nil, 0)
-	right := data.NewFastObject(nil, 0)
+	left := data.NewShapeCache(0, 0).NewFastObject()
+	right := data.NewShapeCache(0, 0).NewFastObject()
 	for _, object := range []*data.FastObject{left, right} {
 		if err := object.Set(ctx, runtime.NewString("value"), runtime.NewInt(1)); err != nil {
 			t.Fatalf("set fast object value: %v", err)

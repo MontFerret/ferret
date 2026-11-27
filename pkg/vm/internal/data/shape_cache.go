@@ -7,10 +7,11 @@ import (
 
 type (
 	ShapeCache struct {
-		transitions map[shapeKey]*fastShape
-		root        *fastShape
-		limit       int
-		nextID      uint64
+		transitions   map[shapeKey]*fastShape
+		root          *fastShape
+		limit         int
+		dictThreshold int
+		nextID        uint64
 	}
 
 	fastShape struct {
@@ -27,14 +28,15 @@ type (
 
 type Shape = fastShape
 
-func NewShapeCache(limit int) *ShapeCache {
+func NewShapeCache(limit, dictThreshold int) *ShapeCache {
 	if limit < 0 {
 		limit = 0
 	}
 
 	cache := &ShapeCache{
-		limit:       limit,
-		transitions: make(map[shapeKey]*fastShape),
+		limit:         limit,
+		dictThreshold: max(dictThreshold, 0),
+		transitions:   make(map[shapeKey]*fastShape),
 	}
 	cache.root = cache.newShape(nil, nil)
 

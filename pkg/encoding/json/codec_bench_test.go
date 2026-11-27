@@ -1,6 +1,7 @@
 package json_test
 
 import (
+	stdjson "encoding/json"
 	"strconv"
 	"testing"
 	"time"
@@ -76,24 +77,45 @@ func BenchmarkJSONCodecEncode(b *testing.B) {
 	}
 }
 
+// Sort the wire keys so every decoder run sees the same insertion order.
+func benchmarkFlatObjectWire(b *testing.B, size int) []byte {
+	b.Helper()
+	fields := make(map[string]int, size)
+	for i := range size {
+		fields[strconv.Itoa(i)] = i
+	}
+
+	data, err := stdjson.Marshal(fields)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	return data
+}
+
 func BenchmarkJSONCodecDecode(b *testing.B) {
 	codec := json.Default
 
 	cases := []struct {
 		value runtime.Value
 		name  string
+		data  []byte
 	}{
 		{name: "flat_array_1024", value: benchmarkFlatArray(1024)},
-		{name: "flat_object_256", value: benchmarkFlatObject(256)},
+		{name: "flat_object_256", data: benchmarkFlatObjectWire(b, 256)},
 		{name: "nested_array_10000", value: nestedArray(10_000)},
 		{name: "nested_object_5000", value: nestedObject(5_000)},
 	}
 
 	for _, tc := range cases {
 		b.Run(tc.name, func(b *testing.B) {
-			data, err := ferretencoding.EncodeBytes(b.Context(), codec, tc.value)
-			if err != nil {
-				b.Fatalf("setup encode failed: %v", err)
+			data := tc.data
+			if data == nil {
+				var err error
+				data, err = ferretencoding.EncodeBytes(b.Context(), codec, tc.value)
+				if err != nil {
+					b.Fatalf("setup encode failed: %v", err)
+				}
 			}
 
 			b.ReportAllocs()

@@ -20,25 +20,23 @@ func BenchmarkObjectInspectionKeyDiscovery(b *testing.B) {
 	} {
 		b.Run(tc.name, func(b *testing.B) {
 			const survivor = "keep"
-			obj := NewObjectOf(tc.reserve)
-			obj.SetString(survivor, True)
+			values := make(map[string]Value, tc.reserve)
+			values[survivor] = True
 
 			for i := 1; i < tc.grow; i++ {
-				obj.SetString(strconv.Itoa(i), False)
+				values[strconv.Itoa(i)] = False
 			}
 			for i := 1; i < tc.grow; i++ {
-				if err := obj.RemoveKey(b.Context(), String(strconv.Itoa(i))); err != nil {
-					b.Fatal(err)
-				}
+				delete(values, strconv.Itoa(i))
 			}
-			if len(obj.data) != 1 {
-				b.Fatalf("got %d live properties", len(obj.data))
+			if len(values) != 1 {
+				b.Fatalf("got %d live properties", len(values))
 			}
 
 			b.Run("first_key", func(b *testing.B) {
 				for b.Loop() {
 					var key string
-					for key = range obj.data {
+					for key = range values {
 						break
 					}
 					if key != survivor {
@@ -48,7 +46,7 @@ func BenchmarkObjectInspectionKeyDiscovery(b *testing.B) {
 			})
 			b.Run("known_key", func(b *testing.B) {
 				for b.Loop() {
-					if obj.data[survivor] != True {
+					if values[survivor] != True {
 						b.Fatal("lost known property")
 					}
 				}

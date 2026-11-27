@@ -59,13 +59,13 @@ type (
 
 const loadKeyICEntries = 4
 
-func NewCache(bytecodeLen, hostCallCount, shapeCacheLimit int) *Cache {
+func NewCache(bytecodeLen, hostCallCount, shapeCacheLimit, dictThreshold int) *Cache {
 	return &Cache{
 		HostFunctions:   make([]CachedHostFunction, hostCallCount),
 		Regexps:         make([]*CachedRegexp, bytecodeLen),
 		LoadKeyICs:      make([]*LoadKeyCache, bytecodeLen),
 		LoadKeyConstICs: make([]*LoadKeyConstCache, bytecodeLen),
-		ShapeCache:      data.NewShapeCache(shapeCacheLimit),
+		ShapeCache:      data.NewShapeCache(shapeCacheLimit, dictThreshold),
 	}
 }
 

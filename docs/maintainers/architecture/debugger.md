@@ -182,8 +182,12 @@ a summary-only value.
 
 Dense fast objects page directly in shape order. A sparse shape can scan up
 to 128 slots for occupied positions. Native objects and fast dictionaries
-sort up to 128 unordered keys on explicit expansion. Core bounds the backing
-scan conservatively. The live count plus successful removals since allocation
+sort up to 128 unordered keys on explicit expansion. After crossing its live-key
+threshold, a fast object uses detached native property storage. Its shape and
+slot caches apply only before that transition. Native storage uses up to eight
+compact slots. Larger reservations and objects that outgrow their slots use
+Go maps. A fresh map reserved for 128 fields can still page all 128 names.
+Core bounds the backing scan conservatively. The live count plus successful removals since allocation
 must fit within 128, and the original capacity hint must also fit. A singleton
 therefore becomes summary-only after 128 deletions and reinsertions. Removing
 a missing property leaves the budget intact. Keys longer than
@@ -359,22 +363,13 @@ datasets. Task 2 could only return a summary for collections of these sizes
 with its default settings.
 
 The ordinary JSON and MessagePack decoders write Go string keys directly into
-native objects. On Go 1.27.3 the flat 256-property fixture took 1,037 JSON and
-255 MessagePack allocations per decode. The 5,000-object fixture took 25,075
-and 20,003. Task 2 took 1,036 and 254 for the flat fixtures and 20,075 and
-15,003 for the nested fixtures. The difference is one shared bounds record
-per native object. Plain Go value copies share that record until one receiver
-clears its map. An old copy can outlive a cleared receiver without retaining
-its replacement values. The [native object inspection investigation](native-object-inspection-cost.md)
-records the open allocation target and the cost of discovering names at a stop.
-
-```sh
-go test -mod=readonly -p=1 ./pkg/encoding/json ./pkg/encoding/msgpack -run '^$' \
-  -bench 'CodecDecode/(flat_object_256|nested_object_5000)$' \
-  -benchmem -cpu=1 -benchtime=200ms -count=6
-go test ./pkg/runtime -run '^$' -bench '^BenchmarkNewObjectOf$' \
-  -benchmem -cpu=1 -benchtime=200ms -count=6
-```
+native objects. Compact properties carry inspection history on their detached
+owner. Reservations from 9 through 128 share one additional history owner
+among Go value copies. Larger reservations omit it. A surviving copy retains
+the original properties when another receiver clears and reuses its storage.
+Allocation and timing comparisons, ownership tests and
+sparse-map discovery costs are documented in the
+[native storage investigation](native-object-inspection-cost.md).
 
 Shallow inspection has a small fixed cost relative to Task 2 (`3ac60f34`).
 In six 200 ms samples on the same machine, builtin
@@ -393,60 +388,28 @@ source-point dispatch (7.63 to 7.68 ns/op), direct object mutation (370 to
 (446 to 418 ns/op). Bytes and allocations per operation were identical for
 each pair.
 
-### FastObject dictionary costs
+### FastObject dictionary ownership
 
-These are medians on Go 1.27.3, darwin/arm64, Apple M2 Max. The timing columns
-compare Task 2 (`3ac60f34`), the first pagination commit (`75653d64`), and
-the follow-up. The allocation columns give Task 2 → follow-up. The first
-pagination commit and the follow-up had the same allocation counts.
+A shape-backed fast object uses shared shape identities and reads and writes
+through cached slots. Crossing its configured live-key threshold copies the
+occupied slots into a native dictionary reserved for the live keys plus the
+incoming field. The threshold belongs to the per-VM shape cache. Moving that
+setting off each fast object made room for a native dictionary handle in
+the original 64-byte fast-object header on 64-bit systems.
 
-| Operation | Task 2 ns/op | First PR ns/op | Follow-up ns/op | B/op | allocs/op |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Build four-field shape | 317 | 317 | 316 | 224 → 224 | 5 → 5 |
-| Overwrite shape field | 8.86 | 8.50 | 8.65 | 0 → 0 | 0 → 0 |
-| Transition on field 65 | 1,281 | 1,308 | 1,317 | 4,952 → 4,968 | 4 → 5 |
-| Build 65-field dictionary | 15,842 | 16,390 | 16,337 | 40,280 → 40,296 | 69 → 70 |
-| Overwrite dictionary field | 15.42 | 16.09 | 9.94 | 0 → 0 | 0 → 0 |
-| Insert and remove one field | 36.90 | 37.87 | 32.19 | 0 → 0 | 0 → 0 |
-| Dictionary Copy | 2,369 | 2,430 | 2,417 | 5,016 → 5,032 | 5 → 6 |
-| Dictionary Clone | 2,486 | 2,522 | 2,503 | 5,016 → 5,032 | 5 → 6 |
-| Clear and write one field | 90.06 | 100.45 | 100.70 | 336 → 352 | 2 → 3 |
-| VM direct property mutation | 357 | 358 | 360 | 128 → 128 | 4 → 4 |
-| VM four-field literal | 427 | 428 | 428 | 288 → 288 | 6 → 6 |
-| VM sixteen 65-field literals | 390,358 | 390,863 | 388,124 | 663,252 → 663,508 | 1,123 → 1,139 |
+Dictionary writes and deletions share inspection history through the
+detached property owner. Clearing a dictionary replaces the receiver's
+dictionary handle. Earlier Go value copies and iterators continue to read
+the old contents. Copy and Clone construct independent dictionaries from
+live entries and start with fresh inspection history.
 
-The fixtures use the same warmed shape cache, keys, and 64-field dictionary
-threshold on all three revisions. The isolated transition starts with 64
-populated slots. Copy and Clone retain the result. Pairing insertion with
-removal holds dictionary size constant. The VM compiles the query before timing.
-Copy `pkg/vm/internal/data/fast_object_bench_test.go` and
-`test/benchmarks/bench_literals_test.go` into each older checkout and run this
-command serially in each tree, then compare with `benchstat`.
-
-```sh
-GOWORK=off go test -mod=readonly -p=1 ./pkg/vm/internal/data ./test/benchmarks -run '^$' \
-  -bench '^Benchmark(FastObject|ObjectLiterals_None|DirectMutation_ObjectProperty_None|ObjectDictionaryLiterals_None)$' \
-  -benchmem -cpu=1 -benchtime=200ms -count=6
-```
-
-A dictionary write now takes the map length after assignment, saving a second
-key lookup. The follow-up reduced overwrite time by 38% and insert/remove time
-by 15% against the first PR commit. The VM execution timings showed no
-statistically significant difference across the three revisions.
-
-Array and dataset pages used the same bytes and allocations at every measured
-size as the first PR commit (two allocations in the VM and five in the session).
-Small timing differences for shape overwrites and dataset session reads did
-not reproduce in ten alternating 200 ms samples. The native constructor and
-both codecs reproduced the allocation counts recorded above.
-
-The dictionary wrapper still costs 16 bytes and one allocation each time a
-backing map is created or replaced. That includes transition, Copy, Clone,
-and Clear. The wrapper keeps bounds with the map while shape-backed objects
-keep their original footprint. Clear detaches the old backing for existing
-iterators and value copies. Removing that allocation is deferred to the
-dedicated performance PR along with the separately measured
-[native object allocation](native-object-inspection-cost.md).
+Merged #1068 paired each dictionary's Go map with a separate 16-byte
+`fastDictionary` allocation. That cost one allocation for every new dictionary
+backing and 16 allocations in the FQL workload that constructs sixteen
+65-field literals. The current implementation uses the native dictionary's
+existing ownership and paging methods. The four-revision comparison covers
+shape reads and writes, transition, construction, Copy, Clone, clear/reuse,
+and FQL workloads that build and repeatedly read dictionaries. [Native storage measurements](native-object-inspection-cost.md#measured-performance)
 
 ## Related guides
 

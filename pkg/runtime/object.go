@@ -11,10 +11,12 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/internal/debugmap"
 )
 
+// Object is a handle. Value copies share its properties until Clear detaches
+// one receiver. A pre-sized map has a shared history only when its original
+// reservation permits bounded debugger enumeration.
 type Object struct {
-	data map[string]Value
-	// Go value copies share the backing map and its scan history.
-	bounds *debugmap.Bounds
+	backing  *objectBacking
+	reserved map[string]Value
 }
 
 func NewObject() *Object {
@@ -22,10 +24,14 @@ func NewObject() *Object {
 }
 
 func NewObjectOf(size int) *Object {
-	o := &Object{data: make(map[string]Value, size), bounds: new(debugmap.Bounds)}
-	o.bounds.Reserve(size)
-
-	return o
+	if size <= smallObjectFields {
+		return &Object{backing: new(objectBacking)}
+	}
+	obj := &Object{reserved: make(map[string]Value, size)}
+	if size <= debugmap.MaxKeys {
+		obj.backing = new(objectBacking)
+	}
+	return obj
 }
 
 // NewObjectWith creates a new object with the provided properties.
@@ -64,11 +70,11 @@ func (t *Object) Equal(ctx context.Context, other Value) (bool, error) {
 		return false, err
 	}
 
-	if Int(len(t.data)) != otherSize {
+	if Int(t.length()) != otherSize {
 		return false, nil
 	}
 
-	for key, value := range t.data {
+	for key, value := range t.callbackEntries {
 		otherValue, found, err := otherMap.Lookup(ctx, String(key))
 		if err != nil {
 			return false, err
@@ -104,7 +110,7 @@ func (t *Object) Compare(ctx context.Context, other Value) (Ordering, error) {
 		return Equal, err
 	}
 
-	size := Int(len(t.data))
+	size := Int(t.length())
 	if size < otherSize {
 		return Less, nil
 	}
@@ -138,7 +144,7 @@ func (t *Object) Compare(ctx context.Context, other Value) (Ordering, error) {
 
 		var rightValue Value
 		if nativeObject {
-			rightValue = otherObject.data[rightKey]
+			rightValue, _ = otherObject.lookup(rightKey)
 		} else {
 			var found bool
 			rightValue, found, err = otherMap.Lookup(ctx, String(rightKey))
@@ -152,7 +158,8 @@ func (t *Object) Compare(ctx context.Context, other Value) (Ordering, error) {
 			}
 		}
 
-		comparison, err := CompareValues(ctx, t.data[leftKey], rightValue)
+		leftValue, _ := t.lookup(leftKey)
+		comparison, err := CompareValues(ctx, leftValue, rightValue)
 		if err != nil {
 			return Equal, err
 		}
@@ -166,30 +173,35 @@ func (t *Object) Compare(ctx context.Context, other Value) (Ordering, error) {
 }
 
 // DebugFieldsPageable reports whether a lexicographic key sort is bounded.
-func (t *Object) DebugFieldsPageable() bool { return t.bounds != nil && t.bounds.Pageable(len(t.data)) }
+func (t *Object) DebugFieldsPageable() bool {
+	return t.backing != nil && t.backing.bounds.Pageable(t.length())
+}
 
 // ReadDebugFields visits the selected interval in stable key order.
 func (t *Object) ReadDebugFields(start, end int, visit func(string, Value) error) error {
-	if t.bounds == nil {
+	if fields := t.fields(); t.backing != nil && fields != nil {
+		return debugmap.Read(fields, t.backing.bounds, start, end, visit)
+	}
+
+	size := t.length()
+	if !t.DebugFieldsPageable() || start < 0 || end < start || end > size {
 		return errors.ErrUnsupported
 	}
 
-	return debugmap.Read(t.data, *t.bounds, start, end, visit)
-}
-
-func (t *Object) setKey(key string, value Value) {
-	t.bounds.AddKey(key)
-	t.data[key] = value
-}
-
-func (t *Object) sortedKeys() []string {
-	keys := make([]string, 0, len(t.data))
-	for key := range t.data {
-		keys = append(keys, key)
+	if start == end {
+		return nil
 	}
 
-	sort.Strings(keys)
-	return keys
+	view := *t
+	keys := view.sortedKeys()
+	for _, key := range keys[start:end] {
+		value, _ := view.lookup(key)
+		if err := visit(key, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (t *Object) Hash() uint64 {
@@ -198,22 +210,17 @@ func (t *Object) Hash() uint64 {
 	h.Write([]byte("object:"))
 	h.Write([]byte("{"))
 
-	keys := make([]string, 0, len(t.data))
-
-	for key := range t.data {
-		keys = append(keys, key)
-	}
-
-	// order does not really matter
-	// but it will give us a consistent hash sum
-	sort.Strings(keys)
+	keys := t.sortedKeys()
 	endIndex := len(keys) - 1
 
 	for idx, key := range keys {
 		h.Write([]byte(key))
 		h.Write([]byte(":"))
 
-		el := t.data[key]
+		el, _ := t.lookup(key)
+		if el == nil {
+			el = None
+		}
 
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
@@ -231,54 +238,28 @@ func (t *Object) Hash() uint64 {
 }
 
 func (t *Object) Copy() Value {
-	c := NewObject()
+	var copied Object
+	t.copyInto(&copied)
 
-	for k, v := range t.data {
-		c.setKey(k, v)
-	}
-
-	return c
+	return &copied
 }
 
 func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
-	cloned := NewObject()
-
-	var value Value
-
-	for key := range t.data {
-		value = t.data[key]
-		cloneable, ok := value.(Cloneable)
-
-		if ok {
-			clone, err := cloneable.Clone(ctx)
-
-			if err != nil {
-				return nil, err
-			}
-
-			value = clone
-		} else {
-			value = value.Copy()
-		}
-
-		cloned.setKey(key, value)
-	}
-
-	return cloned, nil
+	return t.cloneInto(ctx, new(Object))
 }
 
 func (t *Object) Length(_ context.Context) (Int, error) {
-	return Int(len(t.data)), nil
+	return Int(t.length()), nil
 }
 
 func (t *Object) IsEmpty(_ context.Context) (Boolean, error) {
-	return len(t.data) == 0, nil
+	return t.length() == 0, nil
 }
 
 func (t *Object) Keys(_ context.Context) (List, error) {
-	keys := make([]Value, 0, len(t.data))
+	keys := make([]Value, 0, t.length())
 
-	for k := range t.data {
+	for k := range t.entries {
 		keys = append(keys, NewString(k))
 	}
 
@@ -286,9 +267,9 @@ func (t *Object) Keys(_ context.Context) (List, error) {
 }
 
 func (t *Object) Values(_ context.Context) (List, error) {
-	keys := make([]Value, 0, len(t.data))
+	keys := make([]Value, 0, t.length())
 
-	for _, v := range t.data {
+	for _, v := range t.entries {
 		keys = append(keys, v)
 	}
 
@@ -296,25 +277,34 @@ func (t *Object) Values(_ context.Context) (List, error) {
 }
 
 func (t *Object) ForEach(ctx context.Context, predicate KeyReadablePredicate) error {
-	for key, val := range t.data {
-		doContinue, err := predicate(ctx, val, String(key))
-
-		if err != nil {
-			return err
+	// Capture the backing across Clear. Keeping the map loop with the supplied
+	// predicate lets Go inline a concrete callback without boxing each key.
+	return func(view Object) (err error) {
+		visit := func(key string, value Value) bool {
+			more, visitErr := predicate(ctx, value, String(key))
+			if visitErr != nil {
+				err = visitErr
+				return false
+			}
+			return bool(more)
 		}
-
-		if !doContinue {
-			break
+		if fields := view.fields(); fields != nil {
+			for key, value := range fields {
+				if !visit(key, value) {
+					break
+				}
+			}
+		} else {
+			view.callbackEntries(visit)
 		}
-	}
-
-	return nil
+		return err
+	}(*t)
 }
 
 func (t *Object) Filter(ctx context.Context, predicate KeyReadablePredicate) (List, error) {
-	res := NewArray(len(t.data))
+	res := NewArray(t.length())
 
-	for key, val := range t.data {
+	for key, val := range t.callbackEntries {
 		match, err := predicate(ctx, val, String(key))
 
 		if err != nil {
@@ -330,7 +320,7 @@ func (t *Object) Filter(ctx context.Context, predicate KeyReadablePredicate) (Li
 }
 
 func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (Value, Boolean, error) {
-	for key, val := range t.data {
+	for key, val := range t.callbackEntries {
 		res, err := predicate(ctx, val, String(key))
 
 		if err != nil {
@@ -346,13 +336,13 @@ func (t *Object) Find(ctx context.Context, predicate KeyReadablePredicate) (Valu
 }
 
 func (t *Object) ContainsKey(_ context.Context, key Value) (Boolean, error) {
-	_, exists := t.data[key.String()]
+	_, exists := t.lookupValue(key)
 
 	return Boolean(exists), nil
 }
 
 func (t *Object) Contains(ctx context.Context, target Value) (Boolean, error) {
-	for _, val := range t.data {
+	for _, val := range t.callbackEntries {
 		equal, err := EqualValues(ctx, target, val)
 		if err != nil {
 			return false, err
@@ -367,7 +357,7 @@ func (t *Object) Contains(ctx context.Context, target Value) (Boolean, error) {
 }
 
 func (t *Object) Get(_ context.Context, key Value) (Value, error) {
-	val, found := t.data[key.String()]
+	val, found := t.lookupValue(key)
 
 	if found {
 		return val, nil
@@ -377,7 +367,7 @@ func (t *Object) Get(_ context.Context, key Value) (Value, error) {
 }
 
 func (t *Object) Lookup(_ context.Context, key Value) (Value, bool, error) {
-	val, found := t.data[key.String()]
+	val, found := t.lookupValue(key)
 
 	if found {
 		return val, true, nil
@@ -402,26 +392,20 @@ func (t *Object) SetString(key string, value Value) {
 }
 
 func (t *Object) RemoveKey(_ context.Context, key Value) error {
-	keyName := key.String()
-	before := len(t.data)
-	delete(t.data, keyName)
-	if len(t.data) != before {
-		t.bounds.Removed()
-	}
+	t.deleteKey(key.String())
 
 	return nil
 }
 
 func (t *Object) Remove(ctx context.Context, value Value) error {
-	for key, val := range t.data {
+	for key, val := range t.callbackEntries {
 		equal, err := EqualValues(ctx, value, val)
 		if err != nil {
 			return err
 		}
 
 		if equal {
-			delete(t.data, key)
-			t.bounds.Removed()
+			t.deleteKey(key)
 			break
 		}
 	}
@@ -432,7 +416,7 @@ func (t *Object) Remove(ctx context.Context, value Value) error {
 func (t *Object) Merge(ctx context.Context, other Map) error {
 	switch m := other.(type) {
 	case *Object:
-		for key, val := range m.data {
+		for key, val := range m.entries {
 			t.setKey(key, val)
 		}
 
@@ -462,4 +446,36 @@ func (t *Object) New(ctx context.Context) (Map, error) {
 
 func (t *Object) Iterate(_ context.Context) (Iterator, error) {
 	return NewObjectIterator(t), nil
+}
+
+// An embedded dictionary can take the resulting handle by value. Keeping the
+// allocation at the caller lets it retain only the detached property storage.
+func (t *Object) copyInto(dst *Object) {
+	*dst = *NewObjectOf(t.length())
+	for key, value := range t.entries {
+		dst.setKey(key, value)
+	}
+}
+
+func (t *Object) cloneInto(ctx context.Context, cloned *Object) (Cloneable, error) {
+	*cloned = *NewObjectOf(t.length())
+	for key, value := range t.callbackEntries {
+		if value != nil {
+			clone, err := CloneOrCopy(ctx, value)
+			if err != nil {
+				return nil, err
+			}
+			value = clone
+		}
+
+		cloned.setKey(key, value)
+	}
+
+	return cloned, nil
+}
+
+func (t *Object) sortedKeys() []string {
+	keys := t.propertyNames()
+	sort.Strings(keys)
+	return keys
 }

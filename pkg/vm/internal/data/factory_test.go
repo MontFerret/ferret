@@ -62,8 +62,8 @@ func TestDataSetNewPreservesIndependentDistinctPolicy(t *testing.T) {
 }
 
 func TestFastObjectNewPreservesConfiguration(t *testing.T) {
-	for _, threshold := range []int{0, 1, 10} {
-		source := NewFastObject(NewShapeCache(8), threshold)
+	for _, threshold := range []int{-1, 0, 1, 10} {
+		source := NewShapeCache(8, threshold).NewFastObject()
 		if err := source.Set(t.Context(), runtime.String("a"), runtime.Int(7)); err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +74,7 @@ func TestFastObjectNewPreservesConfiguration(t *testing.T) {
 		}
 
 		destination, ok := result.(*FastObject)
-		if !ok || destination == source || destination.cache != source.cache || destination.dictThreshold != threshold {
+		if !ok || destination == source || destination.cache != source.cache || destination.cache.dictThreshold != max(threshold, 0) {
 			t.Fatal("configuration/family changed")
 		}
 
@@ -95,5 +95,19 @@ func TestFastObjectNewPreservesConfiguration(t *testing.T) {
 		if result, err := source.New(ctx); result != nil || !errors.Is(err, context.Canceled) {
 			t.Fatalf("cancellation: %v, %v", result, err)
 		}
+	}
+}
+
+func TestZeroFastObjectFactoryCreatesMutableObject(t *testing.T) {
+	var source FastObject
+	destination, err := source.New(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := destination.Set(t.Context(), runtime.String("a"), runtime.True); err != nil {
+		t.Fatal(err)
+	}
+	if value, found, err := destination.Lookup(t.Context(), runtime.String("a")); value != runtime.True || !found || err != nil {
+		t.Fatalf("new value: %v, found %t, error %v", value, found, err)
 	}
 }

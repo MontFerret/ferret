@@ -154,6 +154,41 @@ func (c *trackingCloser) Copy() runtime.Value {
 	return c
 }
 
+func TestFastObjectThresholdIsLocalToVM(t *testing.T) {
+	program := &bytecode.Program{
+		ISAVersion: bytecode.Version,
+		Registers:  2,
+		Constants:  []runtime.Value{runtime.String("a"), runtime.String("b")},
+		Bytecode: []bytecode.Instruction{
+			bytecode.NewInstruction(bytecode.OpLoadObject, bytecode.NewRegister(0), bytecode.Operand(2)),
+			bytecode.NewInstruction(bytecode.OpLoadZero, bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpObjectSetConst, bytecode.NewRegister(0), bytecode.NewConstant(0), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpObjectSetConst, bytecode.NewRegister(0), bytecode.NewConstant(1), bytecode.NewRegister(1)),
+			bytecode.NewInstruction(bytecode.OpReturn, bytecode.NewRegister(0)),
+		},
+	}
+
+	small := mustNewVM(t, program, WithFastObjectDictThreshold(1))
+	wide := mustNewVM(t, program, WithFastObjectDictThreshold(2))
+	var cached *data.Shape
+	for range 2 {
+		for _, instance := range []*VM{small, wide} {
+			value := mustResultRootAndClose(t, mustRunResult(t, instance, nil))
+			obj := value.(*data.FastObject)
+			shape := obj.Shape()
+			if (shape != nil) != (instance == wide) {
+				t.Fatalf("VM threshold %d produced shape %p", instance.config.fastObjectDictThreshold, shape)
+			}
+			if instance == wide {
+				if cached != nil && cached != shape {
+					t.Fatal("warm VM lost shared shape identity")
+				}
+				cached = shape
+			}
+		}
+	}
+}
+
 func TestNewWith_InitializesFieldsFromProgramAndConfig(t *testing.T) {
 	program := &bytecode.Program{
 		ISAVersion: bytecode.Version,
@@ -1714,12 +1749,12 @@ func TestLoadKeyCached_FastObjectMissingReturnsNoneWithoutError(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	obj := data.NewFastObject(nil, 0)
+	obj := instance.cache.ShapeCache.NewFastObject()
 	if err := obj.Set(ctx, runtime.NewString("present"), runtime.NewInt(1)); err != nil {
 		t.Fatalf("setup fast object failed: %v", err)
 	}
 
-	out, err := instance.loadKeyCached(ctx, 0, obj, runtime.NewString("missing"))
+	out, err := instance.loadKeyCached(ctx, 0, nil, obj, runtime.NewString("missing"))
 	if err != nil {
 		t.Fatalf("expected missing fast-object key to return None without error, got %v", err)
 	}
@@ -1732,7 +1767,7 @@ func TestLoadKeyCached_FastObjectMissingReturnsNoneWithoutError(t *testing.T) {
 		t.Fatal("expected load-key cache to record fast-object miss")
 	}
 
-	out, err = instance.loadKeyCached(ctx, 0, obj, runtime.NewString("missing"))
+	out, err = instance.loadKeyCached(ctx, 0, nil, obj, runtime.NewString("missing"))
 	if err != nil {
 		t.Fatalf("expected cached missing fast-object key to return None without error, got %v", err)
 	}
@@ -1752,13 +1787,13 @@ func TestLoadKeyConstCached_FastObjectMissingReturnsNoneWithoutError(t *testing.
 	})
 
 	ctx := context.Background()
-	obj := data.NewFastObject(nil, 0)
+	obj := instance.cache.ShapeCache.NewFastObject()
 	if err := obj.Set(ctx, runtime.NewString("present"), runtime.NewInt(1)); err != nil {
 		t.Fatalf("setup fast object failed: %v", err)
 	}
 
 	inst := &instance.plan.instructions[0]
-	out, err := instance.loadKeyConstCached(ctx, 0, inst, obj, runtime.NewString("missing"))
+	out, err := instance.loadKeyCached(ctx, 0, inst, obj, runtime.NewString("missing"))
 	if err != nil {
 		t.Fatalf("expected missing const fast-object key to return None without error, got %v", err)
 	}
@@ -1771,7 +1806,7 @@ func TestLoadKeyConstCached_FastObjectMissingReturnsNoneWithoutError(t *testing.
 		t.Fatalf("expected inline slot %d for cached miss, got %d", want, got)
 	}
 
-	out, err = instance.loadKeyConstCached(ctx, 0, inst, obj, runtime.NewString("missing"))
+	out, err = instance.loadKeyCached(ctx, 0, inst, obj, runtime.NewString("missing"))
 	if err != nil {
 		t.Fatalf("expected inline cached missing const key to return None without error, got %v", err)
 	}
@@ -1801,7 +1836,7 @@ func TestMatchLoadPropertyConst_FastObject(t *testing.T) {
 	instance := mustNewVM(t, program)
 	env := mustNewEnvironment(t)
 
-	obj := data.NewFastObject(nil, 0)
+	obj := data.NewShapeCache(0, 0).NewFastObject()
 	if err := obj.Set(context.Background(), runtime.NewString("a"), runtime.NewInt(7)); err != nil {
 		t.Fatalf("setup fast object failed: %v", err)
 	}

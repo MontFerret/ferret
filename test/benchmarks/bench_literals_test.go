@@ -2,12 +2,15 @@ package benchmarks_test
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/MontFerret/ferret/v2/pkg/compiler"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/vm"
+	"github.com/MontFerret/ferret/v2/test/spec"
 )
 
 const (
@@ -133,6 +136,54 @@ func BenchmarkObjectDictionaryLiterals_None(b *testing.B) {
 	RunBenchmarkNone(b, "FOR n IN 1..16 LET obj = {"+strings.Join(fields, ",")+"} RETURN obj.k64")
 }
 
+func BenchmarkObjectDictionaryReads_None(b *testing.B) {
+	const size = 128
+	fields := make([]string, size)
+	hits := make([]runtime.Value, size)
+	misses := make([]runtime.Value, size)
+	for i := range size {
+		name := fmt.Sprintf("property_%03d_common_suffix", i)
+		fields[i] = name + ":" + strconv.Itoa(i)
+		hits[i] = runtime.String(strings.Clone(name))
+		misses[i] = runtime.String(fmt.Sprintf("property_%03d_common_suffix", i+size))
+	}
+	// The runtime parameter keeps the literal on the VM construction path.
+	fields[0] = hits[0].String() + ":@zero"
+	query := "LET obj = {" + strings.Join(fields, ",") + "} RETURN FOR n IN 1..8 FOR key IN @keys RETURN obj?.[key]"
+	program, err := spec.Compile(query, compiler.None)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for _, tc := range []struct {
+		name string
+		keys []runtime.Value
+	}{{"hit", hits}, {"miss", misses}} {
+		b.Run(tc.name, func(b *testing.B) {
+			opts := []vm.EnvironmentOption{WithParam("keys", runtime.NewArrayOf(tc.keys)), WithParam("zero", 0)}
+			result, err := spec.Exec(program, false, opts...)
+			if err != nil {
+				b.Fatal(err)
+			}
+			values, ok := result.([]any)
+			if !ok || len(values) != 8*size {
+				b.Fatalf("expected %d dictionary reads, got %T with %d values", 8*size, result, len(values))
+			}
+			for i, value := range values {
+				var want any
+				if tc.name == "hit" {
+					want = float64(i % size)
+				}
+				if value != want {
+					b.Fatalf("read %d: got %v, want %v", i, value, want)
+				}
+			}
+
+			RunBenchmarkNone(b, query, opts...)
+		})
+	}
+}
+
 func BenchmarkObjectLiterals_Basic(b *testing.B) {
 	RunBenchmarkBasic(b, objectLiteralsQuery)
 }
@@ -223,4 +274,13 @@ func benchmarkSpreadObject() *runtime.Object {
 		"qaz": runtime.NewInt(3),
 		"abc": runtime.NewInt(4),
 	})
+}
+
+func BenchmarkObjectShapeReads_None(b *testing.B) {
+	const prefix = "LET obj = {a: @value} RETURN FOR i IN 1..1024 RETURN "
+	for _, tc := range []struct{ name, read string }{{"constant", "obj?.a"}, {"dynamic", "obj?.[@key]"}} {
+		b.Run(tc.name, func(b *testing.B) {
+			RunBenchmarkNone(b, prefix+tc.read, WithParam("value", 17), WithParam("key", "a"))
+		})
+	}
 }

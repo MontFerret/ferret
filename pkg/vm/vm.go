@@ -51,7 +51,7 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	}
 
 	vm := &VM{
-		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), cfg.shapeCacheLimit),
+		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), cfg.shapeCacheLimit, cfg.fastObjectDictThreshold),
 		program: program,
 		plan:    plan,
 		config:  cfg,
@@ -628,7 +628,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.config.fastObjectDictThreshold, int(src1))
+			reg[dst] = shapeCache.NewFastObject()
 		case bytecode.OpLoadRange:
 			start, err := runtime.ToInt(ctx, reg[src1])
 			if err != nil {
@@ -1539,22 +1539,26 @@ func (vm *VM) regexpCached(pc int, value runtime.Value) (*runtime.Regexp, error)
 	}
 }
 
-func (vm *VM) loadFastKeyCached(
-	ctx context.Context,
-	pc int,
-	inst *execInstruction,
-	obj *data.FastObject,
-	arg runtime.Value,
-	key string,
-	constKey bool,
-) (runtime.Value, error) {
-	shapeID := obj.ShapeID()
-	if shapeID == 0 {
-		return vm.loadKey(ctx, obj, arg)
+func (vm *VM) loadKeyCached(ctx context.Context, pc int, inst *execInstruction, src, arg runtime.Value) (runtime.Value, error) {
+	obj, ok := src.(*data.FastObject)
+	if !ok {
+		return vm.loadKey(ctx, src, arg)
 	}
 
-	if constKey {
-		if inst != nil && inst.InlineShapeID == shapeID {
+	name, ok := arg.(runtime.String)
+	if !ok {
+		// Get resolves a host key once and checks the current shape after that callback.
+		return obj.Get(ctx, arg)
+	}
+
+	key := string(name)
+	shapeID := obj.ShapeIDFor(vm.cache.ShapeCache)
+	if shapeID == 0 {
+		return obj.Get(ctx, arg)
+	}
+
+	if inst != nil {
+		if inst.InlineShapeID == shapeID {
 			if inst.InlineSlot < 0 {
 				return runtime.None, nil
 			}
@@ -1567,16 +1571,14 @@ func (vm *VM) loadFastKeyCached(
 		}
 
 		if pc < 0 || pc >= len(vm.cache.LoadKeyConstICs) {
-			return vm.loadKey(ctx, obj, arg)
+			return obj.Get(ctx, arg)
 		}
 
 		cache := vm.cache.LoadKeyConstICs[pc]
 		if cache != nil {
 			if slot, ok := cache.Lookup(shapeID); ok {
-				if inst != nil {
-					inst.InlineShapeID = shapeID
-					inst.InlineSlot = slot
-				}
+				inst.InlineShapeID = shapeID
+				inst.InlineSlot = slot
 
 				if slot < 0 {
 					return runtime.None, nil
@@ -1599,10 +1601,8 @@ func (vm *VM) loadFastKeyCached(
 
 			cache.Add(shapeID, -1)
 
-			if inst != nil {
-				inst.InlineShapeID = shapeID
-				inst.InlineSlot = -1
-			}
+			inst.InlineShapeID = shapeID
+			inst.InlineSlot = -1
 
 			return runtime.None, nil
 		}
@@ -1619,16 +1619,14 @@ func (vm *VM) loadFastKeyCached(
 
 		cache.Add(shapeID, slot)
 
-		if inst != nil {
-			inst.InlineShapeID = shapeID
-			inst.InlineSlot = slot
-		}
+		inst.InlineShapeID = shapeID
+		inst.InlineSlot = slot
 
 		return val, nil
 	}
 
 	if pc < 0 || pc >= len(vm.cache.LoadKeyICs) {
-		return vm.loadKey(ctx, obj, arg)
+		return obj.Get(ctx, arg)
 	}
 
 	cache := vm.cache.LoadKeyICs[pc]
@@ -1671,42 +1669,6 @@ func (vm *VM) loadFastKeyCached(
 	cache.Add(shapeID, key, slot)
 
 	return val, nil
-}
-
-func (vm *VM) loadKeyCached(ctx context.Context, pc int, src, arg runtime.Value) (runtime.Value, error) {
-	obj, ok := src.(*data.FastObject)
-	if !ok {
-		return vm.loadKey(ctx, src, arg)
-	}
-
-	var key string
-
-	switch v := arg.(type) {
-	case runtime.String:
-		key = string(v)
-	default:
-		key = runtime.ToString(v).String()
-	}
-
-	return vm.loadFastKeyCached(ctx, pc, nil, obj, arg, key, false)
-}
-
-func (vm *VM) loadKeyConstCached(ctx context.Context, pc int, inst *execInstruction, src, arg runtime.Value) (runtime.Value, error) {
-	obj, ok := src.(*data.FastObject)
-	if !ok {
-		return vm.loadKey(ctx, src, arg)
-	}
-
-	var key string
-
-	switch v := arg.(type) {
-	case runtime.String:
-		key = string(v)
-	default:
-		key = runtime.ToString(v).String()
-	}
-
-	return vm.loadFastKeyCached(ctx, pc, inst, obj, arg, key, true)
 }
 
 func (vm *VM) objectSetConstCached(inst *execInstruction, obj *data.FastObject, key runtime.String, value runtime.Value) {
@@ -1794,7 +1756,7 @@ func (vm *VM) loadKeyAndSet(ctx context.Context, dst bytecode.Operand, pc int, s
 		return
 	}
 
-	out, err := vm.loadKeyCached(ctx, pc, src, arg)
+	out, err := vm.loadKeyCached(ctx, pc, nil, src, arg)
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
@@ -1807,7 +1769,7 @@ func (vm *VM) loadKeyConstAndSet(ctx context.Context, dst bytecode.Operand, pc i
 		return
 	}
 
-	out, err := vm.loadKeyConstCached(ctx, pc, inst, src, arg)
+	out, err := vm.loadKeyCached(ctx, pc, inst, src, arg)
 	state.setOrOptional(pc, dst, out, err, optional)
 }
 
@@ -1894,11 +1856,11 @@ func (vm *VM) loadPropertyAndSet(ctx context.Context, dst bytecode.Operand, pc i
 
 	switch getter := prop.(type) {
 	case runtime.String:
-		out, err = vm.loadKeyCached(ctx, pc, src, getter)
+		out, err = vm.loadKeyCached(ctx, pc, nil, src, getter)
 	case runtime.Float, runtime.Int:
 		out, err = vm.loadIndex(ctx, src, getter)
 	default:
-		out, err = vm.loadKeyCached(ctx, pc, src, runtime.ToString(prop))
+		out, err = vm.loadKeyCached(ctx, pc, nil, src, runtime.ToString(prop))
 	}
 
 	state.setOrOptional(pc, dst, out, err, optional)
@@ -1918,11 +1880,11 @@ func (vm *VM) loadPropertyConstAndSet(ctx context.Context, dst bytecode.Operand,
 
 	switch getter := prop.(type) {
 	case runtime.String:
-		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, getter)
+		out, err = vm.loadKeyCached(ctx, pc, inst, src, getter)
 	case runtime.Float, runtime.Int:
 		out, err = vm.loadIndex(ctx, src, getter)
 	default:
-		out, err = vm.loadKeyConstCached(ctx, pc, inst, src, runtime.ToString(prop))
+		out, err = vm.loadKeyCached(ctx, pc, inst, src, runtime.ToString(prop))
 	}
 
 	state.setOrOptional(pc, dst, out, err, optional)

@@ -338,3 +338,103 @@ func TestTaggedTypes(t *testing.T) {
 		})
 	}))
 }
+
+func TestMemberReadAcrossVMs(t *testing.T) {
+	newInstance := func(t *testing.T, query string) *vm.VM {
+		t.Helper()
+		program, err := spec.Compile(query, compiler.None)
+		if err != nil {
+			t.Fatal(err)
+		}
+		instance, err := vm.NewWith(program)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = instance.Close() })
+		return instance
+	}
+	produce := func(query string, value runtime.Int) runtime.Value {
+		producer := newInstance(t, query)
+		env, err := vm.NewEnvironment([]vm.EnvironmentOption{vm.WithParam("value", value)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out, err := producer.Run(t.Context(), env)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = out.Close() })
+		return out.Root()
+	}
+	present := produce("RETURN {a: @value}", 17)
+	absent := produce("RETURN {b: @value}", 23)
+	for _, query := range []string{"RETURN @obj?.a", "RETURN @obj?.[@key]"} {
+		for _, firstHit := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/firstHit=%t", query, firstHit), func(t *testing.T) {
+				consumer := newInstance(t, query)
+				for _, hit := range []bool{firstHit, !firstHit, firstHit} {
+					obj, want := absent, "null"
+					if hit {
+						obj, want = present, "17"
+					}
+					env, err := vm.NewEnvironment([]vm.EnvironmentOption{vm.WithParam("obj", obj), vm.WithParam("key", runtime.String("a"))})
+					if err != nil {
+						t.Fatal(err)
+					}
+					got, err := spec.RunInstance(consumer, env)
+					if err != nil || string(got) != want {
+						t.Fatalf("read = %s, %v; want %s", got, err, want)
+					}
+				}
+			})
+		}
+	}
+}
+
+type changingMemberKey struct {
+	onFirst func()
+	runtime.Int
+	calls int
+}
+
+func (k *changingMemberKey) String() string {
+	k.calls++
+	if k.calls == 1 {
+		if k.onFirst != nil {
+			k.onFirst()
+		}
+		return "a"
+	}
+	return "b"
+}
+
+func TestMemberHostKeyConversion(t *testing.T) {
+	program, err := spec.Compile("LET obj = {a: @value, b: 22} RETURN obj?.[MEMBER_KEY(obj)]", compiler.None)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name      string
+		threshold int
+		promote   bool
+	}{{"shape", 8, false}, {"dictionary", 1, false}, {"promotion", 2, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			key := &changingMemberKey{}
+			makeKey := vm.WithFunction("MEMBER_KEY", func(ctx context.Context, args ...runtime.Value) (runtime.Value, error) {
+				if tc.promote {
+					obj := args[0].(runtime.Map)
+					key.onFirst = func() {
+						if err := obj.Set(ctx, runtime.String("c"), runtime.True); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+				return key, nil
+			})
+			got, err := spec.RunWith(program, []vm.Option{vm.WithFastObjectDictThreshold(tc.threshold)}, makeKey, vm.WithParam("value", runtime.Int(11)))
+			if err != nil || string(got) != "11" || key.calls != 1 {
+				t.Fatalf("read = %s, %v after %d conversions; want 11 after one conversion", got, err, key.calls)
+			}
+		})
+	}
+}

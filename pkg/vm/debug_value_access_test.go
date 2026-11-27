@@ -131,7 +131,7 @@ func TestDebugNamedPage(t *testing.T) {
 		name    string
 		ordered bool
 	}{
-		{name: "map", obj: runtime.NewObject()}, {name: "shape", obj: data.NewFastObject(nil, 0), ordered: true}, {name: "dict", obj: data.NewFastObject(nil, 1)},
+		{name: "map", obj: runtime.NewObject()}, {name: "shape", obj: data.NewShapeCache(0, 0).NewFastObject(), ordered: true}, {name: "dict", obj: data.NewShapeCache(0, 1).NewFastObject()},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			keys := []string{"\uFFFD", "\xff", "0", "a\x00\n", "é", "e\u0301", ""}
@@ -181,8 +181,10 @@ func TestDebugObjectChildViews(t *testing.T) {
 		pageable bool
 	}{
 		{runtime.NewObject(), "small", 1, true},
+		{runtime.NewObjectOf(128), "bounded_reservation", 128, true},
 		{runtime.NewObjectOf(256), "reserved", 1, false},
-		{data.NewFastObject(nil, 1), "large_dictionary", 129, false},
+		{data.NewShapeCache(64, 64).NewFastObject(), "bounded_dictionary", 128, true},
+		{data.NewShapeCache(0, 1).NewFastObject(), "large_dictionary", 129, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for i := range tc.keys {
@@ -252,7 +254,7 @@ func TestNativeObjectAliasesShareInspectionBounds(t *testing.T) {
 
 func TestUnorderedMapRemovalBudget(t *testing.T) {
 	access := NewDebugValueAccess()
-	for _, obj := range []runtime.Map{runtime.NewObject(), data.NewFastObject(nil, 1)} {
+	for _, obj := range []runtime.Map{runtime.NewObject(), data.NewShapeCache(0, 1).NewFastObject()} {
 		// Force the fast object into dictionary mode, then start both cases
 		// with a fresh unordered backing and no prior deletions.
 		_ = obj.Set(t.Context(), runtime.String("a"), runtime.True)
@@ -281,7 +283,7 @@ func TestUnorderedMapRemovalBudget(t *testing.T) {
 func TestDebugObjectBackingBounds(t *testing.T) {
 	a := NewDebugValueAccess()
 
-	for _, o := range []runtime.Map{runtime.NewObject(), data.NewFastObject(nil, 1), data.NewFastObject(nil, 0)} {
+	for _, o := range []runtime.Map{runtime.NewObject(), data.NewShapeCache(0, 1).NewFastObject(), data.NewShapeCache(0, 0).NewFastObject()} {
 		for i := range 129 {
 			_ = o.Set(t.Context(), runtime.String(strconv.Itoa(i)), runtime.Int(i))
 		}
@@ -328,7 +330,7 @@ func TestDebugObjectBackingBounds(t *testing.T) {
 		t.Fatal("unbounded sorting work")
 	}
 
-	sparse := data.NewFastObjectOf(nil, 0, 1<<16)
+	sparse := data.NewShapeCache(0, 0).NewFastObject()
 
 	for _, k := range []string{"b", "a", "c"} {
 		_ = sparse.Set(t.Context(), runtime.String(k), runtime.True)

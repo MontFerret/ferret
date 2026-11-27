@@ -75,6 +75,13 @@ type encodeTaggedNode struct {
 }
 
 func TestEncode(t *testing.T) {
+	checkObject := func(out runtime.Value, expected *runtime.Object) {
+		So(out, ShouldHaveSameTypeAs, expected)
+		equal, err := expected.Equal(t.Context(), out)
+		So(err, ShouldBeNil)
+		So(equal, ShouldBeTrue)
+	}
+
 	Convey("Should encode tagged fields only", t, func() {
 		input := encodeParams{
 			Name:    "Alice",
@@ -94,7 +101,11 @@ func TestEncode(t *testing.T) {
 			},
 		)
 
-		So(out, ShouldResemble, expected)
+		checkObject(out, expected)
+
+		age, err := out.(*runtime.Object).Get(t.Context(), runtime.String("age"))
+		So(err, ShouldBeNil)
+		So(age, ShouldHaveSameTypeAs, runtime.Int(0))
 	})
 
 	Convey("Should encode deeply nested structs and slices", t, func() {
@@ -168,7 +179,7 @@ func TestEncode(t *testing.T) {
 			},
 		)
 
-		So(out, ShouldResemble, expected)
+		checkObject(out, expected)
 	})
 
 	Convey("Should encode anonymous embedded structs inline", t, func() {
@@ -192,7 +203,7 @@ func TestEncode(t *testing.T) {
 			},
 		)
 
-		So(out, ShouldResemble, expected)
+		checkObject(out, expected)
 	})
 
 	Convey("Should reject self-embedded pointer cycles", t, func() {
@@ -235,7 +246,7 @@ func TestEncode(t *testing.T) {
 			}),
 		})
 
-		So(out, ShouldResemble, expected)
+		checkObject(out, expected)
 	})
 
 	Convey("Should encode nested tagged structs", t, func() {
@@ -261,6 +272,6 @@ func TestEncode(t *testing.T) {
 			},
 		)
 
-		So(out, ShouldResemble, expected)
+		checkObject(out, expected)
 	})
 }

@@ -14,8 +14,6 @@ type Bounds struct {
 	oversized bool
 }
 
-func (b *Bounds) Reserve(size int) { b.oversized = size > MaxKeys }
-
 func (b *Bounds) AddKey(key string) {
 	if len(key) > maxKeyBytes {
 		b.oversized = true
