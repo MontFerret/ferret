@@ -215,6 +215,9 @@ func (t *Object) Hash() uint64 {
 		h.Write([]byte(":"))
 
 		el, _ := t.lookup(key)
+		if el == nil {
+			el = None
+		}
 
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())
@@ -232,37 +235,14 @@ func (t *Object) Hash() uint64 {
 }
 
 func (t *Object) Copy() Value {
-	c := NewObjectOf(t.length())
+	var copied Object
+	t.copyInto(&copied)
 
-	for k, v := range t.entries {
-		c.setKey(k, v)
-	}
-
-	return c
+	return &copied
 }
 
 func (t *Object) Clone(ctx context.Context) (Cloneable, error) {
-	cloned := NewObjectOf(t.length())
-
-	for key, value := range t.callbackEntries {
-		cloneable, ok := value.(Cloneable)
-
-		if ok {
-			clone, err := cloneable.Clone(ctx)
-
-			if err != nil {
-				return nil, err
-			}
-
-			value = clone
-		} else {
-			value = value.Copy()
-		}
-
-		cloned.setKey(key, value)
-	}
-
-	return cloned, nil
+	return t.cloneInto(ctx, new(Object))
 }
 
 func (t *Object) Length(_ context.Context) (Int, error) {
@@ -467,6 +447,32 @@ func (t *Object) New(ctx context.Context) (Map, error) {
 
 func (t *Object) Iterate(_ context.Context) (Iterator, error) {
 	return NewObjectIterator(t), nil
+}
+
+// An embedded dictionary can take the resulting handle by value. Keeping the
+// allocation at the caller lets it retain only the detached property storage.
+func (t *Object) copyInto(dst *Object) {
+	*dst = *NewObjectOf(t.length())
+	for key, value := range t.entries {
+		dst.setKey(key, value)
+	}
+}
+
+func (t *Object) cloneInto(ctx context.Context, cloned *Object) (Cloneable, error) {
+	*cloned = *NewObjectOf(t.length())
+	for key, value := range t.callbackEntries {
+		if value != nil {
+			clone, err := CloneOrCopy(ctx, value)
+			if err != nil {
+				return nil, err
+			}
+			value = clone
+		}
+
+		cloned.setKey(key, value)
+	}
+
+	return cloned, nil
 }
 
 func (t *Object) sortedKeys() []string {

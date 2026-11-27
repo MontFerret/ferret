@@ -2,14 +2,16 @@ package runtime
 
 import (
 	"bytes"
+	"encoding/binary"
 	"hash/maphash"
 
 	"github.com/MontFerret/ferret/v2/pkg/internal/debugmap"
 )
 
 const (
-	smallObjectFields   = 8
-	multipleObjectSlots = 255 // Above every one-based slot position.
+	smallObjectFields = 8
+	// The name index stores one-based slot bounds in bytes.
+	maxIndexedObjectFields uint8 = debugmap.MaxKeys
 )
 
 type (
@@ -29,57 +31,39 @@ type (
 		smallBits uint64
 	}
 
-	// A tag is absent, names one slot, or requires a bounded scan for
-	// collisions. Every candidate is compared by its exact string key.
+	// end[tag] bounds the prefix that can contain this tag. Each append
+	// records its one-based slot. Swap-removal only moves entries left, so
+	// stale bounds remain valid until replaced by a later append.
 	objectNameIndex struct {
-		candidate [256]uint8
-		tags      [debugmap.MaxKeys]byte
+		end  [256]uint8
+		tags [maxIndexedObjectFields]byte
 	}
 
 	objectProperty struct {
 		value Value
 		key   string
 	}
-
-	// Co-allocate the detached owner, its index and one bounded size class.
-	indexedObject struct {
-		objectBacking
-		properties objectProperties
-		names      objectNameIndex
-	}
-
-	indexedObjectBlock[Slots any] struct {
-		slots Slots
-		indexedObject
-	}
 )
 
 var objectKeySeed = maphash.MakeSeed()
 
-func (b *indexedObject) withSlots(slots []objectProperty) *objectBacking {
-	b.properties.slots = slots
+func newObjectBacking(size int) *objectBacking {
+	if size <= smallObjectFields {
+		return new(objectBacking)
+	}
+
+	// Keep aliases attached to the same owner when the slots grow into a
+	// map. The separately allocated slots can then be collected.
+	b := new(struct {
+		objectBacking
+		properties objectProperties
+		names      objectNameIndex
+	})
+	b.properties.slots = make([]objectProperty, 0, size)
 	b.properties.index = &b.names
 	b.group = &b.properties
-	return &b.objectBacking
-}
 
-func newObjectBacking(size int) *objectBacking {
-	switch {
-	case size <= smallObjectFields:
-		return new(objectBacking)
-	case size <= 16:
-		p := new(indexedObjectBlock[[16]objectProperty])
-		return p.withSlots(p.slots[:0])
-	case size <= 32:
-		p := new(indexedObjectBlock[[32]objectProperty])
-		return p.withSlots(p.slots[:0])
-	case size <= 64:
-		p := new(indexedObjectBlock[[64]objectProperty])
-		return p.withSlots(p.slots[:0])
-	default:
-		p := new(indexedObjectBlock[[debugmap.MaxKeys]objectProperty])
-		return p.withSlots(p.slots[:0])
-	}
+	return &b.objectBacking
 }
 
 // A clear bit rules out the key. Shared bits and old bits left by deletions
@@ -121,13 +105,19 @@ func (t *Object) length() int {
 func (t *Object) lookupValue(key Value) (Value, bool) {
 	name, ok := key.(String)
 	if !ok {
-		name = String(key.String())
+		return t.lookup(key.String())
 	}
+	if fields := t.large; fields != nil {
+		value, found := fields[string(name)]
+		return value, found
+	}
+
 	return t.lookup(string(name))
 }
 
 func (t *Object) lookup(key string) (Value, bool) {
 	fields := t.large
+
 	if b := t.backing; b != nil {
 		g := b.group
 		if g == nil {
@@ -135,15 +125,19 @@ func (t *Object) lookup(key string) (Value, bool) {
 			if b.firstLen != 0 && p.key == key {
 				return p.value, true
 			}
+
 			return nil, false
 		}
+
 		if g.fields == nil {
 			i, _ := g.find(key)
 			if i >= 0 {
 				return g.slots[i].value, true
 			}
+
 			return nil, false
 		}
+
 		fields = g.fields
 	}
 
@@ -153,7 +147,25 @@ func (t *Object) lookup(key string) (Value, bool) {
 }
 
 func objectNameTag(key string) byte {
-	return byte(maphash.Comparable(objectKeySeed, key))
+	n := len(key)
+	if n > 8 {
+		return byte(maphash.String(objectKeySeed, key))
+	}
+
+	if n >= 4 {
+		// The first and last words cover the complete short name. Mix their
+		// sum before taking the high byte to distinguish nearby names.
+		first := binary.LittleEndian.Uint32([]byte(key[:4]))
+		last := binary.LittleEndian.Uint32([]byte(key[n-4:]))
+
+		return byte(((first + last) * 0x9e3779b1) >> 24)
+	}
+
+	var tag byte
+	for i := 0; i < n; i++ {
+		tag = tag*31 + key[i]
+	}
+	return tag
 }
 
 func (b *objectProperties) find(key string) (int, byte) {
@@ -161,6 +173,7 @@ func (b *objectProperties) find(key string) (int, byte) {
 		if b.smallBits&smallObjectBit(key) == 0 {
 			return -1, 0
 		}
+
 		for i := range b.slots {
 			if b.slots[i].key == key {
 				return i, 0
@@ -171,20 +184,16 @@ func (b *objectProperties) find(key string) (int, byte) {
 	}
 
 	tag := objectNameTag(key)
-	hint := b.index.candidate[tag]
-	if hint == 0 {
+	end := min(int(b.index.end[tag]), len(b.slots))
+	if end == 0 {
 		return -1, tag
 	}
 
-	if hint != multipleObjectSlots {
-		slot := int(hint) - 1
-		if b.slots[slot].key == key {
-			return slot, tag
-		}
-		return -1, tag
+	if b.slots[end-1].key == key {
+		return end - 1, tag
 	}
 
-	tags := b.index.tags[:len(b.slots)]
+	tags := b.index.tags[:end-1]
 	for offset := 0; offset < len(tags); {
 		pos := bytes.IndexByte(tags[offset:], tag)
 		if pos < 0 {
@@ -219,8 +228,10 @@ func (t *Object) setTrackedKey(key string, value Value) {
 		if b.firstLen == 0 || b.first[0].key == key {
 			b.first[0] = objectProperty{key: key, value: value}
 			b.firstLen = 1
+
 			return
 		}
+
 		p := new(struct {
 			inline [smallObjectFields]objectProperty
 			objectProperties
@@ -232,6 +243,7 @@ func (t *Object) setTrackedKey(key string, value Value) {
 		b.first[0] = objectProperty{}
 		b.firstLen = 0
 		b.group = &p.objectProperties
+
 		return
 	}
 
@@ -243,7 +255,7 @@ func (t *Object) setTrackedKey(key string, value Value) {
 
 	idx, tag := g.find(key)
 	if idx >= 0 {
-		g.slots[idx].value = value
+		g.slots[idx] = objectProperty{key: key, value: value}
 
 		return
 	}
@@ -253,6 +265,7 @@ func (t *Object) setTrackedKey(key string, value Value) {
 		// vector. Keep the reservation within the proven inspection limit.
 		size := min(debugmap.MaxKeys, 2*len(g.slots))
 		fields := make(map[string]Value, size)
+
 		for _, property := range g.slots {
 			fields[property.key] = property.value
 		}
@@ -267,15 +280,12 @@ func (t *Object) setTrackedKey(key string, value Value) {
 	}
 
 	g.slots = append(g.slots, objectProperty{key: key, value: value})
+
 	if g.index == nil {
 		g.smallBits |= smallObjectBit(key)
 	} else {
 		g.index.tags[len(g.slots)-1] = tag
-		if g.index.candidate[tag] == 0 {
-			g.index.candidate[tag] = uint8(len(g.slots))
-		} else {
-			g.index.candidate[tag] = multipleObjectSlots
-		}
+		g.index.end[tag] = uint8(len(g.slots))
 	}
 }
 
@@ -294,12 +304,14 @@ func (t *Object) deleteKey(key string) {
 			b.firstLen = 0
 			b.bounds.Removed()
 		}
+
 		return
 	}
 
 	if g.fields != nil {
 		before := len(g.fields)
 		delete(g.fields, key)
+
 		if len(g.fields) < before {
 			b.bounds.Removed()
 		}
@@ -307,7 +319,7 @@ func (t *Object) deleteKey(key string) {
 		return
 	}
 
-	idx, removedTag := g.find(key)
+	idx, _ := g.find(key)
 	if idx < 0 {
 		return
 	}
@@ -316,17 +328,9 @@ func (t *Object) deleteKey(key string) {
 	g.slots[idx] = g.slots[last]
 	g.slots[last] = objectProperty{}
 	g.slots = g.slots[:last]
+
 	if ix := g.index; ix != nil {
-		if ix.candidate[removedTag] != multipleObjectSlots {
-			ix.candidate[removedTag] = 0
-		}
-		if idx != last {
-			tag := ix.tags[last]
-			ix.tags[idx] = tag
-			if ix.candidate[tag] != multipleObjectSlots {
-				ix.candidate[tag] = uint8(idx + 1)
-			}
-		}
+		ix.tags[idx] = ix.tags[last]
 	}
 
 	b.bounds.Removed()
@@ -341,6 +345,7 @@ func (t Object) entries(yield func(string, Value) bool) {
 				return
 			}
 		}
+
 		return
 	}
 
@@ -358,26 +363,33 @@ func (t Object) callbackEntries(yield func(string, Value) bool) {
 				return
 			}
 		}
+
 		return
 	}
 
-	b := t.backing
-	slots := b.slots()
+	slots := t.backing.slots()
 	if len(slots) <= 1 {
 		if len(slots) == 1 {
 			yield(slots[0].key, slots[0].value)
 		}
+
 		return
 	}
 
+	t.callbackSlotEntries(slots, yield)
+}
+
+func (t Object) callbackSlotEntries(slots []objectProperty, yield func(string, Value) bool) {
 	// A callback may remove a field, move its slot or promote the group.
 	// Preserve the original names and read their current values on delivery.
 	var names [debugmap.MaxKeys]string
 	for i := range slots {
 		names[i] = slots[i].key
 	}
+
 	for i, key := range names[:len(slots)] {
-		current := b.slots()
+		current := t.backing.slots()
+
 		if i < len(current) && current[i].key == key {
 			if !yield(key, current[i].value) {
 				return
@@ -393,6 +405,7 @@ func (t *Object) propertyNames() []string {
 	if fields == nil && t.backing != nil {
 		slots := t.backing.slots()
 		keys := make([]string, len(slots))
+
 		for i := range slots {
 			keys[i] = slots[i].key
 		}

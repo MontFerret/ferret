@@ -8,7 +8,9 @@ import (
 	goruntime "runtime"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
+	"unsafe"
 	"weak"
 )
 
@@ -90,6 +92,36 @@ func TestObjectBackingReleasesRemovedValues(t *testing.T) {
 	}
 }
 
+func TestObjectOverwriteReleasesOldKey(t *testing.T) {
+	for _, hint := range []int{0, 16} {
+		t.Run(strconv.Itoa(hint), func(t *testing.T) {
+			const key = "seventeen letters"
+			obj := NewObjectOf(hint)
+			alias := *obj
+			install := func() weak.Pointer[byte] {
+				text := key + strings.Repeat("x", 1<<20)
+				alias.SetString(text[:len(key)], True)
+				alias.SetString("other", None)
+				return weak.Make(unsafe.StringData(text))
+			}
+
+			old := install()
+			goruntime.GC()
+			if old.Value() == nil {
+				t.Fatal("live key lost its source string")
+			}
+			obj.SetString(strings.Clone(key), False)
+			goruntime.GC()
+			if old.Value() != nil {
+				t.Fatal("overwrite retained the old key storage")
+			}
+			if v, found, err := alias.Lookup(t.Context(), String(key)); err != nil || !found || v != False {
+				t.Fatalf("lookup after overwrite: %v, %t, %v", v, found, err)
+			}
+		})
+	}
+}
+
 func TestObjectBackingNilEmptyKey(t *testing.T) {
 	obj := NewObjectWith(map[string]Value{"": nil})
 	alias := *obj
@@ -153,19 +185,20 @@ func TestObjectBackingSparseInspection(t *testing.T) {
 	}
 }
 
-func TestObjectFingerprintCollisions(t *testing.T) {
-	// Find three distinct names with the same tag for this process's hash seed.
+func collidingObjectNames(prefix string) []string {
 	var buckets [256][]string
-	var keys []string
-	for i := 0; len(keys) < 3; i++ {
-		key := strconv.Itoa(i)
+	for i := 0; ; i++ {
+		key := prefix + strconv.Itoa(i)
 		tag := objectNameTag(key)
 		buckets[tag] = append(buckets[tag], key)
 		if len(buckets[tag]) == 3 {
-			keys = buckets[tag]
+			return buckets[tag]
 		}
 	}
+}
 
+func TestObjectFingerprintCollisions(t *testing.T) {
+	keys := collidingObjectNames("common long prefix ")
 	obj := NewObjectOf(16)
 	alias := *obj
 	for i, k := range keys {
@@ -199,6 +232,43 @@ func TestObjectFingerprintCollisions(t *testing.T) {
 	}
 }
 
+func TestObjectLookupAfterMovingCollidingProperty(t *testing.T) {
+	keys := collidingObjectNames("")
+	other := "other"
+	for objectNameTag(other) == objectNameTag(keys[0]) {
+		other += "x"
+	}
+
+	obj := NewObjectOf(16)
+	obj.SetString(other, None)
+	for i, key := range keys {
+		obj.SetString(key, Int(i))
+	}
+
+	// Move the last colliding key to slot zero, shrink below its old slot,
+	// and place an unrelated key at the end of the live range.
+	for _, key := range []string{other, keys[1]} {
+		if err := obj.RemoveKey(t.Context(), String(key)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	obj.SetString(other, None)
+	obj.SetString(keys[2], False)
+	if size, _ := obj.Length(t.Context()); size != 3 {
+		t.Fatalf("overwrite of moved key changed size to %d", size)
+	}
+	if v, ok, err := obj.Lookup(t.Context(), String(keys[1])); err != nil || ok || v != None {
+		t.Fatalf("removed key returned %v, %t, %v", v, ok, err)
+	}
+
+	obj.SetString(keys[1], True)
+	for key, want := range map[string]Value{other: None, keys[0]: Int(0), keys[1]: True, keys[2]: False} {
+		if v, ok, err := obj.Lookup(t.Context(), String(key)); err != nil || !ok || v != want {
+			t.Fatalf("lookup %q returned %v, %t, %v; want %v", key, v, ok, err, want)
+		}
+	}
+}
+
 func TestObjectForEachKeepsBackingAcrossMutation(t *testing.T) {
 	for _, hint := range []int{0, 16, 256} {
 		t.Run(strconv.Itoa(hint), func(t *testing.T) {
@@ -211,6 +281,9 @@ func TestObjectForEachKeepsBackingAcrossMutation(t *testing.T) {
 			visited := map[string]bool{}
 			err := obj.ForEach(t.Context(), func(_ context.Context, v, k Value) (Boolean, error) {
 				key := string(k.(String))
+				if key == "replacement" {
+					t.Fatal("visited replacement backing after Clear")
+				}
 				if !slices.Contains(names, key) {
 					return True, nil
 				}

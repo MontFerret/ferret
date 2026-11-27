@@ -10,7 +10,7 @@ var benchmarkShapeCacheResult *Shape
 func TestShapeCacheTransition(t *testing.T) {
 	t.Parallel()
 
-	cache := NewShapeCache(8)
+	cache := NewShapeCache(8, 0)
 	root := cache.Root()
 	first := cache.Transition(root, "first")
 	second := cache.Transition(first, "second")
@@ -43,7 +43,7 @@ func TestShapeCacheTransition(t *testing.T) {
 func TestShapeCacheTransitionAfterLimitIsNotCached(t *testing.T) {
 	t.Parallel()
 
-	cache := NewShapeCache(1)
+	cache := NewShapeCache(1, 0)
 	root := cache.Root()
 	cache.Transition(root, "cached")
 
@@ -64,7 +64,7 @@ func BenchmarkShapeCacheTransitionChain(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		cache := NewShapeCache(len(keys))
+		cache := NewShapeCache(len(keys), 0)
 		shape := cache.Root()
 
 		for _, key := range keys {

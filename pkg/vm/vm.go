@@ -51,7 +51,7 @@ func NewWith(program *bytecode.Program, opts ...Option) (*VM, error) {
 	}
 
 	vm := &VM{
-		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), cfg.shapeCacheLimit),
+		cache:   mem.NewCache(len(program.Bytecode), len(program.Functions.Host), cfg.shapeCacheLimit, cfg.fastObjectDictThreshold),
 		program: program,
 		plan:    plan,
 		config:  cfg,
@@ -628,7 +628,7 @@ func (vm *VM) runCore(ctx context.Context, env *Environment, retained bool) (run
 		case bytecode.OpLoadArray:
 			reg[dst] = runtime.NewArray(int(src1))
 		case bytecode.OpLoadObject:
-			reg[dst] = data.NewFastObjectOf(shapeCache, vm.config.fastObjectDictThreshold, int(src1))
+			reg[dst] = shapeCache.NewFastObject()
 		case bytecode.OpLoadRange:
 			start, err := runtime.ToInt(ctx, reg[src1])
 			if err != nil {

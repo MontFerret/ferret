@@ -102,6 +102,10 @@ func TestEncode(t *testing.T) {
 		)
 
 		checkObject(out, expected)
+
+		age, err := out.(*runtime.Object).Get(t.Context(), runtime.String("age"))
+		So(err, ShouldBeNil)
+		So(age, ShouldHaveSameTypeAs, runtime.Int(0))
 	})
 
 	Convey("Should encode deeply nested structs and slices", t, func() {

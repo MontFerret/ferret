@@ -16,9 +16,9 @@ func BenchmarkFastObject(b *testing.B) {
 		keys[i] = "field" + strconv.Itoa(i)
 	}
 
-	cache := NewShapeCache(threshold)
+	cache := NewShapeCache(threshold, threshold)
 	build := func(count int) *FastObject {
-		object := NewFastObject(cache, threshold)
+		object := cache.NewFastObject()
 		for _, key := range keys[:count] {
 			object.SetStringCached(key, runtime.True)
 		}
@@ -59,10 +59,11 @@ func BenchmarkFastObject(b *testing.B) {
 		}
 	})
 	b.Run("dictionary_insert_remove", func(b *testing.B) {
+		ctx := b.Context()
 		object := build(threshold + 1)
 		for b.Loop() {
 			object.SetStringCached("extra", runtime.True)
-			object.removeString("extra")
+			_ = object.RemoveKey(ctx, runtime.String("extra"))
 		}
 	})
 	b.Run("dictionary_copy", func(b *testing.B) {

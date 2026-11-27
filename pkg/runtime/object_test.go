@@ -528,16 +528,21 @@ func TestObject(t *testing.T) {
 	})
 }
 
-// A Go value copy keeps the old backing alive across Clear. It must not keep
-// values subsequently stored by the cleared receiver alive.
+// A Go value copy and an iterator keep the old backing alive across Clear.
+// Neither may retain values subsequently stored by the cleared receiver.
 func TestObjectClearDetachesSurvivingCopy(t *testing.T) {
-	clearedCopy := func(hint int, clearOwner bool) (*Object, weak.Pointer[Array]) {
+	clearedCopy := func(hint int, clearOwner bool) (*Object, Iterator, weak.Pointer[Array]) {
 		owner := NewObjectOf(hint)
 		owner.SetString("old", True)
 		alias := *owner
 		cleared, survivor := owner, &alias
 		if !clearOwner {
 			cleared, survivor = survivor, cleared
+		}
+
+		iter, err := cleared.Iterate(t.Context())
+		if err != nil {
+			t.Fatal(err)
 		}
 
 		if err := cleared.Clear(t.Context()); err != nil {
@@ -553,18 +558,19 @@ func TestObjectClearDetachesSurvivingCopy(t *testing.T) {
 			t.Fatalf("replacement visible through copy: %v, %v", ok, err)
 		}
 
-		return survivor, reachability
+		return survivor, iter, reachability
 	}
 
 	for _, hint := range []int{0, 16, 256} {
 		for _, clearOwner := range []bool{true, false} {
-			survivor, reachability := clearedCopy(hint, clearOwner)
+			survivor, iter, reachability := clearedCopy(hint, clearOwner)
 			goruntime.GC()
 			if reachability.Value() != nil {
 				t.Fatalf("surviving copy retained replacement after Clear (hint %d, cleared original %t)", hint, clearOwner)
 			}
 
 			goruntime.KeepAlive(survivor)
+			goruntime.KeepAlive(iter)
 		}
 	}
 }

@@ -2,15 +2,15 @@ package data
 
 import (
 	"context"
-	"sort"
+	"slices"
 
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
 type objectComparisonSnapshot struct {
 	fast   *FastObject
-	values map[string]runtime.Value
-	keys   []string
+	values map[runtime.String]runtime.Value
+	keys   []runtime.String
 }
 
 func equalObjectLike(ctx context.Context, left, right runtime.ObjectLike) (bool, error) {
@@ -46,8 +46,8 @@ func equalObjectLike(ctx context.Context, left, right runtime.ObjectLike) (bool,
 
 		equal, err := runtime.EqualValues(
 			ctx,
-			objectSnapshotValue(leftSnapshot, leftKey),
-			objectSnapshotValue(rightSnapshot, rightKey),
+			objectSnapshotValue(leftSnapshot, idx),
+			objectSnapshotValue(rightSnapshot, idx),
 		)
 		if err != nil {
 			return false, err
@@ -102,8 +102,8 @@ func compareObjectLike(ctx context.Context, left, right runtime.ObjectLike) (run
 
 		ordering, err := runtime.CompareValues(
 			ctx,
-			objectSnapshotValue(leftSnapshot, leftKey),
-			objectSnapshotValue(rightSnapshot, rightKey),
+			objectSnapshotValue(leftSnapshot, idx),
+			objectSnapshotValue(rightSnapshot, idx),
 		)
 		if err != nil {
 			return runtime.Equal, err
@@ -120,23 +120,22 @@ func compareObjectLike(ctx context.Context, left, right runtime.ObjectLike) (run
 func snapshotObjectLike(ctx context.Context, object runtime.ObjectLike, size runtime.Int) (objectComparisonSnapshot, error) {
 	if fastObject, ok := object.(*FastObject); ok {
 		keys := fastObject.keys()
-		sort.Strings(keys)
+		slices.Sort(keys)
 
 		return objectComparisonSnapshot{fast: fastObject, keys: keys}, nil
 	}
 
 	capacity := runtime.CapacityHint(size, 1, 0)
-	keys := make([]string, 0, capacity)
-	values := make(map[string]runtime.Value, capacity)
+	keys := make([]runtime.String, 0, capacity)
+	values := make(map[runtime.String]runtime.Value, capacity)
 	err := object.ForEach(ctx, func(ctx context.Context, value, key runtime.Value) (runtime.Boolean, error) {
-		stringKey, ok := key.(runtime.String)
+		name, ok := key.(runtime.String)
 		if !ok {
 			return runtime.False, runtime.TypeErrorOf(key, runtime.TypeString)
 		}
 
-		keyText := string(stringKey)
-		keys = append(keys, keyText)
-		values[keyText] = value
+		keys = append(keys, name)
+		values[name] = value
 
 		return runtime.True, nil
 	})
@@ -144,15 +143,15 @@ func snapshotObjectLike(ctx context.Context, object runtime.ObjectLike, size run
 		return objectComparisonSnapshot{}, err
 	}
 
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	return objectComparisonSnapshot{keys: keys, values: values}, nil
 }
 
-func objectSnapshotValue(snapshot objectComparisonSnapshot, key string) runtime.Value {
+func objectSnapshotValue(snapshot objectComparisonSnapshot, idx int) runtime.Value {
 	if snapshot.fast != nil {
-		return snapshot.fast.getByKey(key)
+		return snapshot.fast.getByKey(&snapshot.keys[idx])
 	}
 
-	return snapshot.values[key]
+	return snapshot.values[snapshot.keys[idx]]
 }

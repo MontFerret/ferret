@@ -8,53 +8,27 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 )
 
+// FastObject uses shape slots until growth selects its detached native dictionary.
 type FastObject struct {
-	cache         *ShapeCache
-	shape         *fastShape
-	dict          *fastDictionary
-	slots         []runtime.Value
-	size          int
-	dictThreshold int
+	cache *ShapeCache
+	shape *fastShape
+	dict  runtime.Object
+	slots []runtime.Value
+	size  int
 }
 
-// Keep unordered-table history with the dictionary so shape-backed VM objects
-// pay no additional allocation or storage cost.
-type fastDictionary struct {
-	values map[string]runtime.Value
-	bounds debugmap.Bounds
-}
-
-func NewFastObject(cache *ShapeCache, dictThreshold int) *FastObject {
-	if cache == nil {
-		cache = NewShapeCache(0)
-	}
-
-	if dictThreshold < 0 {
-		dictThreshold = 0
-	}
-
+// NewFastObject starts at the root shape of this cache.
+func (c *ShapeCache) NewFastObject() *FastObject {
 	return &FastObject{
-		cache:         cache,
-		shape:         cache.Root(),
-		slots:         make([]runtime.Value, 0),
-		dictThreshold: dictThreshold,
+		cache: c,
+		shape: c.Root(),
 	}
-}
-
-func NewFastObjectOf(cache *ShapeCache, dictThreshold int, size int) *FastObject {
-	obj := NewFastObject(cache, dictThreshold)
-
-	if size > 0 {
-		obj.slots = make([]runtime.Value, 0, size)
-	}
-
-	return obj
 }
 
 func (*FastObject) VMUntracked() {}
 
 func (t *FastObject) Shape() *Shape {
-	if t == nil || t.dict != nil {
+	if t == nil {
 		return nil
 	}
 
@@ -62,7 +36,7 @@ func (t *FastObject) Shape() *Shape {
 }
 
 func (t *FastObject) ShapeID() uint64 {
-	if t == nil || t.shape == nil || t.dict != nil {
+	if t == nil || t.shape == nil {
 		return 0
 	}
 
@@ -70,7 +44,7 @@ func (t *FastObject) ShapeID() uint64 {
 }
 
 func (t *FastObject) LookupSlot(key string) (int, bool) {
-	if t == nil || t.shape == nil || t.dict != nil {
+	if t == nil || t.shape == nil {
 		return 0, false
 	}
 
@@ -80,7 +54,7 @@ func (t *FastObject) LookupSlot(key string) (int, bool) {
 }
 
 func (t *FastObject) SlotValue(slot int) (runtime.Value, bool) {
-	if t == nil || t.dict != nil || slot < 0 || slot >= len(t.slots) {
+	if t == nil || t.shape == nil || slot < 0 || slot >= len(t.slots) {
 		return nil, false
 	}
 
@@ -93,7 +67,7 @@ func (t *FastObject) SlotValue(slot int) (runtime.Value, bool) {
 }
 
 func (t *FastObject) SetSlotWithShape(next *Shape, slot int, value runtime.Value) bool {
-	if t == nil || t.dict != nil || next == nil || slot < 0 {
+	if t == nil || t.shape == nil || next == nil || slot < 0 {
 		return false
 	}
 
@@ -131,16 +105,12 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 		value = runtime.None
 	}
 
-	if t.dict != nil {
-		t.dict.bounds.AddKey(key)
-		t.dict.values[key] = value
-		t.size = len(t.dict.values)
-
-		return nil, nil, 0, false
-	}
-
 	shape := t.shape
 	if shape == nil {
+		if t.cache != nil {
+			t.dict.SetString(key, value)
+		}
+
 		return nil, nil, 0, false
 	}
 
@@ -154,11 +124,9 @@ func (t *FastObject) SetStringCached(key string, value runtime.Value) (*Shape, *
 		return shape, shape, idx, true
 	}
 
-	if t.dictThreshold > 0 && t.size+1 > t.dictThreshold {
+	if t.cache.dictThreshold > 0 && t.size+1 > t.cache.dictThreshold {
 		t.toDict()
-		t.dict.bounds.AddKey(key)
-		t.dict.values[key] = value
-		t.size = len(t.dict.values)
+		t.dict.SetString(key, value)
 
 		return nil, nil, 0, false
 	}
@@ -186,35 +154,14 @@ func (t *FastObject) setString(key string, value runtime.Value) {
 	t.SetStringCached(key, value)
 }
 
-func (t *FastObject) removeString(key string) {
-	if t.dict != nil {
-		if _, exists := t.dict.values[key]; exists {
-			delete(t.dict.values, key)
-			t.dict.bounds.Removed()
-
-			t.size--
-		}
-
-		return
-	}
-
-	idx, ok := t.shape.fields[key]
-	if !ok {
-		return
-	}
-
-	if t.slots[idx] != nil {
-		t.slots[idx] = nil
-		t.size--
-	}
-}
-
 func (t *FastObject) toDict() {
-	if t.dict != nil {
-		return
+	// Crossing the threshold signals growth. Reserve room for subsequent
+	// writes while keeping a small dictionary eligible for named pages.
+	capacity := t.size + 1
+	if capacity <= debugmap.MaxKeys {
+		capacity = min(t.size*2, debugmap.MaxKeys)
 	}
-
-	dict := &fastDictionary{values: make(map[string]runtime.Value, t.size)}
+	dict := *runtime.NewObjectOf(capacity)
 	for idx, key := range t.shape.names {
 		if idx >= len(t.slots) {
 			break
@@ -226,19 +173,20 @@ func (t *FastObject) toDict() {
 			continue
 		}
 
-		dict.bounds.AddKey(key)
-		dict.values[key] = val
+		dict.SetString(key, val)
 	}
 
 	t.dict = dict
 	t.shape = nil
 	t.slots = nil
-	t.size = len(dict.values)
+	t.size = 0
 }
 
 func (t *FastObject) len() int {
-	if t.dict != nil {
-		return len(t.dict.values)
+	if t.shape == nil {
+		size, _ := t.dict.Length(context.Background())
+
+		return int(size)
 	}
 
 	return t.size
@@ -246,11 +194,11 @@ func (t *FastObject) len() int {
 
 // DebugFieldsPageable checks the actual shape width, including tombstones.
 func (t *FastObject) DebugFieldsPageable() bool {
-	if t.dict != nil {
-		return t.dict.bounds.Pageable(len(t.dict.values))
+	if t.shape == nil {
+		return t.dict.DebugFieldsPageable()
 	}
 
-	if t.shape == nil || len(t.shape.names) != len(t.slots) {
+	if len(t.shape.names) != len(t.slots) {
 		return false
 	}
 
@@ -260,17 +208,18 @@ func (t *FastObject) DebugFieldsPageable() bool {
 // ReadDebugFields pages dense shapes directly in slot order. A small sparse
 // shape needs a bounded occupancy scan to locate the requested logical offset.
 func (t *FastObject) ReadDebugFields(start, end int, visit func(string, runtime.Value) error) error {
-	if t.dict != nil {
-		return debugmap.Read(t.dict.values, t.dict.bounds, start, end, visit)
+	if t.shape == nil {
+		return t.dict.ReadDebugFields(start, end, visit)
 	}
 
 	if !t.DebugFieldsPageable() || start < 0 || end < start || end > t.size {
 		return errors.ErrUnsupported
 	}
 
-	if t.size == len(t.slots) {
+	names, slots := t.shape.names, t.slots
+	if t.size == len(slots) {
 		for i := start; i < end; i++ {
-			if err := visit(t.shape.names[i], t.slots[i]); err != nil {
+			if err := visit(names[i], slots[i]); err != nil {
 				return err
 			}
 		}
@@ -280,7 +229,7 @@ func (t *FastObject) ReadDebugFields(start, end int, visit func(string, runtime.
 
 	pos := 0
 
-	for slot, value := range t.slots {
+	for slot, value := range slots {
 		if pos == end {
 			break
 		}
@@ -290,7 +239,7 @@ func (t *FastObject) ReadDebugFields(start, end int, visit func(string, runtime.
 		}
 
 		if pos >= start {
-			if err := visit(t.shape.names[slot], value); err != nil {
+			if err := visit(names[slot], value); err != nil {
 				return err
 			}
 		}
@@ -301,35 +250,28 @@ func (t *FastObject) ReadDebugFields(start, end int, visit func(string, runtime.
 	return nil
 }
 
-func (t *FastObject) keys() []string {
-	if t.dict != nil {
-		keys := make([]string, 0, len(t.dict.values))
-
-		for k := range t.dict.values {
-			keys = append(keys, k)
-		}
-
-		return keys
-	}
-
-	keys := make([]string, 0, t.size)
-	for idx, k := range t.shape.names {
-		if t.slots[idx] == nil {
-			continue
-		}
-
-		keys = append(keys, k)
-	}
+func (t *FastObject) keys() []runtime.String {
+	keys := make([]runtime.String, 0, t.len())
+	t.forEachKV(func(key string, _ runtime.Value) {
+		keys = append(keys, runtime.String(key))
+	})
 
 	return keys
 }
 
-func (t *FastObject) getByKey(key string) runtime.Value {
-	if t.dict != nil {
-		return t.dict.values[key]
+// Snapshot keys are already addressable. Passing a pointer to the native
+// dictionary avoids allocating an interface box for every compared property.
+func (t *FastObject) getByKey(key *runtime.String) runtime.Value {
+	if t.shape == nil {
+		value, found, _ := t.dict.Lookup(context.Background(), key)
+		if !found {
+			return nil
+		}
+
+		return value
 	}
 
-	if idx, ok := t.shape.fields[key]; ok {
+	if idx, ok := t.shape.fields[string(*key)]; ok {
 		if idx < len(t.slots) {
 			return t.slots[idx]
 		}
@@ -338,13 +280,7 @@ func (t *FastObject) getByKey(key string) runtime.Value {
 	return runtime.None
 }
 
-func (t *FastObject) getSlot(key string) (runtime.Value, bool) {
-	if t.dict != nil {
-		val, ok := t.dict.values[key]
-
-		return val, ok
-	}
-
+func (t *FastObject) getShapeSlot(key string) (runtime.Value, bool) {
 	if idx, ok := t.shape.fields[key]; ok {
 		val := t.slots[idx]
 		if val == nil {
@@ -358,10 +294,12 @@ func (t *FastObject) getSlot(key string) (runtime.Value, bool) {
 }
 
 func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
-	if t.dict != nil {
-		for key, val := range t.dict.values {
-			fn(key, val)
-		}
+	if t.shape == nil {
+		_ = t.dict.ForEach(context.Background(), func(_ context.Context, value, key runtime.Value) (runtime.Boolean, error) {
+			fn(string(key.(runtime.String)), value)
+
+			return true, nil
+		})
 
 		return
 	}
@@ -378,11 +316,10 @@ func (t *FastObject) forEachKV(fn func(key string, val runtime.Value)) {
 }
 
 func (t *FastObject) toMap() runtime.Map {
-	if t.dict != nil {
-		return runtime.NewObjectWith(t.dict.values)
+	if t.shape == nil {
+		return t.dict.Copy().(*runtime.Object)
 	}
 
-	ctx := context.Background()
 	obj := runtime.NewObject()
 
 	for idx, key := range t.shape.names {
@@ -390,7 +327,7 @@ func (t *FastObject) toMap() runtime.Map {
 			continue
 		}
 
-		_ = obj.Set(ctx, runtime.String(key), t.slots[idx])
+		obj.SetString(key, t.slots[idx])
 	}
 
 	return obj
