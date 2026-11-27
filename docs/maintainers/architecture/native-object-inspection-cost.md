@@ -148,8 +148,14 @@ history allocation.
 
 ## VM dictionaries
 
-Shape-backed objects keep their VM shape and cached property slots. A named
-overwrite resolves its slot once and uses it to update occupancy and value. When a
+Shape IDs belong to the VM that allocated them. Its read instructions cache slots
+for native string keys on its own shapes. Objects passed in from another VM use
+named lookup. FastObject resolves a host key once before choosing its current
+storage, since a host callback can promote the object. Hashing walks sorted
+original names and contributes the hash of `None` for a sibling removed by an
+earlier child's hash callback, as native objects do.
+
+A named overwrite resolves its slot once and uses it to update occupancy and value. When a
 distinct write crosses the configured threshold, the VM embeds a native
 dictionary in the existing fast-object header and reserves the live count
 including the incoming field. The default transition reserves 65 fields.
@@ -316,3 +322,48 @@ preserves the singleton and nested decode gains, and eliminates the medium
 index. The remaining costs fall on specific compact-key patterns and
 write-heavy construction and copying. The measurements support taking the
 simpler representation with the scoped allocation exception.
+
+## Qualification after the VM read fixes
+
+The rerun compares commit `76aecf6a` with merged #1068 for dictionary reads and
+the pre-review head `8a35deb0` for same-VM shape reads. Each query reads 1,024
+properties. Each pair used twenty alternating one-second samples on the same
+Apple M2 Max, Go 1.27.4, darwin/arm64. The dictionary fixture checks all
+returned values before timing. The new shape fixture uses a parameterized
+object literal and exercises the constant and dynamic instructions separately.
+
+| FQL read | Baseline | Baseline µs/op | Candidate µs/op | Allocations/op | Time vs. baseline |
+| --- | --- | ---: | ---: | ---: | --- |
+| Dictionary hit | #1068 | 147.96 | 144.79 | 102 → 101 | inconclusive (p = 0.221) |
+| Dictionary miss | #1068 | 146.09 | 138.92 | 102 → 101 | inconclusive (p = 0.149) |
+| Dictionary repeat hit | #1068 | 137.45 | 135.10 | 102 → 101 | -1.7% (p = 0.002) |
+| Dictionary repeat miss | #1068 | 134.35 | 131.39 | 102 → 101 | -2.2% (p < 0.001) |
+| Shape constant | 8a35deb0 | 99.07 | 97.86 | 1,552 → 1,552 | inconclusive (p = 0.355) |
+| Shape dynamic | 8a35deb0 | 110.60 | 109.04 | 1,552 → 1,552 | -1.4% (p = 0.014) |
+
+Timing varied during the first series, so the dictionary comparison was repeated after the other workloads finished. The median paired change for misses and its distribution-free 95.9% interval were -4.35% (-8.22% to +2.31%) in the first series and -2.14% (-2.67% to -1.84%) in the repeat. Each interval uses the sixth and fifteenth ordered paired changes. The repeat supports the accepted one-allocation allowance for independently owned, inspectable medium maps. Both same-VM read fixtures retained their original allocations.
+
+### Mutation on a tracked backing
+
+The earlier `insert_remove` rows reserved one extra field. At 128 fields that
+omitted the inspection-history owner. The corrected fixture reserves the
+starting size and checks that the candidate's 128-field object is initially
+pageable. Inserting the extra key crosses the 128-key limit. Removing it
+consumes deletion history, so this measures repeated churn on the same
+history-tracked backing after page eligibility is lost.
+
+Each cell is the median in ns/op from ten balanced, interleaved 200 ms samples.
+All four sizes used zero bytes and zero allocations per timed operation on
+all four revisions.
+
+| Starting fields | Task 2 | Merged #1068 | Previous #1069 | Candidate | Candidate vs. #1068 |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | 21.41 | 23.78 | 12.39 | 10.73 | -54.9% (p < 0.001) |
+| 16 | 24.84 | 27.62 | 29.84 | 29.05 | +5.2% (p < 0.001) |
+| 128 | 24.91 | 27.47 | 29.95 | 29.52 | +7.4% (p < 0.001) |
+| 256 | 25.02 | 27.50 | 27.69 | 28.82 | +4.8% (p = 0.004) |
+
+These four mutation rows supersede the corresponding rows in the original
+matrix. The other storage and codec measurements retain their original commit
+labels. The `review/` directory in the archive includes the raw samples,
+run order, binary checksums, commands and benchstat output.
