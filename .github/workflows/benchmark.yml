@@ -211,8 +211,7 @@ jobs:
           path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
           if-no-files-found: warn
 
-      - name: Compare unit benchmark result and comment on same-repo PRs
-        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+      - name: Compare unit benchmarks
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: ${{ env.UNIT_BENCHMARK_NAME }}
@@ -224,27 +223,18 @@ jobs:
           ref: refs/heads/main
           auto-push: false
           save-data-file: false
-          comment-always: true
           summary-always: true
           fail-on-alert: false
           alert-threshold: '150%'
 
-      - name: Compare unit benchmark result without PR comment
-        if: github.event.pull_request.head.repo.full_name != github.repository || github.actor == 'dependabot[bot]'
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: ${{ env.UNIT_BENCHMARK_NAME }}
-          tool: go
-          output-file-path: ${{ env.UNIT_BENCHMARK_OUTPUT }}
-          benchmark-data-dir-path: dev/bench/unit
-          gh-pages-branch: gh-pages
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ref: refs/heads/main
-          auto-push: false
-          save-data-file: false
-          summary-always: true
-          fail-on-alert: false
-          alert-threshold: '150%'
+      - name: Link the benchmark summary on same-repo PRs
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "[Unit benchmark comparison and raw results]($run_url)"
 
   pr-compare-integration:
     name: Compare PR integration benchmarks
