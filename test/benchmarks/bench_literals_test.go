@@ -275,3 +275,12 @@ func benchmarkSpreadObject() *runtime.Object {
 		"abc": runtime.NewInt(4),
 	})
 }
+
+func BenchmarkObjectShapeReads_None(b *testing.B) {
+	const prefix = "LET obj = {a: @value} RETURN FOR i IN 1..1024 RETURN "
+	for _, tc := range []struct{ name, read string }{{"constant", "obj?.a"}, {"dynamic", "obj?.[@key]"}} {
+		b.Run(tc.name, func(b *testing.B) {
+			RunBenchmarkNone(b, prefix+tc.read, WithParam("value", 17), WithParam("key", "a"))
+		})
+	}
+}

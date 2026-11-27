@@ -67,6 +67,9 @@ func (t *FastObject) Hash() uint64 {
 		h.Write([]byte(":"))
 
 		el := t.getByKey(&keys[idx])
+		if el == nil {
+			el = runtime.None
+		}
 
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, el.Hash())

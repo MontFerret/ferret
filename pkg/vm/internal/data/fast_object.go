@@ -35,8 +35,9 @@ func (t *FastObject) Shape() *Shape {
 	return t.shape
 }
 
-func (t *FastObject) ShapeID() uint64 {
-	if t == nil || t.shape == nil {
+// ShapeIDFor returns a cache-local ID only to the cache that allocated it.
+func (t *FastObject) ShapeIDFor(owner *ShapeCache) uint64 {
+	if t == nil || t.shape == nil || t.cache != owner {
 		return 0
 	}
 

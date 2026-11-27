@@ -410,3 +410,35 @@ func TestObjectClonePreservesNilChildResults(t *testing.T) {
 		})
 	}
 }
+
+type removingHashChild struct {
+	remove func()
+	runtime.Int
+}
+
+func (c removingHashChild) Hash() uint64 {
+	c.remove()
+	return c.Int.Hash()
+}
+
+func TestFastObjectHashAfterChildRemovesSibling(t *testing.T) {
+	hash := func(obj runtime.Map) uint64 {
+		t.Helper()
+		child := removingHashChild{Int: 1, remove: func() {
+			if err := obj.RemoveKey(t.Context(), runtime.String("b")); err != nil {
+				t.Fatal(err)
+			}
+		}}
+		if err := obj.Set(t.Context(), runtime.String("a"), child); err != nil {
+			t.Fatal(err)
+		}
+		if err := obj.Set(t.Context(), runtime.String("b"), runtime.True); err != nil {
+			t.Fatal(err)
+		}
+		return obj.Hash()
+	}
+	want := hash(runtime.NewObject())
+	if got := hash(data.NewShapeCache(8, 8).NewFastObject()); got != want {
+		t.Fatalf("hash = %d, want native object hash %d", got, want)
+	}
+}

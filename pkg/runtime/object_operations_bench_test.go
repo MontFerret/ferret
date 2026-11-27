@@ -65,7 +65,10 @@ func BenchmarkObjectOperations(b *testing.B) {
 				}
 			})
 			b.Run("insert_remove", func(b *testing.B) {
-				obj := build(size+1, size)
+				obj := build(size, size)
+				if size == 128 && !obj.DebugFieldsPageable() {
+					b.Fatal("128-field churn must start with a pageable map")
+				}
 				for b.Loop() {
 					obj.SetString("extra", True)
 					_ = obj.RemoveKey(ctx, String("extra"))
