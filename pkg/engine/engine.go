@@ -15,6 +15,7 @@ import (
 	"github.com/MontFerret/ferret/v2/pkg/engine/internal/resource"
 	enginesession "github.com/MontFerret/ferret/v2/pkg/engine/internal/session"
 	"github.com/MontFerret/ferret/v2/pkg/fs"
+	"github.com/MontFerret/ferret/v2/pkg/logging"
 	ferretnet "github.com/MontFerret/ferret/v2/pkg/net"
 	"github.com/MontFerret/ferret/v2/pkg/runtime"
 	"github.com/MontFerret/ferret/v2/pkg/source"
@@ -107,6 +108,32 @@ func (e *Engine) FileSystem() fs.FileSystem {
 // [WithNetwork] remains caller-owned.
 func (e *Engine) Network() ferretnet.Network {
 	return e.host.Network
+}
+
+// Logger returns the configured engine logger with its writer, level, and
+// structured fields. Use its With method to derive a logger with more fields.
+func (e *Engine) Logger() logging.Logger {
+	return e.host.Logger
+}
+
+// Encoding returns a snapshot of the finalized codec registrations. Changes to
+// the snapshot's registrations are local to it. Codec instances are shared.
+func (e *Engine) Encoding() *encoding.Registry {
+	return e.host.Encoding.Clone()
+}
+
+// Params returns a shallow snapshot of the engine's default parameter bindings.
+// Changes to those bindings are local to the snapshot. Values, including
+// mutable values, are shared.
+func (e *Engine) Params() runtime.Params {
+	return e.host.Params.Clone()
+}
+
+// Functions returns a shallow copy of the finalized function registry for
+// introspection. The copy shares the engine's read-only function collections.
+func (e *Engine) Functions() *runtime.Functions {
+	functions := *e.host.Functions
+	return &functions
 }
 
 // Compile synchronously compiles source into a reusable execution plan. Omitted

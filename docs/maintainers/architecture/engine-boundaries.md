@@ -45,20 +45,24 @@ expand the root API.
   `WithDebugFormat`. These configure native artifact loading, VM environments,
   and debugger output without moving those subsystem contracts into the engine.
 
-The 15 methods declared on native public types are intentional API:
+The 19 methods declared on native public types are intentional API:
 
-* `Engine`: `FileSystem`, `Network`, `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
+* `Engine`: `FileSystem`, `Network`, `Logger`, `Encoding`, `Params`, `Functions`,
+  `Compile`, `CompileDebug`, `Load`, `Run`, `Close`.
 * `Plan`: `Params`, `NewSession`, `NewDebugSession`, `Marshal`, `Close`.
 * `Session`: `Run`, `Close`.
 * `OptimizationLevel`: `String`.
 
-`Engine.FileSystem` gives embedders a borrowed reference to the engine-owned
-filesystem used by module registration and executions that inherit the engine
-root. `WithSessionFSRoot` selects a separate filesystem for that execution.
+The root `ferret.Engine` alias exposes all six finalized host accessors.
 
-`Engine.Network` gives embedders a borrowed reference to the same network that
-module registration and both ordinary and debugger executions receive. The root
-`ferret.Engine` alias exposes both methods.
+| Accessor | Result and ownership |
+| --- | --- |
+| `FileSystem` | Borrowed engine-owned filesystem. Executions inherit it by default. `WithSessionFSRoot` selects a session-owned filesystem. |
+| `Network` | Borrowed network shared by module registration and executions. The engine handles cleanup for networks it creates. Networks supplied through `WithNetwork` are caller-owned. |
+| `Logger` | Configured logger value with its writer, level, and fields. Use `With` to derive a logger with additional fields. |
+| `Encoding` | Independent snapshot of codec registrations with shared codec instances. |
+| `Params` | Independent snapshot of default bindings with shared parameter values, including mutable values. |
+| `Functions` | Shallow copy of the finalized registry that shares read-only function collections for introspection. |
 
 Engine, Plan, and Session fields remain private. `Option`, `PlanOption`, and
 `SessionOption` remain aliases instantiated with engine-owned configuration
